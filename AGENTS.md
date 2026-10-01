@@ -39,7 +39,7 @@ It charges the owner's car every night.
 - No guessed prices: a plan uses only published quarter-hours and waits for the rest.
 - No ranking slots by the fraction the car would use of them: that pushes the partly used slot and the spare one to the dear edge of the trough instead of keeping them in it.
 
-Parked for later: a per-start penalty, so the planner splits charging only when the saving beats a pause (about 2 ct), and a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided).
+Parked for later, as issues #12 and #25: a per-start penalty, so the planner splits charging only when the saving beats a pause (about 2 ct), and a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided).
 
 ## The owner's Mac
 
