@@ -8,3 +8,4 @@
 - CI runs only the simulation's CHEAP_NOW scenario, as the other one depends on the time of day.
 - To reproduce the unit-test job, run its steps in Docker's ubuntu:24.04 on a copy of the repository, as the builds write files.
 - `gh run list` shows a new run only a few seconds after the push.
+- label.yml runs on pull_request_target with a write token, so it must never check out or run the pull request's code: it only reads the title and adds a label. release.yml groups the generated release notes by those labels.

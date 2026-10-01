@@ -1,0 +1,31 @@
+name: Label
+
+on:
+  pull_request_target:
+    types: [edited, opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    name: Label the pull request by its title's type
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          case "${TITLE%%[:(!]*}" in
+            fix) label=bug ;;
+            feat) label=enhancement ;;
+            docs) label=documentation ;;
+            build | chore | ci | perf | refactor | revert | test) label=maintenance ;;
+            *) label= ;;
+          esac
+          # A retitled pull request loses the type label it had, so the notes follow the title.
+          remove=$(printf '%s\n' bug enhancement documentation maintenance | grep -v -x "${label:-none}" | paste -s -d , -)
+          set -- --remove-label "$remove"
+          [ -n "$label" ] && set -- "$@" --add-label "$label"
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" "$@"
