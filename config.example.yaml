@@ -45,4 +45,5 @@ substitutions:
   tesla_battery_kwh: "75"
   tesla_charging_kw: "11"
   tesla_vin: REPLACEME
+  timezone: Europe/Vilnius
   version: v0.2.0
