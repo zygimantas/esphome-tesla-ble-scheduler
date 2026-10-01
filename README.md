@@ -10,7 +10,8 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 
 - A Tesla Model 3, Model Y, Cybertruck, or Model S/X from 2021 on.
 - An ESP32-S3-DevKitC-1 (N16R8) board. It goes within Bluetooth range of the car and needs your Wi-Fi.
-- A USB-C cable that carries data, not only power, with the plug your computer takes, and any USB phone charger with a socket near the car to power the board.
+- A USB-C cable that carries data, not only power, with the plug your computer takes.
+- Any USB phone charger, with a socket near the car, to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
 - Electricity priced by the Nord Pool day-ahead market, such as in the Baltics or the Nordics.
 - A computer to install and update the board.
