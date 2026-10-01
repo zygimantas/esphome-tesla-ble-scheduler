@@ -605,14 +605,15 @@ class Controller {
     if (reported && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
       no_power_asked_ = false;
     // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
-    // charges as soon as power comes, and another every 10 minutes in case its request lapsed.
+    // charges as soon as power comes, and another every 10 minutes in case its request lapsed. The board's
+    // last start counts as that request too.
     if (want_charge && !charging && car.charging_state == "No Power") {
       d.status = "Charger has no power";
-      if (now - no_power_asked_at_ >= 10 * 60) {
+      if (now - std::max(no_power_asked_at_, started_at_) >= 10 * 60) {
         no_power_asked_at_ = now;
-        no_power_asked_ = true;
         d.command = Command::START_CHARGING;
       }
+      no_power_asked_ = true;
       return d;
     }
     if (starting && !charging)

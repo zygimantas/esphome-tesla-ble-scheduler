@@ -1076,6 +1076,19 @@ static void test_charger_without_power() {
 
   FakeTesla powerless = plugged_in(false);
   powerless.no_power = true;
+  // A regular start, then the car reports No Power: it holds that request, so no second start for 10 minutes.
+  FakeTesla late = plugged_in(false);
+  Controller dark_after = with_prices();
+  CHECK(dark_after.tick(late.state(TROUGH), Settings()).command == Command::START_CHARGING);
+  late.no_power = true;
+  late.set_charging(true);
+  const Decision held_back = dark_after.tick(late.state(TROUGH + 30), Settings());
+  CHECK_STR(held_back.status, "Charger has no power");
+  CHECK(held_back.command == Command::NONE);
+  for (int64_t now = TROUGH + 60; now < TROUGH + 10 * 60; now += 30)
+    CHECK(dark_after.tick(late.state(now), Settings()).command == Command::NONE);
+  CHECK(dark_after.tick(late.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
+
   // A button asks again at once: Stop charging, then Start charging now within the 10 minutes.
   Controller pressed = with_prices();
   pressed.tick(powerless.state(TROUGH), Settings());
