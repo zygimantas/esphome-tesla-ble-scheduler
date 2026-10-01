@@ -31,7 +31,7 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
       - run: uvx pre-commit run --all-files --show-diff-on-failure
-      - name: The versions agree, in config.example.yaml, device.yaml and ci.yml
+      - name: The versions agree, in config.example.yaml, device.yaml, ci.yml and codeql.yml
         run: |
           version=$(yq '.esphome.project.version' device.yaml)
           template=$(yq '.substitutions.version' config.example.yaml)
@@ -41,6 +41,10 @@ jobs:
           fi
           if [ "$(yq '.esphome.min_version' device.yaml)" != "$ESPHOME_VERSION" ]; then
             echo "::error file=device.yaml::min_version differs from ESPHOME_VERSION in ci.yml ($ESPHOME_VERSION)"
+            exit 1
+          fi
+          if [ "$(yq '.env.ESPHOME_VERSION' .github/workflows/codeql.yml)" != "$ESPHOME_VERSION" ]; then
+            echo "::error file=.github/workflows/codeql.yml::ESPHOME_VERSION differs from ci.yml ($ESPHOME_VERSION)"
             exit 1
           fi
 
