@@ -140,7 +140,7 @@ inline int64_t easter_sunday(int64_t year) {
   return days_from_civil(year, static_cast<unsigned>(month), static_cast<unsigned>(day));
 }
 
-// The VAT and grid fees from config.yaml (format in the README; the build turns them into one of these): VAT
+// The VAT and grid fees from config.yaml (format in docs/grid-fees.md; the build turns them into one of these): VAT
 // on the spot price, and a grid fee per zone. Every hour of a workday, a weekend day and a public
 // holiday belongs to a zone, named by a letter. Zone hours are local time, or winter time all year
 // with clock: winter. Default: spot prices only.

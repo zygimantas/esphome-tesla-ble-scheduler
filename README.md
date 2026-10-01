@@ -83,20 +83,7 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 
 ## Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, so the board compares what you really pay. It comes with ESO's 2026 Standartinis plan with four zones (Lithuania):
-
-- `fees`: the fee per kWh, with VAT, for each zone letter.
-- `hours`: the zone of each hour from 00:00 to 23:00, one letter per hour, on a `workday`, a `weekend` day and a public `holiday`.
-- `holidays`: public holidays as `MM-DD`, or days around Easter as `easter` and `easter+1`.
-- `clock: winter` (optional): the zone hours stay on winter time all year.
-
-ESO's 2026 household plans, in EUR/kWh with VAT. One zone has the same letter every hour. Two zones have `clock: winter`, `workday: nnnnnnnddddddddddddddddn`, `weekend: nnnnnnnnnnnnnnnnnnnnnnnn` and no holidays.
-
-| Plan | One zone | Two zones (`n`, `d`) | Four zones (`n`, `m`, `d`, `e`) |
-|---|---|---|---|
-| Standartinis | 0.11132 | 0.07139, 0.12947 | 0.06292, 0.08349, 0.10406, 0.14641 |
-| Efektyvus | 0.08833 | 0.05687, 0.10164 | 0.05082, 0.06534, 0.08228, 0.11374 |
-| Namai | 0.09559 | 0.06171, 0.11011 | - |
+The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, so the board compares what you really pay. It comes with ESO's 2026 Standartinis plan with four zones (Lithuania). [ESO plans](docs/eso.md) has ESO's other plans ready to paste, and [Grid fees](docs/grid-fees.md) explains the format for any other grid operator.
 
 ## Troubleshooting
 

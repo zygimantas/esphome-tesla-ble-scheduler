@@ -1,7 +1,7 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
 charging.h plans and decides; charging_component.h connects it to ESPHome. This file checks the settings and the
-grid fees (format in README.md, section Grid fees) when you build, and creates the web page's entities.
+grid fees (format in docs/grid-fees.md) when you build, and creates the web page's entities.
 """
 
 import re
