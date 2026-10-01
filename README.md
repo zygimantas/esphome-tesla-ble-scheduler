@@ -6,6 +6,18 @@ Nord Pool electricity changes price every quarter-hour, and the cheapest hours o
 
 ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
 
+## Example savings
+
+An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on ESO's Standartinis plan with four zones, VAT included.
+
+| How it charges | Cost |
+|---|---|
+| Plugged in and left to charge at once, as a Tesla does | 15.42 EUR |
+| The car's own schedule, starting at 23:00 | 6.27 EUR |
+| The board's plan, 00:45 to 05:30 | 4.05 EUR |
+
+The board picks the quarter-hours by price, grid fee included, so it finds the cheap hours wherever they fall that day, which a fixed schedule can't. The numbers come from the board's planner run on the published prices. On a weekday the evening costs more still, as the evening fee applies.
+
 ## Prerequisites
 
 - A Tesla Model 3, Model Y, Cybertruck, or Model S/X from 2021 on.
