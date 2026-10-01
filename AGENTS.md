@@ -21,7 +21,7 @@ It charges the owner's car every night.
 - Secrets stay in secrets.yaml, read with `!secret`: ESPHome masks only those in `esphome config` and in the settings echoed in main.cpp's comments. Moved into settings, they leak into both, which once put them in a chat.
 - The owner's private repository, where this project started, has those values in its history: never make it public or push its history anywhere public. The public repository started from a fresh history.
 - Deploy with `esphome run config.yaml --device <board IP> --no-logs`. Read Ready by, Ready by once and Charging mode before and after: they should match. Uptime starts again from 0, and Prices until comes back within about 10 s.
-- The Version sensor changes only with the YAML. To see whether a C++-only change went out, look for a new string in the build: `LC_ALL=C grep -a -c -F '<string>' .esphome/build/tesla/build/firmware.ota.bin`.
+- The Version sensor (ESPHome's, with the config hash; Release is the project version) changes only with the YAML. To see whether a C++-only change went out, look for a new string in the build: `LC_ALL=C grep -a -c -F '<string>' .esphome/build/tesla/build/firmware.ota.bin`.
 - `esphome logs` never exits; give it a time limit (`perl -e 'alarm 30; exec @ARGV' esphome logs config.yaml --device <board IP>`). After a crash, ESPHome replays its report (reason, PC, backtrace) once, to the first `esphome logs` connection: save that output, and read it before flashing another build, as the addresses belong to the build that crashed.
 
 ## How users get it

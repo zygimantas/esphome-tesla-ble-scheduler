@@ -34,6 +34,7 @@ const E = {
   status: "text_sensor/Charging status",
   stopCharging: "button/Stop charging",
   uptime: "sensor/Uptime",
+  version: "text_sensor/Release",
   wifi: "sensor/WiFi Signal",
   windows: "text_sensor/Charge windows",
 };
@@ -77,6 +78,7 @@ const PAGE = `
     <div class="row"><span>Bluetooth</span><strong id="ble">-</strong></div>
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
+    <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="pair">Pair BLE key</button>
     <button id="restart" class="danger">Restart board</button>
   </details>
@@ -139,6 +141,7 @@ function render() {
   $("ble").textContent = dbm(value(E.ble));
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
+  $("version").textContent = text(E.version) || "-";
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
