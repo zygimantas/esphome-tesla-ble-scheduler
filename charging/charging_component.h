@@ -65,7 +65,7 @@ class ChargingComponent : public PollingComponent {
   // One tick: read the car, decide, carry out the command and publish the results.
   void update() override;
   void dump_config() override;
-  // After the Tesla's entities and the clock.
+  // After Wi-Fi, so the first tick doesn't run while setup still waits for it.
   float get_setup_priority() const override { return setup_priority::LATE; }
 
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }

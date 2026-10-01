@@ -99,7 +99,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
         cv.Required(CONF_NORDPOOL): cv.Schema(
             {
-                cv.Required(CONF_AREA): cv.string_strict,
+                cv.Required(CONF_AREA): cv.All(cv.string_strict, cv.Upper),
                 cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
             }
         ),
