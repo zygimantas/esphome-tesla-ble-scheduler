@@ -71,6 +71,7 @@ class ChargingComponent : public PollingComponent {
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
   void set_nord_pool_area(const char *area) { this->area_ = area; }
+  void set_currency(const char *currency) { this->settings_.currency = currency; }
   void set_battery_kwh(float kwh) { this->settings_.capacity_kwh = kwh; }
   void set_charging_kw(float kw) { this->settings_.charge_kw = kw; }
   void set_ntfy(const char *server, const char *topic) {

@@ -221,13 +221,13 @@ inline std::optional<int64_t> parse_iso8601(const char *s) {
 }
 
 // Nord Pool's DayAheadPrices URL for the CET delivery day `day_offset` days after `now`.
-inline std::string nord_pool_url(const char *area, int64_t now, int day_offset) {
+inline std::string nord_pool_url(const char *area, const char *currency, int64_t now, int day_offset) {
   const CivilDate date = civil_from_days(local_day_of(now, CET_STANDARD_OFFSET) + day_offset);
   char buf[192];
   std::snprintf(buf, sizeof(buf),
                 "https://dataportal-api.nordpoolgroup.com/api/DayAheadPrices"
-                "?market=DayAhead&date=%04d-%02u-%02u&deliveryArea=%s&currency=EUR",
-                static_cast<int>(date.year), date.month, date.day, area);
+                "?market=DayAhead&date=%04d-%02u-%02u&deliveryArea=%s&currency=%s",
+                static_cast<int>(date.year), date.month, date.day, area, currency);
   return buf;
 }
 
@@ -324,6 +324,7 @@ struct Settings {
   float capacity_kwh = 75.0f;
   float charge_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
+  const char *currency = "EUR";  // of the Nord Pool prices and the grid fees
 };
 
 struct PlanRequest {
@@ -411,14 +412,14 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
   return plan;
 }
 
-// The plan's windows for the web page: "<start>,<end>,<EUR/kWh>[,spare];...", in UTC seconds with each
+// The plan's windows for the web page: "<currency>;<start>,<end>,<price per kWh>[,spare];...", in UTC seconds with each
 // window's price (see Window::avg_price), marked spare when the car shouldn't need it. For example
-// "1790463600,1790466300,0.203;1790467200,1790468100,0.211,spare". Empty without windows.
-inline std::string format_windows(const Plan &plan) {
-  std::string text;
+// "EUR;1790463600,1790466300,0.203;1790467200,1790468100,0.211,spare". Just the currency without windows.
+inline std::string format_windows(const Plan &plan, const char *currency) {
+  std::string text = currency;
   char part[64];
   for (const Window &w : plan.windows) {
-    std::snprintf(part, sizeof(part), "%s%lld,%lld,%.3f%s", text.empty() ? "" : ";", static_cast<long long>(w.start),
+    std::snprintf(part, sizeof(part), ";%lld,%lld,%.3f%s", static_cast<long long>(w.start),
                   static_cast<long long>(w.end), w.avg_price, w.spare() ? ",spare" : "");
     text += part;
   }
@@ -583,7 +584,7 @@ class Controller {
       if (!charging && !plan_.contains(planned_slot_ + SLOT_SECONDS) && planned_slot_ + SLOT_SECONDS - now < 2 * 60)
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
-      d.windows = format_windows(plan_);
+      d.windows = format_windows(plan_, settings.currency);
     }
     const bool full = complete_ || soc_ >= limit_ - 0.5f;  // false while the battery level is unknown (NaN)
     if (want_charge && full && !charging) {
@@ -685,9 +686,9 @@ class Controller {
     for (const Window &w : plan_.windows)
       windows += !w.spare();
     char text[128];
-    std::snprintf(text, sizeof(text), "%.0f to %.0f%% by %s; avg %.3f EUR/kWh over %d window(s)", soc_, limit_,
+    std::snprintf(text, sizeof(text), "%.0f to %.0f%% by %s; avg %.3f %s/kWh over %d window(s)", soc_, limit_,
                   format_day_hhmm(deadline_(now, settings), settings.standard_offset).c_str(), plan_.avg_price,
-                  windows);
+                  settings.currency, windows);
     n.title = "Tesla charging plan created";
     n.message = text;
     if (plan_.soc_at_end < limit_ - 0.5f)

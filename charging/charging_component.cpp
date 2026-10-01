@@ -181,11 +181,11 @@ void ChargingComponent::update() {
 void ChargingComponent::dump_config() {
   ESP_LOGCONFIG(TAG,
                 "Charging:\n"
-                "  Nord Pool area: %s\n"
+                "  Nord Pool area: %s, prices in %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_, this->settings_.capacity_kwh, this->settings_.charge_kw,
+                this->area_, this->settings_.currency, this->settings_.capacity_kwh, this->settings_.charge_kw,
                 this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
@@ -220,7 +220,7 @@ void ChargingComponent::tick_soon_() {
 // again.
 void ChargingComponent::fetch_prices_(int64_t now) {
   for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
-    auto response = this->http_->get(nord_pool_url(this->area_, now, day));
+    auto response = this->http_->get(nord_pool_url(this->area_, this->settings_.currency, now, day));
     if (response == nullptr) {
       ESP_LOGW(TAG, "Nord Pool request failed");
       break;

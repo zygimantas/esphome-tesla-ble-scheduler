@@ -20,6 +20,7 @@ CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
 CONF_NORDPOOL = "nordpool"
 CONF_VAT = "vat"
+CONF_CURRENCY = "currency"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
 CONF_VIN = "vin"
@@ -119,7 +120,7 @@ def _validate_grid(config):
     winter = config[CONF_HOURS].get(CONF_WINTER, {})
     zones = set("".join(config[CONF_HOURS].get(day, "") + winter.get(day, "") for day in days))
     if missing := sorted(zones - set(config[CONF_FEES])):
-        raise cv.Invalid(f'zone "{missing[0]}" needs a fee in EUR/kWh incl. VAT', path=[CONF_FEES])
+        raise cv.Invalid(f'zone "{missing[0]}" needs a fee per kWh incl. VAT', path=[CONF_FEES])
     if unused := sorted(set(config[CONF_FEES]) - zones):
         raise cv.Invalid(f'zone "{unused[0]}" isn\'t used in any hour', path=[CONF_FEES, unused[0]])
     return config
@@ -165,6 +166,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Required(CONF_NORDPOOL): cv.Schema(
             {
                 cv.Required(CONF_AREA): cv.one_of(*NORD_POOL_AREAS, upper=True),
+                cv.Optional(CONF_CURRENCY, default="EUR"): cv.one_of("DKK", "EUR", "NOK", "SEK", upper=True),
                 cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
             }
         ),
@@ -210,6 +212,7 @@ async def to_code(config):
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
     cg.add(var.set_nord_pool_area(config[CONF_NORDPOOL][CONF_AREA]))
+    cg.add(var.set_currency(config[CONF_NORDPOOL][CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
