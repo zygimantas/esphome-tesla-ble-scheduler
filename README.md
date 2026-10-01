@@ -21,7 +21,7 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, any password for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/).
 4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
 5. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open a terminal in that folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
-6. **Put the board next to the car** on the USB charger.
+6. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
 7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
