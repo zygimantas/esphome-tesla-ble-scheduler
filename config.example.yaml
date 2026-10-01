@@ -1,0 +1,48 @@
+charging:
+  grid:
+    fees:
+      n: 0.06292
+      m: 0.08349
+      d: 0.10406
+      e: 0.14641
+    hours:
+      holiday:  nnnnnnndddddddddddddddnn
+      weekend:  nnnnnnndddddddddddddddnn
+      workday:  nnnnnmmddddddddddeeeeenn
+    holidays:
+      - 01-01
+      - 02-16
+      - 03-11
+      - easter
+      - easter+1
+      - 05-01
+      - 06-24
+      - 07-06
+      - 08-15
+      - 11-01
+      - 11-02
+      - 12-24
+      - 12-25
+      - 12-26
+  nordpool:
+    area: LT
+    vat: 0.21
+
+external_components:
+  - components: [charging]
+    source:
+      path: .
+      ref: ${version}
+      type: git
+      url: https://github.com/zygimantas/esphome-tesla-ble-scheduler
+
+packages:
+  device: github://zygimantas/esphome-tesla-ble-scheduler/device.yaml@${version}
+
+substitutions:
+  ntfy_server: https://ntfy.sh
+  ntfy_topic: ""
+  tesla_battery_kwh: "75"
+  tesla_charging_kw: "11"
+  tesla_vin: "your-car-vin"
+  version: v0.1.0

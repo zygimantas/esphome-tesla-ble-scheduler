@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: [--unsafe]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        args: [--ignore-words-list=trough]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v23.1.1
+    hooks:
+      - id: clang-format
+        types_or: [c++]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.5.15
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@2.5.15"]

@@ -1,0 +1,79 @@
+api:
+  encryption:
+    key: !secret api_encryption_key
+  reboot_timeout: 0s
+
+charging:
+  battery_kwh: ${tesla_battery_kwh}
+  charging_kw: ${tesla_charging_kw}
+  ntfy_server: ${ntfy_server}
+  ntfy_topic: ${ntfy_topic}
+  time_id: sntp_time
+
+debug:
+  update_interval: never
+
+esp32_ble_tracker:
+  on_ble_advertise:
+    - then:
+        - lambda: |-
+            static const std::string car = TeslaBLE::get_vin_advertisement_name("${tesla_vin}");
+            if (x.get_name() == car && id(ble_tesla_id).get_address() != x.address_uint64())
+              id(ble_tesla_id).set_address(x.address_uint64());
+
+esphome:
+  includes:
+    - <vin_utils.h>
+  name: ${name}
+  project:
+    name: zygimantas.esphome-tesla-ble-scheduler
+    version: 0.1.0
+
+http_request:
+  timeout: 15s
+
+logger:
+  hardware_uart: UART0
+
+packages:
+  yoziru.esphome-tesla-ble:
+    files: [packages/dashboard.yml]
+    ref: ${tesla_ble_ref}
+    url: https://github.com/yoziru/esphome-tesla-ble.git
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+substitutions:
+  ble_mac_address: "00:00:00:00:00:00"
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  name: tesla
+  tesla_ble_ref: 8b9ec1cb7312f47c8d4d3042fefabc7759eb1a07
+  variant: esp32s3
+
+tesla_ble_vehicle:
+  role: CHARGING_MANAGER
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: "Reset reason"
+
+time:
+  - id: sntp_time
+    platform: sntp
+
+web_server:
+  css_include: web/web_ui.css
+  js_include: web/web_ui.js
+  js_url: ""
+  log: false
+  ota: false
+
+wifi:
+  ap:
+    password: !secret wifi_hotspot_password
+  password: !secret wifi_password
+  ssid: !secret wifi_ssid

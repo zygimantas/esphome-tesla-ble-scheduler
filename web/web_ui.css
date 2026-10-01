@@ -1,0 +1,208 @@
+/* Phone-first page for the Tesla BLE board; see web_ui.js. Sections go from general to specific. */
+
+/* --- Theme: light, then dark --- */
+:root {
+  color-scheme: light dark;
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --muted: #6e6e73;
+  --line: #e5e5ea;
+  --control: #e9e9ee;
+  --accent: #007aff;
+  --red: #ff3b30;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text: #f2f2f7;
+    --muted: #98989f;
+    --line: #38383a;
+    --control: #2c2c2e;
+    --accent: #0a84ff;
+    --red: #ff453a;
+  }
+}
+
+/* --- Base --- */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    17px / 1.35 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: the hidden attribute must win over every display rule */
+  display: none !important;
+}
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 16px) calc(env(safe-area-inset-right) + 16px)
+    calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px);
+}
+
+/* --- Cards; Board folds open --- */
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+}
+summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::after {
+  content: "›";
+  font-size: 24px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+details[open] > summary {
+  margin-bottom: 4px;
+}
+details[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+/* --- Rows: a label on the left, a value or control on the right --- */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  border-top: 1px solid var(--line);
+}
+.row:first-child,
+summary + .row {
+  border-top: 0;
+}
+.row strong {
+  font-weight: 400;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* --- Dropdowns, all the same width, with their own arrow --- */
+select {
+  appearance: none;
+  width: 7em;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--control);
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 30px 7px 12px;
+}
+.dropdown {
+  position: relative;
+  flex: none;
+}
+.dropdown::after {
+  content: "▾";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+select:disabled,
+.dropdown:has(select:disabled)::after {
+  opacity: 0.4;
+}
+
+/* --- Buttons --- */
+button {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  margin: 10px 0 0;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--control);
+}
+button:active {
+  opacity: 0.6;
+}
+button.primary {
+  color: #fff;
+  background: var(--accent);
+}
+button.red {
+  color: #fff;
+  background: var(--red);
+}
+button.danger {
+  color: var(--red);
+}
+button:disabled {
+  opacity: 0.4;
+}
+
+/* --- Plan card --- */
+#create-plan,
+#stop-charging {
+  margin-top: 0;
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+.row.spare {
+  opacity: 0.5;
+}
+
+/* --- Toast --- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  transform: translateX(-50%);
+  max-width: 90vw;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+}

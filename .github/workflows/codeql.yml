@@ -1,0 +1,48 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  ARDUINOJSON_VERSION: 7.4.3
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: c-cpp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - name: Build the unit tests
+        if: matrix.build-mode == 'manual'
+        run: |
+          mkdir ArduinoJson
+          curl -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+            tar xz --strip-components=1 -C ArduinoJson
+          g++ -std=c++17 -I . -isystem ArduinoJson/src test/charging_test.cpp -o charging_test
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

@@ -1,0 +1,9 @@
+# web/
+
+- The page is built into the firmware (`js_include` and `css_include` in device.yaml), so a change needs a build and a flash. The board serves it as /0.js and /0.css.
+- It shows and picks times in the phone's time zone, assuming the board's is the same.
+- render() runs from requestAnimationFrame, which hidden and background browser tabs don't fire. When you test in a headless or hidden browser, replace requestAnimationFrame with a direct call, or the page stays empty.
+- To try it without the board, serve a page that loads web_ui.css and web_ui.js as /0.css and /0.js, a fake /events (Server-Sent Events with `state` events like `{"id":"text_sensor/Charging status","value":"Charging","state":"Charging"}`) and a handler that accepts the POSTs.
+- Biome formats and lints this folder; it replaced Prettier, whose CSS output differs slightly. A biome-ignore comment goes right above the declaration it's about, not above its rule. `[hidden] { display: none !important; }` stays: without it, elements with their own display rule ignore the hidden attribute.
+- The layout is the owner's. Ready by is one dropdown of half-hours, as separate day and time dropdowns confused them. Only Pair BLE key and Restart ask first. Don't add a header, an expected cost, plan warnings (they go in the phone message), settings, price charts or the range in km.
+- Text: a plain hyphen with spaces in time ranges, a space before an ellipsis ("Getting prices …"), and no en or em dashes.
