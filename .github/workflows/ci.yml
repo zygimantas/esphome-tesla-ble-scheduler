@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  ARDUINOJSON_VERSION: 7.4.3
+  CLANG_TIDY_VERSION: 22.1.8
+  ESPHOME_VERSION: 2026.9.0
+
+jobs:
+  lint:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - run: uvx pre-commit run --all-files --show-diff-on-failure
+      - name: config.example.yaml asks for the version in device.yaml
+        run: |
+          version=$(yq '.esphome.project.version' device.yaml)
+          template=$(yq '.substitutions.version' config.example.yaml)
+          if [ "$template" != "v$version" ]; then
+            echo "::error file=config.example.yaml::version is $template, but device.yaml is at $version: make it v$version"
+            exit 1
+          fi
+
+  unit-tests:
+    name: Unit tests, coverage and clang-tidy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false
+      - name: LLVM tools, ArduinoJson and the compiler flags
+        run: |
+          sudo apt-get update -q && sudo apt-get install -q -y llvm
+          mkdir ArduinoJson
+          curl -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+            tar xz --strip-components=1 -C ArduinoJson
+          echo "-std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src" > flags
+      - name: GCC
+        run: g++ @flags test/charging_test.cpp -o charging_test && ./charging_test
+      - name: Clang, with undefined behavior and memory errors caught
+        run: |
+          clang++ @flags -fsanitize=address,undefined -fno-sanitize-recover=all test/charging_test.cpp -o charging_test
+          ./charging_test
+      - name: Coverage of charging.h, all of it
+        run: |
+          clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/charging_test.cpp -o charging_test
+          LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
+          llvm-profdata merge charging_test.profraw -o charging_test.profdata
+          llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/charging.h
+          llvm-cov export charging_test -instr-profile=charging_test.profdata -summary-only charging/charging.h |
+            python3 -c 'import json, sys
+          totals = json.load(sys.stdin)["data"][0]["totals"]
+          missed = {k: totals[k]["count"] - totals[k]["covered"] for k in ("lines", "functions", "regions", "branches")}
+          sys.exit(f"Not covered: {missed}" if any(missed.values()) else 0)'
+      - name: clang-tidy
+        run: uvx "clang-tidy==$CLANG_TIDY_VERSION" test/charging_test.cpp -- @flags
+
+  esphome:
+    name: ESPHome builds and the simulation
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: false
+      - name: Secrets, from the example with a random API key
+        run: sed "s|random-key-from-esphome.io/components/api|$(openssl rand -base64 32)|" secrets.example.yaml > secrets.yaml
+      - name: Simulation, starting a stopped car in a cheap quarter-hour
+        run: |
+          uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
+          CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
+            timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log
+          grep -F '][charging' simulation.log
+          grep -q -F 'Start charging (Charging)' simulation.log
+      - name: Firmware, as users build it, from this commit on GitHub
+        env:
+          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: uvx "esphome@$ESPHOME_VERSION" -s version "$COMMIT" compile config.example.yaml
+
+  release:
+    name: Release the version in device.yaml
+    if: github.event_name == 'push'
+    needs: [esphome, lint, unit-tests]
+    runs-on: ubuntu-24.04
+    concurrency: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Publish it, unless it's out already
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(yq '.esphome.project.version' device.yaml)
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "v$version is out already"
+          else
+            gh release create "v$version" --target "$GITHUB_SHA" --title "ESPHome Tesla BLE Scheduler $version" --generate-notes
+          fi

@@ -1,0 +1,90 @@
+# Runs the charging component on a computer against a simulated Tesla.
+esphome:
+  name: simulation
+  includes:
+    - charging_test_tesla.h
+  on_boot:
+    priority: -100
+    then:
+      # Synthetic prices, so the board doesn't download real ones.
+      - lambda: |-
+          auto &controller = id(charging_id).controller();
+          charging_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
+          controller.replan();
+
+host:
+
+logger:
+
+external_components:
+  - source: ..
+    components: [charging]
+
+http_request:
+
+charging:
+  id: charging_id
+  battery_kwh: 75
+  charging_kw: 11
+  grid:
+    fees:
+      a: 0.11132
+    hours:
+      weekend: aaaaaaaaaaaaaaaaaaaaaaaa
+      workday: aaaaaaaaaaaaaaaaaaaaaaaa
+  nordpool:
+    area: LT
+    vat: 0.21
+  time_id: sntp_time
+
+time:
+  - platform: host
+    id: sntp_time
+    timezone: Europe/Vilnius
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: charging_test::tesla().advance(5);
+
+binary_sensor:
+  - platform: template
+    name: "Charger"
+    lambda: return charging_test::tesla().plugged;
+
+text_sensor:
+  - platform: template
+    name: "Charging"
+    update_interval: 5s
+    lambda: return charging_test::tesla().charging_state();
+
+sensor:
+  - platform: template
+    name: "Battery"
+    update_interval: 5s
+    lambda: return charging_test::tesla().soc;
+
+number:
+  - platform: template
+    name: "Charging Limit"
+    update_interval: 5s
+    lambda: return charging_test::tesla().limit;
+    set_action:
+      - lambda: charging_test::tesla().limit = x;
+    min_value: 50
+    max_value: 100
+    step: 1
+
+switch:
+  - platform: template
+    name: "Charger"
+    restore_mode: DISABLED
+    lambda: return charging_test::tesla().charging;
+    turn_on_action:
+      - lambda: charging_test::tesla().set_charging(true);
+    turn_off_action:
+      - lambda: charging_test::tesla().set_charging(false);
+
+button:
+  - platform: template
+    name: "Wake up"  # the simulated car never sleeps
