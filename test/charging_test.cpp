@@ -746,6 +746,8 @@ static void test_complete_under_the_limit_is_charged() {
       simulate(controller, car, SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR, {{SEP24_1700Z, &FakeTesla::plug_in}});
   CHECK(run.commands.empty());
   CHECK(contains(run.statuses, "Charged"));
+  for (const std::string &status : run.statuses)
+    CHECK(status.rfind("Charges at", 0) != 0);  // no plan on the page either
   REQUIRE(run.messages.size() == 1);
   CHECK_STR(run.messages[0].second.message, "Not needed: battery at limit");
 }

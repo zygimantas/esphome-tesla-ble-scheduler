@@ -634,7 +634,8 @@ class Controller {
 
   // Plans from the current quarter-hour; the plan stands until the next one or replan().
   void update_plan_(int64_t now, const Settings &settings) {
-    const PlanRequest request{now, deadline_(now, settings), soc_, limit_, grid_, settings};
+    // A car that says Complete is at its limit, whatever the level reads: it won't take a start.
+    const PlanRequest request{now, deadline_(now, settings), complete_ ? limit_ : soc_, limit_, grid_, settings};
     plan_ = battery_known_() ? make_plan(prices, request) : Plan{};
     planned_slot_ = floor_to_slot(now);
     replan_ = false;
@@ -661,12 +662,8 @@ class Controller {
       n.message = d.status;
       return;
     }
-    if (complete_ || plan_.needed_slots == 0) {  // the car's own word counts: it stays Complete a percent under
-      n.message = "Not needed: battery at limit";
-      return;
-    }
     if (plan_.windows.empty()) {
-      n.message = "No time left before Ready by";
+      n.message = plan_.needed_slots == 0 ? "Not needed: battery at limit" : "No time left before Ready by";
       return;
     }
     int windows = 0;
