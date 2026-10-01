@@ -43,7 +43,7 @@ Your settings in `config.yaml`:
 
 After a change, run `esphome run config.yaml` again and choose the board's network address: it updates over Wi-Fi. If a setting is wrong, ESPHome stops and says what.
 
-**To update**, set `version` to the latest release and do the same. The release notes say if anything else needs changing.
+**To update**, set `version` to the latest release and do the same; the **Board** section on the page shows the version the board runs. The release notes say if anything else needs changing.
 
 ## Using it
 
