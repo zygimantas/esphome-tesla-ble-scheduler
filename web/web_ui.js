@@ -368,17 +368,23 @@ function setLive(on) {
 async function post(entity, action, param) {
   const [domain, name] = entity.split("/");
   const query = param == null ? "" : `?value=${encodeURIComponent(param)}`;
+  // The board answers at once; a restarting or absent one never does. An AbortController rather than
+  // AbortSignal.timeout(), which Safari got only in 16.4.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 8000);
   try {
     const response = await fetch(`/${domain}/${encodeURIComponent(name)}/${action}${query}`, {
       method: "POST",
       body: "",
-      signal: AbortSignal.timeout(8000), // the board answers at once; a restarting or absent one never does
+      signal: abort.signal,
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return true;
   } catch (e) {
-    toast(`Didn't work (${e.name === "TimeoutError" ? "no answer" : e.message}). Try again.`);
+    toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
