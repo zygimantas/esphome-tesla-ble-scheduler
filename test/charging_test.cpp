@@ -211,11 +211,12 @@ static void test_nord_pool_prices() {
   CHECK(!parse_iso8601(nullptr));
 
   // 21:30Z is still Sep 24 in CET (23:30); 22:30Z is already Sep 25 (00:30).
-  CHECK_STR(nord_pool_url("LT", SEP24_1700Z + 4 * HOUR + 30 * 60, 0),
+  CHECK_STR(nord_pool_url("LT", "EUR", SEP24_1700Z + 4 * HOUR + 30 * 60, 0),
             "https://dataportal-api.nordpoolgroup.com/api/DayAheadPrices"
             "?market=DayAhead&date=2026-09-24&deliveryArea=LT&currency=EUR");
-  CHECK(nord_pool_url("LT", SEP24_1700Z + 5 * HOUR + 30 * 60, 0).find("date=2026-09-25") != std::string::npos);
-  CHECK(nord_pool_url("LT", SEP24_1700Z + 5 * HOUR + 30 * 60, 1).find("date=2026-09-26") != std::string::npos);
+  CHECK(nord_pool_url("LT", "EUR", SEP24_1700Z + 5 * HOUR + 30 * 60, 0).find("date=2026-09-25") != std::string::npos);
+  CHECK(nord_pool_url("LT", "EUR", SEP24_1700Z + 5 * HOUR + 30 * 60, 1).find("date=2026-09-26") != std::string::npos);
+  CHECK(nord_pool_url("SE3", "SEK", SEP24_1700Z, 0).find("deliveryArea=SE3&currency=SEK") != std::string::npos);
   CHECK(end_of_delivery_day(SEP24_1700Z) == CET_SEP25);
   CHECK(end_of_next_delivery_day(SEP24_1700Z) == CET_SEP25 + DAY_SECONDS);
 
@@ -335,7 +336,7 @@ static void test_plan_windows_and_prices() {
   const std::string first = std::to_string(SEP24_1700Z + 5 * HOUR) + "," + std::to_string(SEP24_1700Z + 6 * HOUR);
   const std::string spare =
       std::to_string(SEP24_1700Z + 9 * HOUR) + "," + std::to_string(SEP24_1700Z + 9 * HOUR + SLOT_SECONDS);
-  CHECK_STR(format_windows(plan), first + ",0.100;" + spare + ",0.110,spare");
+  CHECK_STR(format_windows(plan, "EUR"), "EUR;" + first + ",0.100;" + spare + ",0.110,spare");
 
   // At 01:05 the current slot has 10 minutes left, so the buffer at 05:00 is needed after all.
   request.now = SEP24_1700Z + 5 * HOUR + 5 * 60;
@@ -345,7 +346,7 @@ static void test_plan_windows_and_prices() {
   CHECK(near(late.windows[0].energy_kwh, stored_first / 0.9f, 1e-3f));
   CHECK(near(late.windows[1].energy_kwh, (9.75f - stored_first) / 0.9f, 1e-3f));
   CHECK(near(late.avg_price, (stored_first * 0.10f + (9.75f - stored_first) * 0.11f) / 9.75f, 1e-5f));
-  CHECK_STR(format_windows(late), first + ",0.100;" + spare + ",0.110");
+  CHECK_STR(format_windows(late, "EUR"), "EUR;" + first + ",0.100;" + spare + ",0.110");
 
   // A window's price is for the energy the car takes there: all of 01:00, half of 01:15, none of the
   // spare 01:30 (0.10, 0.12 and 0.40 EUR).
@@ -366,7 +367,7 @@ static void test_plan_windows_and_prices() {
   CHECK(near(small.windows[0].avg_price, 0.10f, 1e-5f) && near(small.avg_price, 0.10f, 1e-5f));
 
   request.soc = 80;
-  CHECK(format_windows(make_plan(two_cheap_spells(), request)).empty());  // nothing to charge
+  CHECK_STR(format_windows(make_plan(two_cheap_spells(), request), "EUR"), "EUR");  // nothing to charge
 }
 
 // ---------------------------------------------------------------------------
@@ -1228,10 +1229,11 @@ static Run plug_in_at_8pm(Settings settings = {}, FakeTesla car = {}) {
 static void test_plug_in_in_cet() {
   Settings cet;
   cet.standard_offset = CET_STANDARD_OFFSET;
+  cet.currency = "SEK";  // a Swedish user
   const Run run = plug_in_at_8pm(cet);
   CHECK(contains(run.statuses, "Charges at 00:30"));
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 SEK/kWh over 1 window(s)");
 }
 
 static void test_plug_in_message_when_time_is_short() {

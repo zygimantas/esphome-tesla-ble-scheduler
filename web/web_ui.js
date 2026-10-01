@@ -269,23 +269,21 @@ function renderPlan() {
   renderWindows();
 }
 
-// "<start>,<end>,<EUR/kWh>[,spare];..." from format_windows() in charging.h: the windows in UTC
-// seconds with their price, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
+// "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in charging.h: the windows in UTC
+// seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
 function renderWindows() {
-  const rows = text(E.windows)
-    .split(";")
-    .filter(Boolean)
-    .map((entry) => {
-      const [start, end, eur, spare] = entry.split(",");
-      const row = document.createElement("div");
-      row.className = spare ? "row spare" : "row";
-      const when = document.createElement("span");
-      when.textContent = `${hhmm(start * 1000)} - ${hhmm(end * 1000)}${plus(start * 1000)}`;
-      const price = document.createElement("strong");
-      price.textContent = `${eur} EUR/kWh`;
-      row.append(when, price);
-      return row;
-    });
+  const [currency, ...entries] = text(E.windows).split(";");
+  const rows = entries.filter(Boolean).map((entry) => {
+    const [start, end, amount, spare] = entry.split(",");
+    const row = document.createElement("div");
+    row.className = spare ? "row spare" : "row";
+    const when = document.createElement("span");
+    when.textContent = `${hhmm(start * 1000)} - ${hhmm(end * 1000)}${plus(start * 1000)}`;
+    const price = document.createElement("strong");
+    price.textContent = `${amount} ${currency}/kWh`;
+    row.append(when, price);
+    return row;
+  });
   $("windows").replaceChildren(...rows);
 }
 
