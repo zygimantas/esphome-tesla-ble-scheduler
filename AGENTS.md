@@ -8,6 +8,7 @@ What the code, README.md and CONTRIBUTING.md don't say. Each folder has its own 
 - Less code is better. Delete what nothing uses rather than keeping it just in case, keep files and lists in a consistent order, and say what you removed so the owner can object. Don't bring back removed readouts or settings unless asked.
 - Keep answers short. No en or em dashes in anything a user reads: the page, phone messages, the docs.
 - No AI attribution: no Co-Authored-By trailer in commits and no "Generated with" line in pull requests.
+- `gh pr create` and `gh issue create` skip GitHub's templates, so write what they would ask for. A pull request body has the two headings of .github/PULL_REQUEST_TEMPLATE.md, "What changed and why" and "How it was checked". An issue has the fields of the matching form in .github/ISSUE_TEMPLATE as headings: for a bug, What happened, Release, Car, charger and area, What the page showed, Log; for an improvement, The problem, The proposal, Who it helps. Label it bug or enhancement.
 - The owner's names: "charging", not "smart charging"; "grid" for the fees, not "tariff"; "prices" are Nord Pool prices; a "slot" is one quarter-hour and a "window" a run of them; car settings start with `tesla_`.
 - README.md is for non-technical users: short, plain and in English only (a translation was removed on request).
 - Install tools with Homebrew or mise, never pip; run one-off tools with uvx or npx.
