@@ -9,6 +9,7 @@ charging:
   ntfy_server: ${ntfy_server}
   ntfy_topic: ${ntfy_topic}
   time_id: sntp_time
+  vin: ${tesla_vin}
 
 debug:
   update_interval: never
