@@ -414,6 +414,40 @@ static float fee_at(const Grid &grid, int year, unsigned month, unsigned day, in
   return grid_fee(t, grid, VILNIUS_STANDARD_OFFSET);
 }
 
+static void test_winter_hours() {
+  // Dearer weekdays from 06:00 to 22:00 from November to March, low the rest of the year.
+  Grid g = make_grid(false, "llllllllllllllllllllllll", "llllllllllllllllllllllll", "llllllllllllllllllllllll",
+                     {{'l', 0.03f}, {'h', 0.08f}}, {101});
+  g.winter_from = 1101;
+  g.winter_to = 331;
+  g.winter_workday = "llllllhhhhhhhhhhhhhhhhll";
+  CHECK(fee_at(g, 2027, 1, 15, 12) == 0.08f);  // a Friday in winter
+  CHECK(fee_at(g, 2027, 1, 15, 3) == 0.03f);   // its night
+  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.03f);  // Saturday: no winter weekend hours, so the usual ones
+  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.03f);   // a holiday: the same
+  CHECK(fee_at(g, 2027, 7, 15, 12) == 0.03f);  // a Thursday in summer
+  // The edges of a range across New Year: Wednesday 31 March in, Thursday 1 April out, Friday 29 October
+  // out, Monday 1 November in.
+  CHECK(fee_at(g, 2027, 3, 31, 12) == 0.08f);
+  CHECK(fee_at(g, 2027, 4, 1, 12) == 0.03f);
+  CHECK(fee_at(g, 2027, 10, 29, 12) == 0.03f);
+  CHECK(fee_at(g, 2027, 11, 1, 12) == 0.08f);
+  // Winter hours for weekends and holidays too.
+  g.winter_weekend = g.winter_holiday = g.winter_workday;
+  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.08f);
+  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);
+  CHECK(fee_at(g, 2027, 7, 17, 12) == 0.03f);  // a Saturday in summer
+  // A range within the year, a summer peak: Thursday 1 July in, Wednesday 30 June out, Tuesday 31 August
+  // in, Wednesday 1 September out.
+  g.winter_from = 701;
+  g.winter_to = 831;
+  CHECK(fee_at(g, 2027, 7, 1, 12) == 0.08f);
+  CHECK(fee_at(g, 2027, 6, 30, 12) == 0.03f);
+  CHECK(fee_at(g, 2027, 8, 31, 12) == 0.08f);
+  CHECK(fee_at(g, 2027, 9, 1, 12) == 0.03f);
+  CHECK(fee_at(g, 2027, 1, 15, 12) == 0.03f);
+}
+
 static void test_four_zones_weekends_and_holidays() {
   CHECK(easter_sunday(2025) == days_from_civil(2025, 4, 20));
   CHECK(easter_sunday(2026) == days_from_civil(2026, 4, 5));
@@ -1349,6 +1383,7 @@ int main() {
   test_plan_windows_and_prices();
   test_four_zones_weekends_and_holidays();
   test_one_and_two_zones();
+  test_winter_hours();
   test_plan_counts_the_grid_fee();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();

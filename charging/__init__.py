@@ -30,6 +30,9 @@ CONF_WORKDAY = "workday"
 CONF_WEEKEND = "weekend"
 CONF_HOLIDAY = "holiday"
 CONF_FEES = "fees"
+CONF_WINTER = "winter"
+CONF_FROM = "from"
+CONF_TO = "to"
 
 # Nord Pool's day-ahead delivery areas, as its data portal names them (GER is Germany and Luxembourg).
 NORD_POOL_AREAS = [
@@ -74,15 +77,22 @@ def _hours(value):
     return value
 
 
+def _month_day(value):
+    """Parses "12-25" to 1225 (month * 100 + day)."""
+    value = cv.string_strict(value)
+    if (m := re.fullmatch(r"(\d\d)-(\d\d)", value)) and 1 <= int(m[1]) <= 12 and 1 <= int(m[2]) <= 31:
+        return int(m[1]) * 100 + int(m[2])
+    raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25"')
+
+
 def _holiday(value):
-    """Parses "12-25" to 1225 (month * 100 + day), and "easter", "easter+1" or "easter-2" to ("easter", days after
+    """A public holiday: a date as _month_day(), or "easter", "easter+1" or "easter-2" as ("easter", days after
     Easter Sunday)."""
     value = cv.string_strict(value)
-    if m := re.fullmatch(r"(\d\d)-(\d\d)", value):
-        if 1 <= int(m[1]) <= 12 and 1 <= int(m[2]) <= 31:
-            return int(m[1]) * 100 + int(m[2])
-    elif m := re.fullmatch(r"easter([+-]\d{1,2})?", value):
+    if m := re.fullmatch(r"easter([+-]\d{1,2})?", value):
         return ("easter", int(m[1] or 0))
+    if re.fullmatch(r"\d\d-\d\d", value):
+        return _month_day(value)
     raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25", "easter" or "easter+1"')
 
 
@@ -104,7 +114,8 @@ def _validate_grid(config):
         if CONF_HOLIDAY not in config[CONF_HOURS]:
             raise cv.Invalid("needs the zone of each hour on public holidays", path=[CONF_HOURS, CONF_HOLIDAY])
         days.append(CONF_HOLIDAY)
-    zones = set("".join(config[CONF_HOURS][day] for day in days))
+    winter = config[CONF_HOURS].get(CONF_WINTER, {})
+    zones = set("".join(config[CONF_HOURS].get(day, "") + winter.get(day, "") for day in days))
     if missing := sorted(zones - set(config[CONF_FEES])):
         raise cv.Invalid(f'zone "{missing[0]}" needs a fee in EUR/kWh incl. VAT', path=[CONF_FEES])
     if unused := sorted(set(config[CONF_FEES]) - zones):
@@ -122,6 +133,18 @@ GRID_SCHEMA = cv.All(
                     cv.Required(CONF_WORKDAY): _hours,
                     cv.Required(CONF_WEEKEND): _hours,
                     cv.Optional(CONF_HOLIDAY): _hours,
+                    cv.Optional(CONF_WINTER): cv.All(
+                        cv.Schema(
+                            {
+                                cv.Required(CONF_FROM): _month_day,
+                                cv.Required(CONF_TO): _month_day,
+                                cv.Optional(CONF_WORKDAY): _hours,
+                                cv.Optional(CONF_WEEKEND): _hours,
+                                cv.Optional(CONF_HOLIDAY): _hours,
+                            }
+                        ),
+                        cv.has_at_least_one_key(CONF_WORKDAY, CONF_WEEKEND, CONF_HOLIDAY),
+                    ),
                 }
             ),
             cv.Required(CONF_FEES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
@@ -154,6 +177,7 @@ CONFIG_SCHEMA = cv.Schema(
 def _grid(config, vat):
     hours = config[CONF_HOURS]
     holidays = config[CONF_HOLIDAYS]
+    winter = hours.get(CONF_WINTER, {})
     return cg.StructInitializer(
         Grid,
         ("vat", vat),
@@ -164,6 +188,11 @@ def _grid(config, vat):
         ("fee", [config[CONF_FEES].get(zone, 0.0) for zone in ascii_lowercase]),
         ("holidays", [h for h in holidays if not isinstance(h, tuple)]),
         ("after_easter", [h[1] for h in holidays if isinstance(h, tuple)]),
+        ("winter_from", winter.get(CONF_FROM, 0)),
+        ("winter_to", winter.get(CONF_TO, 0)),
+        ("winter_workday", winter.get(CONF_WORKDAY, "")),
+        ("winter_weekend", winter.get(CONF_WEEKEND, "")),
+        ("winter_holiday", winter.get(CONF_HOLIDAY, "")),
     )
 
 

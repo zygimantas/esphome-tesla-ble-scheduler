@@ -143,7 +143,9 @@ inline int64_t easter_sunday(int64_t year) {
 // The VAT and grid fees from config.yaml (format in docs/grid-fees.md; the build turns them into one of these): VAT
 // on the spot price, and a grid fee per zone. Every hour of a workday, a weekend day and a public
 // holiday belongs to a zone, named by a letter. Zone hours are local time, or winter time all year
-// with clock: winter. Default: spot prices only.
+// with clock: winter. Part of the year can have other hours (winter_from to winter_to, as month * 100
+// + day, a range that may cross New Year); an empty winter string keeps the year-round one. Default:
+// spot prices only.
 struct Grid {
   float vat = 0.0f;
   bool winter_clock = false;
@@ -153,6 +155,11 @@ struct Grid {
   std::vector<float> fee;            // EUR/kWh incl. VAT, per zone letter a-z
   std::vector<uint16_t> holidays;    // public holidays on fixed dates, as month * 100 + day
   std::vector<int8_t> after_easter;  // public holidays around Easter, in days after Easter Sunday
+  uint16_t winter_from = 0;
+  uint16_t winter_to = 0;
+  std::string winter_workday;
+  std::string winter_weekend;
+  std::string winter_holiday;
 };
 
 inline bool public_holiday(int64_t local_day, const Grid &grid) {
@@ -174,9 +181,17 @@ inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
   const int64_t local_day = floor_div(local, DAY_SECONDS);
   const int64_t hour = (local - local_day * DAY_SECONDS) / 3600;
   const int day_of_week = weekday(local_day);
-  const std::string &hours = public_holiday(local_day, grid)        ? grid.holiday
-                             : day_of_week == 0 || day_of_week == 6 ? grid.weekend
-                                                                    : grid.workday;
+  const bool holiday = public_holiday(local_day, grid);
+  const bool weekend = day_of_week == 0 || day_of_week == 6;
+  const CivilDate date = civil_from_days(local_day);
+  const auto month_day = static_cast<uint16_t>(date.month * 100 + date.day);
+  const bool winter = grid.winter_from <= grid.winter_to ? grid.winter_from <= month_day && month_day <= grid.winter_to
+                                                         : month_day >= grid.winter_from || month_day <= grid.winter_to;
+  const std::string &special = holiday ? grid.winter_holiday : weekend ? grid.winter_weekend : grid.winter_workday;
+  const std::string &hours = winter && !special.empty() ? special
+                             : holiday                  ? grid.holiday
+                             : weekend                  ? grid.weekend
+                                                        : grid.workday;
   return grid.fee[hours[hour] - 'a'];
 }
 
