@@ -327,24 +327,36 @@ async function stopCharging(message) {
 // --- Board link ------------------------------------------------------------
 
 let events;
+let lastEvent = 0;
 function connect() {
   events = new EventSource("/events");
+  const seen = () => {
+    lastEvent = Date.now();
+  };
+  seen();
   events.onopen = () => setLive(true);
   events.onerror = () => setLive(false);
+  events.addEventListener("ping", seen);
   events.addEventListener("state", (e) => {
+    seen();
     const data = JSON.parse(e.data);
     states[data.id] = data;
     scheduleRender();
   });
 }
 
-// iOS suspends pages in the background, and the board asks browsers to wait 30 s before reconnecting: reconnect
-// at once when the page comes back.
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !events || events.readyState === EventSource.OPEN) return;
+// The board pings every 10 s. A connection it dropped without closing (Restart, a power cycle) stays open with
+// nothing arriving, so reconnect after 30 s without an event. iOS suspends pages in the background, and the board
+// asks browsers to wait 30 s before reconnecting: reconnect at once when the page comes back.
+function reconnectIfDead() {
+  if (document.hidden || !events) return;
+  if (events.readyState === EventSource.OPEN && Date.now() - lastEvent < 30000) return;
+  setLive(false);
   events.close();
   connect();
-});
+}
+document.addEventListener("visibilitychange", reconnectIfDead);
+setInterval(reconnectIfDead, 10000);
 
 function setLive(on) {
   if (live === on) return;
