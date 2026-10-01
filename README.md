@@ -22,7 +22,7 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
 5. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open a terminal in that folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 6. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
+7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone (type the `http://`: phones try https on their own, which the board doesn't speak), open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
 ## Settings
@@ -80,7 +80,7 @@ ESO's 2026 household plans, in EUR/kWh with VAT. One zone has the same letter ev
 ## Troubleshooting
 
 - **The Tesla app says "Charging equipment not ready"**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
-- **The page doesn't open**: your phone must be on the same Wi-Fi. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
+- **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
 - **The plan's times are an hour or two off**: the board takes its time zone from the computer that installed it. Install from a computer set to your time zone.
