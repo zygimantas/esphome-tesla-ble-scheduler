@@ -180,6 +180,14 @@ static void test_calendar() {
   CHECK(local_to_utc(days_from_civil(2026, 10, 25), 3 * 60, VILNIUS_STANDARD_OFFSET) == utc("2026-10-25T00:00:00Z"));
   // The day they go forward: 03:00 doesn't exist, so it's 04:00 summer time.
   CHECK(local_to_utc(days_from_civil(2027, 3, 28), 3 * 60, VILNIUS_STANDARD_OFFSET) == utc("2027-03-28T01:00:00Z"));
+  // The hour after each change: autumn 03:30 is the first one and 04:00 is winter time already; spring
+  // 03:30 is skipped, so it's 04:30 summer time, and 04:00 is summer time.
+  CHECK(local_to_utc(days_from_civil(2026, 10, 25), 3 * 60 + 30, VILNIUS_STANDARD_OFFSET) ==
+        utc("2026-10-25T00:30:00Z"));
+  CHECK(local_to_utc(days_from_civil(2026, 10, 25), 4 * 60, VILNIUS_STANDARD_OFFSET) == utc("2026-10-25T02:00:00Z"));
+  CHECK(local_to_utc(days_from_civil(2027, 3, 28), 3 * 60 + 30, VILNIUS_STANDARD_OFFSET) ==
+        utc("2027-03-28T01:30:00Z"));
+  CHECK(local_to_utc(days_from_civil(2027, 3, 28), 4 * 60, VILNIUS_STANDARD_OFFSET) == utc("2027-03-28T01:00:00Z"));
 
   // Under a day ahead the time alone is unambiguous.
   CHECK_STR(format_when(SEP24_1700Z + 23 * HOUR, SEP24_1700Z, VILNIUS_STANDARD_OFFSET), "19:00");
@@ -194,6 +202,7 @@ static void test_calendar() {
 static void test_nord_pool_prices() {
   CHECK(parse_iso8601("2025-10-01T22:00:00Z") == 1759356000);
   CHECK(parse_iso8601("2025-10-01T22:00:00") == 1759356000);  // no offset: UTC
+  CHECK(parse_iso8601("2025-10-01T22:00:30Z") == 1759356030);
   CHECK(parse_iso8601("2026-01-01T00:00:00Z") == 1767225600);
   for (const char *bad :
        {"not a date", "2025-10-01T22:00:00+02", "2025-10-01T22:00:00x", "2025-10-01T22:00:00.5x",
@@ -207,6 +216,7 @@ static void test_nord_pool_prices() {
             "?market=DayAhead&date=2026-09-24&deliveryArea=LT&currency=EUR");
   CHECK(nord_pool_url("LT", SEP24_1700Z + 5 * HOUR + 30 * 60, 0).find("date=2026-09-25") != std::string::npos);
   CHECK(nord_pool_url("LT", SEP24_1700Z + 5 * HOUR + 30 * 60, 1).find("date=2026-09-26") != std::string::npos);
+  CHECK(end_of_delivery_day(SEP24_1700Z) == CET_SEP25);
   CHECK(end_of_next_delivery_day(SEP24_1700Z) == CET_SEP25 + DAY_SECONDS);
 
   PriceTable prices;
@@ -647,6 +657,16 @@ static void test_reads_the_charging_state() {
   waking.now += 30;
   restarted.tick(waking, Settings());
   CHECK(restarted.tick(plugged_in().state(SEP24_1700Z + 60), Settings()).command == Command::STOP_CHARGING);
+
+  // After a restart the first reading may be "Unknown", with the charger reported as unplugged: no plug state
+  // yet, and the real reading that follows is no plug-in, so Stop charging still holds.
+  Controller after_unknown = with_prices();
+  after_unknown.restore_mode(2);
+  CarState first = plugged_in(false).state(SEP24_1700Z);
+  first.charging_state = "Unknown";
+  first.plugged = false;
+  CHECK_STR(after_unknown.tick(first, Settings()).status, "Waiting for car");
+  CHECK_STR(after_unknown.tick(plugged_in(false).state(SEP24_1700Z + 30), Settings()).mode, "none");
 }
 
 static void test_tells_its_own_starts_from_the_cars() {
@@ -684,13 +704,18 @@ static void test_tells_its_own_starts_from_the_cars() {
   car.charging = true;
   CHECK_STR(controller.tick(car.state(SEP24_1700Z + 200), Settings()).mode, "now");
 
-  // A higher limit resumes a finished charge by itself: within 3 minutes, that's the car's own start too.
-  // Below the old limit nothing resumes, so a start is the car's or the app's.
-  const auto mode_when_resumed_after = [](int64_t seconds, float soc = 80) {
+  // A higher limit resumes a finished charge by itself: within 3 minutes, that's the car's own start too,
+  // also when the car says Complete a percent under the limit. Below it, with the limit unchanged, or
+  // after Stop charging, a start is the car's or the app's.
+  const auto mode_when_resumed_after = [](int64_t seconds, float soc = 80, bool complete = false,
+                                          bool stopped = false) {
     Controller resumed = with_prices();
     FakeTesla full = plugged_in(false);
     full.soc = soc;
+    full.complete = complete;
     resumed.tick(full.state(SEP24_1700Z - HOUR), Settings());
+    if (stopped)
+      resumed.stop_charging();
     full.limit = 90;
     resumed.tick(full.state(SEP24_1700Z), Settings());
     full.charging = true;
@@ -699,6 +724,43 @@ static void test_tells_its_own_starts_from_the_cars() {
   CHECK_STR(mode_when_resumed_after(179), "plan");
   CHECK_STR(mode_when_resumed_after(180), "now");
   CHECK_STR(mode_when_resumed_after(60, 79), "now");
+  CHECK_STR(mode_when_resumed_after(60, 79, true), "plan");
+  CHECK_STR(mode_when_resumed_after(60, 80, false, true), "now");
+  Controller unchanged = with_prices();
+  FakeTesla at_limit = plugged_in(false);
+  at_limit.soc = 80;
+  unchanged.tick(at_limit.state(SEP24_1700Z), Settings());
+  unchanged.tick(at_limit.state(SEP24_1700Z + 5 * 60), Settings());  // past the plug-in window
+  at_limit.charging = true;
+  CHECK_STR(unchanged.tick(at_limit.state(SEP24_1700Z + 10 * 60), Settings()).mode, "now");
+}
+
+static void test_complete_under_the_limit_is_charged() {
+  // The car says Complete at 79% with the limit at 80 and takes no start: no plan slides through the
+  // night sending starts, and the message says so.
+  Controller controller = with_prices();
+  FakeTesla car;
+  car.soc = 79;
+  car.complete = true;
+  const Run run =
+      simulate(controller, car, SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR, {{SEP24_1700Z, &FakeTesla::plug_in}});
+  CHECK(run.commands.empty());
+  CHECK(contains(run.statuses, "Charged"));
+  REQUIRE(run.messages.size() == 1);
+  CHECK_STR(run.messages[0].second.message, "Not needed: battery at limit");
+}
+
+static void test_no_start_for_a_windows_last_minutes() {
+  // 20:00 is cheap and 20:15 dear: a plan made at 20:14:30 sends no start that the next quarter-hour's
+  // plan would stop, and a car already charging is left alone.
+  const auto price_at = [](int64_t t) { return t < SLOT_SECONDS || (t >= 5 * HOUR && t < 6 * HOUR) ? 0.001f : 0.5f; };
+  FakeTesla car = plugged_in(false);
+  car.soc = 78;
+  Controller stopped = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
+  CHECK(stopped.tick(car.state(SEP24_1700Z + 14 * 60 + 30), Settings()).command == Command::NONE);
+  car.charging = true;
+  Controller charging = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
+  CHECK(charging.tick(car.state(SEP24_1700Z + 13 * 60 + 30), Settings()).command == Command::NONE);
 }
 
 static void test_charges_as_usual_without_prices() {
@@ -736,6 +798,10 @@ static void test_fetch_prices_due() {
   add_day(controller.prices, CET_SEP24);                           // today's, to 01:00
   CHECK(!controller.fetch_prices_due(noon + 15 * 60 + HOUR - 1));  // tomorrow's: hourly
   CHECK(controller.fetch_prices_due(noon + 15 * 60 + HOUR));
+  const int64_t publication = SEP24_1700Z - 6 * HOUR - 15 * 60;  // 12:45 CET: every 5 minutes
+  CHECK(controller.fetch_prices_due(publication));
+  CHECK(!controller.fetch_prices_due(publication + 4 * 60));
+  CHECK(controller.fetch_prices_due(publication + 5 * 60));
   add_day(controller.prices, CET_SEP25);
   CHECK(!controller.fetch_prices_due(noon + 3 * HOUR));  // all in
   CHECK(controller.fetch_prices_due(CET_SEP25 + 60));    // 01:00: the next delivery day is due
@@ -1141,6 +1207,11 @@ static void test_plug_in_message_when_time_is_short() {
   CHECK_STR(short_time.messages[0].second.message,
             "40 to 80% by Thu 22:00; avg 19.0 ct/kWh over 1 window(s)\nNot enough time to reach the limit");
 
+  soon.ready_by_once = SEP24_1700Z + 13 * SLOT_SECONDS;  // 23:15: 13 slots store the 12.1 the car takes
+  const Run just = plug_in_at_8pm(soon);
+  REQUIRE(just.messages.size() == 1);
+  CHECK(just.messages[0].second.message.find("Not enough") == std::string::npos);
+
   soon.ready_by_once = SEP24_1700Z + 14 * SLOT_SECONDS;  // 23:30 leaves the 14
   const Run enough = plug_in_at_8pm(soon);
   REQUIRE(enough.messages.size() == 1);
@@ -1160,6 +1231,18 @@ static void test_plug_in_message_at_the_limit() {
   REQUIRE(run.messages.size() == 1);
   CHECK_STR(run.messages[0].second.message, "Not needed: battery at limit");
   CHECK(contains(run.statuses, "Charged"));
+
+  // The same without the car's Complete, which can arrive a tick after the battery level.
+  Controller at_limit = with_prices();
+  at_limit.tick(full.state(SEP24_1700Z), Settings());
+  full.plugged = true;
+  CarState stopped = full.state(SEP24_1700Z + 30);
+  stopped.charging_state = "Stopped";
+  at_limit.tick(stopped, Settings());
+  stopped.now += 2 * 60;
+  const Decision d = at_limit.tick(stopped, Settings());
+  CHECK_STR(d.notification ? d.notification->message : "", "Not needed: battery at limit");
+  full.plugged = false;
 
   // It doesn't wait for tomorrow's prices.
   Controller controller;
@@ -1269,6 +1352,8 @@ int main() {
   test_start_from_the_car_holds_until_unplugged();
   test_reads_the_charging_state();
   test_tells_its_own_starts_from_the_cars();
+  test_complete_under_the_limit_is_charged();
+  test_no_start_for_a_windows_last_minutes();
   test_charges_as_usual_without_prices();
   test_waits_for_tomorrows_prices();
   test_fetch_prices_due();

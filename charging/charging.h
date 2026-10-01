@@ -216,7 +216,10 @@ inline std::string nord_pool_url(const char *area, int64_t now, int day_offset) 
   return buf;
 }
 
-// End (UTC) of the CET delivery day after the one containing `now`.
+// End (UTC) of the CET delivery day containing `now`, and of the one after it.
+inline int64_t end_of_delivery_day(int64_t now) {
+  return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET) + 1, 0, CET_STANDARD_OFFSET);
+}
 inline int64_t end_of_next_delivery_day(int64_t now) {
   return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET) + 2, 0, CET_STANDARD_OFFSET);
 }
@@ -335,7 +338,8 @@ struct Plan {
   int horizon_slots = 0;   // from this quarter-hour to the deadline
   int unpriced_slots = 0;  // the last ones before the deadline, whose prices aren't out yet
   std::vector<Window> windows;
-  float avg_price = NAN;  // EUR/kWh at total prices (see total_price()) for the energy the car is expected to take
+  float avg_price = NAN;   // EUR/kWh at total prices (see total_price()) for the energy the car is expected to take
+  float soc_at_end = NAN;  // the battery level after the windows, in %
 
   bool contains(int64_t t) const {
     return std::any_of(windows.begin(), windows.end(), [t](const Window &w) { return w.start <= t && t < w.end; });
@@ -388,6 +392,7 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
                                    : std::accumulate(begin, begin + count, 0.0f) / static_cast<float>(count);
   }
   plan.avg_price = cost_eur / energy_kwh;  // NaN (0 / 0) when the car takes nothing
+  plan.soc_at_end = soc;
   return plan;
 }
 
@@ -464,10 +469,12 @@ class Controller {
   // Recompute the plan on the next tick (new prices or settings).
   void replan() { replan_ = true; }
   // Whether to download prices now, which counts as a try: every 5 minutes while there's no price for this
-  // quarter-hour, else hourly until tomorrow's are in. Not before the clock is set: 0 is never past a try.
+  // quarter-hour, else hourly until 12:45 CET and every 5 minutes from then, when Nord Pool publishes the
+  // next day, until tomorrow's are in. Not before the clock is set: 0 is never past a try.
   bool fetch_prices_due(int64_t now) {
     const int64_t until = prices.known_until(now);
-    const int64_t wait = until > now ? 60 * 60 : 5 * 60;
+    const int64_t cet_minute = floor_div(now + eu_offset(now, CET_STANDARD_OFFSET), 60) % 1440;
+    const int64_t wait = until > now && cet_minute < 12 * 60 + 45 ? 60 * 60 : 5 * 60;
     if (now - prices_tried_at_ < wait || until >= end_of_next_delivery_day(now))
       return false;
     prices_tried_at_ = now;
@@ -556,10 +563,14 @@ class Controller {
       d.status = "Charging (no prices)";
     } else {
       want_charge = in_plan_();
+      // A plan made in a window's last 2 minutes: not worth a start that the next quarter-hour's plan
+      // stops, which the command limit delays into that quarter-hour.
+      if (!charging && !plan_.contains(planned_slot_ + SLOT_SECONDS) && planned_slot_ + SLOT_SECONDS - now < 2 * 60)
+        want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(plan_);
     }
-    const bool full = soc_ >= limit_ - 0.5f;  // false while the battery level is unknown (NaN)
+    const bool full = complete_ || soc_ >= limit_ - 0.5f;  // false while the battery level is unknown (NaN)
     if (want_charge && full && !charging) {
       d.status = "Charged";
       return d;
@@ -577,8 +588,8 @@ class Controller {
     if (!std::isnan(car.limit)) {
       if (car.limit != limit_)
         replan_ = true;  // a new charge limit changes the plan right away
-      if (car.limit > limit_ && soc_ >= limit_ - 0.5f)
-        limit_raised_at_ = now;  // a full car resumes by itself
+      if (car.limit > limit_ && complete_)
+        limit_raised_at_ = now;  // a finished charge resumes by itself
       limit_ = car.limit;
     }
     if (battery_known_() != battery_was_known)
@@ -609,12 +620,14 @@ class Controller {
     const bool charging = car.charging_state == "Charging" || car.charging_state == "Starting";
     if (charging_known) {
       const bool we_started_it = now - started_at_ < 5 * 60;
-      // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge.
-      const bool auto_start = now - plugged_since_ < 3 * 60 || now - limit_raised_at_ < 3 * 60;
+      // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge (after
+      // Stop charging, that's the app's start).
+      const bool auto_start = now - plugged_since_ < 3 * 60 || (hold_ != Hold::NONE && now - limit_raised_at_ < 3 * 60);
       const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start;
       if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_plan_()))
         hold_ = Hold::NOW;  // from the car or the Tesla app: leave it alone until unplugged
       charging_ = charging;
+      complete_ = car.charging_state == "Complete";
     }
     return charging_;  // the last known state: "Unknown" says nothing about it
   }
@@ -648,8 +661,12 @@ class Controller {
       n.message = d.status;
       return;
     }
+    if (complete_ || plan_.needed_slots == 0) {  // the car's own word counts: it stays Complete a percent under
+      n.message = "Not needed: battery at limit";
+      return;
+    }
     if (plan_.windows.empty()) {
-      n.message = plan_.needed_slots == 0 ? "Not needed: battery at limit" : "No time left before Ready by";
+      n.message = "No time left before Ready by";
       return;
     }
     int windows = 0;
@@ -661,7 +678,7 @@ class Controller {
                   windows);
     n.title = "Tesla charging plan created";
     n.message = text;
-    if (plan_.needed_slots > plan_.horizon_slots)
+    if (plan_.soc_at_end < limit_ - 0.5f)
       n.message += "\nNot enough time to reach the limit";
   }
 
@@ -717,6 +734,7 @@ class Controller {
   float limit_ = NAN;
   bool plugged_ = false;
   bool charging_ = false;
+  bool complete_ = false;  // the car's own word, which it keeps a percent under the limit
   Hold hold_ = Hold::PLAN;
   bool replan_ = true;
   bool notify_pending_ = false;

@@ -129,7 +129,7 @@ void ChargingComponent::update() {
   if (this->charging_state_ != nullptr && this->charging_state_->has_state())
     car.charging_state = this->charging_state_->state;
   car.soc = this->battery_ != nullptr ? this->battery_->state : NAN;
-  car.limit = this->limit_ != nullptr ? this->limit_->state : NAN;
+  car.limit = this->limit_ != nullptr && this->limit_->has_state() ? this->limit_->state : NAN;
 #ifdef USE_COVER
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 #endif
@@ -215,13 +215,15 @@ void ChargingComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Today's and tomorrow's CET delivery days. A day not published yet answers 204.
+// Today's and tomorrow's CET delivery days, today's only while some of it is missing. A day not published
+// yet answers 204. A failed request ends the try: the next one would fail the same way and block the loop
+// again.
 void ChargingComponent::fetch_prices_(int64_t now) {
-  for (int day = 0; day < 2; day++) {
+  for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
     auto response = this->http_->get(nord_pool_url(this->area_, now, day));
     if (response == nullptr) {
       ESP_LOGW(TAG, "Nord Pool request failed");
-      continue;
+      break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
       std::string body;
@@ -239,6 +241,7 @@ void ChargingComponent::fetch_prices_(int64_t now) {
           break;
         body.append(reinterpret_cast<const char *>(chunk), read);
       }
+      response->end();  // before the parse: the connection's memory isn't needed any more
       const int stored = this->controller_.prices.add_nord_pool(body.data(), body.size(), this->area_);
       if (stored < 0) {
         ESP_LOGW(TAG, "Nord Pool: could not parse %u bytes (cut off?)", static_cast<unsigned>(body.size()));

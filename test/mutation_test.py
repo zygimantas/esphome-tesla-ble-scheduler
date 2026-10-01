@@ -23,7 +23,7 @@ from pathlib import Path
 
 SOURCE = Path("charging/charging.h")
 CHECKS = [
-    "-fsanitize=undefined",
+    "-fsanitize=address,undefined",
     "-fno-sanitize-recover=all",
     "-D_GLIBCXX_ASSERTIONS",
     "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE",
