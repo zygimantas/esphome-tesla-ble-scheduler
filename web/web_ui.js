@@ -264,7 +264,7 @@ function renderPlan() {
   for (const id of ["limit-select", "ready-select"]) $(id).disabled = !editable;
   // No plan without prices: the board downloads them after it starts, which takes about a minute.
   const priced = pricesUntil() > Date.now();
-  $("create-plan").disabled = !priced;
+  $("create-plan").disabled = !priced || busy;
   $("create-plan").textContent = priced ? "Create charging plan" : "Getting prices …";
   renderWindows();
 }
@@ -368,17 +368,42 @@ function setLive(on) {
 async function post(entity, action, param) {
   const [domain, name] = entity.split("/");
   const query = param == null ? "" : `?value=${encodeURIComponent(param)}`;
+  // The board answers at once; a restarting or absent one never does. An AbortController rather than
+  // AbortSignal.timeout(), which Safari got only in 16.4.
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 8000);
   try {
     const response = await fetch(`/${domain}/${encodeURIComponent(name)}/${action}${query}`, {
       method: "POST",
       body: "",
+      signal: abort.signal,
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return true;
   } catch (e) {
-    toast(`Didn't work (${e.message}). Try again.`);
+    toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
     return false;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+// One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
+// and renderPlan() keeps Create charging plan off meanwhile.
+let busy = false;
+function press(button, handler) {
+  button.addEventListener("click", async () => {
+    if (busy) return;
+    busy = true;
+    button.disabled = true;
+    try {
+      await handler();
+    } finally {
+      busy = false;
+      button.disabled = false;
+      scheduleRender();
+    }
+  });
 }
 
 let toastTimer;
@@ -452,7 +477,7 @@ function duration(seconds) {
 
 // A button that asks first, then presses the board's button.
 function confirmPress(elementId, entity, message, question) {
-  $(elementId).addEventListener("click", async () => {
+  press($(elementId), async () => {
     if (!confirm(question)) return;
     if (await post(entity, "press")) toast(message);
   });
@@ -461,10 +486,10 @@ function confirmPress(elementId, entity, message, question) {
 function bind() {
   $("limit-select").addEventListener("change", (e) => (draft.limit = Number(e.target.value)));
   $("ready-select").addEventListener("change", (e) => (draft.deadline = Number(e.target.value)));
-  $("create-plan").addEventListener("click", createPlan);
-  $("charge-now").addEventListener("click", chargeNow);
-  $("delete-plan").addEventListener("click", () => stopCharging("Charging plan deleted"));
-  $("stop-charging").addEventListener("click", () => stopCharging("Charging stopped"));
+  press($("create-plan"), createPlan);
+  press($("charge-now"), chargeNow);
+  press($("delete-plan"), () => stopCharging("Charging plan deleted"));
+  press($("stop-charging"), () => stopCharging("Charging stopped"));
   confirmPress(
     "pair",
     E.pair,
