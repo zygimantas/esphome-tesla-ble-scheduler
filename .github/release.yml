@@ -1,0 +1,12 @@
+changelog:
+  categories:
+    - labels: [bug]
+      title: Fixes
+    - labels: [enhancement]
+      title: New
+    - labels: [documentation]
+      title: Documentation
+    - labels: ["*"]
+      title: Other changes
+  exclude:
+    labels: [dependencies, maintenance]

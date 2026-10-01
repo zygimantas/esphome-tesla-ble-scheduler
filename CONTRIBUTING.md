@@ -79,6 +79,8 @@ The PR title becomes the commit subject on `main`, so it follows [Conventional C
 
 **Scopes** (optional but preferred) follow the repository layout: `charging` (the component in `charging/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the grid fees in `config.example.yaml`) and `docs`. Tests take the scope of what they test.
 
+A workflow labels the pull request from the type: `fix` is bug, `feat` is enhancement, `docs` is documentation, and the rest maintenance. The release notes group by those labels and leave maintenance out.
+
 Write the summary in the imperative mood, lower case, with no trailing period:
 
 ```

@@ -1,0 +1,27 @@
+name: Label
+
+on:
+  pull_request_target:
+    types: [edited, opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    name: Label the pull request by its title's type
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          case "${TITLE%%[:(!]*}" in
+            fix) label=bug ;;
+            feat) label=enhancement ;;
+            docs) label=documentation ;;
+            build | chore | ci | perf | refactor | revert | test) label=maintenance ;;
+            *) exit 0 ;;
+          esac
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label "$label"
