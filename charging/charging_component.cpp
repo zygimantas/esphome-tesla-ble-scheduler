@@ -268,6 +268,7 @@ void ChargingComponent::send_message_(const Notification &message) {
     root["title"] = message.title;
     root["message"] = message.message;
     root["tags"].to<JsonArray>().add("electric_plug");
+    root["click"] = "http://" + App.get_name() + ".local";  // a tap opens the page, on the home Wi-Fi
   });
   auto response = this->http_->post(this->ntfy_server_, body);
   if (response == nullptr) {

@@ -83,7 +83,7 @@ const PAGE = `
     <button id="restart" class="danger">Restart board</button>
   </details>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" role="status"></div>
 </main>`;
 
 // --- State -----------------------------------------------------------------
@@ -387,9 +387,8 @@ let toastTimer;
 function toast(message) {
   const el = $("toast");
   el.textContent = message;
-  el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.hidden = true), 2800);
+  toastTimer = setTimeout(() => (el.textContent = ""), 2800);
 }
 
 // --- Time and text ---------------------------------------------------------

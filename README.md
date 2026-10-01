@@ -79,7 +79,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the plan, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`.
+Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the plan, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page.
 
 ## Grid fees
 
