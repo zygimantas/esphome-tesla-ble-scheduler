@@ -269,20 +269,20 @@ function renderPlan() {
   renderWindows();
 }
 
-// "<start>,<end>,<ct/kWh>[,spare];..." from format_windows() in charging.h: the windows in UTC
-// seconds with their price, shown as "00:00 - 01:00 +1" and "7.6 ct/kWh", spare ones faded.
+// "<start>,<end>,<EUR/kWh>[,spare];..." from format_windows() in charging.h: the windows in UTC
+// seconds with their price, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
 function renderWindows() {
   const rows = text(E.windows)
     .split(";")
     .filter(Boolean)
     .map((entry) => {
-      const [start, end, ct, spare] = entry.split(",");
+      const [start, end, eur, spare] = entry.split(",");
       const row = document.createElement("div");
       row.className = spare ? "row spare" : "row";
       const when = document.createElement("span");
       when.textContent = `${hhmm(start * 1000)} - ${hhmm(end * 1000)}${plus(start * 1000)}`;
       const price = document.createElement("strong");
-      price.textContent = `${ct} ct/kWh`;
+      price.textContent = `${eur} EUR/kWh`;
       row.append(when, price);
       return row;
     });
