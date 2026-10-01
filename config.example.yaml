@@ -45,4 +45,4 @@ substitutions:
   tesla_battery_kwh: "75"
   tesla_charging_kw: "11"
   tesla_vin: REPLACEME
-  version: v0.1.1
+  version: v0.2.0
