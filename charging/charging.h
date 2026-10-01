@@ -454,7 +454,8 @@ struct Decision {
   // "plan", "now" (charging regardless of price), "none" (no plan) or "wait" (no plan possible yet:
   // no clock, plug state, battery level or prices).
   std::string mode;
-  std::optional<Notification> notification;  // once per plug-in, when its plan has settled
+  std::optional<Notification> notification;  // once per plug-in, when its plan has settled, and once more
+                                             // when the board falls back to charging at any price
 };
 
 class Controller {
@@ -570,6 +571,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (battery unknown)";
+      notify_fallback_();
     } else if (!plan_.valid) {
       if (getting_prices_(now)) {
         d.status = "Getting prices";
@@ -577,6 +579,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (no prices)";
+      notify_fallback_();
     } else {
       want_charge = in_plan_();
       // A plan made in a window's last 2 minutes: not worth a start that the next quarter-hour's plan
@@ -616,6 +619,7 @@ class Controller {
     if (plugged.has_value() && *plugged != plugged_) {
       plugged_ = *plugged;
       replan_ = true;
+      fallback_told_ = false;
       if (plugged_) {
         plugged_since_ = now;
         // The plug state first seen after a restart is not a plug-in: no message for it, and what the
@@ -660,6 +664,14 @@ class Controller {
 
   // After a plug-in, one message once its plan has settled: the battery levels, deadline, average price
   // and window count, why nothing was bought, or else the status.
+  // Charging at any price from now on, for lack of prices or a battery level: the phone hears it once per
+  // plug state. When it comes first, the plug-in message says it.
+  void notify_fallback_() {
+    if (!fallback_told_)
+      notify_pending_ = true;
+    fallback_told_ = true;
+  }
+
   void notify_(int64_t now, const Settings &settings, Decision &d) {
     if (!notify_pending_)
       return;
@@ -751,6 +763,7 @@ class Controller {
   Hold hold_ = Hold::PLAN;
   bool replan_ = true;
   bool notify_pending_ = false;
+  bool fallback_told_ = false;
   bool plug_state_seen_ = false;
   int64_t planned_slot_ = -1;
   int64_t plugged_since_ = 0;

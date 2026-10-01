@@ -1349,6 +1349,53 @@ static void test_one_plug_in_message_per_plug_in() {
   CHECK(run.messages[0].first == SEP24_1700Z + 2 * 60 && run.messages[1].first == SEP24_1700Z + HOUR + 12 * 60);
 }
 
+static void test_fallback_message_after_a_restart() {
+  // The board restarts with the car plugged in and never gets prices: when it gives up and charges at any
+  // price, the phone hears it, once.
+  Controller controller;
+  const Run run = simulate(controller, plugged_in(false), SEP24_1700Z, SEP24_1700Z + 15 * 60, {});
+  REQUIRE(run.messages.size() == 1);
+  CHECK(run.messages[0].first == SEP24_1700Z + 10 * 60);
+  CHECK_STR(run.messages[0].second.message, "Charging (no prices)");
+
+  // The same without a battery level, after the half hour of waking the car.
+  FakeTesla unknown = plugged_in(false);
+  unknown.battery_known = false;
+  Controller waking = with_prices();
+  const Run battery = simulate(waking, unknown, SEP24_1700Z, SEP24_1700Z + 35 * 60, {});
+  REQUIRE(battery.messages.size() == 1);
+  CHECK(battery.messages[0].first == SEP24_1700Z + 30 * 60);
+  CHECK_STR(battery.messages[0].second.message, "Charging (battery unknown)");
+}
+
+// Plugged in at 20:00 with 20%, a one-off Ready by at 00:00 and only today's prices, which end at 01:00.
+static std::vector<std::pair<int64_t, Notification>> fallback_night(bool tomorrows_prices_come) {
+  Controller controller;
+  add_day(controller.prices, CET_SEP24);
+  Settings tonight;
+  tonight.ready_by_once = SEP24_1700Z + 4 * HOUR;
+  FakeTesla car;
+  car.soc = 20;
+  std::vector<Step> steps{{SEP24_1700Z, &FakeTesla::plug_in}};
+  if (tomorrows_prices_come)
+    steps.push_back({SEP24_1700Z + 3 * HOUR, [&controller](FakeTesla &) {
+                       add_day(controller.prices, CET_SEP25);
+                       controller.replan();
+                     }});
+  return simulate(controller, car, SEP24_1700Z - 60, SEP24_1700Z + 5 * HOUR + 30 * 60, steps, tonight).messages;
+}
+
+static void test_fallback_message_mid_stay() {
+  // When the prices run out at 01:00 with none for tomorrow, the board charges at any price and says so;
+  // not when tomorrow's prices came first.
+  const auto out = fallback_night(false);
+  REQUIRE(out.size() == 2);
+  CHECK(out[0].first == SEP24_1700Z + 2 * 60);
+  CHECK(out[1].first == CET_SEP25);  // 01:00 local, the first quarter-hour without a price
+  CHECK_STR(out[1].second.message, "Charging (no prices)");
+  CHECK(fallback_night(true).size() == 1);
+}
+
 static void test_plug_in_message_without_prices() {
   Controller controller;
   const Run run =
@@ -1420,6 +1467,8 @@ int main() {
   test_no_plug_in_message_after_stop_charging();
   test_no_plug_in_message_after_a_restart();
   test_one_plug_in_message_per_plug_in();
+  test_fallback_message_after_a_restart();
+  test_fallback_message_mid_stay();
   test_plug_in_message_without_prices();
   test_plug_in_message_when_the_battery_level_stays_unknown();
   if (failures == 0)
