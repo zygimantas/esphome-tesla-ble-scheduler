@@ -101,7 +101,9 @@ The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, s
 
 ## Troubleshooting
 
-- **The Tesla app says "Charging equipment not ready"**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
+[Statuses](docs/status.md) explains everything the Status row can say and what to do about it.
+
+- **The Tesla app says "Charging equipment not ready"**, or the page says **Charger has no power**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.

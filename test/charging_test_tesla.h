@@ -18,6 +18,8 @@ struct FakeTesla {
   bool charging = false;
   bool battery_known = true;
   bool complete = false;  // says Complete under the limit, and takes no start
+  bool no_power = false;  // the charger withholds power: a start is kept for when it comes
+  bool wants = false;
   float soc = 40;
   float limit = 80;
 
@@ -27,9 +29,20 @@ struct FakeTesla {
     charging = soc < limit && !complete;
   }
   void unplug() { plugged = charging = false; }
-  void set_charging(bool on) { charging = on && plugged && soc < limit && !complete; }
+  void set_charging(bool on) {
+    wants = on;
+    charging = on && plugged && soc < limit && !complete && !no_power;
+  }
+  void power_back() {
+    no_power = false;
+    set_charging(wants);
+  }
   std::string charging_state() const {
-    return !plugged ? "Disconnected" : charging ? "Charging" : complete || soc >= limit ? "Complete" : "Stopped";
+    return !plugged                   ? "Disconnected"
+           : charging                 ? "Charging"
+           : no_power                 ? "No Power"
+           : complete || soc >= limit ? "Complete"
+                                      : "Stopped";
   }
   // 11 kW into a 75 kWh pack, as in simulation.yaml, at the planner's EFFICIENCY; stops at the limit.
   void advance(int seconds) {

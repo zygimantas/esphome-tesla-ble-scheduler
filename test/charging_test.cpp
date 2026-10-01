@@ -605,6 +605,7 @@ static void test_charges_only_in_the_cheap_window() {
   CHECK(run.car.soc >= 79.9f);
   CHECK(run.commands.size() <= 4);
   CHECK(contains(run.statuses, "Charges at 01:30"));
+  CHECK(contains(run.statuses, "Starting"));  // the window's first tick, before the car reports charging
   CHECK(contains(run.statuses, "Charging"));
   REQUIRE(run.messages.size() == 1);
   CHECK(run.messages[0].first == SEP24_1700Z + 2 * 60);  // once the plan has settled
@@ -1041,6 +1042,80 @@ static void test_retries_are_rate_limited() {
   Controller once = with_prices();
   once.tick(car.state(TROUGH), Settings());
   CHECK(once.tick(car.state(TROUGH + 2 * 60 - 1), Settings()).command == Command::NONE);
+
+  // The page says Starting until the car charges, and Can't start charging once the three starts of a
+  // quarter-hour went unanswered, until the next quarter-hour tries again.
+  Controller stuck = with_prices();
+  CHECK_STR(stuck.tick(car.state(TROUGH), Settings()).status, "Starting");
+  for (int64_t now = TROUGH + 30; now < TROUGH + 6 * 60; now += 30)
+    stuck.tick(car.state(now), Settings());
+  CHECK_STR(stuck.tick(car.state(TROUGH + 6 * 60 - 30), Settings()).status, "Starting");
+  CHECK_STR(stuck.tick(car.state(TROUGH + 6 * 60), Settings()).status, "Can't start charging");
+  for (int64_t now = TROUGH + 6 * 60 + 30; now < TROUGH + 15 * 60; now += 30)
+    stuck.tick(car.state(now), Settings());
+  CHECK_STR(stuck.tick(car.state(TROUGH + 15 * 60), Settings()).status, "Starting");
+}
+
+static void test_charger_without_power() {
+  // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
+  // charges as soon as power comes, then nothing for 10 minutes, and a stop when the window ends.
+  FakeTesla car = plugged_in(false);
+  car.no_power = true;
+  Controller controller = with_prices();
+  const Decision first = controller.tick(car.state(TROUGH), Settings());
+  CHECK(first.command == Command::START_CHARGING);
+  CHECK_STR(first.status, "Charger has no power");
+  car.set_charging(true);  // the car keeps the request
+  for (int64_t now = TROUGH + 30; now < TROUGH + 10 * 60; now += 30)
+    CHECK(controller.tick(car.state(now), Settings()).command == Command::NONE);
+  CHECK(controller.tick(car.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
+  car.power_back();  // the charger supplies power: the car charges as asked
+  const Decision charging = controller.tick(car.state(TROUGH + 11 * 60), Settings());
+  CHECK(charging.command == Command::NONE);
+  CHECK_STR(charging.status, "Charging");
+
+  FakeTesla powerless = plugged_in(false);
+  powerless.no_power = true;
+  // A regular start, then the car reports No Power: it holds that request, so no second start for 10 minutes.
+  FakeTesla late = plugged_in(false);
+  Controller dark_after = with_prices();
+  CHECK(dark_after.tick(late.state(TROUGH), Settings()).command == Command::START_CHARGING);
+  late.no_power = true;
+  late.set_charging(true);
+  const Decision held_back = dark_after.tick(late.state(TROUGH + 30), Settings());
+  CHECK_STR(held_back.status, "Charger has no power");
+  CHECK(held_back.command == Command::NONE);
+  for (int64_t now = TROUGH + 60; now < TROUGH + 10 * 60; now += 30)
+    CHECK(dark_after.tick(late.state(now), Settings()).command == Command::NONE);
+  CHECK(dark_after.tick(late.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
+
+  // A button asks again at once: Stop charging, then Start charging now within the 10 minutes.
+  Controller pressed = with_prices();
+  pressed.tick(powerless.state(TROUGH), Settings());
+  pressed.stop_charging();
+  pressed.tick(powerless.state(TROUGH + 60), Settings());
+  pressed.charge_now();
+  CHECK(pressed.tick(powerless.state(TROUGH + 2 * 60), Settings()).command == Command::START_CHARGING);
+
+  // An "Unknown" reading in between keeps the request: no start until the 10 minutes are up.
+  Controller flicker = with_prices();
+  CHECK(flicker.tick(powerless.state(TROUGH), Settings()).command == Command::START_CHARGING);
+  CarState unknown_reading = powerless.state(TROUGH + 30);
+  unknown_reading.charging_state = "Unknown";
+  unknown_reading.plugged = false;
+  CHECK(flicker.tick(unknown_reading, Settings()).command == Command::NONE);
+  for (int64_t now = TROUGH + 60; now < TROUGH + 10 * 60; now += 30)
+    CHECK(flicker.tick(powerless.state(now), Settings()).command == Command::NONE);
+  CHECK(flicker.tick(powerless.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
+
+  // Still without power once Ready by has passed and the plan moved to the next night: a stop, so the car
+  // doesn't start at a dear time when power comes.
+  FakeTesla dark = plugged_in(false);
+  dark.no_power = true;
+  Controller ended = with_prices();
+  ended.tick(dark.state(TROUGH), Settings());
+  CHECK(ended.tick(dark.state(TROUGH + 6 * HOUR), Settings()).command == Command::STOP_CHARGING);
+  CHECK(ended.tick(dark.state(TROUGH + 6 * HOUR + 30), Settings()).command == Command::NONE);
 }
 
 static void test_new_limit_replans_at_once() {
@@ -1506,6 +1581,7 @@ int main() {
   test_charge_now_ignores_the_plan();
   test_full_within_half_a_percent();
   test_retries_are_rate_limited();
+  test_charger_without_power();
   test_new_limit_replans_at_once();
   test_one_off_ready_by();
   test_plans_with_the_grid_fees();

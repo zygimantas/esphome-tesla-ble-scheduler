@@ -557,8 +557,10 @@ class Controller {
 
     bool want_charge = true;  // as usual, without a plan
     bool fallback = false;    // at any price, for lack of prices or a battery level
+    bool starting = false;    // the status is about the start, until the car charges
     if (hold_ == Hold::NOW) {
       d.status = "Charging now";
+      starting = true;
     } else if (hold_ == Hold::NONE) {
       want_charge = false;
       d.status = "No plan";
@@ -590,6 +592,7 @@ class Controller {
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(plan_, settings.currency);
+      starting = want_charge;
     }
     const bool full = complete_ || soc_ >= limit_ - 0.5f;  // false while the battery level is unknown (NaN)
     if (want_charge && full && !charging) {
@@ -598,7 +601,26 @@ class Controller {
     }
     if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
       notify_fallback_();
-    d.command = command_(want_charge, charging, now);
+    const bool reported = !car.charging_state.empty() && car.charging_state != "Unknown";
+    if (reported && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
+      no_power_asked_ = false;
+    // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
+    // charges as soon as power comes, and another every 10 minutes in case its request lapsed. The board's
+    // last start counts as that request too.
+    if (want_charge && !charging && car.charging_state == "No Power") {
+      d.status = "Charger has no power";
+      if (now - std::max(no_power_asked_at_, started_at_) >= 10 * 60) {
+        no_power_asked_at_ = now;
+        d.command = Command::START_CHARGING;
+      }
+      no_power_asked_ = true;
+      return d;
+    }
+    if (starting && !charging)
+      d.status = commands_this_plan_ >= 3 && now - last_command_at_ >= 2 * 60 ? "Can't start charging" : "Starting";
+    d.command = command_(want_charge, charging || no_power_asked_, now);  // a stop ends the request the charger holds
+    if (d.command == Command::STOP_CHARGING)
+      no_power_asked_ = false;
     return d;
   }
 
@@ -739,6 +761,7 @@ class Controller {
   void allow_command_() {
     last_command_at_ = 0;
     commands_this_plan_ = 0;
+    no_power_asked_at_ = 0;  // a button asks again at once, also while the charger has no power
   }
 
   // At most one wake-up every 10 minutes.
@@ -793,6 +816,8 @@ class Controller {
   int64_t first_tick_at_ = 0;  // about when the board started, once the clock is set
   int64_t prices_tried_at_ = 0;
   int64_t last_wake_at_ = 0;
+  int64_t no_power_asked_at_ = 0;
+  bool no_power_asked_ = false;  // the car was asked to charge while its charger had no power
   int64_t last_command_at_ = 0;
   int64_t started_at_ = 0;  // the board's last start, 0 after its stop; the buttons don't reset it
   int commands_this_plan_ = 0;
