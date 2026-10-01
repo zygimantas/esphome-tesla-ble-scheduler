@@ -10,8 +10,6 @@ Charges your Tesla at home in the cheapest hours of the Nord Pool electricity ma
 - Electricity priced by the Nord Pool day-ahead market, such as in the Baltics or the Nordics.
 - A computer to install and update the board.
 
-Tested with a Wallbox Pulsar Max in Lithuania, on ESPHome 2026.9.0.
-
 ## Setup
 
 1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux with Python, `pip install esphome`.
