@@ -17,18 +17,19 @@ struct FakeTesla {
   bool plugged = false;
   bool charging = false;
   bool battery_known = true;
+  bool complete = false;  // says Complete under the limit, and takes no start
   float soc = 40;
   float limit = 80;
 
   // A Tesla starts charging on plug-in when no schedule applies.
   void plug_in() {
     plugged = true;
-    charging = soc < limit;
+    charging = soc < limit && !complete;
   }
   void unplug() { plugged = charging = false; }
-  void set_charging(bool on) { charging = on && plugged && soc < limit; }
+  void set_charging(bool on) { charging = on && plugged && soc < limit && !complete; }
   std::string charging_state() const {
-    return !plugged ? "Disconnected" : charging ? "Charging" : soc >= limit ? "Complete" : "Stopped";
+    return !plugged ? "Disconnected" : charging ? "Charging" : complete || soc >= limit ? "Complete" : "Stopped";
   }
   // 11 kW into a 75 kWh pack, as in simulation.yaml, at the planner's EFFICIENCY; stops at the limit.
   void advance(int seconds) {
