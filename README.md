@@ -4,7 +4,7 @@
 
 Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.
 
-ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so it can't unlock or drive the car.
+ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
 
 ## What you need
 
@@ -17,15 +17,13 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 ## Setup
 
 1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux with Python, `pip install esphome`.
-2. **Download this project**: download **Source code (zip)** from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) and unzip it.
+2. **Download the settings files**: download `config.example.yaml` and `secrets.example.yaml` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) into a new folder.
 3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, any password for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/).
 4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
-5. **Install it on the board**: connect the board's USB-C port labelled **UART** (**COM** on some boards) to the computer, open a terminal in the project folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
+5. **Install it on the board**: connect the board's USB-C port labelled **UART** (**COM** on some boards) to the computer, open a terminal in that folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 6. **Put the board next to the car** on the USB charger.
 7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
-
-The board gets a charging-only key: the car refuses unlock, door and drive commands from it, so a stolen board can't open or drive the car.
 
 ## Settings
 
@@ -55,6 +53,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 - **To change the plan**, press **Delete charging plan**, pick **Charge limit** and **Ready by**, then **Create charging plan**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
 - **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a plan, start charging or plug in again.
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
+- **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
 
 ### Phone messages

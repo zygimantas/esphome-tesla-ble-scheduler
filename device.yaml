@@ -24,7 +24,7 @@ esp32_ble_tracker:
 esphome:
   includes:
     - <vin_utils.h>
-  name: ${name}
+  name: tesla
   project:
     name: zygimantas.esphome-tesla-ble-scheduler
     version: 0.1.0
@@ -49,7 +49,6 @@ substitutions:
   ble_mac_address: "00:00:00:00:00:00"
   board: esp32-s3-devkitc-1
   flash_size: 16MB
-  name: tesla
   tesla_ble_ref: 8b9ec1cb7312f47c8d4d3042fefabc7759eb1a07
   variant: esp32s3
 

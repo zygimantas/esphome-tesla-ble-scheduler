@@ -14,7 +14,6 @@ env:
 jobs:
   analyze:
     name: Analyze ${{ matrix.language }}
-    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-24.04
     permissions:
       security-events: write
