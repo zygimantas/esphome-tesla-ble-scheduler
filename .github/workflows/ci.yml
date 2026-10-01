@@ -99,7 +99,7 @@ jobs:
           CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
             timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log
           grep -F '][charging' simulation.log
-          grep -q -F 'Start charging (Charging)' simulation.log
+          grep -q -F 'Start charging (Starting)' simulation.log
       - name: Firmware, as users build it, from this commit on GitHub
         env:
           COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
