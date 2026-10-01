@@ -1074,6 +1074,27 @@ static void test_charger_without_power() {
   CHECK(charging.command == Command::NONE);
   CHECK_STR(charging.status, "Charging");
 
+  FakeTesla powerless = plugged_in(false);
+  powerless.no_power = true;
+  // A button asks again at once: Stop charging, then Start charging now within the 10 minutes.
+  Controller pressed = with_prices();
+  pressed.tick(powerless.state(TROUGH), Settings());
+  pressed.stop_charging();
+  pressed.tick(powerless.state(TROUGH + 60), Settings());
+  pressed.charge_now();
+  CHECK(pressed.tick(powerless.state(TROUGH + 2 * 60), Settings()).command == Command::START_CHARGING);
+
+  // An "Unknown" reading in between keeps the request: no start until the 10 minutes are up.
+  Controller flicker = with_prices();
+  CHECK(flicker.tick(powerless.state(TROUGH), Settings()).command == Command::START_CHARGING);
+  CarState unknown_reading = powerless.state(TROUGH + 30);
+  unknown_reading.charging_state = "Unknown";
+  unknown_reading.plugged = false;
+  CHECK(flicker.tick(unknown_reading, Settings()).command == Command::NONE);
+  for (int64_t now = TROUGH + 60; now < TROUGH + 10 * 60; now += 30)
+    CHECK(flicker.tick(powerless.state(now), Settings()).command == Command::NONE);
+  CHECK(flicker.tick(powerless.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
+
   // Still without power once Ready by has passed and the plan moved to the next night: a stop, so the car
   // doesn't start at a dear time when power comes.
   FakeTesla dark = plugged_in(false);
