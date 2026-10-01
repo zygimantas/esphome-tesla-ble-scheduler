@@ -555,6 +555,7 @@ class Controller {
     }
 
     bool want_charge = true;  // as usual, without a plan
+    bool fallback = false;    // at any price, for lack of prices or a battery level
     if (hold_ == Hold::NOW) {
       d.status = "Charging now";
     } else if (hold_ == Hold::NONE) {
@@ -571,7 +572,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (battery unknown)";
-      notify_fallback_();
+      fallback = true;
     } else if (!plan_.valid) {
       if (getting_prices_(now)) {
         d.status = "Getting prices";
@@ -579,7 +580,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (no prices)";
-      notify_fallback_();
+      fallback = true;
     } else {
       want_charge = in_plan_();
       // A plan made in a window's last 2 minutes: not worth a start that the next quarter-hour's plan
@@ -594,6 +595,8 @@ class Controller {
       d.status = "Charged";
       return d;
     }
+    if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
+      notify_fallback_();
     d.command = command_(want_charge, charging, now);
     return d;
   }

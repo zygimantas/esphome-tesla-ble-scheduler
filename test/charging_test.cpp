@@ -1366,6 +1366,18 @@ static void test_fallback_message_after_a_restart() {
   REQUIRE(battery.messages.size() == 1);
   CHECK(battery.messages[0].first == SEP24_1700Z + 30 * 60);
   CHECK_STR(battery.messages[0].second.message, "Charging (battery unknown)");
+
+  // A full car without prices is Charged, not charging at any price: the message waits for a higher limit.
+  Controller full_controller;
+  FakeTesla full = plugged_in(false);
+  full.soc = 80;
+  const Run charged = simulate(full_controller, full, SEP24_1700Z, SEP24_1700Z + 15 * 60, {});
+  CHECK(contains(charged.statuses, "Charged"));
+  CHECK(charged.messages.empty());
+  full.limit = 90;
+  const Run raised = simulate(full_controller, full, SEP24_1700Z + 15 * 60, SEP24_1700Z + 16 * 60, {});
+  REQUIRE(raised.messages.size() == 1);
+  CHECK_STR(raised.messages[0].second.message, "Charging (no prices)");
 }
 
 // Plugged in at 20:00 with 20%, a one-off Ready by at 00:00 and only today's prices, which end at 01:00.
