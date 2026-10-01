@@ -21,6 +21,7 @@ charging:
     area: LT
     vat: 0.21
   time_id: sntp_time
+  vin: 5YJ3E1EA0KF000000
 
 esphome:
   includes:

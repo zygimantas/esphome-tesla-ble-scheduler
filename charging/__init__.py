@@ -22,6 +22,7 @@ CONF_NORDPOOL = "nordpool"
 CONF_VAT = "vat"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
+CONF_VIN = "vin"
 CONF_GRID = "grid"
 CONF_HOLIDAYS = "holidays"
 CONF_CLOCK = "clock"
@@ -56,6 +57,18 @@ def _holiday(value):
     elif m := re.fullmatch(r"easter([+-]\d{1,2})?", value):
         return ("easter", int(m[1] or 0))
     raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25", "easter" or "easter+1"')
+
+
+def _vin(value):
+    """The car's VIN, checked here because the Tesla component takes any string and a wrong one leaves the board
+    waiting for the car forever. Lower case is wrong too: the Bluetooth name is made from the text as typed."""
+    value = cv.string_strict(value)
+    if not re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", value):
+        raise cv.Invalid(
+            "must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, "
+            "on the car's screen under Controls, Software"
+        )
+    return value
 
 
 def _validate_grid(config):
@@ -105,6 +118,7 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
         cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
+        cv.Required(CONF_VIN): _vin,
         cv.Required(CONF_GRID): GRID_SCHEMA,
     }
 ).extend(cv.polling_component_schema("30s"))
