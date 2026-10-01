@@ -60,6 +60,9 @@ text_sensor:
   - platform: debug
     reset_reason:
       name: "Reset reason"
+  - lambda: return {ESPHOME_PROJECT_VERSION};
+    name: Release
+    platform: template
 
 time:
   - id: sntp_time
