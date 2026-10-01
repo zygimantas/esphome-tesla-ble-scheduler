@@ -577,8 +577,8 @@ class Controller {
     if (!std::isnan(car.limit)) {
       if (car.limit != limit_)
         replan_ = true;  // a new charge limit changes the plan right away
-      if (car.limit > limit_)
-        limit_raised_at_ = now;
+      if (car.limit > limit_ && soc_ >= limit_ - 0.5f)
+        limit_raised_at_ = now;  // a full car resumes by itself
       limit_ = car.limit;
     }
     if (battery_known_() != battery_was_known)
@@ -616,7 +616,7 @@ class Controller {
         hold_ = Hold::NOW;  // from the car or the Tesla app: leave it alone until unplugged
       charging_ = charging;
     }
-    return charging;
+    return charging_;  // the last known state: "Unknown" says nothing about it
   }
 
   // Plans from the current quarter-hour; the plan stands until the next one or replan().
