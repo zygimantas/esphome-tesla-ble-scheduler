@@ -24,9 +24,11 @@ https://github.com/zygimantas/esphome-tesla-ble-scheduler. The board, an ESP32-S
 connected to this computer by USB, and this folder is for its files. Install what is missing first.
 Download the two files the README names from the latest release, then ask me in one message for
 every setting and secret they need, except the API key, which you generate yourself. Fill in the
-files without ever showing my Wi-Fi password, the key or the VIN back to me, build and install the
-firmware over USB, and wait until the board answers at http://tesla.local. Then tell me exactly what
-to do in the car to pair it and what to turn off in the Tesla app.
+files without ever showing my Wi-Fi password, the key or the VIN back to me. Build and install the
+firmware with esphome run config.yaml --device <the board's USB port> --no-logs, since the port prompt
+and the log stream of a plain esphome run never return, and wait until the board answers at
+http://tesla.local. Then tell me exactly what to do in the car to pair it and what to turn off in the
+Tesla app.
 ```
 
 Answer its questions, then do what it tells you to do at the car.
