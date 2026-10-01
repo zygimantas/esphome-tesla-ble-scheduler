@@ -133,9 +133,13 @@ select {
   color: var(--muted);
   pointer-events: none;
 }
-select:disabled,
+/* Locked: only the arrow fades, so the value stays readable; the fill colour overrides iOS Safari's own fading. */
 .dropdown:has(select:disabled)::after {
   opacity: 0.4;
+}
+select:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: var(--text);
 }
 
 /* --- Buttons --- */
