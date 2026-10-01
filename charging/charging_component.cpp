@@ -153,8 +153,12 @@ void ChargingComponent::update() {
     this->held_pref_.save(&this->held_);
     global_preferences->sync();  // now, in case the board restarts soon after
   }
-  if (d.notification)
-    this->send_message_(*d.notification);
+  if (d.notification) {  // a new message replaces an unsent older one
+    this->unsent_ = *d.notification;
+    this->unsent_since_ = car.now;
+    this->message_tried_at_ = 0;
+  }
+  this->send_unsent_(car.now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
     ESP_LOGI(TAG, "Start charging (%s)", d.status.c_str());
     this->charger_->turn_on();
@@ -260,9 +264,27 @@ void ChargingComponent::fetch_prices_(int64_t now) {
   }
 }
 
-void ChargingComponent::send_message_(const Notification &message) {
-  if (this->ntfy_topic_[0] == '\0')
+// Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an
+// hour: a plan from then is still worth reading, an older one isn't.
+void ChargingComponent::send_unsent_(int64_t now) {
+  if (!this->unsent_ || now - this->message_tried_at_ < 60)
     return;
+  if (now - this->unsent_since_ > 30 * 60) {
+    ESP_LOGW(TAG, "ntfy message dropped after 30 minutes of failed sends");
+    this->unsent_.reset();
+    return;
+  }
+  if (!network::is_connected())
+    return;
+  this->message_tried_at_ = now;
+  if (this->send_message_(*this->unsent_))
+    this->unsent_.reset();
+}
+
+// Whether ntfy took the message. Without a topic there's nothing to send.
+bool ChargingComponent::send_message_(const Notification &message) {
+  if (this->ntfy_topic_[0] == '\0')
+    return true;
   const std::string body = json::build_json([this, &message](JsonObject root) {
     root["topic"] = this->ntfy_topic_;
     root["title"] = message.title;
@@ -272,12 +294,14 @@ void ChargingComponent::send_message_(const Notification &message) {
   });
   auto response = this->http_->post(this->ntfy_server_, body);
   if (response == nullptr) {
-    ESP_LOGW(TAG, "ntfy message failed");
-    return;
+    ESP_LOGW(TAG, "ntfy message failed; it's tried again in a minute");
+    return false;
   }
-  if (response->status_code != http_request::HTTP_STATUS_OK)
-    ESP_LOGW(TAG, "ntfy answered HTTP %d", response->status_code);
+  const bool taken = response->status_code == http_request::HTTP_STATUS_OK;
+  if (!taken)
+    ESP_LOGW(TAG, "ntfy answered HTTP %d; the message is tried again in a minute", response->status_code);
   response->end();
+  return taken;
 }
 
 }  // namespace esphome::charging
