@@ -1,6 +1,4 @@
-// Unit tests for charging.h, built from the repository root:
-//   g++ -std=c++17 -Wall -Wextra -I . -I path/to/ArduinoJson/src test/charging_test.cpp -o charging_test
-//   ./charging_test
+// Unit tests for charging.h; CONTRIBUTING.md says how to build and run them.
 #include "charging/charging.h"
 #include "charging_test_tesla.h"
 
@@ -178,21 +176,23 @@ static void test_calendar() {
   // The day they go back: midnight is still summer time, 07:00 winter time.
   CHECK(local_to_utc(days_from_civil(2026, 10, 25), 0, VILNIUS_STANDARD_OFFSET) == utc("2026-10-24T21:00:00Z"));
   CHECK(local_to_utc(days_from_civil(2026, 10, 25), 7 * 60, VILNIUS_STANDARD_OFFSET) == utc("2026-10-25T05:00:00Z"));
+  // Its repeated 03:00 is the first one, still summer time.
+  CHECK(local_to_utc(days_from_civil(2026, 10, 25), 3 * 60, VILNIUS_STANDARD_OFFSET) == utc("2026-10-25T00:00:00Z"));
+  // The day they go forward: 03:00 doesn't exist, so it's 04:00 summer time.
+  CHECK(local_to_utc(days_from_civil(2027, 3, 28), 3 * 60, VILNIUS_STANDARD_OFFSET) == utc("2027-03-28T01:00:00Z"));
 
   // Under a day ahead the time alone is unambiguous.
   CHECK_STR(format_when(SEP24_1700Z + 23 * HOUR, SEP24_1700Z, VILNIUS_STANDARD_OFFSET), "19:00");
   CHECK_STR(format_when(SEP24_1700Z + DAY_SECONDS, SEP24_1700Z, VILNIUS_STANDARD_OFFSET), "Fri 20:00");
   CHECK_STR(format_when(SEP24_1700Z + 25 * HOUR, SEP24_1700Z, VILNIUS_STANDARD_OFFSET), "Fri 21:00");
   CHECK_STR(format_when(SEP24_1700Z + 28 * HOUR, SEP24_1700Z, VILNIUS_STANDARD_OFFSET), "Sat 00:00");
+  // On the day the clocks go forward, 23.5 real hours are 24.5 clock hours.
+  CHECK_STR(format_when(utc("2027-03-28T13:30:00Z"), utc("2027-03-27T14:00:00Z"), VILNIUS_STANDARD_OFFSET),
+            "Sun 16:30");
 }
 
 static void test_nord_pool_prices() {
   CHECK(parse_iso8601("2025-10-01T22:00:00Z") == 1759356000);
-  CHECK(parse_iso8601("2025-10-01T22:00:00.000Z") == 1759356000);
-  CHECK(parse_iso8601("2025-10-02T00:00:00+02:00") == 1759356000);
-  CHECK(parse_iso8601("2025-10-01T20:00:00-02:00") == 1759356000);
-  CHECK(parse_iso8601("2025-10-02T08:30:00.5+10:30") == 1759356000);
-  CHECK(parse_iso8601("2025-10-01T22:15:30.999Z") == 1759356930);
   CHECK(parse_iso8601("2025-10-01T22:00:00") == 1759356000);  // no offset: UTC
   CHECK(parse_iso8601("2026-01-01T00:00:00Z") == 1767225600);
   for (const char *bad :
@@ -561,6 +561,12 @@ static void test_charges_only_in_the_cheap_window() {
   CHECK(run.commands.size() <= 4);
   CHECK(contains(run.statuses, "Charges at 01:30"));
   CHECK(contains(run.statuses, "Charging"));
+  REQUIRE(run.messages.size() == 1);
+  CHECK(run.messages[0].first == SEP24_1700Z + 2 * 60);  // once the plan has settled
+  // 01:30-05:00 local is the bottom of the night trough. The car needs 12.1 of its 14 slots, which
+  // average 21.2 EUR/MWh: (28+26+24+22+20+18+16+16+18+20+22+24 + 0.12*26) / 12.12.
+  CHECK_STR(run.messages[0].second.title, "Tesla charging plan created");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
 }
 
 static void test_start_from_the_car_holds_until_unplugged() {
@@ -607,7 +613,8 @@ static void test_reads_the_charging_state() {
   }
   CHECK_STR(stopped, "Charging Starting ");
 
-  // Unknown for a moment after Stop charging, while the car still charges: not a start from the car.
+  // Unknown for a moment after Stop charging, while the car still charges: not a start from the car. With
+  // "Unknown", esphome-tesla-ble reports the charger as unplugged too, which is no unplug.
   for (const char *unknown : {"", "Unknown"}) {
     const FakeTesla car = plugged_in();
     Controller controller = with_prices();
@@ -616,6 +623,8 @@ static void test_reads_the_charging_state() {
     controller.tick(car.state(TROUGH + 5 * 60), Settings());
     CarState reading = car.state(TROUGH + 6 * 60);
     reading.charging_state = unknown;
+    if (reading.charging_state == "Unknown")
+      reading.plugged = false;
     controller.tick(reading, Settings());
     CHECK_STR(controller.tick(car.state(TROUGH + 7 * 60), Settings()).mode, "none");
   }
@@ -665,6 +674,20 @@ static void test_tells_its_own_starts_from_the_cars() {
   controller.tick(car.state(SEP24_1700Z + 30), Settings());
   car.charging = true;
   CHECK_STR(controller.tick(car.state(SEP24_1700Z + 200), Settings()).mode, "now");
+
+  // A higher limit resumes a finished charge by itself: within 3 minutes, that's the car's own start too.
+  const auto mode_when_resumed_after = [](int64_t seconds) {
+    Controller resumed = with_prices();
+    FakeTesla full = plugged_in(false);
+    full.soc = 80;
+    resumed.tick(full.state(SEP24_1700Z - HOUR), Settings());
+    full.limit = 90;
+    resumed.tick(full.state(SEP24_1700Z), Settings());
+    full.charging = true;
+    return resumed.tick(full.state(SEP24_1700Z + seconds), Settings()).mode;
+  };
+  CHECK_STR(mode_when_resumed_after(179), "plan");
+  CHECK_STR(mode_when_resumed_after(180), "now");
 }
 
 static void test_charges_as_usual_without_prices() {
@@ -678,7 +701,7 @@ static void test_charges_as_usual_without_prices() {
 static void test_waits_for_tomorrows_prices() {
   Controller controller;
   add_day(controller.prices, CET_SEP24);
-  const int64_t noon = SEP24_1700Z - 8 * HOUR, published = SEP24_1700Z - 6 * HOUR;  // 12:00 and 14:00 local
+  const int64_t noon = SEP24_1700Z - 8 * HOUR, published = SEP24_1700Z - 6 * HOUR + 5 * 60;  // 12:00 and 14:05 local
   const Run run = simulate(controller, FakeTesla(), noon - 60, SEP24_1700Z,
                            {{noon, &FakeTesla::plug_in}, {published, [&controller](FakeTesla &) {
                                                             add_day(controller.prices, CET_SEP25);
@@ -905,7 +928,7 @@ static void test_plans_with_the_grid_fees() {
   controller.tick(FakeTesla().state(SEP24_1700Z), Settings());
   controller.set_grid(four_zones());  // re-plans at once
   controller.tick(FakeTesla().state(SEP24_1700Z + 30), Settings());
-  // The night trough (21.2 EUR/MWh for the energy the car takes, see the plug-in message test) plus
+  // The night trough (21.2 EUR/MWh for the energy the car takes, see test_charges_only_in_the_cheap_window) plus
   // VAT, plus the night fee.
   CHECK(near(controller.plan().avg_price, 0.021215f * 1.21f + 0.06292f, 1e-4f));
 }
@@ -1045,19 +1068,6 @@ static void test_create_plan_cancels_charge_now() {
 // Plug-in message
 // ---------------------------------------------------------------------------
 
-static void test_plug_in_message_with_the_plan() {
-  Controller controller = with_prices();
-  const Run run = simulate(controller, FakeTesla(), SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR,
-                           {{SEP24_1700Z, &FakeTesla::plug_in}});
-  REQUIRE(run.messages.size() == 1);
-  const Notification &n = run.messages[0].second;
-  CHECK(run.messages[0].first == SEP24_1700Z + 2 * 60);  // once the plan has settled
-  // 01:30-05:00 local is the bottom of the night trough. The car needs 12.1 of its 14 slots, which
-  // average 21.2 EUR/MWh: (28+26+24+22+20+18+16+16+18+20+22+24 + 0.12*26) / 12.12.
-  CHECK_STR(n.title, "Tesla charging plan created");
-  CHECK_STR(n.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
-}
-
 static void test_plug_in_message_after_two_minutes() {
   Controller controller = with_prices();
   FakeTesla car;
@@ -1102,6 +1112,15 @@ static Run plug_in_at_8pm(Settings settings = {}, FakeTesla car = {}) {
   return simulate(controller, car, SEP24_1700Z - 60, SEP24_1700Z + 180, {{SEP24_1700Z, &FakeTesla::plug_in}}, settings);
 }
 
+static void test_plug_in_in_cet() {
+  Settings cet;
+  cet.standard_offset = CET_STANDARD_OFFSET;
+  const Run run = plug_in_at_8pm(cet);
+  CHECK(contains(run.statuses, "Charges at 00:30"));
+  REQUIRE(run.messages.size() == 1);
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
+}
+
 static void test_plug_in_message_when_time_is_short() {
   // Ready by 22:00 leaves 8 quarter-hours for the 14 the car needs: it takes all 8.
   Settings soon;
@@ -1119,7 +1138,7 @@ static void test_plug_in_message_when_time_is_short() {
   soon.ready_by_once = SEP24_1700Z + 10 * 60;  // 20:10, within the quarter-hour of the plug-in
   const Run no_time = plug_in_at_8pm(soon);
   REQUIRE(no_time.messages.size() == 1);
-  CHECK_STR(no_time.messages[0].second.message, "No time left before ready-by");
+  CHECK_STR(no_time.messages[0].second.message, "No time left before Ready by");
   CHECK(contains(no_time.statuses, "Waiting"));
 }
 
@@ -1256,9 +1275,9 @@ int main() {
   test_buttons_skip_the_command_limits();
   test_buttons_hold_across_a_restart();
   test_create_plan_cancels_charge_now();
-  test_plug_in_message_with_the_plan();
   test_plug_in_message_after_two_minutes();
   test_plug_in_message_leaves_out_the_spare();
+  test_plug_in_in_cet();
   test_plug_in_message_when_time_is_short();
   test_plug_in_message_at_the_limit();
   test_plug_in_message_waits_for_the_last_prices();

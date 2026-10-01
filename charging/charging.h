@@ -14,7 +14,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -101,10 +100,11 @@ inline std::string format_hhmm(int64_t utc, int32_t standard_offset) {
   return buf;
 }
 
-// The moment (UTC) that is `minutes` after local midnight on local calendar day `local_day`.
+// The moment (UTC) that is `minutes` after local midnight on local calendar day `local_day`. A time the clocks
+// skip in spring moves an hour on; one they repeat in autumn is the first.
 inline int64_t local_to_utc(int64_t local_day, int minutes, int32_t standard_offset) {
   const int64_t local = local_day * DAY_SECONDS + static_cast<int64_t>(minutes) * 60;
-  return local - eu_offset(local - standard_offset, standard_offset);
+  return local - eu_offset(local - standard_offset - 3600, standard_offset);
 }
 
 // The next moment (UTC) that is `minutes` after local midnight, strictly after `now`.
@@ -120,9 +120,11 @@ inline std::string format_day_hhmm(int64_t utc, int32_t standard_offset) {
   return std::string(WEEKDAYS[weekday(local_day_of(utc, standard_offset))]) + " " + format_hhmm(utc, standard_offset);
 }
 
-// "23:00" for a moment less than a day after `now` (the next 23:00 is unambiguous), else "Mon 00:00".
+// "23:00" for a moment less than 24 clock hours after `now` (the next 23:00 is unambiguous), else "Mon 00:00".
 inline std::string format_when(int64_t utc, int64_t now, int32_t standard_offset) {
-  return utc < now + DAY_SECONDS ? format_hhmm(utc, standard_offset) : format_day_hhmm(utc, standard_offset);
+  return utc + eu_offset(utc, standard_offset) < now + eu_offset(now, standard_offset) + DAY_SECONDS
+             ? format_hhmm(utc, standard_offset)
+             : format_day_hhmm(utc, standard_offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -191,23 +193,16 @@ inline float total_price(float spot_price, int64_t slot_start, const Grid &grid,
 // Nord Pool delivery days run midnight to midnight CET.
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
 
-// Parses "2025-10-01T22:00:00Z" (optionally with fractional seconds or a +HH:MM offset).
+// Parses "2025-10-01T22:00:00Z", as Nord Pool sends it.
 inline std::optional<int64_t> parse_iso8601(const char *s) {
-  int year, month, day, hour, minute, second, consumed, oh, om;
+  int year, month, day, hour, minute, second, consumed;
   if (s == nullptr ||
-      std::sscanf(s, "%4d-%2d-%2dT%2d:%2d:%2d%n", &year, &month, &day, &hour, &minute, &second, &consumed) != 6)
-    return std::nullopt;
-  const char *p = s + consumed;
-  if (*p == '.')
-    p += 1 + std::strspn(p + 1, "0123456789");
-  int32_t offset = 0;
-  if ((*p == '+' || *p == '-') && std::sscanf(p + 1, "%2d:%2d", &oh, &om) == 2)
-    offset = (*p == '-' ? -1 : 1) * (oh * 3600 + om * 60);
-  else if (*p != 'Z' && *p != '\0')
+      std::sscanf(s, "%4d-%2d-%2dT%2d:%2d:%2d%n", &year, &month, &day, &hour, &minute, &second, &consumed) != 6 ||
+      (s[consumed] != 'Z' && s[consumed] != '\0'))
     return std::nullopt;
   if (month < 1 || month > 12 || day < 1 || day > 31)
     return std::nullopt;
-  return days_from_civil(year, month, day) * DAY_SECONDS + hour * 3600 + minute * 60 + second - offset;
+  return days_from_civil(year, month, day) * DAY_SECONDS + hour * 3600 + minute * 60 + second;
 }
 
 // Nord Pool's DayAheadPrices URL for the CET delivery day `day_offset` days after `now`.
@@ -514,7 +509,7 @@ class Controller {
     if (floor_to_slot(now) != planned_slot_ || replan_)
       update_plan_(now, settings);
 
-    if (!car.plugged.has_value()) {
+    if (!plug_state_seen_) {
       // The plug state comes only from an awake car, so it's unknown after the board restarts while
       // the car sleeps. With the charge port flap open the car may be plugged in: wake it to find
       // out, every 10 minutes for half an hour.
@@ -530,7 +525,7 @@ class Controller {
       d.mode = "wait";
       return d;
     }
-    if (!*car.plugged) {
+    if (!plugged_) {
       d.status = "Unplugged";
       return d;
     }
@@ -582,13 +577,17 @@ class Controller {
     if (!std::isnan(car.limit)) {
       if (car.limit != limit_)
         replan_ = true;  // a new charge limit changes the plan right away
+      if (car.limit > limit_)
+        limit_raised_at_ = now;
       limit_ = car.limit;
     }
     if (battery_known_() != battery_was_known)
       replan_ = true;
 
-    if (car.plugged.has_value() && *car.plugged != plugged_) {
-      plugged_ = *car.plugged;
+    // With "Unknown", esphome-tesla-ble also reports the charger as unplugged: that's no unplug.
+    const std::optional<bool> plugged = car.charging_state == "Unknown" ? std::nullopt : car.plugged;
+    if (plugged.has_value() && *plugged != plugged_) {
+      plugged_ = *plugged;
       replan_ = true;
       if (plugged_) {
         plugged_since_ = now;
@@ -603,15 +602,16 @@ class Controller {
         notify_pending_ = false;
       }
     }
-    if (car.plugged.has_value())
+    if (plugged.has_value())
       plug_state_seen_ = true;
 
     const bool charging_known = !car.charging_state.empty() && car.charging_state != "Unknown";
     const bool charging = car.charging_state == "Charging" || car.charging_state == "Starting";
     if (charging_known) {
       const bool we_started_it = now - started_at_ < 5 * 60;
-      const bool plug_in_auto_start = now - plugged_since_ < 3 * 60;
-      const bool started_by_car = charging && !charging_ && !we_started_it && !plug_in_auto_start;
+      // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge.
+      const bool auto_start = now - plugged_since_ < 3 * 60 || now - limit_raised_at_ < 3 * 60;
+      const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start;
       if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_plan_()))
         hold_ = Hold::NOW;  // from the car or the Tesla app: leave it alone until unplugged
       charging_ = charging;
@@ -649,7 +649,7 @@ class Controller {
       return;
     }
     if (plan_.windows.empty()) {
-      n.message = plan_.needed_slots == 0 ? "Not needed: battery at limit" : "No time left before ready-by";
+      n.message = plan_.needed_slots == 0 ? "Not needed: battery at limit" : "No time left before Ready by";
       return;
     }
     int windows = 0;
@@ -723,6 +723,7 @@ class Controller {
   bool plug_state_seen_ = false;
   int64_t planned_slot_ = -1;
   int64_t plugged_since_ = 0;
+  int64_t limit_raised_at_ = 0;
   int64_t battery_unknown_since_ = 0;
   int64_t plug_unknown_since_ = 0;
   int64_t first_tick_at_ = 0;  // about when the board started, once the clock is set
