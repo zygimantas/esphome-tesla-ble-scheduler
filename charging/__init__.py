@@ -78,10 +78,12 @@ def _hours(value):
 
 
 def _month_day(value):
-    """Parses "12-25" to 1225 (month * 100 + day)."""
+    """Parses "12-25" to 1225 (month * 100 + day). "02-29" passes: it exists in leap years."""
     value = cv.string_strict(value)
-    if (m := re.fullmatch(r"(\d\d)-(\d\d)", value)) and 1 <= int(m[1]) <= 12 and 1 <= int(m[2]) <= 31:
-        return int(m[1]) * 100 + int(m[2])
+    m = re.fullmatch(r"(\d\d)-(\d\d)", value)
+    month, day = (int(m[1]), int(m[2])) if m else (0, 0)
+    if 1 <= month <= 12 and 1 <= day <= (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month - 1]:
+        return month * 100 + day
     raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25"')
 
 
