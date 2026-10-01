@@ -36,6 +36,9 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          config: |
+            paths-ignore:
+              - '**/.esphome/**'
       - uses: astral-sh/setup-uv@v10.2.0
         if: matrix.build-mode == 'manual'
         with:
