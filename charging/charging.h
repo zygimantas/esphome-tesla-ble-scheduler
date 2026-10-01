@@ -396,15 +396,15 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
   return plan;
 }
 
-// The plan's windows for the web page: "<start>,<end>,<ct/kWh>[,spare];...", in UTC seconds with each
+// The plan's windows for the web page: "<start>,<end>,<EUR/kWh>[,spare];...", in UTC seconds with each
 // window's price (see Window::avg_price), marked spare when the car shouldn't need it. For example
-// "1790463600,1790466300,20.3;1790467200,1790468100,21.1,spare". Empty without windows.
+// "1790463600,1790466300,0.203;1790467200,1790468100,0.211,spare". Empty without windows.
 inline std::string format_windows(const Plan &plan) {
   std::string text;
   char part[64];
   for (const Window &w : plan.windows) {
-    std::snprintf(part, sizeof(part), "%s%lld,%lld,%.1f%s", text.empty() ? "" : ";", static_cast<long long>(w.start),
-                  static_cast<long long>(w.end), w.avg_price * 100.0f, w.spare() ? ",spare" : "");
+    std::snprintf(part, sizeof(part), "%s%lld,%lld,%.3f%s", text.empty() ? "" : ";", static_cast<long long>(w.start),
+                  static_cast<long long>(w.end), w.avg_price, w.spare() ? ",spare" : "");
     text += part;
   }
   return text;
@@ -670,8 +670,8 @@ class Controller {
     for (const Window &w : plan_.windows)
       windows += !w.spare();
     char text[128];
-    std::snprintf(text, sizeof(text), "%.0f to %.0f%% by %s; avg %.1f ct/kWh over %d window(s)", soc_, limit_,
-                  format_day_hhmm(deadline_(now, settings), settings.standard_offset).c_str(), plan_.avg_price * 100.0f,
+    std::snprintf(text, sizeof(text), "%.0f to %.0f%% by %s; avg %.3f EUR/kWh over %d window(s)", soc_, limit_,
+                  format_day_hhmm(deadline_(now, settings), settings.standard_offset).c_str(), plan_.avg_price,
                   windows);
     n.title = "Tesla charging plan created";
     n.message = text;

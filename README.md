@@ -70,7 +70,7 @@ After a change, run `esphome run config.yaml` again and choose the board's netwo
 
 Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it.
 
-- **When you plug in**, the board plans by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The plan lists each window with its price, like `02:00 - 02:45 +1` at `19.6 ct/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the status says **Waiting for prices** until they're out.
+- **When you plug in**, the board plans by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The plan lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the status says **Waiting for prices** until they're out.
 - **To change the plan**, press **Delete charging plan**, pick **Charge limit** and **Ready by**, then **Create charging plan**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
 - **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a plan, start charging or plug in again.
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
@@ -79,7 +79,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the plan, like `56 to 80% by Thu 06:30; avg 9.6 ct/kWh over 3 window(s)`.
+Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the plan, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`.
 
 ## Grid fees
 

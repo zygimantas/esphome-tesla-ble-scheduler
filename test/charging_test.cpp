@@ -335,7 +335,7 @@ static void test_plan_windows_and_prices() {
   const std::string first = std::to_string(SEP24_1700Z + 5 * HOUR) + "," + std::to_string(SEP24_1700Z + 6 * HOUR);
   const std::string spare =
       std::to_string(SEP24_1700Z + 9 * HOUR) + "," + std::to_string(SEP24_1700Z + 9 * HOUR + SLOT_SECONDS);
-  CHECK_STR(format_windows(plan), first + ",10.0;" + spare + ",11.0,spare");
+  CHECK_STR(format_windows(plan), first + ",0.100;" + spare + ",0.110,spare");
 
   // At 01:05 the current slot has 10 minutes left, so the buffer at 05:00 is needed after all.
   request.now = SEP24_1700Z + 5 * HOUR + 5 * 60;
@@ -345,10 +345,10 @@ static void test_plan_windows_and_prices() {
   CHECK(near(late.windows[0].energy_kwh, stored_first / 0.9f, 1e-3f));
   CHECK(near(late.windows[1].energy_kwh, (9.75f - stored_first) / 0.9f, 1e-3f));
   CHECK(near(late.avg_price, (stored_first * 0.10f + (9.75f - stored_first) * 0.11f) / 9.75f, 1e-5f));
-  CHECK_STR(format_windows(late), first + ",10.0;" + spare + ",11.0");
+  CHECK_STR(format_windows(late), first + ",0.100;" + spare + ",0.110");
 
   // A window's price is for the energy the car takes there: all of 01:00, half of 01:15, none of the
-  // spare 01:30 (10, 12 and 40 ct).
+  // spare 01:30 (0.10, 0.12 and 0.40 EUR).
   const PriceTable mixed = prices_from(SEP24_1700Z, SEP24_1700Z + 11 * HOUR, [](int64_t after) {
     return after == 5 * HOUR                      ? 0.10f
            : after == 5 * HOUR + SLOT_SECONDS     ? 0.12f
@@ -576,7 +576,7 @@ static void test_charges_only_in_the_cheap_window() {
   // 01:30-05:00 local is the bottom of the night trough. The car needs 12.1 of its 14 slots, which
   // average 21.2 EUR/MWh: (28+26+24+22+20+18+16+16+18+20+22+24 + 0.12*26) / 12.12.
   CHECK_STR(run.messages[0].second.title, "Tesla charging plan created");
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
 }
 
 static void test_start_from_the_car_holds_until_unplugged() {
@@ -986,7 +986,7 @@ static void test_one_off_ready_by() {
                            {{SEP24_1700Z, &FakeTesla::plug_in}}, once);
   CHECK(controller.plan().horizon_slots == 28 * 4);  // until Saturday 00:00, not the daily 07:00
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Sat 00:00; avg 2.1 ct/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Sat 00:00; avg 0.021 EUR/kWh over 1 window(s)");
 
   const FakeTesla car = plugged_in();
   Settings stale;
@@ -1165,7 +1165,7 @@ static void test_plug_in_message_after_two_minutes() {
                                                                                  c.plug_in();
                                                                                }}});
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
 }
 
 static void test_plug_in_message_leaves_out_the_spare() {
@@ -1175,7 +1175,7 @@ static void test_plug_in_message_leaves_out_the_spare() {
   car.soc = 67;
   const Run run = simulate(controller, car, SEP24_1700Z - 60, SEP24_1700Z + 180, {{SEP24_1700Z, &FakeTesla::plug_in}});
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "67 to 80% by Fri 07:00; avg 10.0 ct/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "67 to 80% by Fri 07:00; avg 0.100 EUR/kWh over 1 window(s)");
 
   // Plugged in at 01:05, with 10 minutes of the first slot left, the car needs 05:00 too.
   Controller late = with_prices(two_cheap_spells());
@@ -1197,7 +1197,7 @@ static void test_plug_in_in_cet() {
   const Run run = plug_in_at_8pm(cet);
   CHECK(contains(run.statuses, "Charges at 00:30"));
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 2.1 ct/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
 }
 
 static void test_plug_in_message_when_time_is_short() {
@@ -1207,7 +1207,7 @@ static void test_plug_in_message_when_time_is_short() {
   const Run short_time = plug_in_at_8pm(soon);
   REQUIRE(short_time.messages.size() == 1);
   CHECK_STR(short_time.messages[0].second.message,
-            "40 to 80% by Thu 22:00; avg 19.0 ct/kWh over 1 window(s)\nNot enough time to reach the limit");
+            "40 to 80% by Thu 22:00; avg 0.190 EUR/kWh over 1 window(s)\nNot enough time to reach the limit");
 
   soon.ready_by_once = SEP24_1700Z + 13 * SLOT_SECONDS;  // 23:15: 13 slots store the 12.1 the car takes
   const Run just = plug_in_at_8pm(soon);
