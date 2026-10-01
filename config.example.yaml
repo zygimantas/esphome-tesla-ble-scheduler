@@ -5,10 +5,6 @@ charging:
       m: 0.08349
       d: 0.10406
       e: 0.14641
-    hours:
-      holiday:  nnnnnnndddddddddddddddnn
-      weekend:  nnnnnnndddddddddddddddnn
-      workday:  nnnnnmmddddddddddeeeeenn
     holidays:
       - 01-01
       - 02-16
@@ -24,6 +20,10 @@ charging:
       - 12-24
       - 12-25
       - 12-26
+    hours:
+      holiday:  nnnnnnndddddddddddddddnn
+      weekend:  nnnnnnndddddddddddddddnn
+      workday:  nnnnnmmddddddddddeeeeenn
   nordpool:
     area: LT
     vat: 0.21

@@ -17,7 +17,7 @@ What the code, README.md and CONTRIBUTING.md don't say. Each folder has its own 
 It charges the owner's car every night.
 
 - Never change its settings (Ready by, charge limit, buttons, switches) to try something. Read instead: `curl http://<board>/events` streams every entity, and `curl "http://<board>/text_sensor/Charging%20status"` returns one. Try writes on the simulation (test/) or a page mock (web/).
-- The owner's config.yaml and secrets.yaml hold real values (the VIN, the ntfy topic, Wi-Fi, the API key), and git ignores them. Never print them, the output of `esphome config` or the generated main.cpp, which has the Wi-Fi password and API key in plain text because the firmware needs them; edit the files with sed, without printing.
+- The owner's config.yaml and secrets.yaml hold real values (the VIN, the ntfy topic, Wi-Fi, the API key), and git ignores them. Never print them, the output of `esphome config` on any config that includes this folder's device.yaml (its `!secret` reads the secrets.yaml next to it first, even from a config elsewhere) or the generated main.cpp, which has the Wi-Fi password and API key in plain text because the firmware needs them; edit the files with sed, without printing.
 - Secrets stay in secrets.yaml, read with `!secret`: ESPHome masks only those in `esphome config` and in the settings echoed in main.cpp's comments. Moved into settings, they leak into both, which once put them in a chat.
 - The owner's private repository, where this project started, has those values in its history: never make it public or push its history anywhere public. The public repository started from a fresh history.
 - Deploy with `esphome run config.yaml --device <board IP> --no-logs`. Read Ready by, Ready by once and Charging mode before and after: they should match. Uptime starts again from 0, and Prices until comes back within about 10 s.
@@ -27,7 +27,7 @@ It charges the owner's car every night.
 ## How users get it
 
 - Users' config.yaml loads device.yaml and the charging component from a release tag on GitHub; the owner's points at this folder instead (`source: .` for the component, `!include device.yaml`). A change to device.yaml reaches users only with a release.
-- In device.yaml, a relative path that's missing next to the user's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the user's folder: that's why the component's source is in config.yaml, not in device.yaml.
+- In device.yaml, a relative path that's missing next to the user's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the user's folder: that's why the component's source is in config.yaml, not in device.yaml. It's also why users download only config.example.yaml and secrets.example.yaml, attached to each release: a web/ folder next to their config.yaml would win over the release's page.
 
 ## Settled; don't propose again
 
