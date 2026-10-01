@@ -22,6 +22,10 @@ jobs:
             feat) label=enhancement ;;
             docs) label=documentation ;;
             build | chore | ci | perf | refactor | revert | test) label=maintenance ;;
-            *) exit 0 ;;
+            *) label= ;;
           esac
-          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label "$label"
+          # A retitled pull request loses the type label it had, so the notes follow the title.
+          remove=$(printf '%s\n' bug enhancement documentation maintenance | grep -v -x "${label:-none}" | paste -s -d , -)
+          set -- --remove-label "$remove"
+          [ -n "$label" ] && set -- "$@" --add-label "$label"
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" "$@"
