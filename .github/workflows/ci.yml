@@ -31,12 +31,16 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
       - run: uvx pre-commit run --all-files --show-diff-on-failure
-      - name: config.example.yaml asks for the version in device.yaml
+      - name: The versions agree, in config.example.yaml, device.yaml and ci.yml
         run: |
           version=$(yq '.esphome.project.version' device.yaml)
           template=$(yq '.substitutions.version' config.example.yaml)
           if [ "$template" != "v$version" ]; then
             echo "::error file=config.example.yaml::version is $template, but device.yaml is at $version: make it v$version"
+            exit 1
+          fi
+          if [ "$(yq '.esphome.min_version' device.yaml)" != "$ESPHOME_VERSION" ]; then
+            echo "::error file=device.yaml::min_version differs from ESPHOME_VERSION in ci.yml ($ESPHOME_VERSION)"
             exit 1
           fi
 
@@ -98,7 +102,7 @@ jobs:
         run: |
           user=$(mktemp -d)
           cp config.example.yaml secrets.yaml "$user"
-          uvx "esphome@$ESPHOME_VERSION" -s version "$COMMIT" compile "$user/config.example.yaml"
+          uvx "esphome@$ESPHOME_VERSION" -s version "$COMMIT" -s tesla_vin 5YJ3E1EA0KF000000 compile "$user/config.example.yaml"
 
   release:
     name: Release the version in device.yaml

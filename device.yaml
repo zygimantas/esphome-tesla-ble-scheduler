@@ -24,6 +24,7 @@ esp32_ble_tracker:
 esphome:
   includes:
     - <vin_utils.h>
+  min_version: 2026.9.0
   name: tesla
   project:
     name: zygimantas.esphome-tesla-ble-scheduler
