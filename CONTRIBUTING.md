@@ -8,7 +8,7 @@
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package. The time zone is the building computer's; when building in a container, add `timezone:` to the clock with `id: sntp_time` under `time:` in your config.
 
-In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, and `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant.
+In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down.
 
 ## Branching
 
