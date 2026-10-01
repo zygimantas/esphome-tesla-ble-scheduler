@@ -51,7 +51,7 @@ const PAGE = `
 <main>
   <section class="card">
     <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
-    <div class="row"><span>Status</span><strong id="status">Connecting…</strong></div>
+    <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
   </section>
 
   <section id="target-card" class="card">
@@ -131,7 +131,7 @@ function render() {
   // The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece).
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
-  $("status").textContent = live === false ? "No connection" : (text(E.status) || "Connecting…") + power;
+  $("status").textContent = live === false ? "No connection" : (text(E.status) || "Connecting …") + power;
   renderPlan(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
@@ -177,7 +177,6 @@ function renderLimit() {
 // Sends a changed charge limit to the car; false only if sending failed.
 async function sendLimit() {
   const limit = draft.limit;
-  draft.limit = null;
   if (limit == null || limit === value(E.limit)) return true;
   pending.limit = { value: limit, until: Date.now() + 20000 };
   if (await post(E.limit, "set", limit)) return true;
@@ -291,7 +290,6 @@ function renderWindows() {
 async function createPlan() {
   const current = readyBy();
   let deadline = draft.deadline ?? current.deadline;
-  draft.deadline = null;
   if (deadline == null) return;
   const time = hhmm(deadline);
   if (deadline <= Date.now()) deadline = nextAt(time);
@@ -310,7 +308,6 @@ async function createPlan() {
 
 // Start charging now: charges at once to the limit shown (sending it if changed); Ready by doesn't apply.
 async function chargeNow() {
-  draft.deadline = null;
   if ((await sendLimit()) && (await post(E.chargeNow, "press"))) {
     expectMode("now");
     toast("Charging now until you unplug");
@@ -334,21 +331,19 @@ function connect() {
   events = new EventSource("/events");
   events.onopen = () => setLive(true);
   events.onerror = () => setLive(false);
-  events.addEventListener("ping", () => setLive(true));
   events.addEventListener("state", (e) => {
-    try {
-      const data = JSON.parse(e.data);
-      states[data.id] = { ...states[data.id], ...data }; // updates leave out details sent with the first one
-      scheduleRender();
-    } catch {
-      // not an entity update
-    }
+    const data = JSON.parse(e.data);
+    states[data.id] = data;
+    scheduleRender();
   });
 }
 
-// iOS suspends pages in the background; reconnect when the page comes back.
+// iOS suspends pages in the background, and the board asks browsers to wait 30 s before reconnecting: reconnect
+// at once when the page comes back.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && events?.readyState === EventSource.CLOSED) connect();
+  if (document.hidden || !events || events.readyState === EventSource.OPEN) return;
+  events.close();
+  connect();
 });
 
 function setLive(on) {
@@ -464,7 +459,7 @@ function bind() {
     "Pairing started: tap your key card",
     "Pair a new key? Sit in the car and tap your key card on the console when asked.",
   );
-  confirmPress("restart", E.restart, "Restarting…", "Restart the board?");
+  confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
 }
 
 // Last, so every declaration above is initialised before the page starts.
