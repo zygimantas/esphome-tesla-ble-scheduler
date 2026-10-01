@@ -53,7 +53,7 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `grid` | Your grid fees (see [Grid fees](#grid-fees)). |
-| `nordpool: area` | Your Nord Pool price area, such as `LT`, `LV`, `EE`, `FI`, `SE3`, `NO1` or `DK1`. |
+| `nordpool: area` | Your Nord Pool price area: `LT`, `LV`, `EE`, `FI`, `SE1` to `SE4`, `NO1` to `NO5`, `DK1`, `DK2`, or `AT`, `BE`, `BG`, `FR`, `GER`, `HR`, `NL`, `PL`. |
 | `nordpool: vat` | The VAT added to Nord Pool prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
