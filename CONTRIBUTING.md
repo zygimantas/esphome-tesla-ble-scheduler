@@ -6,7 +6,7 @@
 
 `device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and grid fees when you build. `web/` holds the page, and `test/` the unit tests, the mutation test and the simulation.
 
-A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package. The time zone is the building computer's; when building in a container, add `timezone:` to the clock with `id: sntp_time` under `time:` in your config.
+A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
 In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down.
 

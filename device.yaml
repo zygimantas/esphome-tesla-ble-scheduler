@@ -70,6 +70,7 @@ text_sensor:
 time:
   - id: sntp_time
     platform: sntp
+    timezone: ${timezone}
 
 web_server:
   css_include: web/web_ui.css

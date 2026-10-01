@@ -60,6 +60,7 @@ Your settings in `config.yaml`:
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
+| `timezone` | The time zone the car lives in, like `Europe/Vilnius`, `Europe/Helsinki` or `Europe/Oslo`. |
 | `version` | The release the board runs, like `v0.1.0`. |
 
 After a change, run `esphome run config.yaml` again and choose the board's network address: it updates over Wi-Fi. If a setting is wrong, ESPHome stops and says what.
@@ -91,7 +92,7 @@ The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, s
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The plan's times are an hour or two off**: the board takes its time zone from the computer that installed it. Install from a computer set to your time zone.
+- **The plan's times are an hour or two off**: check `timezone` in `config.yaml`.
 - **ESPHome warns about the web_server OTA platform**: that's expected. The page accepts updates only on the board's backup Wi-Fi.
 
 ## Development
