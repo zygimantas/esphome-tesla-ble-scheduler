@@ -629,6 +629,15 @@ static void test_reads_the_charging_state() {
     CHECK_STR(controller.tick(car.state(TROUGH + 7 * 60), Settings()).mode, "none");
   }
 
+  // "Unknown" says nothing about charging: in a planned window, no start goes out while the car charges.
+  const FakeTesla in_window = plugged_in();
+  Controller planned = with_prices();
+  planned.tick(in_window.state(TROUGH), Settings());
+  CarState unknown_reading = in_window.state(TROUGH + 5 * 60);
+  unknown_reading.charging_state = "Unknown";
+  unknown_reading.plugged = false;
+  CHECK(planned.tick(unknown_reading, Settings()).command == Command::NONE);
+
   // Charging before the plug state is known, after a restart, is not a start from the car either.
   CarState waking = plugged_in(false).state(SEP24_1700Z);
   waking.plugged.reset();
@@ -676,10 +685,11 @@ static void test_tells_its_own_starts_from_the_cars() {
   CHECK_STR(controller.tick(car.state(SEP24_1700Z + 200), Settings()).mode, "now");
 
   // A higher limit resumes a finished charge by itself: within 3 minutes, that's the car's own start too.
-  const auto mode_when_resumed_after = [](int64_t seconds) {
+  // Below the old limit nothing resumes, so a start is the car's or the app's.
+  const auto mode_when_resumed_after = [](int64_t seconds, float soc = 80) {
     Controller resumed = with_prices();
     FakeTesla full = plugged_in(false);
-    full.soc = 80;
+    full.soc = soc;
     resumed.tick(full.state(SEP24_1700Z - HOUR), Settings());
     full.limit = 90;
     resumed.tick(full.state(SEP24_1700Z), Settings());
@@ -688,6 +698,7 @@ static void test_tells_its_own_starts_from_the_cars() {
   };
   CHECK_STR(mode_when_resumed_after(179), "plan");
   CHECK_STR(mode_when_resumed_after(180), "now");
+  CHECK_STR(mode_when_resumed_after(60, 79), "now");
 }
 
 static void test_charges_as_usual_without_prices() {
