@@ -601,7 +601,8 @@ class Controller {
     }
     if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
       notify_fallback_();
-    if (car.charging_state != "No Power")
+    const bool reported = !car.charging_state.empty() && car.charging_state != "Unknown";
+    if (reported && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
       no_power_asked_ = false;
     // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
     // charges as soon as power comes, and another every 10 minutes in case its request lapsed.
@@ -759,6 +760,7 @@ class Controller {
   void allow_command_() {
     last_command_at_ = 0;
     commands_this_plan_ = 0;
+    no_power_asked_at_ = 0;  // a button asks again at once, also while the charger has no power
   }
 
   // At most one wake-up every 10 minutes.
