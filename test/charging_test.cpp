@@ -627,6 +627,23 @@ static void test_start_from_the_car_holds_until_unplugged() {
   REQUIRE(!run.commands.empty());
   CHECK(run.commands.back().second == Command::STOP_CHARGING);
   CHECK(run.commands.back().first >= SEP24_1700Z + 2 * HOUR + 10 * 60);  // planning again after re-plugging
+  // The phone hears of the start at once, then of the plan after the re-plugging.
+  REQUIRE(run.messages.size() == 2);
+  CHECK(run.messages[0].first == SEP24_1700Z + HOUR);
+  CHECK_STR(run.messages[0].second.message,
+            "Started from the car or the Tesla app: charging to 80% at any price until you unplug");
+  CHECK(run.messages[1].first > SEP24_1700Z + 2 * HOUR + 10 * 60);
+
+  // Once per hold: a stop and a start in between send nothing more.
+  Controller held = with_prices();
+  FakeTesla again = plugged_in(false);
+  held.tick(again.state(SEP24_1700Z), Settings());
+  again.charging = true;
+  CHECK(held.tick(again.state(SEP24_1700Z + 5 * 60), Settings()).notification.has_value());
+  again.charging = false;
+  held.tick(again.state(SEP24_1700Z + 10 * 60), Settings());
+  again.charging = true;
+  CHECK(!held.tick(again.state(SEP24_1700Z + 15 * 60), Settings()).notification.has_value());
 
   // In a planned window it stays the plan's: here the car ignores the three starts, then starts by itself.
   Controller planned = with_prices();
@@ -634,7 +651,9 @@ static void test_start_from_the_car_holds_until_unplugged() {
   for (int64_t now = TROUGH - 10 * 60; now < TROUGH + 10 * 60; now += 30)
     planned.tick(stopped.state(now), Settings());
   stopped.charging = true;
-  CHECK_STR(planned.tick(stopped.state(TROUGH + 10 * 60), Settings()).mode, "plan");
+  const Decision in_window = planned.tick(stopped.state(TROUGH + 10 * 60), Settings());
+  CHECK_STR(in_window.mode, "plan");
+  CHECK(!in_window.notification.has_value());  // and no message about it
 
   // So it does while the battery level is unknown, and the plan stops it once it's known.
   Controller reading = with_prices();
@@ -642,7 +661,9 @@ static void test_start_from_the_car_holds_until_unplugged() {
   unknown.battery_known = false;
   reading.tick(unknown.state(SEP24_1700Z), Settings());
   unknown.charging = true;
-  CHECK_STR(reading.tick(unknown.state(SEP24_1700Z + 5 * 60), Settings()).mode, "wait");
+  const Decision waiting = reading.tick(unknown.state(SEP24_1700Z + 5 * 60), Settings());
+  CHECK_STR(waiting.mode, "wait");
+  CHECK(!waiting.notification.has_value());
   unknown.battery_known = true;
   CHECK(reading.tick(unknown.state(SEP24_1700Z + 6 * 60), Settings()).command == Command::STOP_CHARGING);
 }
