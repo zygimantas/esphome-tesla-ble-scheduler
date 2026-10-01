@@ -455,7 +455,8 @@ struct Decision {
   // no clock, plug state, battery level or prices).
   std::string mode;
   std::optional<Notification> notification;  // once per plug-in, when its plan has settled, and once more
-                                             // when the board falls back to charging at any price
+                                             // when the board falls back to charging at any price or a
+                                             // start from the car takes over
 };
 
 class Controller {
@@ -634,6 +635,7 @@ class Controller {
         hold_ = Hold::PLAN;
         battery_unknown_since_ = 0;
         notify_pending_ = false;
+        notify_car_start_ = false;
       }
     }
     if (plugged.has_value())
@@ -647,8 +649,10 @@ class Controller {
       // Stop charging, that's the app's start).
       const bool auto_start = now - plugged_since_ < 3 * 60 || (hold_ != Hold::NONE && now - limit_raised_at_ < 3 * 60);
       const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start;
-      if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_plan_()))
-        hold_ = Hold::NOW;  // from the car or the Tesla app: leave it alone until unplugged
+      if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_plan_())) {
+        notify_car_start_ = hold_ != Hold::NOW;  // once per hold
+        hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
+      }
       charging_ = charging;
       complete_ = car.charging_state == "Complete";
     }
@@ -674,8 +678,17 @@ class Controller {
   }
 
   // After a plug-in, one message once its plan has settled: the battery levels, deadline, average price
-  // and window count, why nothing was bought, or else the status.
+  // and window count, why nothing was bought, or else the status. A start from the car or the Tesla app
+  // outside the plan sends one at once, as the board then charges at any price.
   void notify_(int64_t now, const Settings &settings, Decision &d) {
+    if (notify_car_start_) {
+      notify_car_start_ = false;
+      Notification &n = d.notification.emplace();
+      n.title = "Tesla charging";
+      n.message = "Started from the car or the Tesla app: charging to " + std::to_string(std::lround(limit_)) +
+                  "% at any price until you unplug";
+      return;
+    }
     if (!notify_pending_)
       return;
     if (hold_ == Hold::NONE) {  // you've already stopped it from the page
@@ -767,6 +780,7 @@ class Controller {
   bool replan_ = true;
   bool notify_pending_ = false;
   bool fallback_told_ = false;
+  bool notify_car_start_ = false;
   bool plug_state_seen_ = false;
   int64_t planned_slot_ = -1;
   int64_t plugged_since_ = 0;
