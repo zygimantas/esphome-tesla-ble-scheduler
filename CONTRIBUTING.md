@@ -26,8 +26,9 @@ CI runs these on every pull request and every push to `main` (see `.github/workf
 uvx pre-commit run --all-files
 # Unit tests, with CI's flags and ArduinoJson (ARDUINOJSON_VERSION in ci.yml) on the include path
 g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src test/charging_test.cpp -o charging_test && ./charging_test
-# Static analysis with the checks in .clang-tidy (on macOS, add -isysroot $(xcrun --show-sdk-path))
-uvx clang-tidy test/charging_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src
+# Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
+# -isysroot $(xcrun --show-sdk-path)
+uvx "clang-tidy==22.1.8" test/charging_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src
 # The board's logic on your computer, with a simulated Tesla; CHEAP_NOW=1 START_STOPPED=1 tries the start path
 esphome run test/simulation.yaml
 # The firmware, from your config.yaml pointed at this folder (see The code, above)
@@ -88,4 +89,4 @@ chore(grid): update the ESO fees for 2027
 
 ## Releases
 
-Releases are what users install, numbered vMAJOR.MINOR.PATCH: a new major number when users must edit their settings files, a new minor one for new behavior and a new patch one for fixes. To release, set `version` under `project:` in `device.yaml` and `version` in `config.example.yaml`, and merge that as `chore(board): release v0.2.0`: once CI passes on `main`, it tags the merge and publishes the release with `config.example.yaml` and `secrets.example.yaml`, which users download, and notes listing the merged pull requests. For a new major number, add to the notes what users must change in their settings files. Users get it when they change their `version`.
+Releases are what users install, numbered vMAJOR.MINOR.PATCH: a new major number when users must edit their settings files, a new minor one for new behavior and a new patch one for fixes. To release, set `version` under `project:` in `device.yaml` and `version` in `config.example.yaml`, and merge that as `chore(board): release v0.2.0`: once CI passes on `main`, it tags the merge and publishes the release with `config.example.yaml` and `secrets.example.yaml`, which users download, and notes listing the merged pull requests. Add to the notes anything users must do, such as settings to change for a new major number. Users get it when they change their `version`.

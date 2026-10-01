@@ -37,6 +37,7 @@ It charges the owner's car every night.
 - No charging the part above 80% late, just before Ready by.
 - No limit on the number of windows.
 - No guessed prices: a plan uses only published quarter-hours and waits for the rest.
+- No ranking slots by the fraction the car would use of them: that pushes the partly used slot and the spare one to the dear edge of the trough instead of keeping them in it.
 
 Parked for later: a per-start penalty, so the planner splits charging only when the saving beats a pause (about 2 ct), and a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided).
 

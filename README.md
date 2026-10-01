@@ -16,7 +16,7 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 
 ## Setup
 
-1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux with Python, `pip install esphome`.
+1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux, install [Git](https://git-scm.com) and then ESPHome as its [install guide](https://esphome.io/guides/installing_esphome) says.
 2. **Download the settings files**: download `config.example.yaml` and `secrets.example.yaml` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) into a new folder.
 3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, any password for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/).
 4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
@@ -83,6 +83,7 @@ ESO's 2026 household plans, in EUR/kWh with VAT. One zone has the same letter ev
 - **The page doesn't open**: your phone must be on the same Wi-Fi. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
+- **The plan's times are an hour or two off**: the board takes its time zone from the computer that installed it. Install from a computer set to your time zone.
 - **ESPHome warns about the web_server OTA platform**: that's expected. The page accepts updates only on the board's backup Wi-Fi.
 
 ## Development
