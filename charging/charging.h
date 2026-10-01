@@ -683,10 +683,13 @@ class Controller {
   void notify_(int64_t now, const Settings &settings, Decision &d) {
     if (notify_car_start_) {
       notify_car_start_ = false;
+      notify_pending_ = false;  // a plug-in message still pending would only repeat this
       Notification &n = d.notification.emplace();
       n.title = "Tesla charging";
-      n.message = "Started from the car or the Tesla app: charging to " + std::to_string(std::lround(limit_)) +
-                  "% at any price until you unplug";
+      n.message = "Started from the car or the Tesla app: charging";
+      if (!std::isnan(limit_))
+        n.message += " to " + std::to_string(std::lround(limit_)) + "%";
+      n.message += " at any price until you unplug";
       return;
     }
     if (!notify_pending_)
