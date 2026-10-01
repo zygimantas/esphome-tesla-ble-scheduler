@@ -108,6 +108,7 @@ void ChargingComponent::setup() {
     this->limit_->add_on_state_callback([this](float value) {
       if (value != this->last_limit_) {
         this->last_limit_ = value;
+        this->unsent_.reset();  // a message about the old plan isn't true any more
         this->tick_soon_();
       }
     });
@@ -158,6 +159,8 @@ void ChargingComponent::update() {
     this->unsent_since_ = car.now;
     this->message_tried_at_ = 0;
   }
+  if (d.status == "Unplugged")  // whatever the message said is over
+    this->unsent_.reset();
   this->send_unsent_(car.now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
     ESP_LOGI(TAG, "Start charging (%s)", d.status.c_str());
@@ -194,12 +197,15 @@ void ChargingComponent::dump_config() {
   LOG_UPDATE_INTERVAL(this);
 }
 
+// A new Ready by, or a button: the message about the old plan, if still unsent, isn't true any more.
 void ChargingComponent::replan() {
+  this->unsent_.reset();
   this->controller_.replan();
   this->tick_soon_();
 }
 
 void ChargingComponent::press(Action action) {
+  this->unsent_.reset();
   switch (action) {
     case Action::CREATE_PLAN:
       this->controller_.create_plan();
