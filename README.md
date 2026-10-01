@@ -6,7 +6,7 @@ Nord Pool electricity changes price every quarter-hour, and the cheapest hours o
 
 ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
 
-## What you need
+## Prerequisites
 
 - A Tesla Model 3, Model Y, Cybertruck, or Model S/X from 2021 on.
 - An ESP32-S3-DevKitC-1 (N16R8) board, a USB-C cable and a USB phone charger. The board goes within Bluetooth range of the car and needs your Wi-Fi.
