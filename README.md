@@ -14,7 +14,26 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 - Electricity priced by the Nord Pool day-ahead market, such as in the Baltics or the Nordics.
 - A computer to install and update the board.
 
-## Setup
+## AI assisted setup
+
+A coding agent on your computer, such as Claude Code or Codex, can do the manual setup below for you. Connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, start the agent in a new, empty folder, and give it this prompt:
+
+```text
+Set up a Tesla charging board for me by following the manual setup in the README of
+https://github.com/zygimantas/esphome-tesla-ble-scheduler. The board, an ESP32-S3-DevKitC-1, is
+connected to this computer by USB, and this folder is for its files. Install what is missing first.
+Download the two files the README names from the latest release, then ask me in one message for
+every setting and secret they need, except the API key, which you generate yourself. Fill in the
+files without ever showing my Wi-Fi password, the key or the VIN back to me. Build and install the
+firmware with esphome run config.yaml --device <the board's USB port> --no-logs, since the port prompt
+and the log stream of a plain esphome run never return, and wait until the board answers at
+http://tesla.local. Then tell me exactly what to do in the car to pair it and what to turn off in the
+Tesla app.
+```
+
+Answer its questions, then do what it tells you to do at the car.
+
+## Manual setup
 
 1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux, install [Git](https://git-scm.com) and then ESPHome as its [install guide](https://esphome.io/guides/installing_esphome) says.
 2. **Download the settings files**: download `config.example.yaml` and `secrets.example.yaml` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) into a new folder.
