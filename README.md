@@ -1,6 +1,10 @@
 # ESPHome Tesla BLE Scheduler
 
-Charges your Tesla at home in the cheapest hours of the Nord Pool electricity market. A small board next to the car plans the charging and starts and stops it over Bluetooth. You see and change the plan on your phone. No Home Assistant, server or Tesla account needed.
+## What problem it solves
+
+Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.
+
+ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so it can't unlock or drive the car.
 
 ## What you need
 
