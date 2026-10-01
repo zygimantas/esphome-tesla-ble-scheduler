@@ -96,7 +96,8 @@ class ChargingComponent : public PollingComponent {
  protected:
   void tick_soon_();
   void fetch_prices_(int64_t now);
-  void send_message_(const Notification &message);
+  void send_unsent_(int64_t now);
+  bool send_message_(const Notification &message);
 
   Controller controller_;
   Settings settings_;
@@ -104,7 +105,10 @@ class ChargingComponent : public PollingComponent {
   http_request::HttpRequestComponent *http_{nullptr};
   const char *area_{""};
   const char *ntfy_server_{""};
-  const char *ntfy_topic_{""};  // empty: no phone messages
+  const char *ntfy_topic_{""};          // empty: no phone messages
+  std::optional<Notification> unsent_;  // the last message until ntfy has taken it
+  int64_t unsent_since_{0};
+  int64_t message_tried_at_{0};
 
   ReadyBy *ready_by_{nullptr};
   ReadyByOnce *ready_by_once_{nullptr};
