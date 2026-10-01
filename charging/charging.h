@@ -662,8 +662,6 @@ class Controller {
     commands_this_plan_ = 0;
   }
 
-  // After a plug-in, one message once its plan has settled: the battery levels, deadline, average price
-  // and window count, why nothing was bought, or else the status.
   // Charging at any price from now on, for lack of prices or a battery level: the phone hears it once per
   // plug state. When it comes first, the plug-in message says it.
   void notify_fallback_() {
@@ -672,6 +670,8 @@ class Controller {
     fallback_told_ = true;
   }
 
+  // After a plug-in, one message once its plan has settled: the battery levels, deadline, average price
+  // and window count, why nothing was bought, or else the status.
   void notify_(int64_t now, const Settings &settings, Decision &d) {
     if (!notify_pending_)
       return;
