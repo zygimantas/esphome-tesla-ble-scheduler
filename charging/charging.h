@@ -454,7 +454,8 @@ struct Decision {
   // "plan", "now" (charging regardless of price), "none" (no plan) or "wait" (no plan possible yet:
   // no clock, plug state, battery level or prices).
   std::string mode;
-  std::optional<Notification> notification;  // once per plug-in, when its plan has settled
+  std::optional<Notification> notification;  // once per plug-in, when its plan has settled, and once more
+                                             // when the board falls back to charging at any price
 };
 
 class Controller {
@@ -554,6 +555,7 @@ class Controller {
     }
 
     bool want_charge = true;  // as usual, without a plan
+    bool fallback = false;    // at any price, for lack of prices or a battery level
     if (hold_ == Hold::NOW) {
       d.status = "Charging now";
     } else if (hold_ == Hold::NONE) {
@@ -570,6 +572,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (battery unknown)";
+      fallback = true;
     } else if (!plan_.valid) {
       if (getting_prices_(now)) {
         d.status = "Getting prices";
@@ -577,6 +580,7 @@ class Controller {
         return d;
       }
       d.status = "Charging (no prices)";
+      fallback = true;
     } else {
       want_charge = in_plan_();
       // A plan made in a window's last 2 minutes: not worth a start that the next quarter-hour's plan
@@ -591,6 +595,8 @@ class Controller {
       d.status = "Charged";
       return d;
     }
+    if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
+      notify_fallback_();
     d.command = command_(want_charge, charging, now);
     return d;
   }
@@ -616,6 +622,7 @@ class Controller {
     if (plugged.has_value() && *plugged != plugged_) {
       plugged_ = *plugged;
       replan_ = true;
+      fallback_told_ = false;
       if (plugged_) {
         plugged_since_ = now;
         // The plug state first seen after a restart is not a plug-in: no message for it, and what the
@@ -656,6 +663,14 @@ class Controller {
     planned_slot_ = floor_to_slot(now);
     replan_ = false;
     commands_this_plan_ = 0;
+  }
+
+  // Charging at any price from now on, for lack of prices or a battery level: the phone hears it once per
+  // plug state. When it comes first, the plug-in message says it.
+  void notify_fallback_() {
+    if (!fallback_told_)
+      notify_pending_ = true;
+    fallback_told_ = true;
   }
 
   // After a plug-in, one message once its plan has settled: the battery levels, deadline, average price
@@ -751,6 +766,7 @@ class Controller {
   Hold hold_ = Hold::PLAN;
   bool replan_ = true;
   bool notify_pending_ = false;
+  bool fallback_told_ = false;
   bool plug_state_seen_ = false;
   int64_t planned_slot_ = -1;
   int64_t plugged_since_ = 0;
