@@ -1,0 +1,36 @@
+body:
+  - attributes:
+      description: What the board or the page did, and what you expected instead.
+      label: What happened
+    id: what
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: The Version row in the Board section of the page, like 0.1.1.
+      label: Release
+      placeholder: "0.1.1"
+    id: release
+    type: input
+    validations:
+      required: true
+  - attributes:
+      description: Your car, your home charger, and your Nord Pool area. Never your VIN, Wi-Fi details, key or ntfy topic.
+      label: Car, charger and area
+      placeholder: Model 3 2022, Wallbox Pulsar Max, LT
+    id: setup
+    type: input
+  - attributes:
+      description: The Status row on the page when it happened, and the plan if there was one.
+      label: What the page showed
+    id: page
+    type: textarea
+  - attributes:
+      description: Lines from `esphome logs config.yaml` around the problem, with the `[charging]` ones in particular. Check them for your Wi-Fi name before pasting.
+      label: Log
+      render: text
+    id: log
+    type: textarea
+description: Something the board or the page does wrong
+labels: [bug]
+name: Bug report

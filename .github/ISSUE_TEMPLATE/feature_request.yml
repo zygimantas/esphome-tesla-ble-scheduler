@@ -1,0 +1,23 @@
+body:
+  - attributes:
+      description: What is wrong or missing today, and when it bites.
+      label: The problem
+    id: problem
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: What you would change, as concretely as you can. Small and specific beats broad.
+      label: The proposal
+    id: proposal
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: Who gains what. A few things are decided against and listed under Settled in AGENTS.md; check it first.
+      label: Who it helps
+    id: value
+    type: textarea
+description: An improvement to the board, the page or the docs
+labels: [enhancement]
+name: Feature request
