@@ -245,13 +245,16 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       const int stored = this->controller_.prices.add_nord_pool(body.data(), body.size(), this->area_);
       if (stored < 0) {
         ESP_LOGW(TAG, "Nord Pool: could not parse %u bytes (cut off?)", static_cast<unsigned>(body.size()));
+      } else if (stored == 0) {
+        ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check nordpool: area", this->area_);
       } else {
         ESP_LOGI(TAG, "Nord Pool: stored %d quarter-hours", stored);
-      }
-      if (stored > 0)
         this->controller_.replan();
+      }
     } else if (response->status_code != http_request::HTTP_STATUS_NO_CONTENT) {
       ESP_LOGW(TAG, "Nord Pool answered HTTP %d", response->status_code);
+    } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
+      ESP_LOGW(TAG, "Nord Pool has no prices for %s today: check nordpool: area", this->area_);
     }
     response->end();
   }
