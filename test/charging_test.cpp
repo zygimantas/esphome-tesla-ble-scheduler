@@ -716,8 +716,26 @@ static void test_calendar_and_exceptions() {
   CHECK(uk(12, 1, 23 * 60 + 59) == 0.245f);
 }
 
+// Whether `name` is a rate name the install takes (_rate() in __init__.py): a word, not one YAML reads as true, false
+// or nothing. Any byte past ASCII counts as a letter, as UTF-8 letters like the ø of højlast need.
+static bool install_takes(const std::string &name) {
+  const auto letter = [](char c) { return std::isalpha(static_cast<unsigned char>(c)) || (c & 0x80); };
+  std::string lower;
+  for (char c : name)
+    lower += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  const bool word = !name.empty() && letter(name[0]) && std::all_of(name.begin(), name.end(), [&](char c) {
+    return letter(c) || std::isdigit(static_cast<unsigned char>(c)) || c == '-' || c == '_';
+  });
+  static const char *const NOT_NAMES[] = {"on", "off", "yes", "no", "true", "false", "null"};
+  return word && std::find(std::begin(NOT_NAMES), std::end(NOT_NAMES), lower) == std::end(NOT_NAMES);
+}
+
 static void test_price_lists_in_the_repository() {
-  // Each list reads on the board, alone and with its own currency, and uses all its rates.
+  CHECK(install_takes("night") && install_takes("p1") && install_takes("højlast") && install_takes("winter-peak"));
+  CHECK(!install_takes("") && !install_takes("1st") && !install_takes("Off") && !install_takes("a:b"));
+  // Each list reads on the board, alone and with its own currency, and uses all its rates. The install's own
+  // rules, in _read() and PRICE_LIST_SCHEMA in __init__.py, also take its rate names, an upper-case currency, and
+  // each top-level key once, which the board doesn't ask.
   int lists = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
     if (entry.path().extension() != ".yaml")
@@ -730,7 +748,16 @@ static void test_price_lists_in_the_repository() {
     Grid grid;
     CHECK_STR(name + read_grid(text.str(), list), name);
     CHECK_STR(name + make_grid(list, GridText(), list.currency, grid), name);
-    CHECK(list.currency.size() == 3);
+    CHECK(list.currency.size() == 3 &&
+          std::all_of(list.currency.begin(), list.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
+    for (const auto &[rate, price] : list.rates)
+      CHECK_STR(name + (install_takes(rate) ? "" : rate), name);
+    for (const char *key : {"calendar:", "clock:", "currency:", "exceptions:", "rates:"}) {
+      int found = 0;
+      for (size_t at = 0; (at = text.str().find(std::string("\n") + key, at)) != std::string::npos; at++)
+        found++;
+      CHECK_STR(name + (found + (text.str().rfind(key, 0) == 0) > 1 ? key : ""), name);
+    }
     std::string used;
     for (const auto &days : grid.weeks)
       for (const std::string &day : days)
