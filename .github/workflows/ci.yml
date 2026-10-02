@@ -100,6 +100,19 @@ jobs:
             timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log
           grep -F '][charging' simulation.log
           grep -q -F 'Start charging (Starting)' simulation.log
+      - name: Each price list, as the install checks it
+        run: |
+          for list in pricelists/*/*.yaml; do
+            name=${list#pricelists/}
+            currency=$(sed -n 's/^currency: //p' "$list")
+            yq ".charging.grid = {\"pricelist\": \"${name%.yaml}\"} | del(.charging.market) | .charging.currency = \"$currency\"" \
+              test/simulation.yaml > test/pricelist.yaml
+            if ! uvx "esphome@$ESPHOME_VERSION" config test/pricelist.yaml > pricelist.log 2>&1; then
+              cat pricelist.log
+              echo "::error file=$list::the install rejects ${name%.yaml}"
+              exit 1
+            fi
+          done
       - name: Firmware, as users build it, from this commit on GitHub
         env:
           COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}

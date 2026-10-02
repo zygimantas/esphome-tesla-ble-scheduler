@@ -96,7 +96,7 @@ A price list is a grid operator's plan in `pricelists/`, in a folder for its cou
 - **The format** is that of `grid:` in [Grid fees](docs/grid-fees.md), with the list's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, and no quotes.
 - **A comment at the top** says what the list is, with a link to the operator's prices, and who maintains it: `# Maintained by @your-github-name`.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their list from `main` every day, so merging publishes it, without a release.
-- **CI reads every list as the board does,** in the unit tests, and the install checks the list it uses.
+- **CI checks every list** as the board reads it, in the unit tests, and as the install checks it.
 
 ## Releases
 
