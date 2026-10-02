@@ -96,6 +96,8 @@ void ChargingComponent::setup() {
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("charging_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
+  if (this->area_[0] == '\0')
+    this->controller_.without_market_prices();
   // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
   this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("charging_savings"));
   this->savings_pref_.load(&this->controller_.savings);
@@ -202,8 +204,8 @@ void ChargingComponent::dump_config() {
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_, this->settings_.currency, this->settings_.capacity_kwh, this->settings_.charge_kw,
-                this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->area_[0] != '\0' ? this->area_ : "none, the grid fees are the prices", this->settings_.currency,
+                this->settings_.capacity_kwh, this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -270,7 +272,7 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       if (stored < 0) {
         ESP_LOGW(TAG, "Nord Pool: could not parse %u bytes (cut off?)", static_cast<unsigned>(body.size()));
       } else if (stored == 0) {
-        ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check prices: area", this->area_);
+        ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check grid: prices: area", this->area_);
       } else {
         ESP_LOGI(TAG, "Nord Pool: stored %d quarter-hours", stored);
         this->controller_.replan();
@@ -278,7 +280,7 @@ void ChargingComponent::fetch_prices_(int64_t now) {
     } else if (response->status_code != http_request::HTTP_STATUS_NO_CONTENT) {
       ESP_LOGW(TAG, "Nord Pool answered HTTP %d", response->status_code);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "Nord Pool has no prices for %s today: check prices: area", this->area_);
+      ESP_LOGW(TAG, "Nord Pool has no prices for %s today: check grid: prices: area", this->area_);
     }
     response->end();
   }

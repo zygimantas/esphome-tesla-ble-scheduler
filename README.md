@@ -64,12 +64,12 @@ Your settings in `config.yaml`:
 
 | Setting | What it is |
 |---|---|
-| `grid` | Your grid fees (see [Grid fees](#grid-fees)). |
+| `grid` | Your grid fees, and your prices (see [Grid fees](#grid-fees)). |
+| `grid: prices: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. |
+| `grid: prices: currency` | The currency of the prices and your grid fees: your area's own unless you set it, like `EUR` or `NOK`. Without an area, any currency, euro unless you set it. |
+| `grid: prices: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
-| `prices: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `SE1` to `SE4`. |
-| `prices: currency` | The currency of the prices and your grid fees: `EUR`, `SEK`, `NOK` or `DKK`. Your area's own unless you set it. |
-| `prices: vat` | The VAT added to the prices: `0.21` is 21%. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
@@ -99,6 +99,8 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 ## Grid fees
 
 The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, so the board compares what you really pay. It comes with ESO's 2026 Standartinis plan with four zones (Lithuania). [ESO plans](docs/eso.md) has ESO's other plans ready to paste, and [Grid fees](docs/grid-fees.md) explains the format for any other grid operator.
+
+With a fixed price, leave `prices:` out: nothing is downloaded, and each zone's fee becomes your whole price per kWh with VAT, the supplier's rate included. With one zone for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 

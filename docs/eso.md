@@ -1,6 +1,6 @@
 # ESO plans
 
-ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan and leave `prices:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
+ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan: each comes with Lithuania's market prices and 21% VAT. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
 
 The letters are `n` for night, `m` for morning, `d` for day and `e` for evening. [Grid fees](grid-fees.md) explains the format.
 
@@ -17,6 +17,9 @@ Standartinis:
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 Efektyvus:
@@ -28,6 +31,9 @@ Efektyvus:
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 Namai:
@@ -39,6 +45,9 @@ Namai:
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 ## Two zones
@@ -56,6 +65,9 @@ Standartinis:
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 Efektyvus:
@@ -69,6 +81,9 @@ Efektyvus:
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 Namai:
@@ -82,6 +97,9 @@ Namai:
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 ## Four zones
@@ -116,6 +134,9 @@ Standartinis (the plan in `config.example.yaml`):
       holiday: nnnnnnndddddddddddddddnn
       weekend: nnnnnnndddddddddddddddnn
       workday: nnnnnmmddddddddddeeeeenn
+    prices:
+      area: LT
+      vat: 0.21
 ```
 
 Efektyvus:
@@ -146,4 +167,7 @@ Efektyvus:
       holiday: nnnnnnndddddddddddddddnn
       weekend: nnnnnnndddddddddddddddnn
       workday: nnnnnmmddddddddddeeeeenn
+    prices:
+      area: LT
+      vat: 0.21
 ```

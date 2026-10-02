@@ -561,17 +561,20 @@ class Controller {
   void replan() { replan_ = true; }
   // Whether to download prices now, which counts as a try: every 5 minutes while there's no price for this
   // quarter-hour, else hourly until 12:45 CET and every 5 minutes from then, when Nord Pool publishes the
-  // next day, until tomorrow's are in. Not before the clock is set: 0 is never past a try.
+  // next day, until tomorrow's are in. Never without market prices, and not before the clock is set: 0 is never past a
+  // try.
   bool fetch_prices_due(int64_t now) {
     const int64_t until = prices.known_until(now);
     const int64_t cet_minute = floor_div(now + eu_offset(now, CET_STANDARD_OFFSET), 60) % 1440;
     const int64_t wait = until > now && cet_minute < 12 * 60 + 45 ? 60 * 60 : 5 * 60;
-    if (now - prices_tried_at_ < wait || until >= end_of_next_delivery_day(now))
+    if (!market_ || now - prices_tried_at_ < wait || until >= end_of_next_delivery_day(now))
       return false;
     prices_tried_at_ = now;
     return true;
   }
   const Plan &plan() const { return plan_; }
+  // Without market prices to download, every quarter-hour's spot price is 0: the grid fees are the whole price.
+  void without_market_prices() { market_ = false; }
   // The grid fees from config.yaml; until they're set, plans use spot prices only.
   void set_grid(const Grid &grid) {
     grid_ = grid;
@@ -602,6 +605,9 @@ class Controller {
     const int64_t now = car.now;
     if (first_tick_at_ == 0)
       first_tick_at_ = now;
+    if (!market_)  // as far ahead as Nord Pool's prices go, so the page offers the same times for Ready by
+      for (int64_t t = start_of_delivery_day(now); t < end_of_next_delivery_day(now); t += SLOT_SECONDS)
+        prices.set(t, 0.0f);
     const bool charging = observe_(car, now);
     count_(car, now, settings, d);
     prices.drop_before(start_of_delivery_day(now));  // after count_(), which may need the day before
@@ -980,6 +986,7 @@ class Controller {
   bool fallback_told_ = false;
   bool notify_car_start_ = false;
   bool plug_state_seen_ = false;
+  bool market_ = true;  // prices come from Nord Pool (see without_market_prices())
   int64_t planned_slot_ = -1;
   int64_t plugged_since_ = 0;
   int64_t limit_raised_at_ = 0;

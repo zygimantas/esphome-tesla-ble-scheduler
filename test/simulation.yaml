@@ -16,10 +16,10 @@ charging:
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      area: LT
+      vat: 0.21
   id: charging_id
-  prices:
-    area: LT
-    vat: 0.21
   time_id: sntp_time
   vin: 5YJ3E1EA0KF000000
 

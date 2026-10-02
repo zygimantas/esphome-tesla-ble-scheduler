@@ -36,9 +36,9 @@ CONF_WINTER = "winter"
 CONF_FROM = "from"
 CONF_TO = "to"
 
-# Where electricity is bought: a country's code, or the price area where a country has several. DE is Germany and
-# Luxembourg. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and prices are in euros unless
-# CURRENCIES has the country.
+# Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
+# area Germany and Luxembourg share. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and has
+# its prices in NORD_POOL_CURRENCIES, in euros unless CURRENCIES has the country.
 AREAS = [
     "AT",
     "BE",
@@ -51,6 +51,7 @@ AREAS = [
     "FR",
     "HR",
     "LT",
+    "LU",
     "LV",
     "NL",
     "NO1",
@@ -59,13 +60,15 @@ AREAS = [
     "NO4",
     "NO5",
     "PL",
+    "RO",
     "SE1",
     "SE2",
     "SE3",
     "SE4",
 ]
-NORD_POOL_AREAS = {"DE": "GER"}
-CURRENCIES = {"DK": "DKK", "NO": "NOK", "SE": "SEK"}
+NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
+NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
+CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 
 charging_ns = cg.esphome_ns.namespace("charging")
 ChargingComponent = charging_ns.class_("ChargingComponent", cg.PollingComponent)
@@ -116,9 +119,26 @@ def _vin(value):
     return value
 
 
-def _currency(config):
-    """The area's currency, unless set."""
+def _currency_code(value):
+    value = cv.string_strict(value).upper()
+    if not re.fullmatch(r"[A-Z]{3}", value):
+        raise cv.Invalid("must be a currency's three-letter code, like EUR")
+    return value
+
+
+def _prices(config):
+    """Market prices for an area, with VAT, in the area's currency unless set. Without an area there is nothing to
+    download: the grid fees are the whole price, VAT included, in euros unless set."""
+    if CONF_AREA not in config:
+        if CONF_VAT in config:
+            raise cv.Invalid("goes with area: without one, the grid fees are the whole price, VAT included", [CONF_VAT])
+        config.setdefault(CONF_CURRENCY, "EUR")
+        return config
+    if CONF_VAT not in config:
+        raise cv.Invalid("is needed with area: the VAT added to the market prices, like 0.21", [CONF_VAT])
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(config[CONF_AREA][:2], "EUR"))
+    if config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
+        raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
     return config
 
 
@@ -136,6 +156,17 @@ def _validate_grid(config):
         raise cv.Invalid(f'zone "{unused[0]}" isn\'t used in any hour', path=[CONF_FEES, unused[0]])
     return config
 
+
+PRICES_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.Optional(CONF_AREA): cv.one_of(*AREAS, upper=True),
+            cv.Optional(CONF_CURRENCY): _currency_code,
+            cv.Optional(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
+        }
+    ),
+    _prices,
+)
 
 GRID_SCHEMA = cv.All(
     cv.Schema(
@@ -162,6 +193,7 @@ GRID_SCHEMA = cv.All(
                 }
             ),
             cv.Required(CONF_FEES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
+            cv.Optional(CONF_PRICES, default={}): PRICES_SCHEMA,
         }
     ),
     _validate_grid,
@@ -174,16 +206,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
         cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
         cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
-        cv.Optional(CONF_NORDPOOL): cv.invalid("is called prices: now, and GER is DE"),
-        cv.Required(CONF_PRICES): cv.All(
-            cv.Schema(
-                {
-                    cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
-                    cv.Optional(CONF_CURRENCY): cv.one_of("DKK", "EUR", "NOK", "SEK", upper=True),
-                    cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
-                }
-            ),
-            _currency,
+        cv.Optional(CONF_NORDPOOL): cv.invalid(
+            "is called grid: prices: now. GER is DE, and Norway, Sweden, Denmark and Poland default to their own "
+            "currency: add currency: EUR to keep euros"
         ),
         cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
         cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
@@ -193,13 +218,13 @@ CONFIG_SCHEMA = cv.Schema(
 ).extend(cv.polling_component_schema("30s"))
 
 
-def _grid(config, vat):
+def _grid(config):
     hours = config[CONF_HOURS]
     holidays = config[CONF_HOLIDAYS]
     winter = hours.get(CONF_WINTER, {})
     return cg.StructInitializer(
         Grid,
-        ("vat", vat),
+        ("vat", config[CONF_PRICES].get(CONF_VAT, 0.0)),
         ("winter_clock", config[CONF_CLOCK] == "winter"),
         ("workday", hours[CONF_WORKDAY]),
         ("weekend", hours[CONF_WEEKEND]),
@@ -226,13 +251,14 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
-    prices = config[CONF_PRICES]
-    cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(prices[CONF_AREA], prices[CONF_AREA])))
+    prices = config[CONF_GRID][CONF_PRICES]
+    if CONF_AREA in prices:
+        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(prices[CONF_AREA], prices[CONF_AREA])))
     cg.add(var.set_currency(prices[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    cg.add(var.set_grid(_grid(config[CONF_GRID], prices[CONF_VAT])))
+    cg.add(var.set_grid(_grid(config[CONF_GRID])))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

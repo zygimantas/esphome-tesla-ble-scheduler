@@ -100,6 +100,18 @@ jobs:
             timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log
           grep -F '][charging' simulation.log
           grep -q -F 'Start charging (Starting)' simulation.log
+      - name: Price settings, as the board gets them
+        run: |
+          prices() {
+            sed "$1" test/simulation.yaml > test/prices.yaml
+            uvx "esphome@$ESPHOME_VERSION" compile --only-generate test/prices.yaml > /dev/null
+            grep -o -E 'set_(nord_pool_area|currency)\("[A-Z0-9]*"\)' test/.esphome/build/simulation/src/main.cpp |
+              paste -s -d ' ' -
+          }
+          test "$(prices 's/area: LT/area: LU/')" = 'set_nord_pool_area("GER") set_currency("EUR")'
+          test "$(prices 's/area: LT/area: no1/')" = 'set_nord_pool_area("NO1") set_currency("NOK")'
+          test "$(prices 's/area: LT/area: RO/')" = 'set_nord_pool_area("TEL") set_currency("RON")'
+          test "$(prices '/^    prices:/,/vat:/d')" = 'set_currency("EUR")'
       - name: Firmware, as users build it, from this commit on GitHub
         env:
           COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}

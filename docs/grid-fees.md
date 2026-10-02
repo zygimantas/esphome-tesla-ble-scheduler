@@ -8,7 +8,22 @@ The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, s
 - `clock: winter`: the plan's clock stays on winter time all year, as some plans do: the zone hours, and the days and dates that pick them. Leave it out when the plan follows the clock.
 - `winter` under `hours`: other zone hours for part of the year, between `from` and `to` as `MM-DD` (the range may cross New Year), for the `workday`, `weekend` or `holiday` you give; the others keep the year-round hours.
 
-The VAT on the price itself is `vat` under `prices:`, next to `area` (see Settings in the README).
+`prices` under `grid` says where the market prices come from: `area`, `vat` on the price itself, and `currency` (see Settings in the README).
+
+## A fixed price
+
+Leave `prices:` out, or keep only its `currency`: nothing is downloaded, and each zone's fee is your whole price per kWh, the supplier's rate and the grid fee together, with VAT. One price for every hour:
+
+```yaml
+  grid:
+    fees:
+      x: 0.24
+    hours:
+      weekend: xxxxxxxxxxxxxxxxxxxxxxxx
+      workday: xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+All hours then cost the same, so the board charges at once. With day and night prices, give each its zone, and the board charges in the cheap one.
 
 A plan with two zones, cheap at night and all weekend, on winter time all year:
 
