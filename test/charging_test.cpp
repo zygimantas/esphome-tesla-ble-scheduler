@@ -1570,7 +1570,7 @@ static CarState drawing(int64_t now, float kw, const char *state = "Charging") {
 
 // A plug-in the board sees: the car unplugged a minute before `car`, unlike the plug state it first reads after a
 // restart.
-static Decision plug_in(Controller &controller, CarState car) {
+static Decision plug_in(Controller &controller, const CarState &car) {
   CarState away = car;
   away.now -= 60;
   away.plugged = false;
