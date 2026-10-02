@@ -4,7 +4,7 @@ The board follows market prices where Nord Pool publishes the day-ahead prices o
 
 ## Supported
 
-| Country | `grid: prices: area` | `grid: prices: currency` | Good to know |
+| Country | `market: prices: area` | `currency` | Good to know |
 | --- | --- | --- | --- |
 | Austria | `AT` | `EUR` | |
 | Belgium | `BE` | `EUR` | Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
@@ -33,7 +33,7 @@ Some fees depend on your highest power instead, like Norway's capacity step. Unt
 
 ## A fixed price
 
-With a fixed price, or one that changes only with the hour of the day, leave `prices:` out: nothing is downloaded, and each zone's fee in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `prices:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
+With a fixed price, or one that changes only with the hour of the day, leave `market:` out: nothing is downloaded, and each zone's price in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `charging:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
 
 ## Not supported yet
 

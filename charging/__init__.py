@@ -18,7 +18,7 @@ AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
 CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
-CONF_NORDPOOL = "nordpool"
+CONF_MARKET = "market"
 CONF_PRICES = "prices"
 CONF_VAT = "vat"
 CONF_CURRENCY = "currency"
@@ -31,7 +31,6 @@ CONF_CLOCK = "clock"
 CONF_WORKDAY = "workday"
 CONF_WEEKEND = "weekend"
 CONF_HOLIDAY = "holiday"
-CONF_FEES = "fees"
 CONF_WINTER = "winter"
 CONF_FROM = "from"
 CONF_TO = "to"
@@ -126,18 +125,12 @@ def _currency_code(value):
     return value
 
 
-def _prices(config):
-    """Market prices for an area, with VAT, in the area's currency unless set. Without an area there is nothing to
-    download: the grid fees are the whole price, VAT included, in euros unless set."""
-    if CONF_AREA not in config:
-        if CONF_VAT in config:
-            raise cv.Invalid("goes with area: without one, the grid fees are the whole price, VAT included", [CONF_VAT])
-        config.setdefault(CONF_CURRENCY, "EUR")
-        return config
-    if CONF_VAT not in config:
-        raise cv.Invalid("is needed with area: the VAT added to the market prices, like 0.21", [CONF_VAT])
-    config.setdefault(CONF_CURRENCY, CURRENCIES.get(config[CONF_AREA][:2], "EUR"))
-    if config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
+def _currency(config):
+    """The market area's currency unless set, otherwise euros. Without a market, any currency."""
+    market = config.get(CONF_MARKET)
+    area = market[CONF_PRICES][CONF_AREA] if market else ""
+    config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
+    if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
         raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
     return config
 
@@ -150,23 +143,12 @@ def _validate_grid(config):
         days.append(CONF_HOLIDAY)
     winter = config[CONF_HOURS].get(CONF_WINTER, {})
     zones = set("".join(config[CONF_HOURS].get(day, "") + winter.get(day, "") for day in days))
-    if missing := sorted(zones - set(config[CONF_FEES])):
-        raise cv.Invalid(f'zone "{missing[0]}" needs a fee per kWh incl. VAT', path=[CONF_FEES])
-    if unused := sorted(set(config[CONF_FEES]) - zones):
-        raise cv.Invalid(f'zone "{unused[0]}" isn\'t used in any hour', path=[CONF_FEES, unused[0]])
+    if missing := sorted(zones - set(config[CONF_PRICES])):
+        raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_PRICES])
+    if unused := sorted(set(config[CONF_PRICES]) - zones):
+        raise cv.Invalid(f'zone "{unused[0]}" isn\'t used in any hour', path=[CONF_PRICES, unused[0]])
     return config
 
-
-PRICES_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.Optional(CONF_AREA): cv.one_of(*AREAS, upper=True),
-            cv.Optional(CONF_CURRENCY): _currency_code,
-            cv.Optional(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
-        }
-    ),
-    _prices,
-)
 
 GRID_SCHEMA = cv.All(
     cv.Schema(
@@ -192,44 +174,55 @@ GRID_SCHEMA = cv.All(
                     ),
                 }
             ),
-            cv.Required(CONF_FEES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
-            cv.Optional(CONF_PRICES, default={}): PRICES_SCHEMA,
+            cv.Required(CONF_PRICES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
         }
     ),
     _validate_grid,
 )
 
-CONFIG_SCHEMA = cv.Schema(
+MARKET_SCHEMA = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(ChargingComponent),
-        cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
-        cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
-        cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
-        cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
-        cv.Optional(CONF_NORDPOOL): cv.invalid(
-            "is called grid: prices: now. GER is DE, and Norway, Sweden, Denmark and Poland default to their own "
-            "currency: add currency: EUR to keep euros"
+        cv.Required(CONF_PRICES): cv.Schema(
+            {
+                cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
+                cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
+            }
         ),
-        cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
-        cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
-        cv.Required(CONF_VIN): _vin,
-        cv.Required(CONF_GRID): GRID_SCHEMA,
     }
-).extend(cv.polling_component_schema("30s"))
+)
+
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(ChargingComponent),
+            cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
+            cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
+            cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
+            cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
+            cv.Optional(CONF_CURRENCY): _currency_code,
+            cv.Optional(CONF_MARKET): MARKET_SCHEMA,
+            cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
+            cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
+            cv.Required(CONF_VIN): _vin,
+            cv.Required(CONF_GRID): GRID_SCHEMA,
+        }
+    ).extend(cv.polling_component_schema("30s")),
+    _currency,
+)
 
 
-def _grid(config):
+def _grid(config, vat):
     hours = config[CONF_HOURS]
     holidays = config[CONF_HOLIDAYS]
     winter = hours.get(CONF_WINTER, {})
     return cg.StructInitializer(
         Grid,
-        ("vat", config[CONF_PRICES].get(CONF_VAT, 0.0)),
+        ("vat", vat),
         ("winter_clock", config[CONF_CLOCK] == "winter"),
         ("workday", hours[CONF_WORKDAY]),
         ("weekend", hours[CONF_WEEKEND]),
         ("holiday", hours.get(CONF_HOLIDAY, "")),
-        ("fee", [config[CONF_FEES].get(zone, 0.0) for zone in ascii_lowercase]),
+        ("fee", [config[CONF_PRICES].get(zone, 0.0) for zone in ascii_lowercase]),
         ("holidays", [h for h in holidays if not isinstance(h, tuple)]),
         ("after_easter", [h[1] for h in holidays if isinstance(h, tuple)]),
         ("winter_from", winter.get(CONF_FROM, 0)),
@@ -251,14 +244,15 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
-    prices = config[CONF_GRID][CONF_PRICES]
-    if CONF_AREA in prices:
-        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(prices[CONF_AREA], prices[CONF_AREA])))
-    cg.add(var.set_currency(prices[CONF_CURRENCY]))
+    market = config.get(CONF_MARKET)
+    if market:
+        area = market[CONF_PRICES][CONF_AREA]
+        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(area, area)))
+    cg.add(var.set_currency(config[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    cg.add(var.set_grid(_grid(config[CONF_GRID])))
+    cg.add(var.set_grid(_grid(config[CONF_GRID], market[CONF_PRICES][CONF_VAT] if market else 0.0)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

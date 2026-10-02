@@ -1,10 +1,5 @@
 charging:
   grid:
-    fees:
-      n: 0.06292
-      m: 0.08349
-      d: 0.10406
-      e: 0.14641
     holidays:
       - 01-01
       - 02-16
@@ -24,6 +19,12 @@ charging:
       holiday:  nnnnnnndddddddddddddddnn
       weekend:  nnnnnnndddddddddddddddnn
       workday:  nnnnnmmddddddddddeeeeenn
+    prices:
+      n: 0.06292
+      m: 0.08349
+      d: 0.10406
+      e: 0.14641
+  market:
     prices:
       area: LT
       vat: 0.21
