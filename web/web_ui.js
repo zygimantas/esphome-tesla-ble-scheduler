@@ -64,6 +64,7 @@ const PAGE = `
   </section>
 
   <section id="plan-card" class="card" hidden>
+    <div class="title">Charging plan</div>
     <div id="plan-start">
       <button id="create-plan" class="primary">Create charging plan</button>
       <div class="or">or</div>
