@@ -54,25 +54,28 @@ main {
     calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px);
 }
 
-/* --- Cards; Board folds open --- */
+/* --- Cards, with a title; Board folds open --- */
 .card {
   background: var(--card);
   border-radius: 16px;
   padding: 14px 16px;
   margin: 0 0 14px;
 }
-summary {
+summary,
+.title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: 30px;
-  list-style: none;
-  cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
+}
+summary {
+  list-style: none;
+  cursor: pointer;
 }
 summary::-webkit-details-marker {
   display: none;
@@ -83,7 +86,8 @@ summary::after {
   line-height: 1;
   transition: transform 0.2s;
 }
-details[open] > summary {
+details[open] > summary,
+.title {
   margin-bottom: 4px;
 }
 details[open] > summary::after {
@@ -100,7 +104,8 @@ details[open] > summary::after {
   border-top: 1px solid var(--line);
 }
 .row:first-child,
-summary + .row {
+summary + .row,
+.title + .row {
   border-top: 0;
 }
 .row strong {

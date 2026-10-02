@@ -77,8 +77,9 @@ const PAGE = `
   </section>
 
   <section id="savings-card" class="card" hidden>
-    <div class="row"><span id="month-label">Saved, last 30 days</span><strong id="saved-month">-</strong></div>
-    <div id="year-row" class="row"><span id="year-label">Saved, last 12 months</span><strong id="saved-year">-</strong></div>
+    <div class="title">Savings</div>
+    <div class="row"><span id="month-label">Last 30 days</span><strong id="saved-month">-</strong></div>
+    <div id="year-row" class="row"><span id="year-label">Last 12 months</span><strong id="saved-year">-</strong></div>
     <p id="against-average" class="note"></p>
     <p id="against-at-once" class="note"></p>
     <button id="reset-savings" class="danger">Reset savings</button>
@@ -350,12 +351,12 @@ function renderSavings() {
   const [month, year] = periods.map((period) => period.split(",").map(Number));
   const money = (hundredths) => `${(hundredths / 100).toFixed(2)}\u00a0${currency}`; // one piece when it wraps
   const counted = today() - Number(since); // whole days before today
-  const start = `since ${dayText(Number(since))}`;
-  const monthText = counted < 30 ? start : "in the last 30 days";
-  $("month-label").textContent = counted < 30 ? `Saved ${start}` : "Saved, last 30 days";
+  const start = dayText(Number(since));
+  const monthText = counted < 30 ? `since ${start}` : "in the last 30 days";
+  $("month-label").textContent = counted < 30 ? `Since ${start}` : "Last 30 days";
   $("saved-month").textContent = money(month[2] - month[1]);
   $("year-row").hidden = counted < 30;
-  $("year-label").textContent = counted < 365 ? `Saved ${start}` : "Saved, last 12 months";
+  $("year-label").textContent = counted < 365 ? `Since ${start}` : "Last 12 months";
   $("saved-year").textContent = money(year[2] - year[1]);
   $("against-average").textContent =
     `Compared with the day's average price: ${Math.round(month[0] / 1000)} kWh for ${money(month[1])} ${monthText}`;
