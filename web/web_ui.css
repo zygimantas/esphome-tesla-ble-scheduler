@@ -207,6 +207,10 @@ button:disabled {
   color: var(--muted);
   font-size: 13px;
 }
+/* As far below the text as a button below a row, like Pair BLE key. */
+.note + button {
+  margin-top: 22px;
+}
 
 /* --- Toast --- */
 .toast {
