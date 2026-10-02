@@ -1,5 +1,8 @@
 charging:
   grid:
+    days:
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     holidays:
       - 01-01
       - 02-16
@@ -15,10 +18,7 @@ charging:
       - 12-24
       - 12-25
       - 12-26
-    hours:
-      mon-fri: nnnnnmmddddddddddeeeeenn
-      sat-sun: nnnnnnndddddddddddddddnn
-    prices:
+    zones:
       n: 0.06292
       m: 0.08349
       d: 0.10406

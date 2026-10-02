@@ -12,9 +12,9 @@ Standartinis:
 
 ```yaml
   grid:
-    hours:
+    days:
       mon-sun: a
-    prices:
+    zones:
       a: 0.11132
 ```
 
@@ -22,9 +22,9 @@ Efektyvus:
 
 ```yaml
   grid:
-    hours:
+    days:
       mon-sun: a
-    prices:
+    zones:
       a: 0.08833
 ```
 
@@ -32,9 +32,9 @@ Namai:
 
 ```yaml
   grid:
-    hours:
+    days:
       mon-sun: a
-    prices:
+    zones:
       a: 0.09559
 ```
 
@@ -47,10 +47,10 @@ Standartinis:
 ```yaml
   grid:
     clock: winter
-    hours:
+    days:
       mon-fri: nnnnnnnddddddddddddddddn
       sat-sun: n
-    prices:
+    zones:
       n: 0.07139
       d: 0.12947
 ```
@@ -60,10 +60,10 @@ Efektyvus:
 ```yaml
   grid:
     clock: winter
-    hours:
+    days:
       mon-fri: nnnnnnnddddddddddddddddn
       sat-sun: n
-    prices:
+    zones:
       n: 0.05687
       d: 0.10164
 ```
@@ -73,10 +73,10 @@ Namai:
 ```yaml
   grid:
     clock: winter
-    hours:
+    days:
       mon-fri: nnnnnnnddddddddddddddddn
       sat-sun: n
-    prices:
+    zones:
       n: 0.06171
       d: 0.11011
 ```
@@ -89,6 +89,9 @@ Standartinis (the plan in `config.example.yaml`):
 
 ```yaml
   grid:
+    days:
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     holidays:
       - 01-01
       - 02-16
@@ -104,10 +107,7 @@ Standartinis (the plan in `config.example.yaml`):
       - 12-24
       - 12-25
       - 12-26
-    hours:
-      mon-fri: nnnnnmmddddddddddeeeeenn
-      sat-sun: nnnnnnndddddddddddddddnn
-    prices:
+    zones:
       n: 0.06292
       m: 0.08349
       d: 0.10406
@@ -118,6 +118,9 @@ Efektyvus:
 
 ```yaml
   grid:
+    days:
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     holidays:
       - 01-01
       - 02-16
@@ -133,10 +136,7 @@ Efektyvus:
       - 12-24
       - 12-25
       - 12-26
-    hours:
-      mon-fri: nnnnnmmddddddddddeeeeenn
-      sat-sun: nnnnnnndddddddddddddddnn
-    prices:
+    zones:
       n: 0.05082
       m: 0.06534
       d: 0.08228

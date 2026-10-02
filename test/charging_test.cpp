@@ -374,8 +374,8 @@ static void test_plan_windows_and_prices() {
 // Grid: VAT and the grid fee from config.yaml
 // ---------------------------------------------------------------------------
 
-// Hours as the build makes them from mon-fri, sat-sun and holiday.
-static Hours week(const char *workday, const char *weekend, const char *holiday = "") {
+// Days as the build makes them from mon-fri, sat-sun and holiday.
+static Days week(const char *workday, const char *weekend, const char *holiday = "") {
   return {weekend, workday, workday, workday, workday, workday, weekend, holiday};
 }
 
@@ -386,7 +386,7 @@ static Grid make_grid(bool winter_clock, const char *workday, const char *weeken
   Grid t;
   t.vat = 0.21f;
   t.winter_clock = winter_clock;
-  t.hours = week(workday, weekend, holiday);
+  t.days = week(workday, weekend, holiday);
   t.fee.resize(26);
   for (const auto &[zone, fee] : fees)
     t.fee[zone - 'a'] = fee;
@@ -497,7 +497,7 @@ static void test_days_of_the_week_and_holidays() {
   Grid g;
   g.fee.resize(26);
   for (int day = 1; day <= 7; ++day) {
-    g.hours[day % 7] = std::string(24, static_cast<char>('a' + day));
+    g.days[day % 7] = std::string(24, static_cast<char>('a' + day));
     g.fee[day] = 0.01f * static_cast<float>(day);
   }
   g.holidays = {1224};
@@ -505,22 +505,22 @@ static void test_days_of_the_week_and_holidays() {
   const float expected[] = {0.01f, 0.02f, 0.03f, 0.07f, 0.05f, 0.06f, 0.07f};
   for (unsigned day = 21; day <= 27; ++day)
     CHECK(near(fee_at(g, 2026, 12, day, 12), expected[day - 21]));
-  // With holiday hours, those: here Tuesday's zone.
-  g.hours[7] = g.hours[2];
+  // With holiday zones, those: here Tuesday's.
+  g.days[7] = g.days[2];
   CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.02f));
-  // A season that names Sunday, as Monday's zone, but not holidays: the holiday hours still win, and without them
+  // A season that names Sunday, as Monday's zone, but not holidays: the holiday zones still win, and without them
   // the season's Sunday.
-  g.seasons = {Season{1201, 1231, {g.hours[1], "", "", "", "", "", "", ""}}};
+  g.seasons = {Season{1201, 1231, {g.days[1], "", "", "", "", "", "", ""}}};
   CHECK(near(fee_at(g, 2026, 12, 27, 12), 0.01f));
   CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.02f));
-  g.hours[7] = "";
+  g.days[7] = "";
   CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.01f));
 }
 
 static void test_whole_days_half_hours_and_quarter_hours() {
   // Octopus Go in the UK, on its own clock (no offset in winter): cheap from 00:30 to 05:30, in half-hours.
   Grid go;
-  go.hours.fill("n" + std::string(10, 'c') + std::string(37, 'n'));
+  go.days.fill("n" + std::string(10, 'c') + std::string(37, 'n'));
   go.fee.resize(26);
   go.fee['c' - 'a'] = 0.085f;
   go.fee['n' - 'a'] = 0.245f;
@@ -535,13 +535,13 @@ static void test_whole_days_half_hours_and_quarter_hours() {
   CHECK(uk(go, 7, 1, 29) == 0.245f);
   // Quarter-hours: cheap only from 06:45 to 07:00.
   Grid quarter = go;
-  quarter.hours.fill(std::string(27, 'n') + "c" + std::string(68, 'n'));
+  quarter.days.fill(std::string(27, 'n') + "c" + std::string(68, 'n'));
   CHECK(uk(quarter, 12, 1, 6 * 60 + 44) == 0.245f);
   CHECK(uk(quarter, 12, 1, 6 * 60 + 45) == 0.085f);
   CHECK(uk(quarter, 12, 1, 7 * 60) == 0.245f);
   // One letter: the whole day.
   Grid whole = go;
-  whole.hours.fill("c");
+  whole.days.fill("c");
   CHECK(uk(whole, 12, 1, 0) == 0.085f);
   CHECK(uk(whole, 12, 1, 23 * 60 + 59) == 0.085f);
 }
@@ -553,8 +553,8 @@ static void test_seasons() {
   g.seasons = {Season{1101, 331, week(peak, "")}};
   CHECK(fee_at(g, 2027, 1, 15, 12) == 0.08f);  // a Friday in winter
   CHECK(fee_at(g, 2027, 1, 15, 3) == 0.03f);   // its night
-  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.03f);  // Saturday: the season doesn't name it, so the year-round hours
-  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.03f);   // a holiday, a Friday: no holiday hours, so Sunday's
+  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.03f);  // Saturday: the season doesn't name it, so the year-round zones
+  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.03f);   // a holiday, a Friday: no holiday zones, so Sunday's
   CHECK(fee_at(g, 2027, 7, 15, 12) == 0.03f);  // a Thursday in summer
   // The edges of a range across New Year: Wednesday 31 March in, Thursday 1 April out, Friday 29 October
   // out, Monday 1 November in.
@@ -563,7 +563,7 @@ static void test_seasons() {
   CHECK(fee_at(g, 2027, 10, 29, 12) == 0.03f);
   CHECK(fee_at(g, 2027, 11, 1, 12) == 0.08f);
   // A season that names Saturday and holidays too, as Finland's seasonal grid fee does from Monday to Saturday.
-  g.seasons[0].hours[6] = g.seasons[0].hours[7] = peak;
+  g.seasons[0].days[6] = g.seasons[0].days[7] = peak;
   CHECK(fee_at(g, 2027, 1, 16, 12) == 0.08f);
   CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);
   CHECK(fee_at(g, 2027, 1, 17, 12) == 0.03f);  // Sunday stays
@@ -581,7 +581,7 @@ static void test_seasons() {
   g.seasons.push_back(Season{1201, 228, week(low, low, peak)});
   CHECK(fee_at(g, 2027, 7, 16, 12) == 0.08f);   // a Friday in summer
   CHECK(fee_at(g, 2027, 12, 31, 12) == 0.03f);  // a Friday in December
-  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);    // a holiday in winter, at the season's holiday hours
+  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);    // a holiday in winter, at the season's holiday zones
   // A season of one day.
   g.seasons = {Season{1224, 1224, week(peak, peak)}};
   CHECK(fee_at(g, 2027, 12, 24, 12) == 0.08f);

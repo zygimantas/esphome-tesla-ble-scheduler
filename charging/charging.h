@@ -145,13 +145,13 @@ inline int64_t easter_sunday(int64_t year) {
 // The zones of each day: Sunday (0) to Saturday (6), then public holidays (7). A day's zones are one letter for the
 // whole day, or a letter for each hour, half-hour or quarter-hour from 00:00 (24, 48 or 96 letters); empty where
 // grid_fee() looks further.
-using Hours = std::array<std::string, 8>;
+using Days = std::array<std::string, 8>;
 
-// Other hours for part of the year, from `from` to `to` as month * 100 + day, a range that may cross New Year.
+// Other zones for part of the year, from `from` to `to` as month * 100 + day, a range that may cross New Year.
 struct Season {
   uint16_t from = 0;
   uint16_t to = 0;
-  Hours hours;
+  Days days;
 };
 
 // The VAT and grid fees from config.yaml (format in docs/grid-fees.md; the build turns them into one of these): VAT
@@ -160,8 +160,8 @@ struct Season {
 struct Grid {
   float vat = 0.0f;
   bool winter_clock = false;
-  Hours hours;                       // all year: every weekday has its zones
-  std::vector<Season> seasons;       // other hours for parts of the year; they don't overlap
+  Days days;                         // all year: every weekday has its zones
+  std::vector<Season> seasons;       // other zones for parts of the year; they don't overlap
   std::vector<float> fee;            // per zone letter a-z, with VAT; empty means no grid fees
   std::vector<uint16_t> holidays;    // public holidays on fixed dates, as month * 100 + day
   std::vector<int8_t> after_easter;  // public holidays around Easter, in days after Easter Sunday
@@ -180,7 +180,7 @@ inline bool public_holiday(int64_t local_day, const Grid &grid) {
 }
 
 // The fee of a moment's zone. A day takes its zones from the season it's in, if that names the day, else from the
-// year-round hours; a public holiday takes the holiday's zones, else Sunday's.
+// year-round days; a public holiday takes the holiday's zones, else Sunday's.
 inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
   if (grid.fee.empty())
     return 0.0f;
@@ -192,7 +192,7 @@ inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
     return s.from <= s.to ? s.from <= month_day && month_day <= s.to : month_day >= s.from || month_day <= s.to;
   });
   const auto zones_of = [&](int day) -> const std::string & {
-    return season != grid.seasons.end() && !season->hours[day].empty() ? season->hours[day] : grid.hours[day];
+    return season != grid.seasons.end() && !season->days[day].empty() ? season->days[day] : grid.days[day];
   };
   const std::string &own = zones_of(public_holiday(local_day, grid) ? 7 : weekday(local_day));
   const std::string &zones = own.empty() ? zones_of(0) : own;

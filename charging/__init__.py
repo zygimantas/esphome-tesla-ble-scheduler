@@ -12,7 +12,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import button, datetime, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
-from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_HOURS, CONF_ID, CONF_NAME, CONF_TIME_ID
+from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
@@ -21,16 +21,17 @@ CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
 CONF_CLOCK = "clock"
 CONF_CURRENCY = "currency"
+CONF_DAYS = "days"
 CONF_GRID = "grid"
 CONF_HOLIDAY = "holiday"
 CONF_HOLIDAYS = "holidays"
 CONF_MARKET = "market"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
-CONF_PRICES = "prices"
 CONF_SEASONS = "seasons"
 CONF_VAT = "vat"
 CONF_VIN = "vin"
+CONF_ZONES = "zones"
 
 # Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
 # area Germany and Luxembourg share. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and has
@@ -66,8 +67,8 @@ NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
 NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
 CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 
-# The keys of hours, and the days each names as charging.h numbers them, Sunday to Saturday from 0 and public holidays
-# at 7: a day (sat), a range of days in the week from Monday (mon-fri), or holiday.
+# The keys of days and of a season, and the days each names as charging.h numbers them, Sunday to Saturday from 0 and
+# public holidays at 7: a day (sat), a range of days in the week from Monday (mon-fri), or holiday.
 WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 DAYS = {CONF_HOLIDAY: [7]} | {
     first if first == last else f"{first}-{last}": [(day + 1) % 7 for day in range(i, j + 1)]
@@ -85,7 +86,7 @@ Grid = charging_ns.struct("Grid")
 Season = charging_ns.struct("Season")
 
 
-def _zones(value):
+def _day(value):
     value = cv.string_strict(value)
     if not re.fullmatch(r"[a-z]|[a-z]{24}|[a-z]{48}|[a-z]{96}", value):
         raise cv.Invalid(
@@ -95,9 +96,9 @@ def _zones(value):
     return value
 
 
-def _hours(config):
+def _days(config):
     """The zones of the days its keys name, no day twice."""
-    config = cv.Schema({cv.one_of(*DAYS): _zones})(config)
+    config = cv.Schema({cv.one_of(*DAYS): _day})(config)
     days = [day for key in config for day in DAYS[key]]
     if len(days) != len(set(days)):
         raise cv.Invalid("names a day twice")
@@ -138,17 +139,17 @@ def _in_season(date, first, last):
 
 
 def _validate_grid(config):
-    if not set(range(7)) <= {day for key in config[CONF_HOURS] for day in DAYS[key]}:
-        raise cv.Invalid("must name every day of the week, as mon-fri and sat-sun do", [CONF_HOURS])
+    if not set(range(7)) <= {day for key in config[CONF_DAYS] for day in DAYS[key]}:
+        raise cv.Invalid("must name every day of the week, as mon-fri and sat-sun do", [CONF_DAYS])
     for one, other in combinations(map(_dates, config[CONF_SEASONS]), 2):
         if _in_season(one[0], *other) or _in_season(other[0], *one):
             raise cv.Invalid("has seasons that overlap", [CONF_SEASONS])
-    tables = [config[CONF_HOURS], *config[CONF_SEASONS].values()]
-    zones = set("".join(zones for table in tables for zones in table.values()))
-    if missing := sorted(zones - set(config[CONF_PRICES])):
-        raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_PRICES])
-    if unused := sorted(set(config[CONF_PRICES]) - zones):
-        raise cv.Invalid(f'zone "{unused[0]}" isn\'t used in any hour', path=[CONF_PRICES, unused[0]])
+    tables = [config[CONF_DAYS], *config[CONF_SEASONS].values()]
+    used = set("".join(zones for table in tables for zones in table.values()))
+    if missing := sorted(used - set(config[CONF_ZONES])):
+        raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_ZONES])
+    if unused := sorted(set(config[CONF_ZONES]) - used):
+        raise cv.Invalid(f'zone "{unused[0]}" isn\'t used on any day', path=[CONF_ZONES, unused[0]])
     return config
 
 
@@ -156,10 +157,10 @@ GRID_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.Optional(CONF_CLOCK, default="local"): cv.one_of("local", "winter"),
+            cv.Required(CONF_DAYS): _days,
             cv.Optional(CONF_HOLIDAYS, default=[]): cv.ensure_list(_holiday),
-            cv.Required(CONF_HOURS): _hours,
-            cv.Required(CONF_PRICES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
-            cv.Optional(CONF_SEASONS, default={}): cv.Schema({cv.string_strict: _hours}),
+            cv.Optional(CONF_SEASONS, default={}): cv.Schema({cv.string_strict: _days}),
+            cv.Required(CONF_ZONES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
         }
     ),
     _validate_grid,
@@ -222,10 +223,10 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
-def _table(hours):
-    """A Hours of charging.h: the zones by day from Sunday, then holidays, empty where hours doesn't say."""
+def _table(days):
+    """A Days of charging.h: the zones by day from Sunday, then holidays, empty where days doesn't say."""
     table = [""] * 8
-    for key, zones in hours.items():
+    for key, zones in days.items():
         for day in DAYS[key]:
             table[day] = zones
     return table
@@ -234,16 +235,16 @@ def _table(hours):
 def _grid(config, vat):
     holidays = config[CONF_HOLIDAYS]
     seasons = []
-    for key, hours in config[CONF_SEASONS].items():
+    for key, days in config[CONF_SEASONS].items():
         first, last = _dates(key)
-        seasons.append(cg.StructInitializer(Season, ("from", first), ("to", last), ("hours", _table(hours))))
+        seasons.append(cg.StructInitializer(Season, ("from", first), ("to", last), ("days", _table(days))))
     return cg.StructInitializer(
         Grid,
         ("vat", vat),
         ("winter_clock", config[CONF_CLOCK] == "winter"),
-        ("hours", _table(config[CONF_HOURS])),
+        ("days", _table(config[CONF_DAYS])),
         ("seasons", seasons),
-        ("fee", [config[CONF_PRICES].get(zone, 0.0) for zone in ascii_lowercase]),
+        ("fee", [config[CONF_ZONES].get(zone, 0.0) for zone in ascii_lowercase]),
         ("holidays", [h for h in holidays if not isinstance(h, tuple)]),
         ("after_easter", [h[1] for h in holidays if isinstance(h, tuple)]),
     )

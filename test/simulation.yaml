@@ -11,9 +11,9 @@ charging:
   battery_kwh: 75
   charging_kw: 11
   grid:
-    hours:
+    days:
       mon-sun: a
-    prices:
+    zones:
       a: 0.11132
   id: charging_id
   market:
