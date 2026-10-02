@@ -28,7 +28,7 @@ charging:
 
 Here `n` runs from 00:00 to 07:00 and from 23:00 on weekdays, `d` from 07:00 to 23:00, and the weekend is all `n`.
 
-Finland's seasonal grid fee, dearer from November to March, Monday to Saturday from 07:00 to 22:00:
+A fee that is dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
 ```yaml
 charging:
@@ -40,9 +40,9 @@ charging:
       h: 0.08
     seasons:
       - from: 11-01
-        to: 03-31
         hours:
           mon-sat: lllllllhhhhhhhhhhhhhhhll
+        to: 03-31
 ```
 
 ## A fixed price

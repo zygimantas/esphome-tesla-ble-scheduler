@@ -142,9 +142,8 @@ inline int64_t easter_sunday(int64_t year) {
   return days_from_civil(year, static_cast<unsigned>(month), static_cast<unsigned>(day));
 }
 
-// A day's zones, by weekday from Sunday (0) to Saturday (6), then on public holidays (7). The zones of a day are one
-// letter per hour, half-hour or quarter-hour from 00:00: 24, 48 or 96 letters. Empty where other hours apply (see
-// grid_fee()).
+// The zones of each day: Sunday (0) to Saturday (6), then public holidays (7). A day's zones are a letter for each
+// hour, half-hour or quarter-hour from 00:00 (24, 48 or 96 letters), or empty where grid_fee() looks further.
 using Hours = std::array<std::string, 8>;
 
 // Other hours for part of the year, from `from` to `to` as month * 100 + day, a range that may cross New Year.
@@ -167,11 +166,6 @@ struct Grid {
   std::vector<int8_t> after_easter;  // public holidays around Easter, in days after Easter Sunday
 };
 
-inline bool in_season(uint16_t month_day, const Season &season) {
-  return season.from <= season.to ? season.from <= month_day && month_day <= season.to
-                                  : month_day >= season.from || month_day <= season.to;
-}
-
 inline bool public_holiday(int64_t local_day, const Grid &grid) {
   const CivilDate date = civil_from_days(local_day);
   for (uint16_t holiday : grid.holidays)
@@ -184,8 +178,8 @@ inline bool public_holiday(int64_t local_day, const Grid &grid) {
   return false;
 }
 
-// The zones of a day: a season's that names the day, else the year-round ones. A public holiday takes the holiday's,
-// else Sunday's.
+// The fee of a moment's zone. A day takes its zones from the season it's in, if that names the day, else from the
+// year-round hours; a public holiday takes the holiday's zones, else Sunday's.
 inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
   if (grid.fee.empty())
     return 0.0f;
@@ -193,8 +187,9 @@ inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
   const int64_t local_day = floor_div(local, DAY_SECONDS);
   const CivilDate date = civil_from_days(local_day);
   const auto month_day = static_cast<uint16_t>(date.month * 100 + date.day);
-  const auto season = std::find_if(grid.seasons.begin(), grid.seasons.end(),
-                                   [month_day](const Season &s) { return in_season(month_day, s); });
+  const auto season = std::find_if(grid.seasons.begin(), grid.seasons.end(), [month_day](const Season &s) {
+    return s.from <= s.to ? s.from <= month_day && month_day <= s.to : month_day >= s.from || month_day <= s.to;
+  });
   const auto zones_of = [&](int day) -> const std::string & {
     return season != grid.seasons.end() && !season->hours[day].empty() ? season->hours[day] : grid.hours[day];
   };
