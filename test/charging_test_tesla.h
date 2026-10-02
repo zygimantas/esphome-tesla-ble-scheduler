@@ -44,10 +44,12 @@ struct FakeTesla {
            : complete || soc >= limit ? "Complete"
                                       : "Stopped";
   }
-  // 11 kW into a 75 kWh pack, as in simulation.yaml, at the planner's EFFICIENCY; stops at the limit.
+  // 11 kW from the charger while charging, as in simulation.yaml.
+  float power_kw() const { return charging ? 11.0f : 0.0f; }
+  // Into a 75 kWh pack at the planner's EFFICIENCY; stops at the limit.
   void advance(int seconds) {
     if (charging && soc < limit)
-      soc = std::fmin(limit, soc + 11.0f * esphome::charging::EFFICIENCY * seconds / 3600.0f / 75.0f * 100.0f);
+      soc = std::fmin(limit, soc + power_kw() * esphome::charging::EFFICIENCY * seconds / 3600.0f / 75.0f * 100.0f);
     charging = charging && soc < limit;
   }
   esphome::charging::CarState state(int64_t now) const {
@@ -57,6 +59,7 @@ struct FakeTesla {
     s.charging_state = charging_state();
     s.soc = battery_known ? soc : NAN;
     s.limit = battery_known ? limit : NAN;
+    s.power_kw = power_kw();
     return s;
   }
 };

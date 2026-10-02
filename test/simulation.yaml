@@ -66,6 +66,10 @@ sensor:
     name: "Battery"
     platform: template
     update_interval: 5s
+  - lambda: return charging_test::tesla().power_kw();
+    name: "Charger Power"
+    platform: template
+    update_interval: 5s
 
 switch:
   - lambda: return charging_test::tesla().charging;

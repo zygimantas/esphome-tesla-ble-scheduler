@@ -66,7 +66,7 @@ charging_ns = cg.esphome_ns.namespace("charging")
 ChargingComponent = charging_ns.class_("ChargingComponent", cg.PollingComponent)
 ReadyBy = charging_ns.class_("ReadyBy", datetime.TimeEntity)
 ReadyByOnce = charging_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
-PlanButton = charging_ns.class_("PlanButton", button.Button)
+ActionButton = charging_ns.class_("ActionButton", button.Button)
 Action = charging_ns.enum("Action", is_class=True)
 Grid = charging_ns.struct("Grid")
 
@@ -229,15 +229,17 @@ async def to_code(config):
         ("create_plan", "Create charging plan", Action.CREATE_PLAN),
         ("charge_now", "Start charging now", Action.CHARGE_NOW),
         ("stop_charging", "Stop charging", Action.STOP_CHARGING),
+        ("reset_savings", "Reset savings", Action.RESET_SAVINGS),
     ):
-        plan_button = await button.new_button(_entity(PlanButton, key, name))
-        await cg.register_parented(plan_button, var)
-        cg.add(plan_button.set_action(action))
+        action_button = await button.new_button(_entity(ActionButton, key, name))
+        await cg.register_parented(action_button, var)
+        cg.add(action_button.set_action(action))
 
     for key, name, setter in (
         ("status", "Charging status", var.set_status),
         ("mode", "Charging mode", var.set_mode),
         ("windows", "Charge windows", var.set_windows),
         ("prices_until", "Prices until", var.set_prices_until),
+        ("savings", "Savings", var.set_savings),
     ):
         cg.add(setter(await text_sensor.new_text_sensor(_entity(text_sensor.TextSensor, key, name))))

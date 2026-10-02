@@ -77,7 +77,7 @@ void ReadyByOnce::control(const datetime::DateTimeCall &call) {
   this->parent_->replan();
 }
 
-void PlanButton::press_action() { this->parent_->press(this->action_); }
+void ActionButton::press_action() { this->parent_->press(this->action_); }
 
 // The Tesla component creates its entities internally, so they're found by name.
 template <typename List>
@@ -96,10 +96,14 @@ void ChargingComponent::setup() {
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("charging_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
+  // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
+  this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("charging_savings"));
+  this->savings_pref_.load(&this->controller_.savings);
 
   this->plug_ = find(App.get_binary_sensors(), "Charger");
   this->charging_state_ = find(App.get_text_sensors(), "Charging");
   this->battery_ = find(App.get_sensors(), "Battery");
+  this->power_ = find(App.get_sensors(), "Charger Power");
   this->charger_ = find(App.get_switches(), "Charger");
   this->wake_ = find(App.get_buttons(), "Wake up");
   this->limit_ = find(App.get_numbers(), "Charging Limit");
@@ -131,6 +135,7 @@ void ChargingComponent::update() {
     car.charging_state = this->charging_state_->state;
   car.soc = this->battery_ != nullptr ? this->battery_->state : NAN;
   car.limit = this->limit_ != nullptr && this->limit_->has_state() ? this->limit_->state : NAN;
+  car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
 #ifdef USE_COVER
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 #endif
@@ -153,6 +158,10 @@ void ChargingComponent::update() {
     this->held_ = this->controller_.held_mode();
     this->held_pref_.save(&this->held_);
     global_preferences->sync();  // now, in case the board restarts soon after
+  }
+  if (d.save_savings) {
+    this->savings_pref_.save(&this->controller_.savings);
+    global_preferences->sync();
   }
   if (d.notification) {  // a new message replaces an unsent older one
     this->unsent_ = *d.notification;
@@ -183,6 +192,7 @@ void ChargingComponent::update() {
   publish(this->mode_, d.mode);
   publish(this->windows_, d.windows);
   publish(this->prices_until_, std::to_string(this->controller_.prices.known_until(car.now)));
+  publish(this->savings_, d.savings);
 }
 
 void ChargingComponent::dump_config() {
@@ -205,7 +215,8 @@ void ChargingComponent::replan() {
 }
 
 void ChargingComponent::press(Action action) {
-  this->unsent_.reset();
+  if (action != Action::RESET_SAVINGS)  // a plan button: a message about the old plan isn't true any more
+    this->unsent_.reset();
   switch (action) {
     case Action::CREATE_PLAN:
       this->controller_.create_plan();
@@ -215,6 +226,9 @@ void ChargingComponent::press(Action action) {
       break;
     case Action::STOP_CHARGING:
       this->controller_.stop_charging();
+      break;
+    case Action::RESET_SAVINGS:
+      this->controller_.reset_savings();
       break;
   }
   this->tick_soon_();
