@@ -65,11 +65,11 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `grid` | Your grid fees (see [Grid fees](#grid-fees)). |
-| `nordpool: area` | Your Nord Pool price area: `LT`, `LV`, `EE`, `FI`, `SE1` to `SE4`, `NO1` to `NO5`, `DK1`, `DK2`, or `AT`, `BE`, `BG`, `FR`, `GER`, `HR`, `NL`, `PL`. |
-| `nordpool: currency` | The currency of your area's prices and your grid fees: `EUR`, `SEK`, `NOK` or `DKK`. Euro unless you set it. |
-| `nordpool: vat` | The VAT added to Nord Pool prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
+| `prices: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `SE1` to `SE4`. |
+| `prices: currency` | The currency of the prices and your grid fees: `EUR`, `SEK`, `NOK` or `DKK`. Your area's own unless you set it. |
+| `prices: vat` | The VAT added to the prices: `0.21` is 21%. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |

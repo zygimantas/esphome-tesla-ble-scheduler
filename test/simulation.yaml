@@ -17,7 +17,7 @@ charging:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
   id: charging_id
-  nordpool:
+  prices:
     area: LT
     vat: 0.21
   time_id: sntp_time

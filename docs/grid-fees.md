@@ -2,13 +2,13 @@
 
 The `grid:` part of `config.yaml` adds your grid fees to the Nord Pool prices, so the board compares what you really pay. The example comes with ESO's 2026 Standartinis plan with four zones; [ESO plans](eso.md) has the others ready to paste. For any other grid operator, write your plan the same way:
 
-- `fees`: the fee per kWh, with VAT, in the currency of `nordpool: currency` (euro unless you set it), for each zone, named by a letter you choose.
+- `fees`: the fee per kWh, with VAT, in the currency of `prices: currency` (your area's own unless you set it), for each zone, named by a letter you choose.
 - `hours`: the zone of each hour from 00:00 to 23:00, one letter per hour, on a `workday`, a `weekend` day and a public `holiday`. Leave `holiday` out when you list no holidays.
 - `holidays`: public holidays as `MM-DD`, or days around Easter as `easter`, `easter+1` or `easter-2`. The `holiday` hours apply on them.
 - `clock: winter`: the plan's clock stays on winter time all year, as some plans do: the zone hours, and the days and dates that pick them. Leave it out when the plan follows the clock.
 - `winter` under `hours`: other zone hours for part of the year, between `from` and `to` as `MM-DD` (the range may cross New Year), for the `workday`, `weekend` or `holiday` you give; the others keep the year-round hours.
 
-The VAT on the Nord Pool price itself is `vat` under `nordpool:`, next to `area` (see Settings in the README).
+The VAT on the price itself is `vat` under `prices:`, next to `area` (see Settings in the README).
 
 A plan with two zones, cheap at night and all weekend, on winter time all year:
 

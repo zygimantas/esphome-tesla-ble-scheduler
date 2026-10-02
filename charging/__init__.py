@@ -19,6 +19,7 @@ AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
 CONF_NORDPOOL = "nordpool"
+CONF_PRICES = "prices"
 CONF_VAT = "vat"
 CONF_CURRENCY = "currency"
 CONF_NTFY_SERVER = "ntfy_server"
@@ -35,17 +36,19 @@ CONF_WINTER = "winter"
 CONF_FROM = "from"
 CONF_TO = "to"
 
-# Nord Pool's day-ahead delivery areas, as its data portal names them (GER is Germany and Luxembourg).
-NORD_POOL_AREAS = [
+# Where electricity is bought: a country's code, or the price area where a country has several. DE is Germany and
+# Luxembourg. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and prices are in euros unless
+# CURRENCIES has the country.
+AREAS = [
     "AT",
     "BE",
     "BG",
+    "DE",
     "DK1",
     "DK2",
     "EE",
     "FI",
     "FR",
-    "GER",
     "HR",
     "LT",
     "LV",
@@ -61,6 +64,8 @@ NORD_POOL_AREAS = [
     "SE3",
     "SE4",
 ]
+NORD_POOL_AREAS = {"DE": "GER"}
+CURRENCIES = {"DK": "DKK", "NO": "NOK", "SE": "SEK"}
 
 charging_ns = cg.esphome_ns.namespace("charging")
 ChargingComponent = charging_ns.class_("ChargingComponent", cg.PollingComponent)
@@ -109,6 +114,12 @@ def _vin(value):
             "on the car's screen under Controls, Software"
         )
     return value
+
+
+def _currency(config):
+    """The area's currency, unless set."""
+    config.setdefault(CONF_CURRENCY, CURRENCIES.get(config[CONF_AREA][:2], "EUR"))
+    return config
 
 
 def _validate_grid(config):
@@ -163,12 +174,16 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
         cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
         cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
-        cv.Required(CONF_NORDPOOL): cv.Schema(
-            {
-                cv.Required(CONF_AREA): cv.one_of(*NORD_POOL_AREAS, upper=True),
-                cv.Optional(CONF_CURRENCY, default="EUR"): cv.one_of("DKK", "EUR", "NOK", "SEK", upper=True),
-                cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
-            }
+        cv.Optional(CONF_NORDPOOL): cv.invalid("is called prices: now, and GER is DE"),
+        cv.Required(CONF_PRICES): cv.All(
+            cv.Schema(
+                {
+                    cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
+                    cv.Optional(CONF_CURRENCY): cv.one_of("DKK", "EUR", "NOK", "SEK", upper=True),
+                    cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
+                }
+            ),
+            _currency,
         ),
         cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
         cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
@@ -211,12 +226,13 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
-    cg.add(var.set_nord_pool_area(config[CONF_NORDPOOL][CONF_AREA]))
-    cg.add(var.set_currency(config[CONF_NORDPOOL][CONF_CURRENCY]))
+    prices = config[CONF_PRICES]
+    cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(prices[CONF_AREA], prices[CONF_AREA])))
+    cg.add(var.set_currency(prices[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    cg.add(var.set_grid(_grid(config[CONF_GRID], config[CONF_NORDPOOL][CONF_VAT])))
+    cg.add(var.set_grid(_grid(config[CONF_GRID], prices[CONF_VAT])))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

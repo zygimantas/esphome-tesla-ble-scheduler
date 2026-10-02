@@ -1,6 +1,6 @@
 # ESO plans
 
-ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan and leave `nordpool:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
+ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan and leave `prices:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
 
 The letters are `n` for night, `m` for morning, `d` for day and `e` for evening. [Grid fees](grid-fees.md) explains the format.
 
