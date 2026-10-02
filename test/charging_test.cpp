@@ -499,6 +499,16 @@ static void test_reads_grid_settings() {
            Case{"exceptions:\n  12-25:", "line 2 doesn't belong there: 12-25"},
            Case{"calendar:\n  jan-dec:\nrates:\n    mon-sun: flat", "line 4 doesn't belong there: mon-sun"},
            Case{"calendar:\n  jan-dec:\nrates:\n  jun:", "line 4 doesn't belong there: jun"},
+           Case{"rates:\n  night:\t0.1", "line 2 isn't a key and a value"},
+           Case{"calendar:\n  jan-dec", "line 2 isn't a key and a value"},
+           Case{"calendar:\n  : x", "line 2 isn't a key and a value"},
+           Case{"currency:X", "line 1 isn't a key and a value"},
+           Case{"  calendar:", "line 1 doesn't belong there: calendar"},
+           Case{"zones:", "line 1 doesn't belong there: zones"},
+           Case{"  currency: EUR", "line 1 doesn't belong there: currency"},
+           Case{"calendar:\njan-dec:", "line 2 doesn't belong there: jan-dec"},
+           Case{"rates:\nnight: 0.1", "line 2 doesn't belong there: night"},
+           Case{"calendar:\n  jan-dec:\nclock: winter\n    mon-sun: flat", "line 4 doesn't belong there: mon-sun"},
        }) {
     GridText ignored;
     CHECK_STR(read_grid(c.text, ignored), c.error);
@@ -585,6 +595,27 @@ static void test_makes_grids() {
                 "calendar: jan-dec: mon-sun: 07:00 isn't a later quarter-hour, like 07:00 or 22:15"},
            Case{calendar_of("    mon-sun: flat 07:00 flat 06:45 flat"),
                 "calendar: jan-dec: mon-sun: 06:45 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:00 flat 08:00"),
+                "calendar: jan-dec: mon-sun: \"flat 07:00 flat 08:00\" isn't rates and times by turns, like night "
+                "07:00 day"},
+           Case{calendar_of("    mon-sun: flat 0::00 flat"),
+                "calendar: jan-dec: mon-sun: 0::00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 1/:00 flat"),
+                "calendar: jan-dec: mon-sun: 1/:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:0? flat"),
+                "calendar: jan-dec: mon-sun: 07:0? isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:000 flat"),
+                "calendar: jan-dec: mon-sun: 07:000 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07x00 flat"),
+                "calendar: jan-dec: mon-sun: 07x00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 25:00 flat"),
+                "calendar: jan-dec: mon-sun: 25:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    xyz-mon: flat"), "calendar: jan-dec: xyz-mon isn't a day or a range like mon-fri"},
+           Case{calendar_of("    mon-sun: flat") + "\nclock: abc", "clock is local or winter, not abc"},
+           Case{calendar_of("    mon-sun: flat") + "\nclock: zone", "clock is local or winter, not zone"},
+           Case{calendar_of("    mon-sun: flat", "flat: 1000000"), "rate flat: 1000000 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  01+01: flat",
+                "exceptions: 01+01 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "\nclock: summer", "clock is local or winter, not summer"},
            Case{calendar_of("    mon-sun: flat", "flat: x"), "rate flat: x isn't a price per kWh"},
            Case{calendar_of("    mon-sun: flat", "flat: 0.1x"), "rate flat: 0.1x isn't a price per kWh"},
@@ -614,6 +645,22 @@ static void test_makes_grids() {
     CHECK_STR(grid_error("", c.own), c.error);
   }
   CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 23:45 flat") + "\nexceptions:\n  02-29: flat"), "");
+  // Prices of nothing and above 1, like Norway's in NOK, and exceptions in any order.
+  CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 12:00 free", "flat: 12.5\n  free: 0")), "");
+  CHECK_STR(grid_error("", calendar_of("    mon-sun: flat") + "\nexceptions:\n  12-25: flat\n  01-01: flat"), "");
+  // A list in another currency than the board's.
+  CHECK_STR(grid_error("currency: NOK\n" + calendar_of("    mon-sun: flat")),
+            "the price list's prices are in NOK, not EUR");
+  // The last day of each month is a date, and the day after isn't.
+  const int last_day[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  for (int month = 1; month <= 12; month++) {
+    char last[16], after[16];
+    std::snprintf(last, sizeof(last), "%02d-%02d", month, last_day[month - 1]);
+    std::snprintf(after, sizeof(after), "%02d-%02d", month, last_day[month - 1] + 1);
+    CHECK_STR(grid_error("", calendar_of("    mon-sun: flat") + "\nexceptions:\n  " + last + ": flat"), "");
+    CHECK_STR(grid_error("", calendar_of("    mon-sun: flat") + "\nexceptions:\n  " + after + ": flat"),
+              std::string("exceptions: ") + after + " isn't a date like 12-25, or it's there twice");
+  }
   // A key twice can only be in a price list: config.yaml's settings come from YAML, without it.
   CHECK_STR(grid_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
             "rate flat: a rate is there twice, or there are more than 26");
@@ -699,6 +746,15 @@ static void test_calendar_and_exceptions() {
   CHECK(fee_at(seasons, 2027, 12, 24, 3) == 0.08f);   // the exception, all day
   CHECK(fee_at(seasons, 2028, 2, 29, 12) == 0.08f);   // a leap day, a Tuesday
 
+  // Ranges that end and start in the middle of the year, at the months' names.
+  const Grid thirds = grid_of("",
+                              "calendar:\n  jan-may:\n    mon-sun: a\n  jun-aug:\n    mon-sun: b\n  sep-dec:\n"
+                              "    mon-sun: c\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03");
+  CHECK(fee_at(thirds, 2026, 5, 31, 12) == 0.01f);
+  CHECK(fee_at(thirds, 2026, 6, 1, 12) == 0.02f);
+  CHECK(fee_at(thirds, 2026, 8, 31, 12) == 0.02f);
+  CHECK(fee_at(thirds, 2026, 9, 1, 12) == 0.03f);
+
   // Quarter-hours, on UK time: Octopus Go's cheap 00:30 to 05:30, and a quarter-hour from 06:45.
   const Grid go = grid_of("", calendar_of("    mon-sun: n 00:30 c 05:30 n 06:45 c 07:00 n", "n: 0.245\n  c: 0.085"));
   const auto uk = [&](unsigned month, unsigned day, int minutes) {
@@ -764,6 +820,7 @@ static void test_price_lists_in_the_repository() {
         used += day;
     for (const auto &exception : grid.exceptions)
       used += exception.second;
+    CHECK(used.size() % 96 == 0 && !used.empty());
     for (size_t rate = 0; rate < grid.fee.size(); rate++)
       CHECK(used.find(static_cast<char>('a' + rate)) != std::string::npos);
     lists++;

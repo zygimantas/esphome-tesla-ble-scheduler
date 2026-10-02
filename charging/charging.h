@@ -215,7 +215,7 @@ inline std::vector<size_t> named(const std::string &key, const char *const (&nam
 
 // A day's rates as a letter for each quarter-hour, 'a' for the first of `names`, from a line like
 // "night 07:00 day 23:00 night": the rate from midnight, then each time it changes, on a quarter-hour, and the rate
-// from then. Marks the rates used. Returns what's wrong, or "".
+// from then, onto `day`, which starts empty. Marks the rates used. Returns what's wrong, or "".
 inline std::string day_rates(const std::string &line, const std::vector<std::string> &names, std::string &day,
                              std::vector<bool> &used) {
   std::vector<std::string> words;
@@ -226,7 +226,6 @@ inline std::string day_rates(const std::string &line, const std::vector<std::str
   }
   if (words.size() % 2 == 0)
     return concat({"\"", line, "\" isn't rates and times by turns, like night 07:00 day"});
-  day.clear();
   for (size_t i = 0; i < words.size(); i += 2) {
     const auto rate = static_cast<size_t>(std::find(names.begin(), names.end(), words[i]) - names.begin());
     if (rate == names.size())
