@@ -897,6 +897,32 @@ static void test_fetch_prices_due() {
   CHECK(!planning.prices.get(CET_SEP25 - SLOT_SECONDS) && planning.prices.get(CET_SEP25));
 }
 
+static void test_grid_fees_alone() {
+  // Without market prices, each quarter-hour costs its grid fee: two_zones()' night, 0.07139 EUR/kWh, is from 00:00 to
+  // 08:00 in summer time. Plugged in at 20:00, the plan waits for midnight.
+  Controller controller;
+  controller.without_market_prices();
+  controller.set_grid(two_zones());
+  CHECK(!controller.fetch_prices_due(SEP24_1700Z));  // nothing to download, even before the first tick
+  const Decision d = controller.tick(plugged_in(false).state(SEP24_1700Z), Settings());
+  CHECK_STR(d.status, "Charges at 00:00");
+  REQUIRE(!controller.plan().windows.empty());
+  CHECK(controller.plan().windows.front().start == SEP24_1700Z + 4 * HOUR);
+  CHECK(near(controller.plan().avg_price, 0.07139f));
+  // As far ahead as Nord Pool's prices go, and from the start of the delivery day, for its average.
+  CHECK(controller.prices.known_until(SEP24_1700Z) == end_of_next_delivery_day(SEP24_1700Z));
+  CHECK(controller.prices.get(CET_SEP24).has_value());
+  CHECK(!controller.fetch_prices_due(SEP24_1700Z + 60));
+
+  // One fee for every hour: no hour is cheaper, so it charges at once.
+  Controller flat;
+  flat.without_market_prices();
+  flat.set_grid(one_zone());
+  flat.tick(plugged_in(false).state(SEP24_1700Z), Settings());
+  REQUIRE(!flat.plan().windows.empty());
+  CHECK(flat.plan().windows.front().start == SEP24_1700Z);
+}
+
 static void test_restart_waits_for_prices() {
   // The board restarts while the car is plugged in and stopped, waiting for a cheap slot.
   const FakeTesla car = plugged_in(false);
@@ -1924,6 +1950,7 @@ int main() {
   test_charges_as_usual_without_prices();
   test_waits_for_tomorrows_prices();
   test_fetch_prices_due();
+  test_grid_fees_alone();
   test_restart_waits_for_prices();
   test_wakes_for_battery_level_then_charges();
   test_wakes_to_learn_the_plug_state();

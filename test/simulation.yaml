@@ -11,13 +11,13 @@ charging:
   battery_kwh: 75
   charging_kw: 11
   grid:
-    fees:
-      a: 0.11132
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      a: 0.11132
   id: charging_id
-  nordpool:
+  market:
     area: LT
     vat: 0.21
   time_id: sntp_time

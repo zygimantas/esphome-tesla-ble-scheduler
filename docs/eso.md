@@ -1,6 +1,6 @@
 # ESO plans
 
-ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan and leave `nordpool:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
+ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan, and leave `market:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
 
 The letters are `n` for night, `m` for morning, `d` for day and `e` for evening. [Grid fees](grid-fees.md) explains the format.
 
@@ -12,33 +12,33 @@ Standartinis:
 
 ```yaml
   grid:
-    fees:
-      a: 0.11132
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      a: 0.11132
 ```
 
 Efektyvus:
 
 ```yaml
   grid:
-    fees:
-      a: 0.08833
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      a: 0.08833
 ```
 
 Namai:
 
 ```yaml
   grid:
-    fees:
-      a: 0.09559
     hours:
       weekend: aaaaaaaaaaaaaaaaaaaaaaaa
       workday: aaaaaaaaaaaaaaaaaaaaaaaa
+    prices:
+      a: 0.09559
 ```
 
 ## Two zones
@@ -50,12 +50,12 @@ Standartinis:
 ```yaml
   grid:
     clock: winter
-    fees:
-      n: 0.07139
-      d: 0.12947
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      n: 0.07139
+      d: 0.12947
 ```
 
 Efektyvus:
@@ -63,12 +63,12 @@ Efektyvus:
 ```yaml
   grid:
     clock: winter
-    fees:
-      n: 0.05687
-      d: 0.10164
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      n: 0.05687
+      d: 0.10164
 ```
 
 Namai:
@@ -76,12 +76,12 @@ Namai:
 ```yaml
   grid:
     clock: winter
-    fees:
-      n: 0.06171
-      d: 0.11011
     hours:
       weekend: nnnnnnnnnnnnnnnnnnnnnnnn
       workday: nnnnnnnddddddddddddddddn
+    prices:
+      n: 0.06171
+      d: 0.11011
 ```
 
 ## Four zones
@@ -92,11 +92,6 @@ Standartinis (the plan in `config.example.yaml`):
 
 ```yaml
   grid:
-    fees:
-      n: 0.06292
-      m: 0.08349
-      d: 0.10406
-      e: 0.14641
     holidays:
       - 01-01
       - 02-16
@@ -116,17 +111,17 @@ Standartinis (the plan in `config.example.yaml`):
       holiday: nnnnnnndddddddddddddddnn
       weekend: nnnnnnndddddddddddddddnn
       workday: nnnnnmmddddddddddeeeeenn
+    prices:
+      n: 0.06292
+      m: 0.08349
+      d: 0.10406
+      e: 0.14641
 ```
 
 Efektyvus:
 
 ```yaml
   grid:
-    fees:
-      n: 0.05082
-      m: 0.06534
-      d: 0.08228
-      e: 0.11374
     holidays:
       - 01-01
       - 02-16
@@ -146,4 +141,9 @@ Efektyvus:
       holiday: nnnnnnndddddddddddddddnn
       weekend: nnnnnnndddddddddddddddnn
       workday: nnnnnmmddddddddddeeeeenn
+    prices:
+      n: 0.05082
+      m: 0.06534
+      d: 0.08228
+      e: 0.11374
 ```
