@@ -1,5 +1,7 @@
 changelog:
   categories:
+    - labels: [breaking]
+      title: Breaking changes
     - labels: [bug]
       title: Fixes
     - labels: [enhancement]
