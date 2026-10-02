@@ -13,8 +13,7 @@ Standartinis:
 ```yaml
   grid:
     hours:
-      weekend: aaaaaaaaaaaaaaaaaaaaaaaa
-      workday: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
     prices:
       a: 0.11132
 ```
@@ -24,8 +23,7 @@ Efektyvus:
 ```yaml
   grid:
     hours:
-      weekend: aaaaaaaaaaaaaaaaaaaaaaaa
-      workday: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
     prices:
       a: 0.08833
 ```
@@ -35,8 +33,7 @@ Namai:
 ```yaml
   grid:
     hours:
-      weekend: aaaaaaaaaaaaaaaaaaaaaaaa
-      workday: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
     prices:
       a: 0.09559
 ```
@@ -51,8 +48,8 @@ Standartinis:
   grid:
     clock: winter
     hours:
-      weekend: nnnnnnnnnnnnnnnnnnnnnnnn
-      workday: nnnnnnnddddddddddddddddn
+      mon-fri: nnnnnnnddddddddddddddddn
+      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
     prices:
       n: 0.07139
       d: 0.12947
@@ -64,8 +61,8 @@ Efektyvus:
   grid:
     clock: winter
     hours:
-      weekend: nnnnnnnnnnnnnnnnnnnnnnnn
-      workday: nnnnnnnddddddddddddddddn
+      mon-fri: nnnnnnnddddddddddddddddn
+      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
     prices:
       n: 0.05687
       d: 0.10164
@@ -77,8 +74,8 @@ Namai:
   grid:
     clock: winter
     hours:
-      weekend: nnnnnnnnnnnnnnnnnnnnnnnn
-      workday: nnnnnnnddddddddddddddddn
+      mon-fri: nnnnnnnddddddddddddddddn
+      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
     prices:
       n: 0.06171
       d: 0.11011
@@ -108,9 +105,8 @@ Standartinis (the plan in `config.example.yaml`):
       - 12-25
       - 12-26
     hours:
-      holiday: nnnnnnndddddddddddddddnn
-      weekend: nnnnnnndddddddddddddddnn
-      workday: nnnnnmmddddddddddeeeeenn
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     prices:
       n: 0.06292
       m: 0.08349
@@ -138,9 +134,8 @@ Efektyvus:
       - 12-25
       - 12-26
     hours:
-      holiday: nnnnnnndddddddddddddddnn
-      weekend: nnnnnnndddddddddddddddnn
-      workday: nnnnnmmddddddddddeeeeenn
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     prices:
       n: 0.05082
       m: 0.06534

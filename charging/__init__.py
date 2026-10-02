@@ -28,10 +28,8 @@ CONF_VIN = "vin"
 CONF_GRID = "grid"
 CONF_HOLIDAYS = "holidays"
 CONF_CLOCK = "clock"
-CONF_WORKDAY = "workday"
-CONF_WEEKEND = "weekend"
 CONF_HOLIDAY = "holiday"
-CONF_WINTER = "winter"
+CONF_SEASONS = "seasons"
 CONF_FROM = "from"
 CONF_TO = "to"
 
@@ -76,13 +74,57 @@ ReadyByOnce = charging_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
 ActionButton = charging_ns.class_("ActionButton", button.Button)
 Action = charging_ns.enum("Action", is_class=True)
 Grid = charging_ns.struct("Grid")
+Season = charging_ns.struct("Season")
+
+# The keys of hours: days, ranges of days in the week from Monday, like mon-fri, and holiday. charging.h numbers the
+# days from Sunday, 0, with public holidays after Saturday, at 7.
+WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+DAY_INDEX = {"sun": 0, "mon": 1, "tue": 2, "wed": 3, "thu": 4, "fri": 5, "sat": 6, CONF_HOLIDAY: 7}
+MONTH_DAYS = (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 
-def _hours(value):
+def _zones(value):
     value = cv.string_strict(value)
-    if not re.fullmatch(r"[a-z]{24}", value):
-        raise cv.Invalid("must be 24 lowercase letters, one zone per hour from 00:00 to 23:00")
+    if not re.fullmatch(r"[a-z]{24}|[a-z]{48}|[a-z]{96}", value):
+        raise cv.Invalid(
+            "must be 24, 48 or 96 lowercase letters: the zone of each hour, half-hour or quarter-hour from 00:00"
+        )
     return value
+
+
+def _days(key):
+    """The days a key of hours covers, as charging.h numbers them: a day (mon), a range (mon-fri) or holiday. None for
+    anything else."""
+    if key in DAY_INDEX:
+        return [DAY_INDEX[key]]
+    first, _, last = key.partition("-")
+    if first in WEEK and last in WEEK and WEEK.index(first) < WEEK.index(last):
+        return [DAY_INDEX[day] for day in WEEK[WEEK.index(first) : WEEK.index(last) + 1]]
+    return None
+
+
+def _hours(every_day):
+    """The zones of the days the keys cover, each day once; all year, every day of the week."""
+
+    def validate(config):
+        config = cv.Schema({cv.string_strict: _zones})(config)
+        if not config:
+            raise cv.Invalid("needs the zones of a day")
+        names = {index: name for name, index in DAY_INDEX.items()}
+        covered = {}
+        for key in config:
+            days = _days(key)
+            if days is None:
+                raise cv.Invalid(f'"{key}" isn\'t a day like mon, a range like mon-fri, or holiday', [key])
+            for day in days:
+                if day in covered:
+                    raise cv.Invalid(f'{names[day]} is in "{covered[day]}" already', [key])
+                covered[day] = key
+        if every_day and (missing := [day for day in WEEK if DAY_INDEX[day] not in covered]):
+            raise cv.Invalid(f"needs the zones of {', '.join(missing)} too")
+        return config
+
+    return validate
 
 
 def _month_day(value):
@@ -90,7 +132,7 @@ def _month_day(value):
     value = cv.string_strict(value)
     m = re.fullmatch(r"(\d\d)-(\d\d)", value)
     month, day = (int(m[1]), int(m[2])) if m else (0, 0)
-    if 1 <= month <= 12 and 1 <= day <= (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month - 1]:
+    if 1 <= month <= 12 and 1 <= day <= MONTH_DAYS[month - 1]:
         return month * 100 + day
     raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25"')
 
@@ -135,14 +177,22 @@ def _currency(config):
     return config
 
 
+def _season_dates(season):
+    """The dates of a season, as month * 100 + day."""
+    first, last = season[CONF_FROM], season[CONF_TO]
+    dates = {month * 100 + day for month in range(1, 13) for day in range(1, MONTH_DAYS[month - 1] + 1)}
+    return {date for date in dates if (first <= date <= last if first <= last else date >= first or date <= last)}
+
+
 def _validate_grid(config):
-    days = [CONF_WORKDAY, CONF_WEEKEND]
-    if config[CONF_HOLIDAYS]:
-        if CONF_HOLIDAY not in config[CONF_HOURS]:
-            raise cv.Invalid("needs the zone of each hour on public holidays", path=[CONF_HOURS, CONF_HOLIDAY])
-        days.append(CONF_HOLIDAY)
-    winter = config[CONF_HOURS].get(CONF_WINTER, {})
-    zones = set("".join(config[CONF_HOURS].get(day, "") + winter.get(day, "") for day in days))
+    seasons = config[CONF_SEASONS]
+    for i, season in enumerate(seasons):
+        for other in seasons[:i]:
+            if _season_dates(season) & _season_dates(other):
+                start = f"{other[CONF_FROM] // 100:02d}-{other[CONF_FROM] % 100:02d}"
+                raise cv.Invalid(f"overlaps the season from {start}", [CONF_SEASONS, i])
+    tables = [config[CONF_HOURS], *(season[CONF_HOURS] for season in seasons)]
+    zones = set("".join(zones for table in tables for zones in table.values()))
     if missing := sorted(zones - set(config[CONF_PRICES])):
         raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_PRICES])
     if unused := sorted(set(config[CONF_PRICES]) - zones):
@@ -153,28 +203,19 @@ def _validate_grid(config):
 GRID_SCHEMA = cv.All(
     cv.Schema(
         {
-            cv.Optional(CONF_HOLIDAYS, default=[]): cv.ensure_list(_holiday),
             cv.Optional(CONF_CLOCK, default="local"): cv.one_of("local", "winter"),
-            cv.Required(CONF_HOURS): cv.Schema(
-                {
-                    cv.Required(CONF_WORKDAY): _hours,
-                    cv.Required(CONF_WEEKEND): _hours,
-                    cv.Optional(CONF_HOLIDAY): _hours,
-                    cv.Optional(CONF_WINTER): cv.All(
-                        cv.Schema(
-                            {
-                                cv.Required(CONF_FROM): _month_day,
-                                cv.Required(CONF_TO): _month_day,
-                                cv.Optional(CONF_WORKDAY): _hours,
-                                cv.Optional(CONF_WEEKEND): _hours,
-                                cv.Optional(CONF_HOLIDAY): _hours,
-                            }
-                        ),
-                        cv.has_at_least_one_key(CONF_WORKDAY, CONF_WEEKEND, CONF_HOLIDAY),
-                    ),
-                }
-            ),
+            cv.Optional(CONF_HOLIDAYS, default=[]): cv.ensure_list(_holiday),
+            cv.Required(CONF_HOURS): _hours(every_day=True),
             cv.Required(CONF_PRICES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
+            cv.Optional(CONF_SEASONS, default=[]): cv.ensure_list(
+                cv.Schema(
+                    {
+                        cv.Required(CONF_FROM): _month_day,
+                        cv.Required(CONF_TO): _month_day,
+                        cv.Required(CONF_HOURS): _hours(every_day=False),
+                    }
+                )
+            ),
         }
     ),
     _validate_grid,
@@ -207,25 +248,34 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
+def _table(hours):
+    """A Hours of charging.h: the zones by day from Sunday, then holidays, empty where hours doesn't say."""
+    table = [""] * 8
+    for key, zones in hours.items():
+        for day in _days(key):
+            table[day] = zones
+    return table
+
+
 def _grid(config, vat):
-    hours = config[CONF_HOURS]
     holidays = config[CONF_HOLIDAYS]
-    winter = hours.get(CONF_WINTER, {})
     return cg.StructInitializer(
         Grid,
         ("vat", vat),
         ("winter_clock", config[CONF_CLOCK] == "winter"),
-        ("workday", hours[CONF_WORKDAY]),
-        ("weekend", hours[CONF_WEEKEND]),
-        ("holiday", hours.get(CONF_HOLIDAY, "")),
+        ("hours", _table(config[CONF_HOURS])),
+        (
+            "seasons",
+            [
+                cg.StructInitializer(
+                    Season, ("from", season[CONF_FROM]), ("to", season[CONF_TO]), ("hours", _table(season[CONF_HOURS]))
+                )
+                for season in config[CONF_SEASONS]
+            ],
+        ),
         ("fee", [config[CONF_PRICES].get(zone, 0.0) for zone in ascii_lowercase]),
         ("holidays", [h for h in holidays if not isinstance(h, tuple)]),
         ("after_easter", [h[1] for h in holidays if isinstance(h, tuple)]),
-        ("winter_from", winter.get(CONF_FROM, 0)),
-        ("winter_to", winter.get(CONF_TO, 0)),
-        ("winter_workday", winter.get(CONF_WORKDAY, "")),
-        ("winter_weekend", winter.get(CONF_WEEKEND, "")),
-        ("winter_holiday", winter.get(CONF_HOLIDAY, "")),
     )
 
 

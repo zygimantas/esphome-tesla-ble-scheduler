@@ -11,6 +11,7 @@
 #include <ArduinoJson.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -141,27 +142,35 @@ inline int64_t easter_sunday(int64_t year) {
   return days_from_civil(year, static_cast<unsigned>(month), static_cast<unsigned>(day));
 }
 
+// A day's zones, by weekday from Sunday (0) to Saturday (6), then on public holidays (7). The zones of a day are one
+// letter per hour, half-hour or quarter-hour from 00:00: 24, 48 or 96 letters. Empty where other hours apply (see
+// grid_fee()).
+using Hours = std::array<std::string, 8>;
+
+// Other hours for part of the year, from `from` to `to` as month * 100 + day, a range that may cross New Year.
+struct Season {
+  uint16_t from = 0;
+  uint16_t to = 0;
+  Hours hours;
+};
+
 // The VAT and grid fees from config.yaml (format in docs/grid-fees.md; the build turns them into one of these): VAT
-// on the spot price, and a grid fee per zone. Every hour of a workday, a weekend day and a public
-// holiday belongs to a zone, named by a letter. Zone hours are local time, or winter time all year
-// with clock: winter. Part of the year can have other hours (winter_from to winter_to, as month * 100
-// + day, a range that may cross New Year); an empty winter string keeps the year-round one. Default:
-// spot prices only.
+// on the spot price, and a grid fee per zone, named by a letter. Zone hours are local time, or winter time all year
+// with clock: winter. Default: spot prices only.
 struct Grid {
   float vat = 0.0f;
   bool winter_clock = false;
-  std::string workday;  // one zone letter per hour; empty means no grid fees
-  std::string weekend;
-  std::string holiday;
-  std::vector<float> fee;            // EUR/kWh incl. VAT, per zone letter a-z
+  Hours hours;                       // all year: every weekday has its zones
+  std::vector<Season> seasons;       // other hours for parts of the year; they don't overlap
+  std::vector<float> fee;            // per zone letter a-z, with VAT; empty means no grid fees
   std::vector<uint16_t> holidays;    // public holidays on fixed dates, as month * 100 + day
   std::vector<int8_t> after_easter;  // public holidays around Easter, in days after Easter Sunday
-  uint16_t winter_from = 0;
-  uint16_t winter_to = 0;
-  std::string winter_workday;
-  std::string winter_weekend;
-  std::string winter_holiday;
 };
+
+inline bool in_season(uint16_t month_day, const Season &season) {
+  return season.from <= season.to ? season.from <= month_day && month_day <= season.to
+                                  : month_day >= season.from || month_day <= season.to;
+}
 
 inline bool public_holiday(int64_t local_day, const Grid &grid) {
   const CivilDate date = civil_from_days(local_day);
@@ -175,25 +184,24 @@ inline bool public_holiday(int64_t local_day, const Grid &grid) {
   return false;
 }
 
+// The zones of a day: a season's that names the day, else the year-round ones. A public holiday takes the holiday's,
+// else Sunday's.
 inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
-  if (grid.workday.empty())
+  if (grid.fee.empty())
     return 0.0f;
   const int64_t local = utc + (grid.winter_clock ? standard_offset : eu_offset(utc, standard_offset));
   const int64_t local_day = floor_div(local, DAY_SECONDS);
-  const int64_t hour = (local - local_day * DAY_SECONDS) / 3600;
-  const int day_of_week = weekday(local_day);
-  const bool holiday = public_holiday(local_day, grid);
-  const bool weekend = day_of_week == 0 || day_of_week == 6;
   const CivilDate date = civil_from_days(local_day);
   const auto month_day = static_cast<uint16_t>(date.month * 100 + date.day);
-  const bool winter = grid.winter_from <= grid.winter_to ? grid.winter_from <= month_day && month_day <= grid.winter_to
-                                                         : month_day >= grid.winter_from || month_day <= grid.winter_to;
-  const std::string &special = holiday ? grid.winter_holiday : weekend ? grid.winter_weekend : grid.winter_workday;
-  const std::string &hours = winter && !special.empty() ? special
-                             : holiday                  ? grid.holiday
-                             : weekend                  ? grid.weekend
-                                                        : grid.workday;
-  return grid.fee[hours[hour] - 'a'];
+  const auto season = std::find_if(grid.seasons.begin(), grid.seasons.end(),
+                                   [month_day](const Season &s) { return in_season(month_day, s); });
+  const auto zones_of = [&](int day) -> const std::string & {
+    return season != grid.seasons.end() && !season->hours[day].empty() ? season->hours[day] : grid.hours[day];
+  };
+  const std::string &own = zones_of(public_holiday(local_day, grid) ? 7 : weekday(local_day));
+  const std::string &zones = own.empty() ? zones_of(0) : own;
+  const auto part = (local - local_day * DAY_SECONDS) * static_cast<int64_t>(zones.size()) / DAY_SECONDS;
+  return grid.fee[zones[part] - 'a'];
 }
 
 // The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that

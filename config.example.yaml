@@ -16,9 +16,8 @@ charging:
       - 12-25
       - 12-26
     hours:
-      holiday:  nnnnnnndddddddddddddddnn
-      weekend:  nnnnnnndddddddddddddddnn
-      workday:  nnnnnmmddddddddddeeeeenn
+      mon-fri: nnnnnmmddddddddddeeeeenn
+      sat-sun: nnnnnnndddddddddddddddnn
     prices:
       n: 0.06292
       m: 0.08349

@@ -12,8 +12,7 @@ charging:
   charging_kw: 11
   grid:
     hours:
-      weekend: aaaaaaaaaaaaaaaaaaaaaaaa
-      workday: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
     prices:
       a: 0.11132
   id: charging_id
