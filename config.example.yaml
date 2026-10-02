@@ -46,4 +46,4 @@ substitutions:
   tesla_charging_kw: "11"
   tesla_vin: REPLACEME
   timezone: Europe/Vilnius
-  version: v1.0.0
+  version: v1.1.0
