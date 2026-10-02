@@ -553,7 +553,7 @@ class Controller {
     allow_command_();
   }
   // The page's Reset savings: the figures start afresh on the next tick.
-  void reset_savings() { savings.currency[0] = '\0'; }
+  void reset_savings() { savings = Savings{}; }
   // What the buttons chose, for the board to keep across a restart (see Hold).
   int held_mode() const { return static_cast<int>(hold_); }
   void restore_mode(int mode) { hold_ = mode == 1 ? Hold::NOW : mode == 2 ? Hold::NONE : Hold::PLAN; }
