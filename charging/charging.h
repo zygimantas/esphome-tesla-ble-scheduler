@@ -383,7 +383,8 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
   const int64_t first = floor_to_slot(request.now);
   std::vector<float> totals;  // total_price() of each slot from `first` to priced_end
   for (int64_t t = first; t + SLOT_SECONDS <= priced_end; t += SLOT_SECONDS)
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): up to known_until(), every slot has a price
+    // Up to known_until(), every slot has a price.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access,clang-analyzer-core.CallAndMessage)
     totals.push_back(total_price(*prices.get(t), t, request.grid, request.settings.standard_offset));
   plan.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
   plan.horizon_slots = static_cast<int>(totals.size()) + plan.unpriced_slots;
