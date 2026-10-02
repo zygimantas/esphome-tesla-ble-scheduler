@@ -8,7 +8,7 @@ The `grid:` part of `config.yaml` adds your grid fees to the market prices, so t
 - `clock: winter`: the plan's clock stays on winter time all year, as some plans do: the zone hours, and the days and dates that pick them. Leave it out when the plan follows the clock.
 - `winter` under `hours`: other zone hours for part of the year, between `from` and `to` as `MM-DD` (the range may cross New Year), for the `workday`, `weekend` or `holiday` you give; the others keep the year-round hours.
 
-`market: prices:` says where the market prices come from: the `area`, and the `vat` on the price itself (see Settings in the README).
+`market:` says where the market prices come from: the `area`, and the `vat` on the price itself (see Settings in the README).
 
 ## A fixed price
 

@@ -4,7 +4,7 @@ The board follows market prices where Nord Pool publishes the day-ahead prices o
 
 ## Supported
 
-| Country | `market: prices: area` | `currency` | Good to know |
+| Country | `market: area` | `currency` | Good to know |
 | --- | --- | --- | --- |
 | Austria | `AT` | `EUR` | |
 | Belgium | `BE` | `EUR` | Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |

@@ -25,9 +25,8 @@ charging:
       d: 0.10406
       e: 0.14641
   market:
-    prices:
-      area: LT
-      vat: 0.21
+    area: LT
+    vat: 0.21
 
 external_components:
   - components: [charging]

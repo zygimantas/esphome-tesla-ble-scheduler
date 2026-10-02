@@ -128,7 +128,7 @@ def _currency_code(value):
 def _currency(config):
     """The market area's currency unless set, otherwise euros. Without a market, any currency."""
     market = config.get(CONF_MARKET)
-    area = market[CONF_PRICES][CONF_AREA] if market else ""
+    area = market[CONF_AREA] if market else ""
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
     if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
         raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
@@ -182,12 +182,8 @@ GRID_SCHEMA = cv.All(
 
 MARKET_SCHEMA = cv.Schema(
     {
-        cv.Required(CONF_PRICES): cv.Schema(
-            {
-                cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
-                cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
-            }
-        ),
+        cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
+        cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
     }
 )
 
@@ -246,13 +242,12 @@ async def to_code(config):
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
     market = config.get(CONF_MARKET)
     if market:
-        area = market[CONF_PRICES][CONF_AREA]
-        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(area, area)))
+        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(market[CONF_AREA], market[CONF_AREA])))
     cg.add(var.set_currency(config[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    cg.add(var.set_grid(_grid(config[CONF_GRID], market[CONF_PRICES][CONF_VAT] if market else 0.0)))
+    cg.add(var.set_grid(_grid(config[CONF_GRID], market[CONF_VAT] if market else 0.0)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

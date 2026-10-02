@@ -66,8 +66,8 @@ Your settings in `config.yaml`:
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
 | `grid` | Your grid fees, by zone and hour (see [Grid fees](#grid-fees)). |
-| `market: prices: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
-| `market: prices: vat` | The VAT added to the market prices: `0.21` is 21%. |
+| `market: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
+| `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
