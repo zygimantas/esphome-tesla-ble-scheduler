@@ -65,8 +65,10 @@ def digest(binary):
 
 
 def passes(binary):
+    """Whether the tests pass. They take a few seconds with the checks, more while the other builds run: a mutant
+    fails only when it takes far longer, looping forever."""
     try:
-        return subprocess.run([binary], capture_output=True, timeout=5).returncode == 0
+        return subprocess.run([binary], capture_output=True, timeout=20).returncode == 0
     except subprocess.TimeoutExpired:
         return False
 

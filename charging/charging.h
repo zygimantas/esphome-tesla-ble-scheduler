@@ -299,6 +299,13 @@ class PriceTable {
     return t;
   }
 
+  // Calls f(slot_start, price) for each price from `from` to `to`.
+  template <typename F>
+  void for_each(int64_t from, int64_t to, F f) const {
+    for (auto it = find_(slots_, from); it != slots_.end() && it->first < to; ++it)
+      f(it->first, it->second);
+  }
+
   void drop_before(int64_t t) { slots_.erase(slots_.begin(), find_(slots_, t)); }
 
  private:
@@ -781,9 +788,10 @@ class Controller {
       at_once_charged_ = 0;
     }
     needed_ = needed;
-    for (size_t i = 0; i < at_once_prices_.size(); ++i) {  // also prices published since it started
+    for (size_t i = 0; i < at_once_prices_.size(); ++i) {  // as each price comes out, then kept
       const int64_t slot = floor_to_slot(at_once_from_) + static_cast<int64_t>(i) * SLOT_SECONDS;
-      if (const std::optional<float> spot = prices.get(slot))
+      const std::optional<float> spot = std::isnan(at_once_prices_[i]) ? prices.get(slot) : std::nullopt;
+      if (spot)
         at_once_prices_[i] = total_price(*spot, slot, grid_, settings.standard_offset);
     }
 
@@ -843,12 +851,10 @@ class Controller {
   float day_average_(int64_t t, int32_t standard_offset) const {
     float sum = 0;
     int count = 0;
-    for (int64_t slot = start_of_delivery_day(t); slot < end_of_delivery_day(t); slot += SLOT_SECONDS) {
-      if (const std::optional<float> spot = prices.get(slot)) {
-        sum += total_price(*spot, slot, grid_, standard_offset);
-        ++count;
-      }
-    }
+    prices.for_each(start_of_delivery_day(t), end_of_delivery_day(t), [&](int64_t slot, float spot) {
+      sum += total_price(spot, slot, grid_, standard_offset);
+      ++count;
+    });
     return sum / static_cast<float>(count);  // NaN (0 / 0) without prices
   }
 
