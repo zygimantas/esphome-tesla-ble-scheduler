@@ -47,10 +47,10 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<ChargingCom
   ESPPreferenceObject pref_;
 };
 
-enum class Action { CREATE_PLAN, CHARGE_NOW, STOP_CHARGING };
+enum class Action { CREATE_PLAN, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
-// The page's Create charging plan, Start charging now and Stop charging.
-class PlanButton : public button::Button, public Parented<ChargingComponent> {
+// The page's Create charging plan, Start charging now, Stop charging and Reset savings.
+class ActionButton : public button::Button, public Parented<ChargingComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }
 
@@ -85,6 +85,7 @@ class ChargingComponent : public PollingComponent {
   void set_mode(text_sensor::TextSensor *mode) { this->mode_ = mode; }
   void set_windows(text_sensor::TextSensor *windows) { this->windows_ = windows; }
   void set_prices_until(text_sensor::TextSensor *prices_until) { this->prices_until_ = prices_until; }
+  void set_savings(text_sensor::TextSensor *savings) { this->savings_ = savings; }
 
   // For the simulation, which loads made-up prices.
   Controller &controller() { return this->controller_; }
@@ -116,11 +117,13 @@ class ChargingComponent : public PollingComponent {
   text_sensor::TextSensor *mode_{nullptr};
   text_sensor::TextSensor *windows_{nullptr};
   text_sensor::TextSensor *prices_until_{nullptr};
+  text_sensor::TextSensor *savings_{nullptr};
 
   // The Tesla's entities, found by name; null when missing.
   binary_sensor::BinarySensor *plug_{nullptr};
   text_sensor::TextSensor *charging_state_{nullptr};
   sensor::Sensor *battery_{nullptr};
+  sensor::Sensor *power_{nullptr};
   number::Number *limit_{nullptr};
   switch_::Switch *charger_{nullptr};
   button::Button *wake_{nullptr};
@@ -133,6 +136,7 @@ class ChargingComponent : public PollingComponent {
   // What the buttons chose, kept across a restart (Controller::held_mode()).
   ESPPreferenceObject held_pref_;
   int32_t held_{0};
+  ESPPreferenceObject savings_pref_;  // Controller::savings
 };
 
 }  // namespace esphome::charging

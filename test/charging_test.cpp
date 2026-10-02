@@ -889,10 +889,12 @@ static void test_fetch_prices_due() {
   CHECK(!controller.fetch_prices_due(noon + 3 * HOUR));  // all in
   CHECK(controller.fetch_prices_due(CET_SEP25 + 60));    // 01:00: the next delivery day is due
 
-  // Planning drops the prices before the current quarter-hour.
+  // A tick keeps the delivery day's prices, for its average, and drops the days before.
   Controller planning = with_prices();
-  planning.tick(FakeTesla().state(SEP24_1700Z + 60), Settings());
-  CHECK(!planning.prices.get(SEP24_1700Z - SLOT_SECONDS) && planning.prices.get(SEP24_1700Z));
+  planning.tick(FakeTesla().state(SEP24_1700Z), Settings());
+  CHECK(planning.prices.get(CET_SEP24).has_value());
+  planning.tick(FakeTesla().state(CET_SEP25 + 60), Settings());
+  CHECK(!planning.prices.get(CET_SEP25 - SLOT_SECONDS) && planning.prices.get(CET_SEP25));
 }
 
 static void test_restart_waits_for_prices() {
@@ -1554,6 +1556,283 @@ static void test_plug_in_message_when_the_battery_level_stays_unknown() {
   CHECK(late.tick(car.state(SEP24_1700Z + 30 * 60 + 1), Settings()).notification.has_value());
 }
 
+// ---------------------------------------------------------------------------
+// Savings
+// ---------------------------------------------------------------------------
+
+// A car plugged in at 40% with an 80% limit, reporting `state` and drawing `kw`.
+static CarState drawing(int64_t now, float kw, const char *state = "Charging") {
+  CarState car = plugged_in(false).state(now);
+  car.charging_state = state;
+  car.power_kw = kw;
+  return car;
+}
+
+// The start of format_savings(): the currency and the local day number of a date.
+static std::string savings_since(int year, unsigned month, unsigned day, const char *currency = "EUR") {
+  return currency + (";" + std::to_string(days_from_civil(year, month, day)));
+}
+
+// The same figures for the last 30 days and the last 365, as format_savings() lists them.
+static std::string twice(const std::string &figures) { return ";" + figures + ";" + figures; }
+
+// Spot prices at `price` for the delivery days from that of `from` to that of `to`.
+static PriceTable flat_prices(float price, int64_t from, int64_t to) {
+  return prices_from(start_of_delivery_day(from), end_of_delivery_day(to), [price](int64_t) { return price; });
+}
+
+static const SavingsDay &savings_on(const Controller &controller, int year, unsigned month, unsigned day) {
+  return controller.savings.days[ring_index(days_from_civil(year, month, day))];
+}
+
+static void test_savings_count_each_quarter_hour() {
+  // At 36 kW, 0.01 kWh a second. Spot prices only: 0.50 EUR/kWh, but 0 in the quarter-hour before 20:00 and 1.00 in
+  // the one from 20:00, so the day's average stays 0.50.
+  Controller controller;
+  controller.prices = prices_from(CET_SEP24, CET_SEP25, [](int64_t after) {
+    const int64_t t = CET_SEP24 + after;
+    return t == SEP24_1700Z - SLOT_SECONDS ? 0.0f : t == SEP24_1700Z ? 1.0f : 0.5f;
+  });
+  CHECK_STR(controller.tick(drawing(SEP24_1700Z - 45, 0, "Stopped"), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("0,0,0,0"));
+  controller.tick(drawing(SEP24_1700Z - 15, 36), Settings());                     // 30 s at 0
+  const Decision d = controller.tick(drawing(SEP24_1700Z + 15, 36), Settings());  // 15 s at 0, 15 s at 1.00
+  // 0.6 kWh for 0.15 EUR, 0.30 at the day's average, and 0.15 at once: it charged from the start.
+  CHECK_STR(d.savings, savings_since(2026, 9, 24) + twice("600,15,30,15"));
+
+  // Below zero, the car earns.
+  Controller paid = with_prices(flat_prices(-0.5f, SEP24_1700Z, SEP24_1700Z));
+  paid.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  CHECK_STR(paid.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("100,-5,-5,-5"));
+
+  // The ring wraps around for any day number.
+  CHECK(ring_index(-1) == SAVINGS_DAYS - 1 && ring_index(SAVINGS_DAYS) == 0);
+}
+
+static void test_savings_by_local_day() {
+  // Charging over midnight on New Year's Eve, in winter time: what it took before midnight counts on 31 December 2026,
+  // the rest on 1 January 2027.
+  const int64_t new_year = local_to_utc(days_from_civil(2027, 1, 1), 0, VILNIUS_STANDARD_OFFSET);
+  Controller controller = with_prices(flat_prices(0.5f, new_year, new_year));
+  controller.tick(drawing(new_year - 20, 0, "Stopped"), Settings());
+  const Decision d = controller.tick(drawing(new_year + 10, 36), Settings());
+  const SavingsDay &december = savings_on(controller, 2026, 12, 31), &january = savings_on(controller, 2027, 1, 1);
+  CHECK(december.wh == 200 && december.paid == 10 && december.average == 10 && december.at_once == 10);
+  CHECK(january.wh == 100 && january.paid == 5 && january.average == 5 && january.at_once == 5);
+  CHECK_STR(d.savings, savings_since(2026, 12, 31) + twice("300,15,15,15"));
+}
+
+static void test_savings_last_30_and_365_days() {
+  // 0.1 kWh at 0.50 EUR/kWh on Thursday 24 September 2026, then the figures as the days go by.
+  Controller controller = with_prices(flat_prices(0.5f, SEP24_1700Z, SEP24_1700Z));
+  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  controller.tick(drawing(SEP24_1700Z + 10, 36), Settings());
+  const auto days_later = [&controller](int64_t days) {
+    return controller.tick(drawing(SEP24_1700Z + days * DAY_SECONDS, 0, "Stopped"), Settings()).savings;
+  };
+  const std::string start = savings_since(2026, 9, 24), some = ";100,5,5,5", none = ";0,0,0,0";
+  CHECK_STR(days_later(0), start + some + some);
+  CHECK_STR(days_later(29), start + some + some);  // Friday 23 October, the 30th day
+  CHECK_STR(days_later(30), start + none + some);
+  CHECK_STR(days_later(364), start + none + some);  // Thursday 23 September 2027, the 365th
+  CHECK_STR(days_later(365), start + none + none);
+  CHECK_STR(days_later(365 + 1000), start + none + none);
+}
+
+static void test_savings_without_a_price() {
+  // No prices at all: the energy counts, and no money.
+  Controller none;
+  none.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  CHECK_STR(none.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("100,0,0,0"));
+  // A quarter-hour without a price in a day with some counts at the day's average: it neither saves nor costs.
+  Controller gap = with_prices(prices_from(CET_SEP24, SEP24_1700Z, [](int64_t) { return 0.5f; }));  // until 20:00
+  gap.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  CHECK_STR(gap.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("100,5,5,5"));
+}
+
+static void test_savings_average_of_the_delivery_day() {
+  // Nord Pool's delivery day runs 01:00 to 01:00 in Vilnius: spot 0.10 EUR/kWh, and 1.00 in its last hour, on Friday.
+  // With 21% VAT and two_zones()' fees by winter time, 8 night hours at 0.07139 and 16 day hours at 0.12947.
+  Controller controller =
+      with_prices(prices_from(CET_SEP24, CET_SEP25, [](int64_t after) { return after >= 23 * HOUR ? 1.0f : 0.1f; }));
+  controller.set_grid(two_zones());
+  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  controller.tick(drawing(SEP24_1700Z + 50, 36), Settings());
+  const Decision d = controller.tick(drawing(SEP24_1700Z + 100, 36), Settings());
+  // 1 kWh at 20:00, in a day hour: 0.10 * 1.21 + 0.12947 = 0.25047. The day's average: (23 * 0.10 + 1.00) / 24 *
+  // 1.21 + (8 * 0.07139 + 16 * 0.12947) / 24 = 0.16638 + 0.11011 = 0.27649.
+  CHECK_STR(d.savings, savings_since(2026, 9, 24) + twice("1000,25,28,25"));
+}
+
+// The figures of the last 365 days.
+static SavingsDay savings_total(const Savings &savings) {
+  SavingsDay all;
+  for (const SavingsDay &day : savings.days)
+    all.add(day);
+  return all;
+}
+
+static void test_savings_after_a_night() {
+  // Plugged in at 20:00 at 40% and charged to 80% in the night trough (test_charges_only_in_the_cheap_window): the 30
+  // kWh the battery takes are 33.3 from the grid, plus half a minute of the car's own start at 190 EUR/MWh. The
+  // trough averages 21.2 EUR/MWh, and both delivery days 94.48 (typical_baltic_price()). At once from 20:00, at 11 kW,
+  // it would have charged two hours at 190 EUR/MWh and the rest at 95.
+  Controller controller = with_prices();
+  simulate(controller, FakeTesla(), SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR, {{SEP24_1700Z, &FakeTesla::plug_in}});
+  const SavingsDay all = savings_total(controller.savings);
+  const float kwh = static_cast<float>(all.wh) / 1000.0f, start_kwh = 11.0f * 30 / 3600;
+  CHECK(near(kwh, 30.0f / EFFICIENCY + start_kwh, 0.1f));
+  CHECK(near(static_cast<float>(all.paid) / 100.0f, (kwh - start_kwh) * 0.0212f + start_kwh * 0.19f, 0.01f));
+  CHECK(near(static_cast<float>(all.average) / 100.0f, kwh * 0.09448f, 0.01f));
+  CHECK(near(static_cast<float>(all.at_once) / 100.0f, 22 * 0.19f + (kwh - 22) * 0.095f, 0.01f));
+}
+
+static void test_savings_at_once_with_prices_out_later() {
+  // Plugged in at 20:00 Thursday, then charged at 36 kW (9 kWh a quarter-hour) for 45 minutes from 03:00 Friday, at
+  // 0.10 EUR/kWh. At once it would have charged 20:00 to 20:45: at 0.20, in a quarter-hour that never got a price
+  // (so at Friday's average, 0.10), and at 0.40, a price out only after the plug-in.
+  const int64_t eight = SEP24_1700Z, three = SEP24_1700Z + 7 * HOUR;
+  Controller controller;
+  for (int64_t t = CET_SEP24; t < CET_SEP25 + DAY_SECONDS; t += SLOT_SECONDS)
+    if (t != eight + SLOT_SECONDS && t != eight + 2 * SLOT_SECONDS)
+      controller.prices.set(t, t < CET_SEP25 ? 0.2f : 0.1f);
+  controller.tick(drawing(eight, 0, "Stopped"), Settings());
+  controller.prices.set(eight + 2 * SLOT_SECONDS, 0.4f);
+  controller.tick(drawing(eight + 20 * 60, 0, "Stopped"), Settings());
+  controller.tick(drawing(three, 0, "Stopped"), Settings());
+  for (int64_t t = three + 30; t <= three + 45 * 60; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  // 27 kWh for 2.70 EUR, the same at Friday's average; at once 9 * 0.20 + 9 * 0.10 + 9 * 0.40 = 6.30.
+  CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("27000,270,270,630"));
+}
+
+static void test_savings_at_once_for_a_day_at_most() {
+  // Plugged in at the start of Thursday's delivery day, at 1.00 EUR/kWh, then charged at 2 kW for a day and a
+  // quarter-hour from the start of Friday's, at 0.10, into Saturday's, at 0.30. At once covers a day of charging; the
+  // rest counts at its day's average.
+  const int64_t saturday = CET_SEP25 + DAY_SECONDS;
+  Controller controller = with_prices(prices_from(CET_SEP24, saturday + DAY_SECONDS, [](int64_t after) {
+    return after < DAY_SECONDS ? 1.0f : after < 2 * DAY_SECONDS ? 0.1f : 0.3f;
+  }));
+  controller.tick(drawing(CET_SEP24, 0, "Stopped"), Settings());
+  controller.tick(drawing(CET_SEP25, 0, "Stopped"), Settings());
+  for (int64_t t = CET_SEP25 + 60; t <= saturday + 15 * 60; t += 60)
+    controller.tick(drawing(t, 2), Settings());
+  // 48.5 kWh: 48 * 0.10 + 0.5 * 0.30 = 4.95 paid and at the days' averages; at once 48 * 1.00 + 0.5 * 0.30 = 48.15.
+  const SavingsDay all = savings_total(controller.savings);
+  CHECK(near(static_cast<float>(all.wh), 48500, 2));
+  CHECK(near(static_cast<float>(all.paid), 495, 1.5f));
+  CHECK(near(static_cast<float>(all.average), 495, 1.5f));
+  CHECK(near(static_cast<float>(all.at_once), 4815, 1.5f));
+}
+
+static void test_savings_at_once_starts_when_charging_is_needed() {
+  // Plugged in at 20:00 and charged at once for a quarter-hour at 0.30 EUR/kWh, to the limit. By 06:00 Friday the car
+  // has drifted below it, at 0.20; the board charges at 07:00, at 0.10. At once would have charged from 06:00.
+  const int64_t eight = SEP24_1700Z, six = SEP24_1700Z + 10 * HOUR, seven = six + HOUR;
+  Controller controller = with_prices(prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [=](int64_t after) {
+    const int64_t t = CET_SEP24 + after;
+    return t == eight ? 0.3f : t == six ? 0.2f : 0.1f;
+  }));
+  const auto at = [](int64_t now, float soc, float kw, const char *state) {
+    CarState car = drawing(now, kw, state);
+    car.soc = soc;
+    return car;
+  };
+  controller.tick(at(eight, 79, 0, "Stopped"), Settings());
+  for (int64_t t = eight + 30; t <= eight + 15 * 60; t += 30)
+    controller.tick(at(t, 79, 36, "Charging"), Settings());
+  controller.tick(at(eight + 16 * 60, 80, 0, "Complete"), Settings());
+  controller.tick(at(six, 79, 0, "Stopped"), Settings());
+  controller.tick(at(seven, 79, 0, "Stopped"), Settings());
+  for (int64_t t = seven + 30; t <= seven + 15 * 60; t += 30)
+    controller.tick(at(t, 79, 36, "Charging"), Settings());
+  // 9 kWh each day: 2.70 EUR on Thursday, paid and at once; 0.90 on Friday, and 1.80 at once.
+  const SavingsDay &thursday = savings_on(controller, 2026, 9, 24), &friday = savings_on(controller, 2026, 9, 25);
+  CHECK(thursday.wh == 9000 && thursday.paid == 270 && thursday.at_once == 270);
+  CHECK(friday.wh == 9000 && friday.paid == 90 && friday.at_once == 180);
+}
+
+static void test_savings_count_only_what_the_car_draws() {
+  // 0.10 EUR/kWh from 20:00, 0.30 from 20:15. Plugged in at 20:00.
+  Controller controller = with_prices(prices_from(CET_SEP24, CET_SEP25, [](int64_t after) {
+    return CET_SEP24 + after < SEP24_1700Z + SLOT_SECONDS ? 0.1f : 0.3f;
+  }));
+  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  // Nothing while the car isn't reported charging, draws nothing or its power is unknown, nor does charging at once
+  // move on.
+  controller.tick(drawing(SEP24_1700Z + 30, 11, "Starting"), Settings());
+  controller.tick(drawing(SEP24_1700Z + 60, 11, "Unknown"), Settings());
+  controller.tick(drawing(SEP24_1700Z + 90, 0), Settings());
+  controller.tick(drawing(SEP24_1700Z + 120, NAN), Settings());
+  CHECK(savings_on(controller, 2026, 9, 24).wh == 0);
+  // 20:15 to 20:30 at 36 kW: 9 kWh for 2.70 EUR, at once in the first quarter-hour for 0.90.
+  controller.tick(drawing(SEP24_1700Z + SLOT_SECONDS, 0, "Stopped"), Settings());
+  for (int64_t t = SEP24_1700Z + SLOT_SECONDS + 30; t <= SEP24_1700Z + 2 * SLOT_SECONDS; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  const SavingsDay &thursday = savings_on(controller, 2026, 9, 24);
+  CHECK(thursday.wh == 9000 && thursday.paid == 270 && thursday.at_once == 90);
+  // A tick ten minutes late counts the last minute: the car's power is from the last few seconds.
+  controller.tick(drawing(SEP24_1700Z + 2 * SLOT_SECONDS + 10 * 60, 36), Settings());
+  CHECK(thursday.wh == 9600 && thursday.paid == 288);
+}
+
+static void test_savings_saved_once_a_quarter_hour() {
+  // Written at once when counting starts, then while the car charges on its first tick in each quarter-hour, and
+  // once it stops.
+  Controller controller = with_prices();
+  CHECK(controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings()).save_savings);
+  CHECK(!controller.tick(drawing(SEP24_1700Z + 30, 0, "Stopped"), Settings()).save_savings);
+  CHECK(!controller.tick(drawing(SEP24_1700Z + 60, 11), Settings()).save_savings);  // the quarter-hour just written
+  CHECK(!controller.tick(drawing(SEP24_1700Z + 90, 11), Settings()).save_savings);
+  CHECK(controller.tick(drawing(SEP24_1700Z + SLOT_SECONDS, 11), Settings()).save_savings);
+  CHECK(!controller.tick(drawing(SEP24_1700Z + SLOT_SECONDS + 30, 11), Settings()).save_savings);
+  CHECK(controller.tick(drawing(SEP24_1700Z + SLOT_SECONDS + 60, 0, "Complete"), Settings()).save_savings);
+  CHECK(!controller.tick(drawing(SEP24_1700Z + 2 * SLOT_SECONDS, 0, "Complete"), Settings()).save_savings);
+}
+
+static void test_savings_restart_currency_and_reset() {
+  // Nothing before the clock is set.
+  Controller controller = with_prices(flat_prices(0.5f, SEP24_1700Z, SEP24_1700Z + DAY_SECONDS));
+  CHECK(controller.tick(drawing(0, 0, "Stopped"), Settings()).savings.empty());
+  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  controller.tick(drawing(SEP24_1700Z + 10, 36), Settings());
+
+  // After a restart the board loads what it saved and adds to it.
+  Controller restarted = with_prices(controller.prices);
+  restarted.savings = controller.savings;
+  const Decision loaded = restarted.tick(drawing(SEP24_1700Z + 60, 0, "Stopped"), Settings());
+  CHECK_STR(loaded.savings, savings_since(2026, 9, 24) + twice("100,5,5,5"));
+  CHECK(!loaded.save_savings);
+  CHECK_STR(restarted.tick(drawing(SEP24_1700Z + 70, 36), Settings()).savings,
+            savings_since(2026, 9, 24) + twice("200,10,10,10"));
+
+  // Another currency starts afresh, from that day.
+  Settings sek;
+  sek.currency = "SEK";
+  const int64_t friday = SEP24_1700Z + DAY_SECONDS;
+  const Decision swedish = restarted.tick(drawing(friday, 0, "Stopped"), sek);
+  CHECK_STR(swedish.savings, savings_since(2026, 9, 25, "SEK") + twice("0,0,0,0"));
+  CHECK(swedish.save_savings);
+  CHECK_STR(restarted.tick(drawing(friday + 10, 36), sek).savings,
+            savings_since(2026, 9, 25, "SEK") + twice("100,5,5,5"));
+
+  // So does Reset savings, on the next tick, and what the car takes after it counts alone.
+  restarted.reset_savings();
+  const Decision reset = restarted.tick(drawing(friday + 20, 0, "Stopped"), sek);
+  CHECK_STR(reset.savings, savings_since(2026, 9, 25, "SEK") + twice("0,0,0,0"));
+  CHECK(reset.save_savings);
+  CHECK_STR(restarted.tick(drawing(friday + 30, 36), sek).savings,
+            savings_since(2026, 9, 25, "SEK") + twice("100,5,5,5"));
+  restarted.reset_savings();
+  CHECK_STR(restarted.tick(drawing(friday + DAY_SECONDS, 0, "Stopped"), sek).savings,
+            savings_since(2026, 9, 26, "SEK") + twice("0,0,0,0"));
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape): an exception ends the run, failing it as it should
 int main() {
   test_calendar();
@@ -1604,6 +1883,18 @@ int main() {
   test_fallback_message_mid_stay();
   test_plug_in_message_without_prices();
   test_plug_in_message_when_the_battery_level_stays_unknown();
+  test_savings_count_each_quarter_hour();
+  test_savings_by_local_day();
+  test_savings_last_30_and_365_days();
+  test_savings_without_a_price();
+  test_savings_average_of_the_delivery_day();
+  test_savings_after_a_night();
+  test_savings_at_once_with_prices_out_later();
+  test_savings_at_once_for_a_day_at_most();
+  test_savings_at_once_starts_when_charging_is_needed();
+  test_savings_count_only_what_the_car_draws();
+  test_savings_saved_once_a_quarter_hour();
+  test_savings_restart_currency_and_reset();
   if (failures == 0)
     std::printf("All tests passed\n");
   return failures == 0 ? 0 : 1;

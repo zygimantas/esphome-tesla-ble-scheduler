@@ -8,6 +8,7 @@
 //   Charge limit   the limit dropdown and sending it
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Plan           the plan card: the mode, the charge windows and the plan buttons
+//   Savings        the savings card
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
 //   Start          wiring, then this page or ESPHome's (?full)
@@ -30,7 +31,9 @@ const E = {
   pricesUntil: "text_sensor/Prices until",
   readyBy: "time/Ready by",
   readyByOnce: "datetime/Ready by once",
+  resetSavings: "button/Reset savings",
   restart: "button/Restart",
+  savings: "text_sensor/Savings",
   status: "text_sensor/Charging status",
   stopCharging: "button/Stop charging",
   uptime: "sensor/Uptime",
@@ -71,6 +74,14 @@ const PAGE = `
       <button id="delete-plan" class="red">Delete charging plan</button>
     </div>
     <button id="stop-charging" class="red">Stop charging</button>
+  </section>
+
+  <section id="savings-card" class="card" hidden>
+    <div class="row"><span id="month-label">Saved, last 30 days</span><strong id="saved-month">-</strong></div>
+    <div id="year-row" class="row"><span id="year-label">Saved, last 12 months</span><strong id="saved-year">-</strong></div>
+    <p id="against-average" class="note"></p>
+    <p id="against-at-once" class="note"></p>
+    <button id="reset-savings" class="danger">Reset savings</button>
   </section>
 
   <details class="card">
@@ -137,6 +148,7 @@ function render() {
   renderPlan(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
+  renderSavings();
 
   $("ble").textContent = dbm(value(E.ble));
   $("wifi").textContent = dbm(value(E.wifi));
@@ -325,6 +337,32 @@ async function stopCharging(message) {
   }
 }
 
+// --- Savings ---------------------------------------------------------------
+
+// "<currency>;<since>;<last 30 days>;<last 365 days>" from format_savings() in charging.h, each period as
+// "<Wh>,<paid>,<at the day's average>,<at once>", the money in hundredths and since as the board's day number. Saved is
+// the difference. A period that reaches back to when counting began says so, and the year shows once it differs from
+// the month.
+function renderSavings() {
+  const [currency, since, ...periods] = text(E.savings).split(";");
+  $("savings-card").hidden = !currency;
+  if (!currency) return;
+  const [month, year] = periods.map((period) => period.split(",").map(Number));
+  const money = (hundredths) => `${(hundredths / 100).toFixed(2)}\u00a0${currency}`; // one piece when it wraps
+  const counted = today() - Number(since); // whole days before today
+  const start = `since ${dayText(Number(since))}`;
+  const monthText = counted < 30 ? start : "in the last 30 days";
+  $("month-label").textContent = counted < 30 ? `Saved ${start}` : "Saved, last 30 days";
+  $("saved-month").textContent = money(month[2] - month[1]);
+  $("year-row").hidden = counted < 30;
+  $("year-label").textContent = counted < 365 ? `Saved ${start}` : "Saved, last 12 months";
+  $("saved-year").textContent = money(year[2] - year[1]);
+  $("against-average").textContent =
+    `Compared with the day's average price: ${Math.round(month[0] / 1000)} kWh for ${money(month[1])} ${monthText}`;
+  $("against-at-once").textContent =
+    `Compared with charging at once on plug-in: ${money(month[3] - month[1])} saved ${monthText}`;
+}
+
 // --- Board link ------------------------------------------------------------
 
 let events;
@@ -438,6 +476,13 @@ function deadlineText(ms) {
   return `${day} ${hhmm(ms)}`;
 }
 
+// Today's day number (days since 1970-01-01, local time), as the board counts them, and "2 Oct 2026" for one.
+const today = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / DAY_MS);
+function dayText(day) {
+  const options = { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" };
+  return new Date(day * DAY_MS).toLocaleDateString("en-GB", options);
+}
+
 // The next time the clock shows "HH:MM": today if it's still ahead, else tomorrow.
 function nextAt(time) {
   const [h, m] = time.split(":").map(Number);
@@ -495,6 +540,12 @@ function bind() {
     E.pair,
     "Pairing started: tap your key card",
     "Pair a new key? Sit in the car and tap your key card on the console when asked.",
+  );
+  confirmPress(
+    "reset-savings",
+    E.resetSavings,
+    "Savings reset",
+    "Reset the savings? They start again from zero today.",
   );
   confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
 }

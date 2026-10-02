@@ -3,8 +3,8 @@
 //
 // A plan takes the cheapest slots, priced at Nord Pool's spot price plus VAT and the grid fee, that
 // bring the battery to the car's charge limit, plus a buffer slot. Every 30 s ChargingComponent
-// (charging_component.h) passes the car's state to Controller::tick(), which re-plans when needed and
-// returns what to do.
+// (charging_component.h) passes the car's state to Controller::tick(), which re-plans when needed, counts
+// what charging cost and saved, and returns what to do.
 //
 // Plain C++17 plus ArduinoJson, with nothing from ESPHome, so it can be unit-tested on a computer.
 
@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -231,7 +232,10 @@ inline std::string nord_pool_url(const char *area, const char *currency, int64_t
   return buf;
 }
 
-// End (UTC) of the CET delivery day containing `now`, and of the one after it.
+// Start (UTC) of the CET delivery day containing `now`, its end, and the end of the one after it.
+inline int64_t start_of_delivery_day(int64_t now) {
+  return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET), 0, CET_STANDARD_OFFSET);
+}
 inline int64_t end_of_delivery_day(int64_t now) {
   return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET) + 1, 0, CET_STANDARD_OFFSET);
 }
@@ -427,6 +431,61 @@ inline std::string format_windows(const Plan &plan, const char *currency) {
 }
 
 // ---------------------------------------------------------------------------
+// Savings
+// ---------------------------------------------------------------------------
+
+// The energy the car took from the grid on one local day, what it cost, and what it would have cost at the
+// delivery day's average total price and charging at once (see Controller::count_()). Money in hundredths of the
+// currency, rounded from the day's sum rather than from each tick.
+struct SavingsDay {
+  uint32_t wh = 0;
+  int32_t paid = 0;
+  int32_t average = 0;
+  int32_t at_once = 0;
+
+  void add(const SavingsDay &other) {
+    wh += other.wh;
+    paid += other.paid;
+    average += other.average;
+    at_once += other.at_once;
+  }
+};
+
+constexpr int SAVINGS_DAYS = 365;
+
+// What the board keeps in flash: the last 365 local days. ESPHome saves it byte for byte, and loads it only into a
+// struct of the same size.
+struct Savings {
+  char currency[4] = {};          // of the money; another one starts the figures afresh
+  int32_t since = 0;              // local day number when counting began; 0 starts afresh
+  int32_t day = 0;                // the last day in `days`
+  SavingsDay days[SAVINGS_DAYS];  // by ring_index() of the local day number
+};
+
+inline int ring_index(int64_t day) { return static_cast<int>(day - floor_div(day, SAVINGS_DAYS) * SAVINGS_DAYS); }
+
+// The savings for the web page: "<currency>;<since>;<last 30 days>;<last 365 days>", each period as
+// "<Wh>,<paid>,<at the day's average>,<at once>", the money in hundredths and since as a local day number. For
+// example "EUR;20728;9200,103,147,190;9200,103,147,190".
+inline std::string format_savings(const Savings &savings) {
+  SavingsDay periods[2];
+  for (int i = 0; i < SAVINGS_DAYS; ++i) {
+    const SavingsDay &day = savings.days[ring_index(savings.day - i)];
+    if (i < 30)
+      periods[0].add(day);
+    periods[1].add(day);
+  }
+  std::string text = std::string(savings.currency) + ";" + std::to_string(savings.since);
+  char part[64];
+  for (const SavingsDay &period : periods) {
+    std::snprintf(part, sizeof(part), ";%u,%d,%d,%d", static_cast<unsigned>(period.wh), static_cast<int>(period.paid),
+                  static_cast<int>(period.average), static_cast<int>(period.at_once));
+    text += part;
+  }
+  return text;
+}
+
+// ---------------------------------------------------------------------------
 // Controller
 // ---------------------------------------------------------------------------
 
@@ -438,6 +497,7 @@ struct CarState {
   std::string charging_state;   // "Charging", "Starting", "Stopped", "Complete", ...; empty or "Unknown" when unknown
   float soc = NAN;              // battery %
   float limit = NAN;            // the car's charge limit %
+  float power_kw = NAN;         // what the car draws from the charger
   bool port_open = false;       // the charge port flap; the car reports it even while asleep
 };
 
@@ -457,11 +517,15 @@ struct Decision {
   std::optional<Notification> notification;  // once per plug-in, when its plan has settled, and once more
                                              // when the board falls back to charging at any price or a
                                              // start from the car takes over
+  std::string savings;                       // format_savings() once the clock is set, else empty
+  bool save_savings = false;                 // Controller::savings changed: time to write it to flash
 };
 
 class Controller {
  public:
   PriceTable prices;
+  // What charging cost and saved, for the board to keep in flash (see Decision::save_savings).
+  Savings savings;
 
   // The buttons on the web page. Each acts at once, free of command_()'s limits.
 
@@ -481,6 +545,8 @@ class Controller {
     hold_ = Hold::NONE;
     allow_command_();
   }
+  // The page's Reset savings: the figures start afresh from today on the next tick.
+  void reset_savings() { savings.since = 0; }
   // What the buttons chose, for the board to keep across a restart (see Hold).
   int held_mode() const { return static_cast<int>(hold_); }
   void restore_mode(int mode) { hold_ = mode == 1 ? Hold::NOW : mode == 2 ? Hold::NONE : Hold::PLAN; }
@@ -529,8 +595,9 @@ class Controller {
     const int64_t now = car.now;
     if (first_tick_at_ == 0)
       first_tick_at_ = now;
-    prices.drop_before(floor_to_slot(now));  // plans start at this quarter-hour
     const bool charging = observe_(car, now);
+    count_(car, now, settings, d);
+    prices.drop_before(start_of_delivery_day(now));  // after count_(), which may need the day before
     if (floor_to_slot(now) != planned_slot_ || replan_)
       update_plan_(now, settings);
 
@@ -594,8 +661,7 @@ class Controller {
       d.windows = format_windows(plan_, settings.currency);
       starting = want_charge;
     }
-    const bool full = complete_ || soc_ >= limit_ - 0.5f;  // false while the battery level is unknown (NaN)
-    if (want_charge && full && !charging) {
+    if (want_charge && full_() && !charging) {
       d.status = "Charged";
       return d;
     }
@@ -689,6 +755,102 @@ class Controller {
     planned_slot_ = floor_to_slot(now);
     replan_ = false;
     commands_this_plan_ = 0;
+  }
+
+  // Counts the energy the car took since the last tick (its power times the time, at most a minute back) into
+  // `savings`: at the total price of each quarter-hour, at the delivery day's average total price, and at the price
+  // it would have had charging at once. Charging at once starts when the car needs charging, at plug-in or when it's
+  // no longer full, and replays the car's charging time from then; past a day of it, or without its price, it counts
+  // as the day's average. A quarter-hour without a price counts as the day's average throughout, or as nothing
+  // without that: it neither saves nor costs.
+  void count_(const CarState &car, int64_t now, const Settings &settings, Decision &d) {
+    const int64_t today = local_day_of(now, settings.standard_offset);
+    if (savings.since == 0 || std::strncmp(savings.currency, settings.currency, sizeof(savings.currency)) != 0) {
+      savings = Savings{};
+      std::snprintf(savings.currency, sizeof(savings.currency), "%s", settings.currency);
+      savings.since = savings.day = static_cast<int32_t>(today);
+      counted_day_ = -1;
+      savings_unsaved_ = true;
+    }
+    for (; savings.day < today; ++savings.day)  // a new day takes the place of the one a year before
+      savings.days[ring_index(savings.day + 1)] = SavingsDay{};
+
+    const bool needed = plugged_ && !full_();
+    if (needed && !needed_) {
+      at_once_prices_.assign(DAY_SECONDS / SLOT_SECONDS, NAN);
+      at_once_from_ = now;
+      at_once_charged_ = 0;
+    }
+    needed_ = needed;
+    for (size_t i = 0; i < at_once_prices_.size(); ++i) {  // also prices published since it started
+      const int64_t slot = floor_to_slot(at_once_from_) + static_cast<int64_t>(i) * SLOT_SECONDS;
+      if (const std::optional<float> spot = prices.get(slot))
+        at_once_prices_[i] = total_price(*spot, slot, grid_, settings.standard_offset);
+    }
+
+    const bool charging = car.charging_state == "Charging";
+    for (int64_t from = std::max(counted_until_, now - 60); charging && car.power_kw > 0 && from < now;) {
+      const int64_t slot = floor_to_slot(from);
+      const int64_t to = std::min(now, slot + SLOT_SECONDS);
+      const float kwh = car.power_kw * static_cast<float>(to - from) / 3600.0f;
+      const float average = day_average_(slot, settings.standard_offset);
+      const auto replayed =
+          static_cast<size_t>((at_once_from_ - floor_to_slot(at_once_from_) + at_once_charged_) / SLOT_SECONDS);
+      const float at_once = replayed < at_once_prices_.size() && !std::isnan(at_once_prices_[replayed])
+                                ? at_once_prices_[replayed]
+                                : average;
+      at_once_charged_ += to - from;
+      const int64_t day = local_day_of(slot, settings.standard_offset);
+      if (const std::optional<float> spot = prices.get(slot)) {
+        add_energy_(day, kwh, total_price(*spot, slot, grid_, settings.standard_offset), average, at_once);
+      } else {
+        const float neutral = std::isnan(average) ? 0.0f : average;
+        add_energy_(day, kwh, neutral, neutral, neutral);
+      }
+      from = to;
+    }
+    counted_until_ = now;
+
+    d.savings = format_savings(savings);
+    // While the car charges, once a quarter-hour: a restart loses at most that.
+    d.save_savings = savings_unsaved_ && (floor_to_slot(now) != savings_saved_slot_ || !charging);
+    if (d.save_savings) {
+      savings_unsaved_ = false;
+      savings_saved_slot_ = floor_to_slot(now);
+    }
+  }
+
+  // Adds `kwh` bought at `paid` per kWh, and its cost at the two other prices, to a local day. The day's figures add
+  // up in floats, as the cents of each tick would round away.
+  void add_energy_(int64_t day, float kwh, float paid, float average, float at_once) {
+    SavingsDay &figures = savings.days[ring_index(day)];
+    if (day != counted_day_) {
+      counted_day_ = day;
+      counted_ = {static_cast<float>(figures.wh) / 1000.0f, static_cast<float>(figures.paid) / 100.0f,
+                  static_cast<float>(figures.average) / 100.0f, static_cast<float>(figures.at_once) / 100.0f};
+    }
+    counted_.kwh += kwh;
+    counted_.paid += kwh * paid;
+    counted_.average += kwh * average;
+    counted_.at_once += kwh * at_once;
+    figures.wh = static_cast<uint32_t>(std::lround(counted_.kwh * 1000.0f));
+    figures.paid = static_cast<int32_t>(std::lround(counted_.paid * 100.0f));
+    figures.average = static_cast<int32_t>(std::lround(counted_.average * 100.0f));
+    figures.at_once = static_cast<int32_t>(std::lround(counted_.at_once * 100.0f));
+    savings_unsaved_ = true;
+  }
+
+  // The average total price of the delivery day of `t`, over the quarter-hours with a price; NaN without one.
+  float day_average_(int64_t t, int32_t standard_offset) const {
+    float sum = 0;
+    int count = 0;
+    for (int64_t slot = start_of_delivery_day(t); slot < end_of_delivery_day(t); slot += SLOT_SECONDS) {
+      if (const std::optional<float> spot = prices.get(slot)) {
+        sum += total_price(*spot, slot, grid_, standard_offset);
+        ++count;
+      }
+    }
+    return sum / static_cast<float>(count);  // NaN (0 / 0) without prices
   }
 
   // Charging at any price from now on, for lack of prices or a battery level: the phone hears it once per
@@ -792,6 +954,9 @@ class Controller {
 
   bool battery_known_() const { return !std::isnan(soc_) && !std::isnan(limit_); }
 
+  // At the limit by the car's word, or within half a percent; false while the battery level is unknown (NaN).
+  bool full_() const { return complete_ || soc_ >= limit_ - 0.5f; }
+
   // Whether the plan charges in the quarter-hour it was made for (always without prices or battery level).
   bool in_plan_() const { return !plan_.valid || plan_.contains(planned_slot_); }
 
@@ -821,6 +986,22 @@ class Controller {
   int64_t last_command_at_ = 0;
   int64_t started_at_ = 0;  // the board's last start, 0 after its stop; the buttons don't reset it
   int commands_this_plan_ = 0;
+
+  // Savings (see count_()).
+  struct Figures {
+    float kwh, paid, average, at_once;
+  };
+  Figures counted_{};  // of counted_day_
+  bool savings_unsaved_ = false;
+  bool needed_ = false;  // plugged in and not full, at the last tick
+  int64_t counted_day_ = -1;
+  int64_t counted_until_ = 0;
+  int64_t savings_saved_slot_ = 0;
+  // Charging at once: the total prices of a day of quarter-hours from at_once_from_, NaN until known, and how long the
+  // car has charged since.
+  std::vector<float> at_once_prices_;
+  int64_t at_once_from_ = 0;
+  int64_t at_once_charged_ = 0;
 };
 
 }  // namespace esphome::charging
