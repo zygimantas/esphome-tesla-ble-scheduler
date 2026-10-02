@@ -1,0 +1,11 @@
+# ESO's Standartinis plan with two zones, prices with VAT: https://www.eso.lt
+# Maintained by @zygimantas
+currency: EUR
+clock: winter
+calendar:
+  jan-dec:
+    mon-fri: night 07:00 day 23:00 night
+    sat-sun: night
+rates:
+  night: 0.07139
+  day: 0.12947

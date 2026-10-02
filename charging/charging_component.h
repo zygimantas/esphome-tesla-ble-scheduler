@@ -1,6 +1,6 @@
 #pragma once
-// Connects the planner and controller in charging.h to ESPHome: the web page's entities, Nord Pool
-// downloads, phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
+// Connects the planner and controller in charging.h to ESPHome: the web page's entities, Nord Pool and price
+// list downloads, phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
 #include "charging.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -78,7 +78,14 @@ class ChargingComponent : public PollingComponent {
     this->ntfy_server_ = server;
     this->ntfy_topic_ = topic;
   }
-  void set_grid(const Grid &grid) { this->controller_.set_grid(grid); }
+  // The VAT on market prices; the price list's name and the copy built in, both empty without a list; and the
+  // grid: settings of config.yaml, written as read_grid() reads them.
+  void set_grid(float vat, const char *pricelist, const char *list, const char *own) {
+    this->vat_ = vat;
+    this->pricelist_ = pricelist;
+    this->list_ = list;
+    this->own_ = own;
+  }
   void set_ready_by(ReadyBy *ready_by) { this->ready_by_ = ready_by; }
   void set_ready_by_once(ReadyByOnce *ready_by_once) { this->ready_by_once_ = ready_by_once; }
   void set_status(text_sensor::TextSensor *status) { this->status_ = status; }
@@ -96,7 +103,10 @@ class ChargingComponent : public PollingComponent {
 
  protected:
   void tick_soon_();
+  std::string apply_grid_(const std::string &list);
+  std::string read_body_(http_request::HttpContainer &response, size_t max);
   void fetch_prices_(int64_t now);
+  void fetch_price_list_(int64_t now);
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);
 
@@ -105,6 +115,12 @@ class ChargingComponent : public PollingComponent {
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
   const char *area_{""};
+  float vat_{0.0f};
+  const char *pricelist_{""};
+  const char *own_{""};
+  std::string list_;  // the price list in use: the copy built in until a download brings another
+  int64_t list_tried_at_{0};
+  bool list_downloaded_{false};
   const char *ntfy_server_{""};
   const char *ntfy_topic_{""};          // empty: no phone messages
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it

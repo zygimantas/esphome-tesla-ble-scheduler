@@ -11,10 +11,11 @@ charging:
   battery_kwh: 75
   charging_kw: 11
   grid:
-    days:
-      mon-sun: a
-    zones:
-      a: 0.11132
+    calendar:
+      jan-dec:
+        mon-sun: flat
+    rates:
+      flat: 0.11132
   id: charging_id
   market:
     area: LT

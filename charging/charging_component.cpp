@@ -14,6 +14,10 @@ static constexpr uint32_t READY_BY_KEY = 194434060U;
 static constexpr uint32_t READY_BY_ONCE_KEY = 194434090U;
 // One day of LT prices is about 11 kB.
 static constexpr size_t MAX_PRICES_BYTES = 24 * 1024;
+// The price lists as their maintainers keep them current, on GitHub; one is about 1 kB.
+static const char *const PRICE_LISTS =
+    "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/pricelists/";
+static constexpr size_t MAX_PRICE_LIST_BYTES = 16 * 1024;
 
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>(READY_BY_KEY);
@@ -91,6 +95,9 @@ static auto find(const List &entities, const char *name) {
 }
 
 void ChargingComponent::setup() {
+  const std::string error = this->apply_grid_(this->list_);
+  if (!error.empty())
+    ESP_LOGE(TAG, "Grid: %s", error.c_str());
   this->ready_by_->restore();
   this->ready_by_once_->restore();
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("charging_held_mode"));
@@ -154,6 +161,10 @@ void ChargingComponent::update() {
   // The clock keeps running through a restart, so wait for the network too.
   if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
     this->fetch_prices_(car.now);
+  // Daily, and hourly until a download comes through.
+  if (network::is_connected() && car.now != 0 && this->pricelist_[0] != '\0' &&
+      car.now - this->list_tried_at_ >= (this->list_downloaded_ ? DAY_SECONDS : 3600))
+    this->fetch_price_list_(car.now);
 
   Decision d = this->controller_.tick(car, settings);
   if (this->controller_.held_mode() != this->held_) {
@@ -201,12 +212,13 @@ void ChargingComponent::dump_config() {
   ESP_LOGCONFIG(TAG,
                 "Charging:\n"
                 "  Nord Pool area: %s, prices in %s\n"
+                "  Grid: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
                 this->area_[0] != '\0' ? this->area_ : "none, the grid prices are the whole price",
-                this->settings_.currency, this->settings_.capacity_kwh, this->settings_.charge_kw,
-                this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->settings_.currency, this->pricelist_[0] != '\0' ? this->pricelist_ : "the rates in config.yaml",
+                this->settings_.capacity_kwh, this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -242,6 +254,43 @@ void ChargingComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
+// Uses `list`, a price list's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
+std::string ChargingComponent::apply_grid_(const std::string &list) {
+  GridText list_settings, own;
+  Grid grid;
+  std::string error = read_grid(list, list_settings);
+  if (error.empty())
+    error = read_grid(this->own_, own);
+  if (error.empty())
+    error = make_grid(list_settings, own, this->settings_.currency, grid);
+  if (!error.empty())
+    return error;
+  grid.vat = this->vat_;
+  this->controller_.set_grid(grid);
+  this->list_ = list;
+  return "";
+}
+
+// A response's body, up to `max` bytes.
+std::string ChargingComponent::read_body_(http_request::HttpContainer &response, size_t max) {
+  std::string body;
+  uint8_t chunk[512];
+  uint32_t last_data = millis();
+  while (body.size() < max) {
+    const int read = response.read(chunk, std::min(sizeof(chunk), max - body.size()));
+    App.feed_wdt();
+    yield();
+    const auto result =
+        http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(), response.is_read_complete());
+    if (result == http_request::HttpReadLoopResult::RETRY)
+      continue;
+    if (result != http_request::HttpReadLoopResult::DATA)
+      break;
+    body.append(reinterpret_cast<const char *>(chunk), read);
+  }
+  return body;
+}
+
 // Today's and tomorrow's CET delivery days, today's only while some of it is missing. A day not published
 // yet answers 204. A failed request ends the try: the next one would fail the same way and block the loop
 // again.
@@ -253,21 +302,7 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
-      std::string body;
-      uint8_t chunk[512];
-      uint32_t last_data = millis();
-      while (body.size() < MAX_PRICES_BYTES) {
-        const int read = response->read(chunk, std::min(sizeof(chunk), MAX_PRICES_BYTES - body.size()));
-        App.feed_wdt();
-        yield();
-        const auto result = http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(),
-                                                                response->is_read_complete());
-        if (result == http_request::HttpReadLoopResult::RETRY)
-          continue;
-        if (result != http_request::HttpReadLoopResult::DATA)
-          break;
-        body.append(reinterpret_cast<const char *>(chunk), read);
-      }
+      const std::string body = this->read_body_(*response, MAX_PRICES_BYTES);
       response->end();  // before the parse: the connection's memory isn't needed any more
       const int stored = this->controller_.prices.add_nord_pool(body.data(), body.size(), this->area_);
       if (stored < 0) {
@@ -285,6 +320,33 @@ void ChargingComponent::fetch_prices_(int64_t now) {
     }
     response->end();
   }
+}
+
+// The price list as its maintainer keeps it, from GitHub. One the board can't use with the grid: settings of
+// config.yaml leaves the one in use, and so does a failed download, which is tried again in an hour.
+void ChargingComponent::fetch_price_list_(int64_t now) {
+  this->list_tried_at_ = now;
+  auto response = this->http_->get(std::string(PRICE_LISTS) + this->pricelist_ + ".yaml");
+  if (response == nullptr) {
+    ESP_LOGW(TAG, "Price list %s: request failed", this->pricelist_);
+    return;
+  }
+  const int status = response->status_code;
+  const std::string list =
+      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response, MAX_PRICE_LIST_BYTES) : "";
+  response->end();
+  if (status != http_request::HTTP_STATUS_OK) {
+    ESP_LOGW(TAG, "Price list %s: GitHub answered HTTP %d", this->pricelist_, status);
+    return;
+  }
+  this->list_downloaded_ = true;
+  if (list == this->list_)
+    return;
+  const std::string error = this->apply_grid_(list);
+  if (error.empty())
+    ESP_LOGI(TAG, "Price list %s: new prices", this->pricelist_);
+  else
+    ESP_LOGW(TAG, "Price list %s: %s, so the one in use stays", this->pricelist_, error.c_str());
 }
 
 // Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an

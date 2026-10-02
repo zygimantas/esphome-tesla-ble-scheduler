@@ -1,12 +1,12 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
-charging.h plans and decides; charging_component.h connects it to ESPHome. This file checks the settings and the
-grid fees (format in docs/grid-fees.md) when you build, and creates the web page's entities.
+charging.h plans and decides; charging_component.h connects it to ESPHome. This file checks the settings, the grid's
+rates and the price list they start from (format in docs/grid-fees.md) when you build, and creates the web page's
+entities.
 """
 
 import re
-from itertools import combinations
-from string import ascii_lowercase
+from pathlib import Path
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
@@ -18,20 +18,19 @@ DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
 CONF_BATTERY_KWH = "battery_kwh"
+CONF_CALENDAR = "calendar"
 CONF_CHARGING_KW = "charging_kw"
 CONF_CLOCK = "clock"
 CONF_CURRENCY = "currency"
-CONF_DAYS = "days"
+CONF_EXCEPTIONS = "exceptions"
 CONF_GRID = "grid"
-CONF_HOLIDAY = "holiday"
-CONF_HOLIDAYS = "holidays"
 CONF_MARKET = "market"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
-CONF_SEASONS = "seasons"
+CONF_PRICELIST = "pricelist"
+CONF_RATES = "rates"
 CONF_VAT = "vat"
 CONF_VIN = "vin"
-CONF_ZONES = "zones"
 
 # Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
 # area Germany and Luxembourg share. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and has
@@ -67,14 +66,14 @@ NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
 NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
 CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 
-# The keys of days and of a season, and the days each names as charging.h numbers them, Sunday to Saturday from 0 and
-# public holidays at 7: a day (sat), a range of days in the week from Monday (mon-fri), or holiday.
-WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-DAYS = {CONF_HOLIDAY: [7]} | {
-    first if first == last else f"{first}-{last}": [(day + 1) % 7 for day in range(i, j + 1)]
-    for i, first in enumerate(WEEK)
-    for j, last in enumerate(WEEK[i:], i)
-}
+# The price lists, which the build reads from this release and the board downloads from GitHub every day.
+PRICE_LISTS = Path(__file__).resolve().parent.parent / "pricelists"
+
+# The names of the days and months, in charging.h's order, from Sunday.
+DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+# Words YAML reads as true, false or nothing.
+NOT_NAMES = ["on", "off", "yes", "no", "true", "false", "null"]
 
 charging_ns = cg.esphome_ns.namespace("charging")
 ChargingComponent = charging_ns.class_("ChargingComponent", cg.PollingComponent)
@@ -82,88 +81,195 @@ ReadyBy = charging_ns.class_("ReadyBy", datetime.TimeEntity)
 ReadyByOnce = charging_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
 ActionButton = charging_ns.class_("ActionButton", button.Button)
 Action = charging_ns.enum("Action", is_class=True)
-Grid = charging_ns.struct("Grid")
-Season = charging_ns.struct("Season")
 
 
-def _day(value):
-    value = cv.string_strict(value)
-    if not re.fullmatch(r"[a-z]|[a-z]{24}|[a-z]{48}|[a-z]{96}", value):
-        raise cv.Invalid(
-            "must be lowercase letters: one for the whole day, or 24, 48 or 96 for the zone of each hour, half-hour "
-            "or quarter-hour from 00:00"
-        )
+def _named(key, names):
+    """The indexes `key` names among `names`: one name, or a range like fri-mon or nov-mar, which may wrap. None if
+    it's neither."""
+    first, dash, last = str(key).partition("-")
+    last = last if dash else first
+    if first not in names or last not in names:
+        return None
+    i, j = names.index(first), names.index(last)
+    return [(i + k) % len(names) for k in range((j - i) % len(names) + 1)]
+
+
+def _words(line):
+    """A line's words, split at spaces as the board splits them."""
+    return [word for word in line.split(" ") if word]
+
+
+def _rate(value):
+    """A rate's name: a word like night or p1."""
+    if isinstance(value, bool) or value is None or str(value).lower() in NOT_NAMES:
+        raise cv.Invalid(f"YAML reads {', '.join(NOT_NAMES)} as true, false or nothing, so they can't be rate names")
+    if not isinstance(value, str) or not re.fullmatch(r"[^\W\d_][\w-]*", value):
+        raise cv.Invalid(f'"{value}" isn\'t a rate name: a word like night or p1')
     return value
 
 
-def _days(config):
-    """The zones of the days its keys name, no day twice."""
-    config = cv.Schema({cv.one_of(*DAYS): _day})(config)
-    days = [day for key in config for day in DAYS[key]]
-    if len(days) != len(set(days)):
-        raise cv.Invalid("names a day twice")
-    return config
+def _line(value):
+    """A day's rates: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then."""
+    words = _words(value) if isinstance(value, str) else [value]
+    if len(words) % 2 == 0:
+        raise cv.Invalid(f'"{value}" isn\'t rates and times by turns, like night 07:00 day 23:00 night')
+    for rate in words[::2]:
+        _rate(rate)
+    minutes = 0
+    for when in words[1::2]:
+        m = re.fullmatch(r"(\d\d):(00|15|30|45)", when)
+        if not m or not minutes < int(m[1]) * 60 + int(m[2]) < 24 * 60:
+            raise cv.Invalid(f"{when} isn't a later quarter-hour, like 07:00 or 22:15")
+        minutes = int(m[1]) * 60 + int(m[2])
+    return value
 
 
-def _month_day(value):
-    """Parses "12-25" to 1225 (month * 100 + day). "02-29" passes: it exists in leap years."""
+def _each_once(names, what, example):
+    """A table keyed like mon-fri or nov-mar, naming each of `names` once."""
+
+    def validate(config):
+        seen = []
+        for key in config:
+            found = _named(key, names)
+            if found is None:
+                raise cv.Invalid(f'"{key}" isn\'t a {what} or a range like {example}', [key])
+            if set(found) & set(seen):
+                raise cv.Invalid(f"{key} has a {what} that's there already", [key])
+            seen += found
+        if len(seen) < len(names):
+            raise cv.Invalid(f"needs every {what}, like {example}")
+        return config
+
+    return validate
+
+
+def _date(value):
+    """A date like 12-25. 02-29 passes: it exists in leap years."""
     value = cv.string_strict(value)
     m = re.fullmatch(r"(\d\d)-(\d\d)", value)
-    month, day = (int(m[1]), int(m[2])) if m else (0, 0)
-    if 1 <= month <= 12 and 1 <= day <= (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month - 1]:
-        return month * 100 + day
-    raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25"')
+    if (
+        not m
+        or not 1 <= int(m[1]) <= 12
+        or not 1 <= int(m[2]) <= (31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[int(m[1]) - 1]
+    ):
+        raise cv.Invalid(f'"{value}" isn\'t a date like 12-25')
+    return value
 
 
-def _holiday(value):
-    """A public holiday: a date as _month_day(), or "easter", "easter+1" or "easter-2" as ("easter", days after
-    Easter Sunday)."""
+def _keys(check, values):
+    """A table whose keys pass `check`, with its message, and whose values pass `values`."""
+
+    def validate(config):
+        config = cv.Schema({cv.valid: values})(config)
+        for key in config:
+            try:
+                check(key)
+            except cv.Invalid as error:
+                raise cv.Invalid(error.msg, [key]) from error
+        return config
+
+    return validate
+
+
+def _currency_code(value):
+    value = cv.string_strict(value).upper()
+    if not re.fullmatch(r"[A-Z]{3}", value):
+        raise cv.Invalid("must be a currency's three-letter code, like EUR")
+    return value
+
+
+def _check_rates(settings, own):
+    """Every rate the days use has a price, and every rate in `own` is used."""
+    lines = [rates for week in settings[CONF_CALENDAR].values() for rates in week.values()]
+    used = {rate for line in [*lines, *settings.get(CONF_EXCEPTIONS, {}).values()] for rate in _words(line)[::2]}
+    if missing := sorted(used - set(settings.get(CONF_RATES, {}))):
+        raise cv.Invalid(f"rate {missing[0]} needs a price per kWh, with VAT", [CONF_RATES])
+    if unused := sorted(set(own) - used):
+        raise cv.Invalid(f"rate {unused[0]} isn't used on any day", [CONF_RATES, unused[0]])
+
+
+# The weeks by month, and the tables both price lists and config.yaml have.
+CALENDAR = cv.All(
+    cv.Schema(
+        {cv.string_strict: cv.All(cv.Schema({cv.string_strict: _line}), _each_once(DAY_NAMES, "day", "mon-fri"))}
+    ),
+    _each_once(MONTH_NAMES, "month", "jan-dec"),
+)
+TABLES = {
+    cv.Optional(CONF_CLOCK): cv.one_of("local", "winter"),
+    cv.Optional(CONF_EXCEPTIONS): _keys(_date, _line),
+    cv.Optional(CONF_RATES): _keys(_rate, cv.float_range(min=0.0)),
+}
+PRICE_LIST_SCHEMA = cv.Schema(
+    {cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): _currency_code}
+)
+
+
+def _price_list_name(value):
+    """A price list's name, like lt/eso-standartinis-4-zones."""
     value = cv.string_strict(value)
-    if m := re.fullmatch(r"easter([+-]\d{1,2})?", value):
-        return ("easter", int(m[1] or 0))
-    if re.fullmatch(r"\d\d-\d\d", value):
-        return _month_day(value)
-    raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25", "easter" or "easter+1"')
+    if not re.fullmatch(r"[a-z]{2}/[a-z0-9-]+", value) or not (PRICE_LISTS / f"{value}.yaml").is_file():
+        names = sorted(str(path.relative_to(PRICE_LISTS).with_suffix("")) for path in PRICE_LISTS.glob("*/*.yaml"))
+        raise cv.Invalid(f"there's no price list {value}; there are {', '.join(names)}")
+    return value
 
 
-def _dates(season):
-    """The first and last date of a season, as _month_day(), from its key, like "11-01 to 03-31"."""
-    m = re.fullmatch(r"(\d\d-\d\d) to (\d\d-\d\d)", season)
-    if not m:
-        raise cv.Invalid(f'"{season}" isn\'t a season such as "11-01 to 03-31"')
-    return _month_day(m[1]), _month_day(m[2])
+def _read(text):
+    """Grid settings as the board reads them (read_grid() in charging.h), into tables with each key once."""
+    settings, section, week = {}, None, None
+    for number, line in enumerate(text.split("\n"), 1):
+        line = line.rstrip(" \r")
+        body = line.lstrip(" ")
+        indent = len(line) - len(body)
+        key, colon, rest = body.partition(":")
+        value = rest.lstrip(" ")
+        table = None
+        if not body or body.startswith("#"):
+            continue
+        if not colon or not key or rest[:1] not in ("", " "):
+            pass
+        elif indent == 0 and not value and key in (CONF_CALENDAR, CONF_EXCEPTIONS, CONF_RATES):
+            table, section, value = settings, key, {}
+        elif indent == 0 and value and key in (CONF_CLOCK, CONF_CURRENCY):
+            table, section = settings, None
+        elif indent == 2 and not value and section == CONF_CALENDAR:
+            table, week, value = settings[section], key, {}
+        elif indent == 4 and value and section == CONF_CALENDAR and week is not None:
+            table = settings[section][week]
+        elif indent == 2 and value and section in (CONF_EXCEPTIONS, CONF_RATES):
+            table = settings[section]
+        if table is None or key in table:
+            raise cv.Invalid(f"line {number} isn't a key and a value where it can be, or its key is there already")
+        table[key] = value
+    return settings
 
 
-def _in_season(date, first, last):
-    return first <= date <= last if first <= last else date >= first or date <= last
+def _price_list(name):
+    """A price list's settings, checked as the build checks config.yaml's, with every rate used."""
+    try:
+        settings = PRICE_LIST_SCHEMA(_read((PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8")))
+        _check_rates(settings, settings.get(CONF_RATES, {}))
+    except cv.Invalid as error:
+        raise cv.Invalid(f"price list {name}: {error}") from error
+    return settings
 
 
-def _validate_grid(config):
-    if not set(range(7)) <= {day for key in config[CONF_DAYS] for day in DAYS[key]}:
-        raise cv.Invalid("must name every day of the week, as mon-fri and sat-sun do", [CONF_DAYS])
-    for one, other in combinations(map(_dates, config[CONF_SEASONS]), 2):
-        if _in_season(one[0], *other) or _in_season(other[0], *one):
-            raise cv.Invalid("has seasons that overlap", [CONF_SEASONS])
-    tables = [config[CONF_DAYS], *config[CONF_SEASONS].values()]
-    used = set("".join(zones for table in tables for zones in table.values()))
-    if missing := sorted(used - set(config[CONF_ZONES])):
-        raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_ZONES])
-    if unused := sorted(set(config[CONF_ZONES]) - used):
-        raise cv.Invalid(f'zone "{unused[0]}" isn\'t used on any day', path=[CONF_ZONES, unused[0]])
+def _with_price_list(config):
+    """config.yaml's grid settings over the price list's, as make_grid() in charging.h puts them together."""
+    settings = _price_list(config[CONF_PRICELIST]) if CONF_PRICELIST in config else {}
+    if CONF_CALENDAR in config:
+        settings[CONF_CALENDAR] = config[CONF_CALENDAR]
+    for table in (CONF_EXCEPTIONS, CONF_RATES):
+        settings[table] = {**settings.get(table, {}), **config.get(table, {})}
+    if CONF_CALENDAR not in settings:
+        raise cv.Invalid("needs a pricelist, or a calendar of its own")
+    _check_rates(settings, config.get(CONF_RATES, {}))
     return config
 
 
 GRID_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.Optional(CONF_CLOCK, default="local"): cv.one_of("local", "winter"),
-            cv.Required(CONF_DAYS): _days,
-            cv.Optional(CONF_HOLIDAYS, default=[]): cv.ensure_list(_holiday),
-            cv.Optional(CONF_SEASONS, default={}): cv.Schema({cv.string_strict: _days}),
-            cv.Required(CONF_ZONES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
-        }
-    ),
-    _validate_grid,
+    cv.Schema({cv.Optional(CONF_CALENDAR): CALENDAR, **TABLES, cv.Optional(CONF_PRICELIST): _price_list_name}),
+    _with_price_list,
 )
 
 MARKET_SCHEMA = cv.Schema(
@@ -186,20 +292,17 @@ def _vin(value):
     return value
 
 
-def _currency_code(value):
-    value = cv.string_strict(value).upper()
-    if not re.fullmatch(r"[A-Z]{3}", value):
-        raise cv.Invalid("must be a currency's three-letter code, like EUR")
-    return value
-
-
 def _currency(config):
-    """The market area's currency unless set, otherwise euros. Without a market, any currency."""
+    """The market area's currency unless set, otherwise euros. Without a market, any currency. A price list's must be
+    the same."""
     market = config.get(CONF_MARKET)
     area = market[CONF_AREA] if market else ""
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
     if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
         raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
+    name = config[CONF_GRID].get(CONF_PRICELIST)
+    if name and (currency := _price_list(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
+        raise cv.Invalid(f"the price list {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
     return config
 
 
@@ -223,31 +326,19 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
-def _table(days):
-    """A Days of charging.h: the zones by day from Sunday, then holidays, empty where days doesn't say."""
-    table = [""] * 8
-    for key, zones in days.items():
-        for day in DAYS[key]:
-            table[day] = zones
-    return table
-
-
-def _grid(config, vat):
-    holidays = config[CONF_HOLIDAYS]
-    seasons = []
-    for key, days in config[CONF_SEASONS].items():
-        first, last = _dates(key)
-        seasons.append(cg.StructInitializer(Season, ("from", first), ("to", last), ("days", _table(days))))
-    return cg.StructInitializer(
-        Grid,
-        ("vat", vat),
-        ("winter_clock", config[CONF_CLOCK] == "winter"),
-        ("days", _table(config[CONF_DAYS])),
-        ("seasons", seasons),
-        ("fee", [config[CONF_ZONES].get(zone, 0.0) for zone in ascii_lowercase]),
-        ("holidays", [h for h in holidays if not isinstance(h, tuple)]),
-        ("after_easter", [h[1] for h in holidays if isinstance(h, tuple)]),
-    )
+def _write(grid):
+    """config.yaml's grid settings as the board reads them (read_grid() in charging.h)."""
+    lines = []
+    if CONF_CALENDAR in grid:
+        lines.append(f"{CONF_CALENDAR}:")
+        for months, week in grid[CONF_CALENDAR].items():
+            lines += [f"  {months}:", *(f"    {days}: {rates}" for days, rates in week.items())]
+    if CONF_CLOCK in grid:
+        lines.append(f"{CONF_CLOCK}: {grid[CONF_CLOCK]}")
+    for table in (CONF_EXCEPTIONS, CONF_RATES):
+        if table in grid:
+            lines += [f"{table}:", *(f"  {key}: {value}" for key, value in grid[table].items())]
+    return "\n".join(lines)
 
 
 # The web page finds these entities by name, and the board keeps Ready by and Ready by once under theirs, so the
@@ -268,7 +359,10 @@ async def to_code(config):
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    cg.add(var.set_grid(_grid(config[CONF_GRID], market[CONF_VAT] if market else 0.0)))
+    grid = config[CONF_GRID]
+    name = grid.get(CONF_PRICELIST, "")
+    text = (PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
+    cg.add(var.set_grid(market[CONF_VAT] if market else 0.0, name, text, _write(grid)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

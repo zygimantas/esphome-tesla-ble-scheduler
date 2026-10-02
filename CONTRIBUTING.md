@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and grid fees when you build. `web/` holds the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -56,7 +56,7 @@ The C++ follows ESPHome's own style. Comments say why, not what. YAML config fil
 ## Pull requests
 
 - The body says what changed and why, in plain prose, and how you checked it.
-- Keep your own values out: git ignores `config.yaml` and `secrets.yaml`, and `config.example.yaml` keeps ESO's grid fees unless the change is about them.
+- Keep your own values out: git ignores `config.yaml` and `secrets.yaml`, and `config.example.yaml` keeps ESO's price list unless the change is about it.
 - Pull requests merge by squash only, and the head branch is deleted on merge. Only the squash commit reaches `main`.
 
 ## Commit and PR-title format
@@ -77,7 +77,7 @@ The PR title becomes the commit subject on `main`, so it follows [Conventional C
 | `chore`    | Maintenance with no product impact |
 | `revert`   | Reverting a previous change        |
 
-**Scopes** (optional but preferred) follow the repository layout: `charging` (the component in `charging/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the grid fees in `config.example.yaml`) and `docs`. Tests take the scope of what they test.
+**Scopes** (optional but preferred) follow the repository layout: `charging` (the component in `charging/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the price lists in `pricelists/`) and `docs`. Tests take the scope of what they test.
 
 A workflow labels the pull request from the type: `fix` is bug, `feat` is enhancement, `docs` is documentation, and the rest maintenance. A `!` before the colon, as in `feat(board)!: ...`, marks a change users must act on, and adds breaking. The release notes list breaking changes first, group the rest by those labels and leave maintenance out.
 
@@ -88,6 +88,15 @@ feat(charging): suggest a later ready-by when it's much cheaper
 fix(web): keep ready by hidden until prices arrive
 chore(grid): update the ESO fees for 2027
 ```
+
+## Price lists
+
+A price list is a grid operator's plan in `pricelists/`, in a folder for its country: `pricelists/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
+
+- **The format** is that of `grid:` in [Grid fees](docs/grid-fees.md), with the list's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, and no quotes.
+- **A comment at the top** says what the list is, with a link to the operator's prices, and who maintains it: `# Maintained by @your-github-name`.
+- **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their list from `main` every day, so merging publishes it, without a release.
+- **CI reads every list as the board does,** in the unit tests, and the install checks the list it uses.
 
 ## Releases
 

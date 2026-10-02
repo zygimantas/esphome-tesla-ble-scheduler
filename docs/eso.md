@@ -1,144 +1,20 @@
-# ESO plans
+# ESO price lists
 
-ESO's household plans for Lithuania as `grid:` blocks for `config.yaml`, with 2026 prices in EUR/kWh with VAT. Replace the `grid:` block under `charging:` with the one for your plan, and leave `market:` as it is. Check the current prices on [ESO's website](https://www.eso.lt) first: they change at least once a year.
-
-The letters are `n` for night, `m` for morning, `d` for day and `e` for evening. [Grid fees](grid-fees.md) explains the format.
-
-## One zone
-
-The same fee every hour.
-
-Standartinis:
+ESO's household plans for Lithuania, as price lists with prices with VAT. Name yours under `grid:` in `config.yaml`, and leave `market:` as it is:
 
 ```yaml
   grid:
-    days:
-      mon-sun: a
-    zones:
-      a: 0.11132
+    pricelist: lt/eso-standartinis-4-zones
 ```
 
-Efektyvus:
+| Plan | One zone | Two zones | Four zones |
+| --- | --- | --- | --- |
+| Standartinis | `lt/eso-standartinis-1-zone` | `lt/eso-standartinis-2-zones` | `lt/eso-standartinis-4-zones` |
+| Efektyvus | `lt/eso-efektyvus-1-zone` | `lt/eso-efektyvus-2-zones` | `lt/eso-efektyvus-4-zones` |
+| Namai | `lt/eso-namai-1-zone` | `lt/eso-namai-2-zones` | |
 
-```yaml
-  grid:
-    days:
-      mon-sun: a
-    zones:
-      a: 0.08833
-```
+- **One zone:** the same fee every hour.
+- **Two zones:** night from 23:00 to 07:00 and all weekend, day the rest, on winter time all year. Public holidays count as workdays.
+- **Four zones:** on a workday, night from 22:00 to 05:00, morning from 05:00 to 07:00, day from 07:00 to 17:00 and evening from 17:00 to 22:00. At weekends and on public holidays, night from 22:00 to 07:00 and day the rest. The hours follow the clock, summer time included.
 
-Namai:
-
-```yaml
-  grid:
-    days:
-      mon-sun: a
-    zones:
-      a: 0.09559
-```
-
-## Two zones
-
-Night from 23:00 to 07:00 and all weekend, day the rest, on winter time all year.
-
-Standartinis:
-
-```yaml
-  grid:
-    clock: winter
-    days:
-      mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: n
-    zones:
-      n: 0.07139
-      d: 0.12947
-```
-
-Efektyvus:
-
-```yaml
-  grid:
-    clock: winter
-    days:
-      mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: n
-    zones:
-      n: 0.05687
-      d: 0.10164
-```
-
-Namai:
-
-```yaml
-  grid:
-    clock: winter
-    days:
-      mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: n
-    zones:
-      n: 0.06171
-      d: 0.11011
-```
-
-## Four zones
-
-On a workday: night from 22:00 to 05:00, morning from 05:00 to 07:00, day from 07:00 to 17:00, evening from 17:00 to 22:00. At weekends and on public holidays: night from 22:00 to 07:00, day the rest. The hours follow the clock, summer time included. Namai has no four-zone plan.
-
-Standartinis (the plan in `config.example.yaml`):
-
-```yaml
-  grid:
-    days:
-      mon-fri: nnnnnmmddddddddddeeeeenn
-      sat-sun: nnnnnnndddddddddddddddnn
-    holidays:
-      - 01-01
-      - 02-16
-      - 03-11
-      - easter
-      - easter+1
-      - 05-01
-      - 06-24
-      - 07-06
-      - 08-15
-      - 11-01
-      - 11-02
-      - 12-24
-      - 12-25
-      - 12-26
-    zones:
-      n: 0.06292
-      m: 0.08349
-      d: 0.10406
-      e: 0.14641
-```
-
-Efektyvus:
-
-```yaml
-  grid:
-    days:
-      mon-fri: nnnnnmmddddddddddeeeeenn
-      sat-sun: nnnnnnndddddddddddddddnn
-    holidays:
-      - 01-01
-      - 02-16
-      - 03-11
-      - easter
-      - easter+1
-      - 05-01
-      - 06-24
-      - 07-06
-      - 08-15
-      - 11-01
-      - 11-02
-      - 12-24
-      - 12-25
-      - 12-26
-    zones:
-      n: 0.05082
-      m: 0.06534
-      d: 0.08228
-      e: 0.11374
-```
+The prices are in the lists in [pricelists/lt](../pricelists/lt). [Grid fees](grid-fees.md) says how to change them for yourself.

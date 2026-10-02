@@ -7,7 +7,10 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -371,46 +374,78 @@ static void test_plan_windows_and_prices() {
 }
 
 // ---------------------------------------------------------------------------
-// Grid: VAT and the grid fee from config.yaml
+// Grid: VAT, and the grid's rates from a price list and config.yaml
 // ---------------------------------------------------------------------------
 
-// Days as the build makes them from mon-fri, sat-sun and holiday.
-static Days week(const char *workday, const char *weekend, const char *holiday = "") {
-  return {weekend, workday, workday, workday, workday, workday, weekend, holiday};
+// ESO's 2026 plans as price lists (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
+// of 2026.
+static const char *const FOUR_ZONES = R"(# ESO's Standartinis plan with four zones
+currency: EUR
+calendar:
+  jan-dec:
+    mon-fri: night 05:00 morning 07:00 day 17:00 evening 22:00 night
+    sat-sun: night 07:00 day 22:00 night
+exceptions:
+  01-01: night 07:00 day 22:00 night
+  02-16: night 07:00 day 22:00 night
+  03-11: night 07:00 day 22:00 night
+  04-06: night 07:00 day 22:00 night
+  05-01: night 07:00 day 22:00 night
+  06-24: night 07:00 day 22:00 night
+  07-06: night 07:00 day 22:00 night
+  08-15: night 07:00 day 22:00 night
+  11-01: night 07:00 day 22:00 night
+  11-02: night 07:00 day 22:00 night
+  12-24: night 07:00 day 22:00 night
+  12-25: night 07:00 day 22:00 night
+  12-26: night 07:00 day 22:00 night
+rates:
+  night: 0.06292
+  morning: 0.08349
+  day: 0.10406
+  evening: 0.14641
+)";
+static const char *const TWO_ZONES = R"(currency: EUR
+clock: winter
+calendar:
+  jan-dec:
+    mon-fri: night 07:00 day 23:00 night
+    sat-sun: night
+rates:
+  night: 0.07139
+  day: 0.12947
+)";
+static const char *const ONE_ZONE = R"(currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.11132
+)";
+
+// What's wrong with a price list's settings and config.yaml's together, as the board puts them, or "".
+static std::string grid_error(const std::string &list, const std::string &own, Grid &grid,
+                              const char *currency = "EUR") {
+  GridText list_settings, own_settings;
+  std::string error = read_grid(list, list_settings);
+  error += read_grid(own, own_settings);
+  return error + make_grid(list_settings, own_settings, currency, grid);
+}
+static std::string grid_error(const std::string &list, const std::string &own = "", const char *currency = "EUR") {
+  Grid ignored;
+  return grid_error(list, own, ignored, currency);
 }
 
-// A grid as the build makes it from config.yaml, with 21% VAT.
-static Grid make_grid(bool winter_clock, const char *workday, const char *weekend, const char *holiday,
-                      const std::vector<std::pair<char, float>> &fees, std::vector<uint16_t> holidays = {},
-                      std::vector<int8_t> after_easter = {}) {
-  Grid t;
-  t.vat = 0.21f;
-  t.winter_clock = winter_clock;
-  t.days = week(workday, weekend, holiday);
-  t.fee.resize(26);
-  for (const auto &[zone, fee] : fees)
-    t.fee[zone - 'a'] = fee;
-  t.holidays = std::move(holidays);
-  t.after_easter = std::move(after_easter);
-  return t;
+// The grid of a price list and config.yaml's settings, with 21% VAT.
+static Grid grid_of(const std::string &list, const std::string &own = "") {
+  Grid grid;
+  CHECK_STR(grid_error(list, own, grid), "");
+  grid.vat = 0.21f;
+  return grid;
 }
-
-// ESO's 2026 "Standartinis" plans (fees in EUR/kWh incl. VAT), with Lithuania's public holidays.
-static Grid four_zones(const char *holiday = "nnnnnnndddddddddddddddnn",
-                       std::vector<uint16_t> holidays = {101, 216, 311, 501, 624, 706, 815, 1101, 1102, 1224, 1225,
-                                                         1226},
-                       std::vector<int8_t> after_easter = {0, 1}) {
-  return make_grid(false, "nnnnnmmddddddddddeeeeenn", "nnnnnnndddddddddddddddnn", holiday,
-                   {{'n', 0.06292f}, {'m', 0.08349f}, {'d', 0.10406f}, {'e', 0.14641f}}, std::move(holidays),
-                   std::move(after_easter));
-}
-static Grid two_zones() {
-  return make_grid(true, "nnnnnnnddddddddddddddddn", "nnnnnnnnnnnnnnnnnnnnnnnn", "",
-                   {{'n', 0.07139f}, {'d', 0.12947f}});
-}
-static Grid one_zone() {
-  return make_grid(false, "aaaaaaaaaaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa", "", {{'a', 0.11132f}});
-}
+static Grid four_zones() { return grid_of(FOUR_ZONES); }
+static Grid two_zones() { return grid_of(TWO_ZONES); }
+static Grid one_zone() { return grid_of(ONE_ZONE); }
 
 // The grid fee at a Vilnius date and clock time.
 static float fee_at(const Grid &grid, int year, unsigned month, unsigned day, int hour, int minute = 0) {
@@ -418,21 +453,176 @@ static float fee_at(const Grid &grid, int year, unsigned month, unsigned day, in
   return grid_fee(t, grid, VILNIUS_STANDARD_OFFSET);
 }
 
-static void test_four_zones_weekends_and_holidays() {
-  CHECK(easter_sunday(2025) == days_from_civil(2025, 4, 20));
-  CHECK(easter_sunday(2026) == days_from_civil(2026, 4, 5));
-  CHECK(easter_sunday(2027) == days_from_civil(2027, 3, 28));
-  // Every Easter from 1583, the first Gregorian one, to 9999 matches Lichtenberg's version of Gauss's formula.
-  int wrong = 0;
-  for (int64_t year = 1583; year < 10000; ++year) {
-    const int64_t k = year / 100, a = year % 19, m = 15 + (3 * k + 3) / 4 - (8 * k + 13) / 25;
-    const int64_t d = (19 * a + m) % 30, full_moon = 21 + d - (d + a / 11) / 29;   // as a day of March
-    const int64_t first_sunday = 7 - (year + year / 4 + 2 - (3 * k + 3) / 4) % 7;  // in March
-    const int64_t easter = full_moon + 7 - (full_moon - first_sunday) % 7;
-    wrong += easter_sunday(year) != days_from_civil(year, 3, 1) + easter - 1;
-  }
-  CHECK(wrong == 0);
+// A whole calendar of one week, with the rates that make it whole.
+static std::string calendar_of(const char *week, const char *rates = "flat: 0.1") {
+  return std::string("calendar:\n  jan-dec:\n") + week + "\nrates:\n  " + rates;
+}
 
+using Entries = std::vector<std::pair<std::string, std::string>>;
+
+static void test_reads_grid_settings() {
+  GridText settings;
+  CHECK_STR(read_grid("# a comment\r\n\ncurrency: EUR  \nclock: winter\ncalendar:\n  jan-dec:\n    # the days\n"
+                      "    mon-sun:   flat 07:00 day\nexceptions:\n  12-25: flat\nrates:\n  flat: 0.1\n  day: 0.2",
+                      settings),
+            "");
+  CHECK_STR(settings.currency, "EUR");
+  CHECK_STR(settings.clock, "winter");
+  REQUIRE(settings.calendar.size() == 1);
+  CHECK_STR(settings.calendar[0].first, "jan-dec");
+  CHECK((settings.calendar[0].second == Entries{{"mon-sun", "flat 07:00 day"}}));
+  CHECK((settings.exceptions == Entries{{"12-25", "flat"}}));
+  CHECK((settings.rates == Entries{{"flat", "0.1"}, {"day", "0.2"}}));
+  GridText none;
+  CHECK_STR(read_grid("", none) + read_grid("\n  \n# only a comment", none), "");
+  CHECK(none.calendar.empty() && none.rates.empty() && none.clock.empty());
+
+  struct Case {
+    const char *text;
+    const char *error;
+  };
+  for (const Case &c : {
+           Case{"calendar", "line 1 isn't a key and a value"},
+           Case{": x", "line 1 isn't a key and a value"},
+           Case{"rates:\n  night:0.1", "line 2 isn't a key and a value"},
+           Case{"currency:", "line 1 doesn't belong there: currency"},
+           Case{"calendar: x", "line 1 doesn't belong there: calendar"},
+           Case{"foo: bar", "line 1 doesn't belong there: foo"},
+           Case{"\tcalendar:", "line 1 doesn't belong there: \tcalendar"},
+           Case{"  jan-dec:", "line 1 doesn't belong there: jan-dec"},
+           Case{"calendar:\n    mon-sun: flat", "line 2 doesn't belong there: mon-sun"},
+           Case{"calendar:\n  jan-dec: flat", "line 2 doesn't belong there: jan-dec"},
+           Case{"calendar:\n  jan-dec:\n   mon-sun: flat", "line 3 doesn't belong there: mon-sun"},
+           Case{"calendar:\n  jan-dec:\n    mon-sun:", "line 3 doesn't belong there: mon-sun"},
+           Case{"calendar:\n  jan-dec:\n      mon-sun: flat", "line 3 doesn't belong there: mon-sun"},
+           Case{"clock: winter\n  jan-dec:", "line 2 doesn't belong there: jan-dec"},
+           Case{"exceptions:\n  12-25:", "line 2 doesn't belong there: 12-25"},
+           Case{"calendar:\n  jan-dec:\nrates:\n    mon-sun: flat", "line 4 doesn't belong there: mon-sun"},
+           Case{"calendar:\n  jan-dec:\nrates:\n  jun:", "line 4 doesn't belong there: jun"},
+       }) {
+    GridText ignored;
+    CHECK_STR(read_grid(c.text, ignored), c.error);
+  }
+}
+
+static void test_makes_grids() {
+  // Your rates replace the list's, and add to them.
+  const Grid cheaper = grid_of(FOUR_ZONES, "rates:\n  night: 0.05");
+  CHECK(near(fee_at(cheaper, 2026, 9, 24, 3), 0.05f));
+  CHECK(near(fee_at(cheaper, 2026, 9, 24, 12), 0.10406f));
+  const Grid peak = grid_of(FOUR_ZONES, "exceptions:\n  12-28: peak\nrates:\n  peak: 0.2");
+  CHECK(near(fee_at(peak, 2026, 12, 28, 3), 0.2f));
+  // Your exceptions replace the list's on the same date, and add others.
+  const Grid special = grid_of(FOUR_ZONES, "exceptions:\n  12-31: night 07:00 day 22:00 night\n  12-25: evening");
+  CHECK(near(fee_at(special, 2026, 12, 31, 18), 0.10406f));  // a Thursday, now a holiday
+  CHECK(near(fee_at(special, 2026, 12, 25, 3), 0.14641f));
+  CHECK(near(fee_at(special, 2026, 12, 24, 18), 0.10406f));  // the list's holiday stays
+  // Your calendar replaces the list's whole calendar, and your clock its clock.
+  const Grid own_week = grid_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: day");
+  CHECK(near(fee_at(own_week, 2026, 9, 26, 3), 0.12947f));
+  CHECK(near(fee_at(grid_of(TWO_ZONES, "clock: local"), 2026, 9, 24, 7, 30), 0.12947f));
+  CHECK(near(fee_at(grid_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: night  07:00   day"), 2026, 9, 24, 8),
+             0.12947f));
+  // Without a list, your settings are the whole grid; a price list's prices are in its currency.
+  CHECK(near(fee_at(grid_of("", calendar_of("    mon-sun: flat", "flat: 0.2")), 2026, 9, 24, 3), 0.2f));
+  CHECK_STR(grid_error(FOUR_ZONES, "", "NOK"), "the price list's prices are in EUR, not NOK");
+  CHECK_STR(grid_error(calendar_of("    mon-sun: flat")), "the price list's prices are in , not EUR");
+  CHECK_STR(grid_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat", "", "NOK"),
+            "calendar: jan-dec: mon-sun: rate flat has no price");
+  // A rate the list renamed or dropped, which yours still sets.
+  CHECK_STR(grid_error(FOUR_ZONES, "rates:\n  nakts: 0.05"), "rate nakts isn't used on any day");
+
+  std::string rates = "rates:";
+  for (char rate = 'a'; rate <= 'z'; rate++)
+    rates += std::string("\n  ") + rate + ": 0.1";
+  std::string week = "    mon-sun: a";  // a new rate every quarter-hour from 00:15 to 06:15
+  for (char rate = 'b'; rate <= 'z'; rate++) {
+    char when[16];
+    std::snprintf(when, sizeof(when), " %02d:%02d ", (rate - 'a') / 4, (rate - 'a') % 4 * 15);
+    week += when + std::string(1, rate);
+  }
+  CHECK_STR(grid_error("", "calendar:\n  jan-dec:\n" + week + "\n" + rates), "");
+  CHECK_STR(grid_error("", "calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n  extra: 0.1"),
+            "rate extra: a rate is there twice, or there are more than 26");
+
+  struct Case {
+    std::string own;
+    const char *error;
+  };
+  for (const Case &c : {
+           Case{"", "the calendar needs every month"},
+           Case{"calendar:\n  jan-jun:\n    mon-sun: flat\nrates:\n  flat: 0.1", "the calendar needs every month"},
+           Case{"calendar:\n  jan-jun:\n    mon-sun: flat\n  jun-dec:\n    mon-sun: flat\nrates:\n  flat: 0.1",
+                "calendar: jun-dec has a month that's in the calendar already"},
+           Case{"calendar:\n  jan-dex:\n    mon-sun: flat", "calendar: jan-dex isn't a month or a range like nov-mar"},
+           Case{"calendar:\n  january:\n    mon-sun: flat", "calendar: january isn't a month or a range like nov-mar"},
+           Case{calendar_of("    mon-fri: flat"), "calendar: jan-dec needs every day of the week"},
+           Case{calendar_of("    mon-sun: flat\n    sun: flat"),
+                "calendar: jan-dec: sun has a day that's there already"},
+           Case{calendar_of("    weekend: flat"), "calendar: jan-dec: weekend isn't a day or a range like mon-fri"},
+           Case{calendar_of("    mon-: flat"), "calendar: jan-dec: mon- isn't a day or a range like mon-fri"},
+           Case{calendar_of("    mon-sun: flat 07:00"),
+                "calendar: jan-dec: mon-sun: \"flat 07:00\" isn't rates and times by turns, like night 07:00 day"},
+           Case{calendar_of("    mon-sun: dark"), "calendar: jan-dec: mon-sun: rate dark has no price"},
+           Case{calendar_of("    mon-sun: flat 07:00 dark"), "calendar: jan-dec: mon-sun: rate dark has no price"},
+           Case{calendar_of("    mon-sun: flat 7:00 flat"),
+                "calendar: jan-dec: mon-sun: 7:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:10 flat"),
+                "calendar: jan-dec: mon-sun: 07:10 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:60 flat"),
+                "calendar: jan-dec: mon-sun: 07:60 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07-00 flat"),
+                "calendar: jan-dec: mon-sun: 07-00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 0x:00 flat"),
+                "calendar: jan-dec: mon-sun: 0x:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:x0 flat"),
+                "calendar: jan-dec: mon-sun: 07:x0 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 00:00 flat"),
+                "calendar: jan-dec: mon-sun: 00:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 24:00 flat"),
+                "calendar: jan-dec: mon-sun: 24:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:00 flat 07:00 flat"),
+                "calendar: jan-dec: mon-sun: 07:00 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat 07:00 flat 06:45 flat"),
+                "calendar: jan-dec: mon-sun: 06:45 isn't a later quarter-hour, like 07:00 or 22:15"},
+           Case{calendar_of("    mon-sun: flat") + "\nclock: summer", "clock is local or winter, not summer"},
+           Case{calendar_of("    mon-sun: flat", "flat: x"), "rate flat: x isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: 0.1x"), "rate flat: 0.1x isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: -0.1"), "rate flat: -0.1 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: 1e9"), "rate flat: 1e9 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: nan"), "rate flat: nan isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  13-01: flat",
+                "exceptions: 13-01 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  00-10: flat",
+                "exceptions: 00-10 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  02-30: flat",
+                "exceptions: 02-30 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  04-31: flat",
+                "exceptions: 04-31 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  01-00: flat",
+                "exceptions: 01-00 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  1-01: flat",
+                "exceptions: 1-01 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  01/01: flat",
+                "exceptions: 01/01 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  01-011: flat",
+                "exceptions: 01-011 isn't a date like 12-25, or it's there twice"},
+           Case{calendar_of("    mon-sun: flat") + "\nexceptions:\n  12-25: dark",
+                "exceptions: 12-25: rate dark has no price"},
+       }) {
+    CHECK_STR(grid_error("", c.own), c.error);
+  }
+  CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 23:45 flat") + "\nexceptions:\n  02-29: flat"), "");
+  // A key twice can only be in a price list: config.yaml's settings come from YAML, without it.
+  CHECK_STR(grid_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
+            "rate flat: a rate is there twice, or there are more than 26");
+  CHECK_STR(
+      grid_error("currency: EUR\n" + calendar_of("    mon-sun: flat") + "\nexceptions:\n  12-25: flat\n  12-25: flat"),
+      "exceptions: 12-25 isn't a date like 12-25, or it's there twice");
+}
+
+static void test_eso_plans() {
   const Grid t = four_zones();
   const float night = 0.06292f, morning = 0.08349f, day = 0.10406f, evening = 0.14641f;
   // Thursday 2026-09-24, a workday.
@@ -458,32 +648,20 @@ static void test_four_zones_weekends_and_holidays() {
   CHECK(near(total_price(0.10f, SEP24_1700Z + 6 * HOUR, t, VILNIUS_STANDARD_OFFSET), 0.10f * 1.21f + night));
   CHECK(grid_fee(SEP24_1700Z, Grid(), VILNIUS_STANDARD_OFFSET) == 0.0f);  // no grid fees: spot prices only
 
-  // Holidays with workday hours instead.
-  CHECK(near(fee_at(four_zones("nnnnnmmddddddddddeeeeenn"), 2026, 12, 24, 18), evening));
-
-  // Another country's holidays: Good Friday (Easter Sunday - 2) and 14 May, both workdays in 2026.
-  const Grid other = four_zones("nnnnnnndddddddddddddddnn", {514}, {-2});
-  CHECK(near(fee_at(t, 2026, 4, 3, 18), evening));  // not holidays in Lithuania
-  CHECK(near(fee_at(other, 2026, 4, 3, 18), day));
-  CHECK(near(fee_at(other, 2026, 5, 14, 18), day));
-}
-
-static void test_one_and_two_zones() {
-  const Grid t = two_zones();
-  const float night = 0.07139f, day = 0.12947f;
-  // Summer: the day zone, 07-23 in winter time, is 08-24 on the clock.
-  CHECK(near(fee_at(t, 2026, 9, 24, 7, 30), night));
-  CHECK(near(fee_at(t, 2026, 9, 24, 8), day));
-  CHECK(near(fee_at(t, 2026, 9, 24, 23, 30), day));
-  CHECK(near(fee_at(t, 2026, 9, 25, 0, 30), night));
+  const Grid two = two_zones();
+  // Summer: the day rate, 07-23 in winter time, is 08-24 on the clock.
+  CHECK(near(fee_at(two, 2026, 9, 24, 7, 30), 0.07139f));
+  CHECK(near(fee_at(two, 2026, 9, 24, 8), 0.12947f));
+  CHECK(near(fee_at(two, 2026, 9, 24, 23, 30), 0.12947f));
+  CHECK(near(fee_at(two, 2026, 9, 25, 0, 30), 0.07139f));
   // Winter: 07-23.
-  CHECK(near(fee_at(t, 2026, 12, 1, 6, 30), night));
-  CHECK(near(fee_at(t, 2026, 12, 1, 7), day));
-  CHECK(near(fee_at(t, 2026, 12, 1, 22, 30), day));
-  CHECK(near(fee_at(t, 2026, 12, 1, 23), night));
-  CHECK(near(fee_at(t, 2026, 9, 26, 12), night));  // weekends are night all day
+  CHECK(near(fee_at(two, 2026, 12, 1, 6, 30), 0.07139f));
+  CHECK(near(fee_at(two, 2026, 12, 1, 7), 0.12947f));
+  CHECK(near(fee_at(two, 2026, 12, 1, 22, 30), 0.12947f));
+  CHECK(near(fee_at(two, 2026, 12, 1, 23), 0.07139f));
+  CHECK(near(fee_at(two, 2026, 9, 26, 12), 0.07139f));  // weekends are night all day
   // ESO's two-zone meters don't know public holidays: Christmas Eve (a Thursday) is a workday.
-  CHECK(near(fee_at(t, 2026, 12, 24, 12), day));
+  CHECK(near(fee_at(two, 2026, 12, 24, 12), 0.12947f));
 
   const Grid one = one_zone();
   for (int hour : {3, 6, 12, 18, 23}) {
@@ -492,101 +670,78 @@ static void test_one_and_two_zones() {
   }
 }
 
-static void test_days_of_the_week_and_holidays() {
-  // A zone for each day of the week: from Monday's b at 0.01 EUR/kWh to Sunday's h at 0.07.
-  Grid g;
-  g.fee.resize(26);
-  for (int day = 1; day <= 7; ++day) {
-    g.days[day % 7] = std::string(24, static_cast<char>('a' + day));
-    g.fee[day] = 0.01f * static_cast<float>(day);
-  }
-  g.holidays = {1224};
-  // Monday 21 to Sunday 27 December 2026 at their days' prices; Christmas Eve, a Thursday holiday, at Sunday's.
-  const float expected[] = {0.01f, 0.02f, 0.03f, 0.07f, 0.05f, 0.06f, 0.07f};
+static void test_calendar_and_exceptions() {
+  // A rate for each day of the week, a range that wraps past Sunday, and an exception: Monday 21 to Sunday 27
+  // December 2026, with Christmas Eve, a Thursday, at its own rate.
+  const Grid week = grid_of("",
+                            "calendar:\n  jan-dec:\n    tue: b\n    wed: c\n    thu: d\n    fri-mon: a\n"
+                            "exceptions:\n  12-24: e\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03\n  d: 0.04\n  e: 0.05");
+  const float expected[] = {0.01f, 0.02f, 0.03f, 0.05f, 0.01f, 0.01f, 0.01f};
   for (unsigned day = 21; day <= 27; ++day)
-    CHECK(near(fee_at(g, 2026, 12, day, 12), expected[day - 21]));
-  // With holiday zones, those: here Tuesday's.
-  g.days[7] = g.days[2];
-  CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.02f));
-  // A season that names Sunday, as Monday's zone, but not holidays: the holiday zones still win, and without them
-  // the season's Sunday.
-  g.seasons = {Season{1201, 1231, {g.days[1], "", "", "", "", "", "", ""}}};
-  CHECK(near(fee_at(g, 2026, 12, 27, 12), 0.01f));
-  CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.02f));
-  g.days[7] = "";
-  CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.01f));
-}
+    CHECK(near(fee_at(week, 2026, 12, day, 12), expected[day - 21]));
+  CHECK(near(fee_at(week, 2026, 12, 31, 12), 0.04f));  // the next Thursday, no exception
 
-static void test_whole_days_half_hours_and_quarter_hours() {
-  // Octopus Go in the UK, on its own clock (no offset in winter): cheap from 00:30 to 05:30, in half-hours.
-  Grid go;
-  go.days.fill("n" + std::string(10, 'c') + std::string(37, 'n'));
-  go.fee.resize(26);
-  go.fee['c' - 'a'] = 0.085f;
-  go.fee['n' - 'a'] = 0.245f;
-  const auto uk = [](const Grid &grid, unsigned month, unsigned day, int minutes) {
-    return grid_fee(local_to_utc(days_from_civil(2026, month, day), minutes, 0), grid, 0);
+  // Seasons: weekdays and Saturdays dearer from 07:00 to 22:00 from November to March, low the rest of the year,
+  // and the same on 24 December in any year.
+  const Grid seasons = grid_of("",
+                               "calendar:\n  apr-oct:\n    mon-sun: low\n  nov-mar:\n"
+                               "    mon-sat: low 07:00 high 22:00 low\n    sun: low\n"
+                               "exceptions:\n  12-24: high\nrates:\n  low: 0.03\n  high: 0.08");
+  CHECK(fee_at(seasons, 2027, 1, 15, 12) == 0.08f);   // a Friday in January
+  CHECK(fee_at(seasons, 2027, 1, 15, 3) == 0.03f);    // its night
+  CHECK(fee_at(seasons, 2027, 1, 16, 12) == 0.08f);   // Saturday
+  CHECK(fee_at(seasons, 2027, 1, 17, 12) == 0.03f);   // Sunday
+  CHECK(fee_at(seasons, 2027, 3, 31, 12) == 0.08f);   // the last day of winter
+  CHECK(fee_at(seasons, 2027, 4, 1, 12) == 0.03f);    // the first of summer
+  CHECK(fee_at(seasons, 2027, 10, 29, 12) == 0.03f);  // a Friday in October
+  CHECK(fee_at(seasons, 2027, 11, 1, 12) == 0.08f);   // Monday 1 November
+  CHECK(fee_at(seasons, 2027, 12, 15, 12) == 0.08f);  // a Wednesday in December
+  CHECK(fee_at(seasons, 2027, 12, 24, 3) == 0.08f);   // the exception, all day
+  CHECK(fee_at(seasons, 2028, 2, 29, 12) == 0.08f);   // a leap day, a Tuesday
+
+  // Quarter-hours, on UK time: Octopus Go's cheap 00:30 to 05:30, and a quarter-hour from 06:45.
+  const Grid go = grid_of("", calendar_of("    mon-sun: n 00:30 c 05:30 n 06:45 c 07:00 n", "n: 0.245\n  c: 0.085"));
+  const auto uk = [&](unsigned month, unsigned day, int minutes) {
+    return grid_fee(local_to_utc(days_from_civil(2026, month, day), minutes, 0), go, 0);
   };
-  CHECK(uk(go, 12, 1, 29) == 0.245f);
-  CHECK(uk(go, 12, 1, 30) == 0.085f);
-  CHECK(uk(go, 12, 1, 5 * 60 + 29) == 0.085f);
-  CHECK(uk(go, 12, 1, 5 * 60 + 30) == 0.245f);
-  CHECK(uk(go, 7, 1, 30) == 0.085f);  // in summer time too
-  CHECK(uk(go, 7, 1, 29) == 0.245f);
-  // Quarter-hours: cheap only from 06:45 to 07:00.
-  Grid quarter = go;
-  quarter.days.fill(std::string(27, 'n') + "c" + std::string(68, 'n'));
-  CHECK(uk(quarter, 12, 1, 6 * 60 + 44) == 0.245f);
-  CHECK(uk(quarter, 12, 1, 6 * 60 + 45) == 0.085f);
-  CHECK(uk(quarter, 12, 1, 7 * 60) == 0.245f);
-  // One letter: the whole day.
-  Grid whole = go;
-  whole.days.fill("c");
-  CHECK(uk(whole, 12, 1, 0) == 0.085f);
-  CHECK(uk(whole, 12, 1, 23 * 60 + 59) == 0.085f);
+  CHECK(uk(12, 1, 29) == 0.245f);
+  CHECK(uk(12, 1, 30) == 0.085f);
+  CHECK(uk(12, 1, 5 * 60 + 29) == 0.085f);
+  CHECK(uk(12, 1, 5 * 60 + 30) == 0.245f);
+  CHECK(uk(7, 1, 30) == 0.085f);  // in summer time too
+  CHECK(uk(7, 1, 29) == 0.245f);
+  CHECK(uk(12, 1, 6 * 60 + 44) == 0.245f);
+  CHECK(uk(12, 1, 6 * 60 + 45) == 0.085f);
+  CHECK(uk(12, 1, 7 * 60) == 0.245f);
+  CHECK(uk(12, 1, 23 * 60 + 59) == 0.245f);
 }
 
-static void test_seasons() {
-  // Dearer weekdays from 06:00 to 22:00 from November to March, low the rest of the year.
-  const char *low = "llllllllllllllllllllllll", *peak = "llllllhhhhhhhhhhhhhhhhll";
-  Grid g = make_grid(false, low, low, "", {{'l', 0.03f}, {'h', 0.08f}}, {101});
-  g.seasons = {Season{1101, 331, week(peak, "")}};
-  CHECK(fee_at(g, 2027, 1, 15, 12) == 0.08f);  // a Friday in winter
-  CHECK(fee_at(g, 2027, 1, 15, 3) == 0.03f);   // its night
-  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.03f);  // Saturday: the season doesn't name it, so the year-round zones
-  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.03f);   // a holiday, a Friday: no holiday zones, so Sunday's
-  CHECK(fee_at(g, 2027, 7, 15, 12) == 0.03f);  // a Thursday in summer
-  // The edges of a range across New Year: Wednesday 31 March in, Thursday 1 April out, Friday 29 October
-  // out, Monday 1 November in.
-  CHECK(fee_at(g, 2027, 3, 31, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 4, 1, 12) == 0.03f);
-  CHECK(fee_at(g, 2027, 10, 29, 12) == 0.03f);
-  CHECK(fee_at(g, 2027, 11, 1, 12) == 0.08f);
-  // A season that names Saturday and holidays too, as Finland's seasonal grid fee does from Monday to Saturday.
-  g.seasons[0].days[6] = g.seasons[0].days[7] = peak;
-  CHECK(fee_at(g, 2027, 1, 16, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 1, 17, 12) == 0.03f);  // Sunday stays
-  CHECK(fee_at(g, 2027, 7, 17, 12) == 0.03f);  // a Saturday in summer
-  // A range within the year, a summer peak: Thursday 1 July in, Wednesday 30 June out, Tuesday 31 August
-  // in, Wednesday 1 September out.
-  g.seasons[0].from = 701;
-  g.seasons[0].to = 831;
-  CHECK(fee_at(g, 2027, 7, 1, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 6, 30, 12) == 0.03f);
-  CHECK(fee_at(g, 2027, 8, 31, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 9, 1, 12) == 0.03f);
-  CHECK(fee_at(g, 2027, 1, 15, 12) == 0.03f);
-  // Two seasons: each date takes the one it's in.
-  g.seasons.push_back(Season{1201, 228, week(low, low, peak)});
-  CHECK(fee_at(g, 2027, 7, 16, 12) == 0.08f);   // a Friday in summer
-  CHECK(fee_at(g, 2027, 12, 31, 12) == 0.03f);  // a Friday in December
-  CHECK(fee_at(g, 2027, 1, 1, 12) == 0.08f);    // a holiday in winter, at the season's holiday zones
-  // A season of one day.
-  g.seasons = {Season{1224, 1224, week(peak, peak)}};
-  CHECK(fee_at(g, 2027, 12, 24, 12) == 0.08f);
-  CHECK(fee_at(g, 2027, 12, 23, 12) == 0.03f);
-  CHECK(fee_at(g, 2027, 12, 25, 12) == 0.03f);
+static void test_price_lists_in_the_repository() {
+  // Each list reads on the board, alone and with its own currency, and uses all its rates.
+  int lists = 0;
+  for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
+    if (entry.path().extension() != ".yaml")
+      continue;
+    std::ifstream file(entry.path());
+    std::stringstream text;
+    text << file.rdbuf();
+    const std::string name = entry.path().string() + ": ";
+    GridText list;
+    Grid grid;
+    CHECK_STR(name + read_grid(text.str(), list), name);
+    CHECK_STR(name + make_grid(list, GridText(), list.currency, grid), name);
+    CHECK(list.currency.size() == 3);
+    std::string used;
+    for (const auto &days : grid.weeks)
+      for (const std::string &day : days)
+        used += day;
+    for (const auto &exception : grid.exceptions)
+      used += exception.second;
+    for (size_t rate = 0; rate < grid.fee.size(); rate++)
+      CHECK(used.find(static_cast<char>('a' + rate)) != std::string::npos);
+    lists++;
+  }
+  CHECK(lists >= 8);
 }
 
 static void test_plan_counts_the_grid_fee() {
@@ -2003,11 +2158,11 @@ int main() {
   test_plan_picks_the_night_trough();
   test_plan_waits_for_prices_not_out_yet();
   test_plan_windows_and_prices();
-  test_four_zones_weekends_and_holidays();
-  test_one_and_two_zones();
-  test_days_of_the_week_and_holidays();
-  test_whole_days_half_hours_and_quarter_hours();
-  test_seasons();
+  test_reads_grid_settings();
+  test_makes_grids();
+  test_eso_plans();
+  test_calendar_and_exceptions();
+  test_price_lists_in_the_repository();
   test_plan_counts_the_grid_fee();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();

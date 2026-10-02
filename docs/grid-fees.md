@@ -1,71 +1,115 @@
 # Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. The example comes with ESO's 2026 Standartinis plan with four zones; [ESO plans](eso.md) has the others ready to paste. For any other grid operator, write your plan the same way:
-
-- `zones`: the fee per kWh of each zone, with VAT, in your `currency` (your market area's own unless you set it). Name each zone by a letter you choose.
-- `days`: the zones of each day: one letter for the whole day, or a letter for each hour from 00:00 (24 letters), half-hour (48) or quarter-hour (96). Name the days `mon` to `sun`, or ranges like `mon-fri` and `sat-sun`, so that each day of the week is named once. `holiday` gives public holidays their own zones; without it, they take Sunday's.
-- `holidays`: public holidays as `MM-DD`, or days around Easter as `easter`, `easter+1` or `easter-2`.
-- `clock: winter`: the plan's clock stays on winter time all year, as some plans do: the zone hours, and the days and dates that pick them. Leave it out when the plan follows the clock.
-- `seasons`: other zones for parts of the year. Each is named by its first and last date, like `11-01 to 03-31` (a season may cross New Year), and gives the zones of the days that change, as `days` does; the other days keep the year-round zones. Seasons can't overlap. For other prices in a season, give its days zones of their own.
-
-`market:` says where the market prices come from: the `area`, and the `vat` on the price itself (see Settings in the README).
-
-## Examples
-
-A plan with two zones, cheap at night and all weekend, on winter time all year:
+The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name the price list of their grid operator and plan:
 
 ```yaml
 charging:
   grid:
-    clock: winter
-    days:
-      mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: n
-    zones:
-      n: 0.07139
-      d: 0.12947
+    pricelist: lt/eso-standartinis-4-zones
+  market:
+    area: LT
+    vat: 0.21
 ```
 
-Here `n` runs from 00:00 to 07:00 and from 23:00 on weekdays, `d` from 07:00 to 23:00, and the weekend is all `n`.
+The board starts with the list from the release you installed, and downloads the current one every day, so new prices reach it without a reinstall. Each list has a maintainer from its country who keeps it up to date. [Price lists](#price-lists) says which there are.
 
-A fee that is dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
+## Your own changes
+
+Next to `pricelist:`, these change the list for you alone:
+
+- `rates`: your own price for a rate, or a rate the list doesn't have.
+- `exceptions`: a date of your own, or another line for one of the list's.
+- `calendar` and `clock`: your own calendar or clock, instead of the list's whole one.
 
 ```yaml
 charging:
   grid:
-    days:
-      mon-sun: l
-    seasons:
-      11-01 to 03-31:
-        mon-sat: lllllllhhhhhhhhhhhhhhhll
-    zones:
-      l: 0.03
-      h: 0.08
+    pricelist: lt/eso-standartinis-4-zones
+    exceptions:
+      12-31: night 07:00 day 22:00 night
+    rates:
+      night: 0.05
 ```
+
+A rate you set has to be one your days use. If a list later drops or renames it, the board keeps the list it has and says why in its log.
+
+## Your own grid
+
+Without a price list for your grid operator, write the grid yourself, or [add a price list](../CONTRIBUTING.md#price-lists) for everyone with your plan:
+
+- `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
+- A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
+- `exceptions`: public holidays and other dates that differ, like `12-25`, each with a line for the whole day. On those dates they replace the calendar.
+- `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`. YAML reads `on`, `off`, `yes`, `no`, `true`, `false` and `null` as true, false or nothing, so those can't be names.
+- `clock: winter`: all times stay on winter time all year, as some plans do. Leave it out when the plan follows the clock.
+
+ESO's four zones, with a public holiday:
+
+```yaml
+charging:
+  grid:
+    calendar:
+      jan-dec:
+        mon-fri: night 05:00 morning 07:00 day 17:00 evening 22:00 night
+        sat-sun: night 07:00 day 22:00 night
+    exceptions:
+      01-01: night 07:00 day 22:00 night
+    rates:
+      night: 0.06292
+      morning: 0.08349
+      day: 0.10406
+      evening: 0.14641
+```
+
+A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
+
+```yaml
+charging:
+  grid:
+    calendar:
+      apr-oct:
+        mon-sun: low
+      nov-mar:
+        mon-sat: low 07:00 high 22:00 low
+        sun: low
+    rates:
+      low: 0.03
+      high: 0.08
+```
+
+Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a price list, whose maintainer does.
 
 ## A fixed price
 
-Leave `market:` out: nothing is downloaded, and each zone's price is your whole price per kWh, the supplier's rate and the grid fee together, with VAT. One price for every hour:
+Leave `market:` out: nothing is downloaded, and each rate's price is your whole price per kWh, the supplier's rate and the grid fee together, with VAT. One price for every hour:
 
 ```yaml
   grid:
-    days:
-      mon-sun: x
-    zones:
-      x: 0.24
+    calendar:
+      jan-dec:
+        mon-sun: flat
+    rates:
+      flat: 0.24
 ```
 
-All hours then cost the same, so the board charges at once. With day and night prices, give each its zone, and the board charges in the cheap one. A night rate that starts on the half-hour, like Octopus Go's from 00:30 to 05:30 in the UK, takes 48 letters, with your rates:
+All hours then cost the same, so the board charges at once. With day and night prices, give each its rate, and the board charges in the cheap one. A night rate that starts on the half-hour, like Octopus Go's from 00:30 to 05:30 in the UK, with your rates:
 
 ```yaml
 charging:
   currency: GBP
   grid:
-    days:
-      mon-sun: nccccccccccnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
-    zones:
-      c: 0.085
-      n: 0.245
+    calendar:
+      jan-dec:
+        mon-sun: standard 00:30 cheap 05:30 standard
+    rates:
+      standard: 0.245
+      cheap: 0.085
 ```
 
-If something is wrong, the install stops and says what: a letter without a price, a zone no day uses, a day named twice or not at all, seasons that overlap, or a date that doesn't exist.
+## Price lists
+
+The lists are in [pricelists](../pricelists), a folder for each country:
+
+- Lithuania: [ESO price lists](eso.md).
+
+If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, or a price list in another currency than yours.
