@@ -29,6 +29,8 @@ jobs:
             *!) breaking=breaking ;;
             *) breaking= ;;
           esac
+          # The notes leave maintenance out, so a breaking change is never maintenance.
+          [ -n "$breaking" ] && [ "$label" = maintenance ] && label=
           # A retitled pull request loses the labels it had, so the notes follow the title.
           remove=$(printf '%s\n' bug enhancement documentation maintenance breaking |
             grep -v -x -e "${label:-none}" -e "${breaking:-none}" | paste -s -d , -)
