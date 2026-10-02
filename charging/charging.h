@@ -766,10 +766,10 @@ class Controller {
 
   // Counts the energy the car took since the last tick (its power times the time, at most a minute back) into
   // `savings`: at the total price of each quarter-hour, at the delivery day's average total price, and at the price
-  // it would have had charging at once. Charging at once starts when the car needs charging, at plug-in or when it's
-  // no longer full, and replays the car's charging time from then; past a day of it, or without its price, it counts
-  // as the day's average. A quarter-hour without a price counts as the day's average throughout, or as nothing
-  // without that: it neither saves nor costs.
+  // it would have had charging at once. Charging at once starts when the car needs charging, at a plug-in or when it's
+  // no longer full, and replays the car's charging time from then. Until it starts (after a restart, when the car was
+  // plugged in is unknown), past a day of it, or without its price, it counts as the day's average. A quarter-hour
+  // without a price counts as the day's average throughout, or as nothing without that: it neither saves nor costs.
   void count_(const CarState &car, int64_t now, const Settings &settings, Decision &d) {
     const int64_t today = local_day_of(now, settings.standard_offset);
     if (std::strncmp(savings.currency, settings.currency, sizeof(savings.currency)) != 0) {
@@ -788,7 +788,8 @@ class Controller {
       at_once_from_ = now;
       at_once_charged_ = 0;
     }
-    needed_ = needed;
+    if (plug_state_seen_)
+      needed_ = needed;
     for (size_t i = 0; i < at_once_prices_.size(); ++i) {  // as each price comes out, then kept
       const int64_t slot = floor_to_slot(at_once_from_) + static_cast<int64_t>(i) * SLOT_SECONDS;
       const std::optional<float> spot = std::isnan(at_once_prices_[i]) ? prices.get(slot) : std::nullopt;
@@ -999,7 +1000,7 @@ class Controller {
   };
   Figures counted_{};  // of counted_day_
   bool savings_unsaved_ = false;
-  bool needed_ = false;  // plugged in and not full, at the last tick
+  bool needed_ = true;  // plugged in and not full, at the last tick with a plug state
   int64_t counted_day_ = -1;
   int64_t counted_until_ = 0;
   int64_t savings_saved_slot_ = 0;

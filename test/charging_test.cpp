@@ -1568,6 +1568,17 @@ static CarState drawing(int64_t now, float kw, const char *state = "Charging") {
   return car;
 }
 
+// A plug-in the board sees: the car unplugged a minute before `car`, unlike the plug state it first reads after a
+// restart.
+static Decision plug_in(Controller &controller, CarState car) {
+  CarState away = car;
+  away.now -= 60;
+  away.plugged = false;
+  away.charging_state = "Disconnected";
+  controller.tick(away, Settings());
+  return controller.tick(car, Settings());
+}
+
 // format_savings() with the same figures for the last 30 days and the last 365.
 static std::string twice(const std::string &figures, const char *currency = "EUR") {
   return currency + (";" + figures + ";" + figures);
@@ -1590,7 +1601,7 @@ static void test_savings_count_each_quarter_hour() {
     const int64_t t = CET_SEP24 + after;
     return t == SEP24_1700Z - SLOT_SECONDS ? 0.0f : t == SEP24_1700Z ? 1.0f : 0.5f;
   });
-  CHECK_STR(controller.tick(drawing(SEP24_1700Z - 45, 0, "Stopped"), Settings()).savings, twice("0,0,0,0"));
+  CHECK_STR(plug_in(controller, drawing(SEP24_1700Z - 45, 0, "Stopped")).savings, twice("0,0,0,0"));
   controller.tick(drawing(SEP24_1700Z - 15, 36), Settings());                     // 30 s at 0
   const Decision d = controller.tick(drawing(SEP24_1700Z + 15, 36), Settings());  // 15 s at 0, 15 s at 1.00
   // 0.6 kWh for 0.15 EUR, 0.30 at the day's average, and 0.15 at once: it charged from the start.
@@ -1663,6 +1674,7 @@ static void test_savings_average_of_the_delivery_day() {
     if (t != saturday)
       controller.prices.set(t, t > saturday ? 9.0f : t >= CET_SEP25 ? 5.0f : t >= CET_SEP25 - HOUR ? 1.0f : 0.1f);
   controller.set_grid(two_zones());
+  plug_in(controller, drawing(SEP24_1700Z - 60, 0, "Stopped"));     // at the same price as 20:00
   for (int64_t eight : {SEP24_1700Z, SEP24_1700Z + DAY_SECONDS}) {  // 1 kWh at 20:00, in a day hour, each day
     controller.tick(drawing(eight, 0, "Stopped"), Settings());
     controller.tick(drawing(eight + 50, 36), Settings());
@@ -1707,7 +1719,7 @@ static void test_savings_at_once_with_prices_out_later() {
   for (int64_t t = CET_SEP24; t < CET_SEP25 + DAY_SECONDS; t += SLOT_SECONDS)
     if (t != eight + SLOT_SECONDS && t != eight + 2 * SLOT_SECONDS)
       controller.prices.set(t, t < CET_SEP25 ? 0.2f : 0.1f);
-  controller.tick(drawing(eight, 0, "Stopped"), Settings());
+  plug_in(controller, drawing(eight, 0, "Stopped"));
   controller.prices.set(eight + 2 * SLOT_SECONDS, 0.4f);
   controller.tick(drawing(eight + 20 * 60, 0, "Stopped"), Settings());
   controller.prices.set(eight, 0.9f);  // a price it has is kept
@@ -1726,7 +1738,7 @@ static void test_savings_at_once_for_a_day_at_most() {
   Controller controller = with_prices(prices_from(CET_SEP24, saturday + DAY_SECONDS, [](int64_t after) {
     return after < DAY_SECONDS ? 1.0f : after < 2 * DAY_SECONDS ? 0.1f : 0.3f;
   }));
-  controller.tick(drawing(CET_SEP24, 0, "Stopped"), Settings());
+  plug_in(controller, drawing(CET_SEP24, 0, "Stopped"));
   controller.tick(drawing(CET_SEP25, 0, "Stopped"), Settings());
   for (int64_t t = CET_SEP25 + 60; t <= saturday + 30 * 60; t += 60)
     controller.tick(drawing(t, 2), Settings());
@@ -1736,6 +1748,31 @@ static void test_savings_at_once_for_a_day_at_most() {
   CHECK(near(static_cast<float>(all.paid), 510, 1.5f));
   CHECK(near(static_cast<float>(all.average), 510, 1.5f));
   CHECK(near(static_cast<float>(all.at_once), 4830, 1.5f));
+}
+
+static void test_savings_at_once_after_a_restart() {
+  // After a restart with the car plugged in, when it was plugged in is unknown: charging at once counts at the day's
+  // average until the car is plugged in again. 0.10 EUR/kWh, but 0.30 from 20:00 and 0.50 from 20:30 for a quarter-hour
+  // each: the day's average is (94 * 0.10 + 0.30 + 0.50) / 96 = 0.10625.
+  Controller controller = with_prices(prices_from(CET_SEP24, CET_SEP25, [](int64_t after) {
+    const int64_t t = CET_SEP24 + after;
+    return t == SEP24_1700Z ? 0.3f : t == SEP24_1700Z + 2 * SLOT_SECONDS ? 0.5f : 0.1f;
+  }));
+  CarState unknown = drawing(SEP24_1700Z - 60, 0, "");  // the car hasn't reported since the restart
+  unknown.plugged.reset();
+  controller.tick(unknown, Settings());
+  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  for (int64_t t = SEP24_1700Z + 30; t <= SEP24_1700Z + SLOT_SECONDS; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  // 9 kWh from 20:00 for 2.70 EUR, and 0.96 at the day's average, also at once.
+  const SavingsDay &thursday = savings_on(controller, 2026, 9, 24);
+  CHECK(thursday.paid == 270 && thursday.average == 96 && thursday.at_once == 96);
+  // Plugged in again at 20:30, then 9 kWh from 20:45 for 0.90, 0.96 at the day's average, and at once from 20:30 4.50.
+  plug_in(controller, drawing(SEP24_1700Z + 2 * SLOT_SECONDS, 0, "Stopped"));
+  controller.tick(drawing(SEP24_1700Z + 3 * SLOT_SECONDS, 0, "Stopped"), Settings());
+  for (int64_t t = SEP24_1700Z + 3 * SLOT_SECONDS + 30; t <= SEP24_1700Z + 4 * SLOT_SECONDS; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  CHECK(thursday.paid == 360 && thursday.average == 191 && thursday.at_once == 546);
 }
 
 static void test_savings_at_once_starts_when_charging_is_needed() {
@@ -1751,7 +1788,7 @@ static void test_savings_at_once_starts_when_charging_is_needed() {
     car.soc = soc;
     return car;
   };
-  controller.tick(at(eight, 79, 0, "Stopped"), Settings());
+  plug_in(controller, at(eight, 79, 0, "Stopped"));
   for (int64_t t = eight + 30; t <= eight + 15 * 60; t += 30)
     controller.tick(at(t, 79, 36, "Charging"), Settings());
   controller.tick(at(eight + 16 * 60, 80, 0, "Complete"), Settings());
@@ -1770,7 +1807,7 @@ static void test_savings_count_only_what_the_car_draws() {
   Controller controller = with_prices(prices_from(CET_SEP24, CET_SEP25, [](int64_t after) {
     return CET_SEP24 + after < SEP24_1700Z + SLOT_SECONDS ? 0.1f : 0.3f;
   }));
-  controller.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
+  plug_in(controller, drawing(SEP24_1700Z, 0, "Stopped"));
   // Nothing while the car isn't reported charging, draws nothing or its power is unknown, nor does charging at once
   // move on.
   controller.tick(drawing(SEP24_1700Z + 30, 11, "Starting"), Settings());
@@ -1924,6 +1961,7 @@ int main() {
   test_savings_after_a_night();
   test_savings_at_once_with_prices_out_later();
   test_savings_at_once_for_a_day_at_most();
+  test_savings_at_once_after_a_restart();
   test_savings_at_once_starts_when_charging_is_needed();
   test_savings_count_only_what_the_car_draws();
   test_savings_with_a_clock_that_goes_back();
