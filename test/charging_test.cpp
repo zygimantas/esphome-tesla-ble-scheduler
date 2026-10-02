@@ -1568,13 +1568,10 @@ static CarState drawing(int64_t now, float kw, const char *state = "Charging") {
   return car;
 }
 
-// The start of format_savings(): the currency and the local day number of a date.
-static std::string savings_since(int year, unsigned month, unsigned day, const char *currency = "EUR") {
-  return currency + (";" + std::to_string(days_from_civil(year, month, day)));
+// format_savings() with the same figures for the last 30 days and the last 365.
+static std::string twice(const std::string &figures, const char *currency = "EUR") {
+  return currency + (";" + figures + ";" + figures);
 }
-
-// The same figures for the last 30 days and the last 365, as format_savings() lists them.
-static std::string twice(const std::string &figures) { return ";" + figures + ";" + figures; }
 
 // Spot prices at `price` for the delivery days from that of `from` to that of `to`.
 static PriceTable flat_prices(float price, int64_t from, int64_t to) {
@@ -1593,18 +1590,16 @@ static void test_savings_count_each_quarter_hour() {
     const int64_t t = CET_SEP24 + after;
     return t == SEP24_1700Z - SLOT_SECONDS ? 0.0f : t == SEP24_1700Z ? 1.0f : 0.5f;
   });
-  CHECK_STR(controller.tick(drawing(SEP24_1700Z - 45, 0, "Stopped"), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("0,0,0,0"));
+  CHECK_STR(controller.tick(drawing(SEP24_1700Z - 45, 0, "Stopped"), Settings()).savings, twice("0,0,0,0"));
   controller.tick(drawing(SEP24_1700Z - 15, 36), Settings());                     // 30 s at 0
   const Decision d = controller.tick(drawing(SEP24_1700Z + 15, 36), Settings());  // 15 s at 0, 15 s at 1.00
   // 0.6 kWh for 0.15 EUR, 0.30 at the day's average, and 0.15 at once: it charged from the start.
-  CHECK_STR(d.savings, savings_since(2026, 9, 24) + twice("600,15,30,15"));
+  CHECK_STR(d.savings, twice("600,15,30,15"));
 
   // Below zero, the car earns.
   Controller paid = with_prices(flat_prices(-0.5f, SEP24_1700Z, SEP24_1700Z));
   paid.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
-  CHECK_STR(paid.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("100,-5,-5,-5"));
+  CHECK_STR(paid.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings, twice("100,-5,-5,-5"));
 
   // The ring wraps around for any day number.
   CHECK(ring_index(-1) == SAVINGS_DAYS - 1 && ring_index(SAVINGS_DAYS) == 0);
@@ -1620,7 +1615,7 @@ static void test_savings_by_local_day() {
   const SavingsDay &december = savings_on(controller, 2026, 12, 31), &january = savings_on(controller, 2027, 1, 1);
   CHECK(december.wh == 200 && december.paid == 10 && december.average == 10 && december.at_once == 10);
   CHECK(january.wh == 100 && january.paid == 5 && january.average == 5 && january.at_once == 5);
-  CHECK_STR(d.savings, savings_since(2026, 12, 31) + twice("300,15,15,15"));
+  CHECK_STR(d.savings, twice("300,15,15,15"));
 }
 
 static void test_savings_last_30_and_365_days() {
@@ -1631,7 +1626,7 @@ static void test_savings_last_30_and_365_days() {
   const auto days_later = [&controller](int64_t days) {
     return controller.tick(drawing(SEP24_1700Z + days * DAY_SECONDS, 0, "Stopped"), Settings()).savings;
   };
-  const std::string start = savings_since(2026, 9, 24), some = ";100,5,5,5", none = ";0,0,0,0";
+  const std::string start = "EUR", some = ";100,5,5,5", none = ";0,0,0,0";
   CHECK_STR(days_later(0), start + some + some);
   CHECK_STR(days_later(29), start + some + some);  // Friday 23 October, the 30th day
   CHECK_STR(days_later(30), start + none + some);
@@ -1644,13 +1639,11 @@ static void test_savings_without_a_price() {
   // No prices at all: the energy counts, and no money.
   Controller none;
   none.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
-  CHECK_STR(none.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("100,0,0,0"));
+  CHECK_STR(none.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings, twice("100,0,0,0"));
   // A quarter-hour without a price in a day with some counts at the day's average: it neither saves nor costs.
   Controller gap = with_prices(prices_from(CET_SEP24, SEP24_1700Z, [](int64_t) { return 0.5f; }));  // until 20:00
   gap.tick(drawing(SEP24_1700Z, 0, "Stopped"), Settings());
-  CHECK_STR(gap.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("100,5,5,5"));
+  CHECK_STR(gap.tick(drawing(SEP24_1700Z + 10, 36), Settings()).savings, twice("100,5,5,5"));
 }
 
 static void test_savings_average_of_the_delivery_day() {
@@ -1664,7 +1657,7 @@ static void test_savings_average_of_the_delivery_day() {
   const Decision d = controller.tick(drawing(SEP24_1700Z + 100, 36), Settings());
   // 1 kWh at 20:00, in a day hour: 0.10 * 1.21 + 0.12947 = 0.25047. The day's average: (23 * 0.10 + 1.00) / 24 *
   // 1.21 + (8 * 0.07139 + 16 * 0.12947) / 24 = 0.16638 + 0.11011 = 0.27649.
-  CHECK_STR(d.savings, savings_since(2026, 9, 24) + twice("1000,25,28,25"));
+  CHECK_STR(d.savings, twice("1000,25,28,25"));
 }
 
 // The figures of the last 365 days.
@@ -1706,8 +1699,7 @@ static void test_savings_at_once_with_prices_out_later() {
   for (int64_t t = three + 30; t <= three + 45 * 60; t += 30)
     controller.tick(drawing(t, 36), Settings());
   // 27 kWh for 2.70 EUR, the same at Friday's average; at once 9 * 0.20 + 9 * 0.10 + 9 * 0.40 = 6.30.
-  CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("27000,270,270,630"));
+  CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,270,270,630"));
 }
 
 static void test_savings_at_once_for_a_day_at_most() {
@@ -1806,31 +1798,27 @@ static void test_savings_restart_currency_and_reset() {
   Controller restarted = with_prices(controller.prices);
   restarted.savings = controller.savings;
   const Decision loaded = restarted.tick(drawing(SEP24_1700Z + 60, 0, "Stopped"), Settings());
-  CHECK_STR(loaded.savings, savings_since(2026, 9, 24) + twice("100,5,5,5"));
+  CHECK_STR(loaded.savings, twice("100,5,5,5"));
   CHECK(!loaded.save_savings);
-  CHECK_STR(restarted.tick(drawing(SEP24_1700Z + 70, 36), Settings()).savings,
-            savings_since(2026, 9, 24) + twice("200,10,10,10"));
+  CHECK_STR(restarted.tick(drawing(SEP24_1700Z + 70, 36), Settings()).savings, twice("200,10,10,10"));
 
-  // Another currency starts afresh, from that day.
+  // Another currency starts afresh.
   Settings sek;
   sek.currency = "SEK";
   const int64_t friday = SEP24_1700Z + DAY_SECONDS;
   const Decision swedish = restarted.tick(drawing(friday, 0, "Stopped"), sek);
-  CHECK_STR(swedish.savings, savings_since(2026, 9, 25, "SEK") + twice("0,0,0,0"));
+  CHECK_STR(swedish.savings, twice("0,0,0,0", "SEK"));
   CHECK(swedish.save_savings);
-  CHECK_STR(restarted.tick(drawing(friday + 10, 36), sek).savings,
-            savings_since(2026, 9, 25, "SEK") + twice("100,5,5,5"));
+  CHECK_STR(restarted.tick(drawing(friday + 10, 36), sek).savings, twice("100,5,5,5", "SEK"));
 
-  // So does Reset savings, on the next tick, and what the car takes after it counts alone.
+  // So does Reset savings, on the next tick, and what the car takes after it counts alone; also the days before.
   restarted.reset_savings();
   const Decision reset = restarted.tick(drawing(friday + 20, 0, "Stopped"), sek);
-  CHECK_STR(reset.savings, savings_since(2026, 9, 25, "SEK") + twice("0,0,0,0"));
+  CHECK_STR(reset.savings, twice("0,0,0,0", "SEK"));
   CHECK(reset.save_savings);
-  CHECK_STR(restarted.tick(drawing(friday + 30, 36), sek).savings,
-            savings_since(2026, 9, 25, "SEK") + twice("100,5,5,5"));
+  CHECK_STR(restarted.tick(drawing(friday + 30, 36), sek).savings, twice("100,5,5,5", "SEK"));
   restarted.reset_savings();
-  CHECK_STR(restarted.tick(drawing(friday + DAY_SECONDS, 0, "Stopped"), sek).savings,
-            savings_since(2026, 9, 26, "SEK") + twice("0,0,0,0"));
+  CHECK_STR(restarted.tick(drawing(friday + DAY_SECONDS, 0, "Stopped"), sek).savings, twice("0,0,0,0", "SEK"));
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape): an exception ends the run, failing it as it should

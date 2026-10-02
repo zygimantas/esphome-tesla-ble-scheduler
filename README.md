@@ -90,7 +90,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
-- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, or since the board began counting when that's shorter, and underneath, against plugging in and charging at once. Prices count VAT and grid fees, not your supplier's own charges. **Reset savings** starts again from zero.
+- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT and grid fees, not your supplier's own charges. **Reset savings** starts again from zero.
 
 ### Phone messages
 

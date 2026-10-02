@@ -78,8 +78,8 @@ const PAGE = `
 
   <section id="savings-card" class="card" hidden>
     <div class="title">Savings</div>
-    <div class="row"><span id="month-label">Last 30 days</span><strong id="saved-month">-</strong></div>
-    <div id="year-row" class="row"><span id="year-label">Last 12 months</span><strong id="saved-year">-</strong></div>
+    <div class="row"><span>Last 30 days</span><strong id="saved-month">-</strong></div>
+    <div class="row"><span>Last 12 months</span><strong id="saved-year">-</strong></div>
     <p id="against-average" class="note"></p>
     <p id="against-at-once" class="note"></p>
     <button id="reset-savings" class="danger">Reset savings</button>
@@ -340,28 +340,20 @@ async function stopCharging(message) {
 
 // --- Savings ---------------------------------------------------------------
 
-// "<currency>;<since>;<last 30 days>;<last 365 days>" from format_savings() in charging.h, each period as
-// "<Wh>,<paid>,<at the day's average>,<at once>", the money in hundredths and since as the board's day number. Saved is
-// the difference. A period that reaches back to when counting began says so, and the year shows once it differs from
-// the month.
+// "<currency>;<last 30 days>;<last 365 days>" from format_savings() in charging.h, each period as
+// "<Wh>,<paid>,<at the day's average>,<at once>" with the money in hundredths. Saved is the difference.
 function renderSavings() {
-  const [currency, since, ...periods] = text(E.savings).split(";");
+  const [currency, ...periods] = text(E.savings).split(";");
   $("savings-card").hidden = !currency;
   if (!currency) return;
   const [month, year] = periods.map((period) => period.split(",").map(Number));
   const money = (hundredths) => `${(hundredths / 100).toFixed(2)}\u00a0${currency}`; // one piece when it wraps
-  const counted = today() - Number(since); // whole days before today
-  const start = dayText(Number(since));
-  const monthText = counted < 30 ? `since ${start}` : "in the last 30 days";
-  $("month-label").textContent = counted < 30 ? `Since ${start}` : "Last 30 days";
   $("saved-month").textContent = money(month[2] - month[1]);
-  $("year-row").hidden = counted < 30;
-  $("year-label").textContent = counted < 365 ? `Since ${start}` : "Last 12 months";
   $("saved-year").textContent = money(year[2] - year[1]);
   $("against-average").textContent =
-    `Compared with the day's average price: ${Math.round(month[0] / 1000)} kWh for ${money(month[1])} ${monthText}`;
+    `Compared with the day's average price: ${Math.round(month[0] / 1000)} kWh for ${money(month[1])} in the last 30 days`;
   $("against-at-once").textContent =
-    `Compared with charging at once on plug-in: ${money(month[3] - month[1])} saved ${monthText}`;
+    `Compared with charging at once on plug-in: ${money(month[3] - month[1])} saved in the last 30 days`;
 }
 
 // --- Board link ------------------------------------------------------------
@@ -475,13 +467,6 @@ function deadlineText(ms) {
   const day =
     days === 0 ? "Today" : days === 1 ? "Tomorrow" : new Date(ms).toLocaleDateString("en-GB", { weekday: "short" });
   return `${day} ${hhmm(ms)}`;
-}
-
-// Today's day number (days since 1970-01-01, local time), as the board counts them, and "2 Oct 2026" for one.
-const today = () => Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / DAY_MS);
-function dayText(day) {
-  const options = { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" };
-  return new Date(day * DAY_MS).toLocaleDateString("en-GB", options);
 }
 
 // The next time the clock shows "HH:MM": today if it's still ahead, else tomorrow.

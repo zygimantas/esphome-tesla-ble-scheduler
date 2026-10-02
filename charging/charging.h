@@ -456,17 +456,16 @@ constexpr int SAVINGS_DAYS = 365;
 // What the board keeps in flash: the last 365 local days. ESPHome saves it byte for byte, and loads it only into a
 // struct of the same size.
 struct Savings {
-  char currency[4] = {};          // of the money; another one starts the figures afresh
-  int32_t since = 0;              // local day number when counting began; 0 starts afresh
-  int32_t day = 0;                // the last day in `days`
+  char currency[4] = {};          // of the money; another one, or none, starts the figures afresh
+  int32_t day = 0;                // the last day in `days`, as a local day number
   SavingsDay days[SAVINGS_DAYS];  // by ring_index() of the local day number
 };
 
 inline int ring_index(int64_t day) { return static_cast<int>(day - floor_div(day, SAVINGS_DAYS) * SAVINGS_DAYS); }
 
-// The savings for the web page: "<currency>;<since>;<last 30 days>;<last 365 days>", each period as
-// "<Wh>,<paid>,<at the day's average>,<at once>", the money in hundredths and since as a local day number. For
-// example "EUR;20728;9200,103,147,190;9200,103,147,190".
+// The savings for the web page: "<currency>;<last 30 days>;<last 365 days>", each period as
+// "<Wh>,<paid>,<at the day's average>,<at once>" with the money in hundredths. For example
+// "EUR;9200,103,147,190;9200,103,147,190".
 inline std::string format_savings(const Savings &savings) {
   SavingsDay periods[2];
   for (int i = 0; i < SAVINGS_DAYS; ++i) {
@@ -475,7 +474,7 @@ inline std::string format_savings(const Savings &savings) {
       periods[0].add(day);
     periods[1].add(day);
   }
-  std::string text = std::string(savings.currency) + ";" + std::to_string(savings.since);
+  std::string text = savings.currency;
   char part[64];
   for (const SavingsDay &period : periods) {
     std::snprintf(part, sizeof(part), ";%u,%d,%d,%d", static_cast<unsigned>(period.wh), static_cast<int>(period.paid),
@@ -545,8 +544,8 @@ class Controller {
     hold_ = Hold::NONE;
     allow_command_();
   }
-  // The page's Reset savings: the figures start afresh from today on the next tick.
-  void reset_savings() { savings.since = 0; }
+  // The page's Reset savings: the figures start afresh on the next tick.
+  void reset_savings() { savings.currency[0] = '\0'; }
   // What the buttons chose, for the board to keep across a restart (see Hold).
   int held_mode() const { return static_cast<int>(hold_); }
   void restore_mode(int mode) { hold_ = mode == 1 ? Hold::NOW : mode == 2 ? Hold::NONE : Hold::PLAN; }
@@ -765,10 +764,10 @@ class Controller {
   // without that: it neither saves nor costs.
   void count_(const CarState &car, int64_t now, const Settings &settings, Decision &d) {
     const int64_t today = local_day_of(now, settings.standard_offset);
-    if (savings.since == 0 || std::strncmp(savings.currency, settings.currency, sizeof(savings.currency)) != 0) {
+    if (std::strncmp(savings.currency, settings.currency, sizeof(savings.currency)) != 0) {
       savings = Savings{};
       std::snprintf(savings.currency, sizeof(savings.currency), "%s", settings.currency);
-      savings.since = savings.day = static_cast<int32_t>(today);
+      savings.day = static_cast<int32_t>(today);
       counted_day_ = -1;
       savings_unsaved_ = true;
     }
