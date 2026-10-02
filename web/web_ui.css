@@ -147,8 +147,9 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- Buttons --- */
-button {
+/* --- Buttons, and links that look like one --- */
+button,
+.button {
   display: block;
   width: 100%;
   min-height: 50px;
@@ -160,7 +161,14 @@ button {
   color: var(--accent);
   background: var(--control);
 }
-button:active {
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+button:active,
+.button:active {
   opacity: 0.6;
 }
 button.primary {
@@ -208,7 +216,7 @@ button:disabled {
   font-size: 13px;
 }
 /* As far below the text as a button below a row, like Pair BLE key. */
-.note + button {
+.note + .button {
   margin-top: 22px;
 }
 
