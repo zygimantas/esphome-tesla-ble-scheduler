@@ -26,7 +26,7 @@ Your electricity contract or your supplier's price list names your area. Write y
 
 ## Grid fees
 
-The board adds VAT to the price, and a grid fee that can change by the hour: zones by hour for workdays, weekends and public holidays, other hours for part of the year, and holidays on fixed dates or around Easter. Taxes and charges that are the same in every hour don't change which hours are cheapest, so they can stay out. [Grid fees](grid-fees.md) explains the format.
+The board adds VAT to the price, and a grid fee that can change by the hour: zones by hour for workdays, weekends and public holidays, other hours for part of the year, and holidays on fixed dates or around Easter. Taxes and charges that are the same in every hour don't change which hours are cheapest. Left out, they're missing from every price the board shows, the plan's windows, the phone message and what Savings says you paid; added to every zone's fee, those show your full price. [Grid fees](grid-fees.md) explains the format.
 
 Some fees depend on your highest power instead, like Norway's capacity step. Until the board counts them ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), set the car's charging current low enough for your step, in the car or the Tesla app, and `tesla_charging_kw` to match.
 
