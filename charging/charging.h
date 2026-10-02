@@ -142,8 +142,9 @@ inline int64_t easter_sunday(int64_t year) {
   return days_from_civil(year, static_cast<unsigned>(month), static_cast<unsigned>(day));
 }
 
-// The zones of each day: Sunday (0) to Saturday (6), then public holidays (7). A day's zones are a letter for each
-// hour, half-hour or quarter-hour from 00:00 (24, 48 or 96 letters), or empty where grid_fee() looks further.
+// The zones of each day: Sunday (0) to Saturday (6), then public holidays (7). A day's zones are one letter for the
+// whole day, or a letter for each hour, half-hour or quarter-hour from 00:00 (24, 48 or 96 letters); empty where
+// grid_fee() looks further.
 using Hours = std::array<std::string, 8>;
 
 // Other hours for part of the year, from `from` to `to` as month * 100 + day, a range that may cross New Year.

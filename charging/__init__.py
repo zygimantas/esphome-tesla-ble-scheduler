@@ -21,7 +21,6 @@ CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
 CONF_CLOCK = "clock"
 CONF_CURRENCY = "currency"
-CONF_FROM = "from"
 CONF_GRID = "grid"
 CONF_HOLIDAY = "holiday"
 CONF_HOLIDAYS = "holidays"
@@ -30,7 +29,6 @@ CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
 CONF_PRICES = "prices"
 CONF_SEASONS = "seasons"
-CONF_TO = "to"
 CONF_VAT = "vat"
 CONF_VIN = "vin"
 
@@ -89,9 +87,10 @@ Season = charging_ns.struct("Season")
 
 def _zones(value):
     value = cv.string_strict(value)
-    if not re.fullmatch(r"[a-z]{24}|[a-z]{48}|[a-z]{96}", value):
+    if not re.fullmatch(r"[a-z]|[a-z]{24}|[a-z]{48}|[a-z]{96}", value):
         raise cv.Invalid(
-            "must be 24, 48 or 96 lowercase letters: the zone of each hour, half-hour or quarter-hour from 00:00"
+            "must be lowercase letters: one for the whole day, or 24, 48 or 96 for the zone of each hour, half-hour "
+            "or quarter-hour from 00:00"
         )
     return value
 
@@ -126,18 +125,25 @@ def _holiday(value):
     raise cv.Invalid(f'"{value}" isn\'t a date such as "12-25", "easter" or "easter+1"')
 
 
-def _in_season(date, season):
-    first, last = season[CONF_FROM], season[CONF_TO]
+def _dates(season):
+    """The first and last date of a season, as _month_day(), from its key, like "11-01 to 03-31"."""
+    m = re.fullmatch(r"(\d\d-\d\d) to (\d\d-\d\d)", season)
+    if not m:
+        raise cv.Invalid(f'"{season}" isn\'t a season such as "11-01 to 03-31"')
+    return _month_day(m[1]), _month_day(m[2])
+
+
+def _in_season(date, first, last):
     return first <= date <= last if first <= last else date >= first or date <= last
 
 
 def _validate_grid(config):
     if not set(range(7)) <= {day for key in config[CONF_HOURS] for day in DAYS[key]}:
         raise cv.Invalid("must name every day of the week, as mon-fri and sat-sun do", [CONF_HOURS])
-    for one, other in combinations(config[CONF_SEASONS], 2):
-        if _in_season(one[CONF_FROM], other) or _in_season(other[CONF_FROM], one):
+    for one, other in combinations(map(_dates, config[CONF_SEASONS]), 2):
+        if _in_season(one[0], *other) or _in_season(other[0], *one):
             raise cv.Invalid("has seasons that overlap", [CONF_SEASONS])
-    tables = [config[CONF_HOURS], *(season[CONF_HOURS] for season in config[CONF_SEASONS])]
+    tables = [config[CONF_HOURS], *config[CONF_SEASONS].values()]
     zones = set("".join(zones for table in tables for zones in table.values()))
     if missing := sorted(zones - set(config[CONF_PRICES])):
         raise cv.Invalid(f'zone "{missing[0]}" needs a price per kWh incl. VAT', path=[CONF_PRICES])
@@ -153,15 +159,7 @@ GRID_SCHEMA = cv.All(
             cv.Optional(CONF_HOLIDAYS, default=[]): cv.ensure_list(_holiday),
             cv.Required(CONF_HOURS): _hours,
             cv.Required(CONF_PRICES): cv.Schema({cv.string_strict: cv.float_range(min=0.0)}),
-            cv.Optional(CONF_SEASONS, default=[]): cv.ensure_list(
-                cv.Schema(
-                    {
-                        cv.Required(CONF_FROM): _month_day,
-                        cv.Required(CONF_HOURS): _hours,
-                        cv.Required(CONF_TO): _month_day,
-                    }
-                )
-            ),
+            cv.Optional(CONF_SEASONS, default={}): cv.Schema({cv.string_strict: _hours}),
         }
     ),
     _validate_grid,
@@ -235,10 +233,10 @@ def _table(hours):
 
 def _grid(config, vat):
     holidays = config[CONF_HOLIDAYS]
-    seasons = [
-        cg.StructInitializer(Season, ("from", s[CONF_FROM]), ("to", s[CONF_TO]), ("hours", _table(s[CONF_HOURS])))
-        for s in config[CONF_SEASONS]
-    ]
+    seasons = []
+    for key, hours in config[CONF_SEASONS].items():
+        first, last = _dates(key)
+        seasons.append(cg.StructInitializer(Season, ("from", first), ("to", last), ("hours", _table(hours))))
     return cg.StructInitializer(
         Grid,
         ("vat", vat),

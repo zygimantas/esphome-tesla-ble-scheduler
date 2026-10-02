@@ -13,7 +13,7 @@ Standartinis:
 ```yaml
   grid:
     hours:
-      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: a
     prices:
       a: 0.11132
 ```
@@ -23,7 +23,7 @@ Efektyvus:
 ```yaml
   grid:
     hours:
-      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: a
     prices:
       a: 0.08833
 ```
@@ -33,7 +33,7 @@ Namai:
 ```yaml
   grid:
     hours:
-      mon-sun: aaaaaaaaaaaaaaaaaaaaaaaa
+      mon-sun: a
     prices:
       a: 0.09559
 ```
@@ -49,7 +49,7 @@ Standartinis:
     clock: winter
     hours:
       mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
+      sat-sun: n
     prices:
       n: 0.07139
       d: 0.12947
@@ -62,7 +62,7 @@ Efektyvus:
     clock: winter
     hours:
       mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
+      sat-sun: n
     prices:
       n: 0.05687
       d: 0.10164
@@ -75,7 +75,7 @@ Namai:
     clock: winter
     hours:
       mon-fri: nnnnnnnddddddddddddddddn
-      sat-sun: nnnnnnnnnnnnnnnnnnnnnnnn
+      sat-sun: n
     prices:
       n: 0.06171
       d: 0.11011

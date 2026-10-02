@@ -517,7 +517,7 @@ static void test_days_of_the_week_and_holidays() {
   CHECK(near(fee_at(g, 2026, 12, 24, 12), 0.01f));
 }
 
-static void test_half_and_quarter_hours() {
+static void test_whole_days_half_hours_and_quarter_hours() {
   // Octopus Go in the UK, on its own clock (no offset in winter): cheap from 00:30 to 05:30, in half-hours.
   Grid go;
   go.hours.fill("n" + std::string(10, 'c') + std::string(37, 'n'));
@@ -539,6 +539,11 @@ static void test_half_and_quarter_hours() {
   CHECK(uk(quarter, 12, 1, 6 * 60 + 44) == 0.245f);
   CHECK(uk(quarter, 12, 1, 6 * 60 + 45) == 0.085f);
   CHECK(uk(quarter, 12, 1, 7 * 60) == 0.245f);
+  // One letter: the whole day.
+  Grid whole = go;
+  whole.hours.fill("c");
+  CHECK(uk(whole, 12, 1, 0) == 0.085f);
+  CHECK(uk(whole, 12, 1, 23 * 60 + 59) == 0.085f);
 }
 
 static void test_seasons() {
@@ -2001,7 +2006,7 @@ int main() {
   test_four_zones_weekends_and_holidays();
   test_one_and_two_zones();
   test_days_of_the_week_and_holidays();
-  test_half_and_quarter_hours();
+  test_whole_days_half_hours_and_quarter_hours();
   test_seasons();
   test_plan_counts_the_grid_fee();
   test_charges_only_in_the_cheap_window();
