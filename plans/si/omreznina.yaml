@@ -1,0 +1,33 @@
+# Slovenia's network charge for households, user group 0, prices with VAT: https://www.uro.si/prenova-omrežnine/tarifne-postavke
+# AGEN-RS prints the prices without VAT, transmission and distribution apart: these are their sum, with 22% VAT.
+# The blocks' hours change on 1 January 2027, with new prices.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  mar-oct:
+    mon-fri: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+    sat-sun: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  nov-feb:
+    mon-fri: block3 06:00 block2 07:00 block1 14:00 block2 16:00 block1 20:00 block2 22:00 block3
+    sat-sun: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+exceptions:
+  01-01: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+  01-02: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+  02-08: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+  # Easter Monday, 2027
+  03-29: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  04-27: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  05-01: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  05-02: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  06-25: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  08-15: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  10-31: block5 06:00 block4 07:00 block3 14:00 block4 16:00 block3 20:00 block4 22:00 block5
+  11-01: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+  12-25: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+  12-26: block4 06:00 block3 07:00 block2 14:00 block3 16:00 block2 20:00 block3 22:00 block4
+rates:
+  block1: 0.02705
+  block2: 0.02438
+  block3: 0.02095
+  block4: 0.02202
+  block5: 0.01585
