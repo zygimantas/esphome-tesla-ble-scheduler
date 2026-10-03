@@ -12,7 +12,7 @@ The board follows market prices where Nord Pool or SMARD, Germany's Federal Netw
 | Croatia | `HR` | `EUR` | |
 | Czechia | `CZ` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | |
-| Estonia | `EE` | `EUR` | |
+| Estonia | `EE` | `EUR` | [Elektrilevi's plans](elektrilevi.md). |
 | Finland | `FI` | `EUR` | |
 | France | `FR` | `EUR` | |
 | Germany and Luxembourg | `DE` or `LU` | `EUR` | |

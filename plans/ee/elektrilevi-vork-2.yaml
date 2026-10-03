@@ -1,0 +1,23 @@
+# Elektrilevi's Võrk 2 package up to 63 A, prices with VAT: https://elektrilevi.ee/et/hinnakirjad/vorguteenuste-hinnakiri
+# Elektrilevi prints the prices in cents without VAT: these are in euros, with 24% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-fri: night 07:00 day 22:00 night
+    sat-sun: night
+exceptions:
+  01-01: night
+  02-24: night
+  # Good Friday, 2027
+  03-26: night
+  05-01: night
+  06-23: night
+  06-24: night
+  08-20: night
+  12-24: night
+  12-25: night
+  12-26: night
+rates:
+  night: 0.04352
+  day: 0.07527
