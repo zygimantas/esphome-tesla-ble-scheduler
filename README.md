@@ -66,6 +66,7 @@ Your settings in `config.yaml`:
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
+| `market: margin` | Your supplier's own price per kWh on top of the market price, without VAT, as your contract says, like `0.01`. Leave it out if there's none. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
@@ -90,7 +91,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
-- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT and grid fees, not your supplier's own charges. **Reset savings** starts again from zero.
+- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT, grid fees and the supplier's price per kWh in `market: margin`, not monthly fees. **Reset savings** starts again from zero.
 
 ### Phone messages
 
@@ -98,7 +99,7 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 
 ## Tariff
 
-The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
+The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). Your supplier, like Ignitis or Enefit, usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
 With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 

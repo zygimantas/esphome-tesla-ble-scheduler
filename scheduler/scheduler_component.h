@@ -74,9 +74,10 @@ class SchedulerComponent : public PollingComponent {
     this->ntfy_server_ = server;
     this->ntfy_topic_ = topic;
   }
-  // The VAT on market prices; the plan's name and the copy built in, both empty without a plan; and the tariff:
-  // settings of config.yaml, written as read_tariff() reads them.
-  void set_tariff(float vat, const char *plan, const char *text, const char *own) {
+  // The supplier's margin on market prices and the VAT on both; the plan's name and the copy built in, both empty
+  // without a plan; and the tariff: settings of config.yaml, written as read_tariff() reads them.
+  void set_tariff(float margin, float vat, const char *plan, const char *text, const char *own) {
+    this->margin_ = margin;
     this->vat_ = vat;
     this->plan_ = plan;
     this->plan_text_ = text;
@@ -111,6 +112,7 @@ class SchedulerComponent : public PollingComponent {
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
   const char *area_{""};
+  float margin_{0.0f};
   float vat_{0.0f};
   const char *plan_{""};
   const char *own_{""};

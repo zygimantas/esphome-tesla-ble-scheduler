@@ -250,6 +250,7 @@ std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   const std::string error = make_tariff(text, this->own_, this->settings_.currency, tariff);
   if (!error.empty())
     return error;
+  tariff.margin = this->margin_;
   tariff.vat = this->vat_;
   this->controller_.set_tariff(tariff);
   this->plan_text_ = text;
