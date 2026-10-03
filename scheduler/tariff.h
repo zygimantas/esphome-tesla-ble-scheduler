@@ -1,6 +1,6 @@
 #pragma once
-// What a kWh costs on the grid in each quarter-hour: a plan from plans/, and the grid: settings of
-// config.yaml over it (format in docs/grid-fees.md). Plain C++17, with nothing from ESPHome, like charger.h.
+// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, and the tariff: settings of config.yaml over
+// it (format in docs/tariff.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -16,9 +16,9 @@
 
 namespace esphome::scheduler {
 
-// The grid settings as written (format in docs/grid-fees.md): a plan from plans/, or the grid: block of
-// config.yaml, which the build writes out the same way. Keys and lines stay text, in the order written.
-struct GridText {
+// The tariff as written (format in docs/tariff.md): a plan from plans/, or the tariff: block of config.yaml, which the
+// build writes out the same way. Keys and lines stay text, in the order written.
+struct TariffText {
   std::string clock;
   std::string currency;
   std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::string>>>> calendar;
@@ -34,9 +34,9 @@ inline std::string concat(std::initializer_list<std::string_view> pieces) {
   return joined;
 }
 
-// Reads grid settings in the YAML of plans: two-space indents, `key: value` or `key:` lines, and comments on
+// Reads a tariff in the YAML of plans: two-space indents, `key: value` or `key:` lines, and comments on
 // lines of their own, without quotes, flow style or anchors, ending with a line break. Returns what's wrong, or "".
-inline std::string read_grid(const std::string &text, GridText &grid) {
+inline std::string read_tariff(const std::string &text, TariffText &tariff) {
   if (!text.empty() && text.back() != '\n')
     return "the text ends inside a line, as if cut off";
   std::string section;
@@ -59,13 +59,13 @@ inline std::string read_grid(const std::string &text, GridText &grid) {
       section = key;
     } else if (indent == 0 && !value.empty() && (key == "clock" || key == "currency")) {
       section.clear();
-      (key == "clock" ? grid.clock : grid.currency) = value;
+      (key == "clock" ? tariff.clock : tariff.currency) = value;
     } else if (indent == 2 && value.empty() && section == "calendar") {
-      grid.calendar.push_back({key, {}});
-    } else if (indent == 4 && !value.empty() && section == "calendar" && !grid.calendar.empty()) {
-      grid.calendar.back().second.emplace_back(key, value);
+      tariff.calendar.push_back({key, {}});
+    } else if (indent == 4 && !value.empty() && section == "calendar" && !tariff.calendar.empty()) {
+      tariff.calendar.back().second.emplace_back(key, value);
     } else if (indent == 2 && !value.empty() && (section == "exceptions" || section == "rates")) {
-      (section == "rates" ? grid.rates : grid.exceptions).emplace_back(key, value);
+      (section == "rates" ? tariff.rates : tariff.exceptions).emplace_back(key, value);
     } else {
       return concat({"line ", std::to_string(number), " doesn't belong there: ", key});
     }
@@ -128,10 +128,10 @@ inline std::string day_rates(const std::string &line, const std::vector<std::str
   return "";
 }
 
-// What a kWh costs on the grid: the VAT on market prices, and the grid's rates for each quarter-hour, from
-// make_grid(). The times are local time, or winter time all year with clock: winter. Without a calendar, no grid
-// fees: market prices only.
-struct Grid {
+// What the tariff adds to a kWh: the VAT on market prices, and the tariff's rates for each quarter-hour, from
+// make_tariff(). The times are local time, or winter time all year with clock: winter. Without a calendar, no rates:
+// market prices only.
+struct Tariff {
   float vat = 0.0f;
   bool winter_clock = false;
   std::vector<std::array<std::string, 7>> weeks;        // the calendar: a day's rates by day of the week from Sunday
@@ -143,22 +143,22 @@ struct Grid {
 constexpr const char *DAY_NAMES[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
 constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
                                        "jul", "aug", "sep", "oct", "nov", "dec"};
-// A day's rates are letters from 'a', so a grid has 26 at most. Prices are per kWh and below MAX_PRICE. grid.py
+// A day's rates are letters from 'a', so a tariff has 26 at most. Prices are per kWh and below MAX_PRICE. tariff.py
 // checks the same before the board gets the settings.
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 
-// The grid of a plan's text and config.yaml's grid: settings, both as read_grid() reads them: your calendar and clock
-// replace the plan's, and your exceptions and rates replace or add to its own, one key at a time. The plan's prices are
-// in `currency`. Returns what's wrong, or "".
-inline std::string make_grid(const std::string &plan_text, const std::string &own_text, const std::string &currency,
-                             Grid &grid) {
-  GridText plan, own;
-  if (const std::string error = read_grid(plan_text, plan) + read_grid(own_text, own); !error.empty())
+// The tariff of a plan's text and config.yaml's tariff: settings, both as read_tariff() reads them: your calendar and
+// clock replace the plan's, and your exceptions and rates replace or add to its own, one key at a time. The plan's
+// prices are in `currency`. Returns what's wrong, or "".
+inline std::string make_tariff(const std::string &plan_text, const std::string &own_text, const std::string &currency,
+                               Tariff &tariff) {
+  TariffText plan, own;
+  if (const std::string error = read_tariff(plan_text, plan) + read_tariff(own_text, own); !error.empty())
     return error;
   if (!plan.rates.empty() && plan.currency != currency)
     return concat({"the plan's prices are in ", plan.currency, ", not ", currency});
-  GridText all = plan;
+  TariffText all = plan;
   if (!own.clock.empty())
     all.clock = own.clock;
   if (!own.calendar.empty())
@@ -176,7 +176,7 @@ inline std::string make_grid(const std::string &plan_text, const std::string &ow
   for (const auto &entry : own.rates)
     set(all.rates, entry);
 
-  Grid made;
+  Tariff made;
   if (!all.clock.empty() && all.clock != "local" && all.clock != "winter")
     return concat({"clock is local or winter, not ", all.clock});
   made.winter_clock = all.clock == "winter";
@@ -240,31 +240,31 @@ inline std::string make_grid(const std::string &plan_text, const std::string &ow
   for (const auto &[name, price] : own.rates)
     if (!used[std::find(names.begin(), names.end(), name) - names.begin()])
       return concat({"rate ", name, " isn't used on any day"});
-  grid = made;
+  tariff = made;
   return "";
 }
 
-// The grid fee of the quarter-hour at `utc`: the exception's rates on its date, else the calendar's for the month
+// The tariff's fee for the quarter-hour at `utc`: the exception's rates on its date, else the calendar's for the month
 // and the day of the week.
-inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
-  if (grid.weeks.empty())
+inline float tariff_fee(int64_t utc, const Tariff &tariff, int32_t standard_offset) {
+  if (tariff.weeks.empty())
     return 0.0f;
-  const int64_t local = utc + (grid.winter_clock ? standard_offset : eu_offset(utc, standard_offset));
+  const int64_t local = utc + (tariff.winter_clock ? standard_offset : eu_offset(utc, standard_offset));
   const int64_t local_day = floor_div(local, DAY_SECONDS);
   const CivilDate date = civil_from_days(local_day);
   const auto fee_of = [&](const std::string &rates) {
-    return grid.fee[rates[(local - local_day * DAY_SECONDS) / SLOT_SECONDS] - 'a'];
+    return tariff.fee[rates[(local - local_day * DAY_SECONDS) / SLOT_SECONDS] - 'a'];
   };
-  for (const auto &[month_day, rates] : grid.exceptions)
+  for (const auto &[month_day, rates] : tariff.exceptions)
     if (month_day == static_cast<int>(date.month * 100 + date.day))
       return fee_of(rates);
-  return fee_of(grid.weeks[grid.week_of_month[date.month - 1]][weekday(local_day)]);
+  return fee_of(tariff.weeks[tariff.week_of_month[date.month - 1]][weekday(local_day)]);
 }
 
 // The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that
 // are the same in every quarter-hour (the supplier's margin, public service obligations).
-inline float total_price(float spot_price, int64_t slot_start, const Grid &grid, int32_t standard_offset) {
-  return spot_price * (1.0f + grid.vat) + grid_fee(slot_start, grid, standard_offset);
+inline float total_price(float spot_price, int64_t slot_start, const Tariff &tariff, int32_t standard_offset) {
+  return spot_price * (1.0f + tariff.vat) + tariff_fee(slot_start, tariff, standard_offset);
 }
 
 // Whether to download the plan at `now`: daily after a try that brought a plan the board can use, the one in use or a

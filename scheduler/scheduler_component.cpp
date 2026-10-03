@@ -93,9 +93,9 @@ static auto find(const List &entities, const char *name) {
 }
 
 void SchedulerComponent::setup() {
-  const std::string error = this->apply_grid_(this->plan_text_);
+  const std::string error = this->apply_tariff_(this->plan_text_);
   if (!error.empty())
-    ESP_LOGE(TAG, "Grid: %s", error.c_str());
+    ESP_LOGE(TAG, "Tariff: %s", error.c_str());
   this->ready_by_->restore();
   this->ready_by_once_->restore();
   // This key and the savings' keep the component's old name, so what boards saved before carries over.
@@ -209,13 +209,13 @@ void SchedulerComponent::dump_config() {
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Nord Pool area: %s, prices in %s\n"
-                "  Grid: %s\n"
+                "  Tariff: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_[0] != '\0' ? this->area_ : "none, the grid prices are the whole price",
-                this->settings_.currency, this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml",
-                this->settings_.capacity_kwh, this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->area_[0] != '\0' ? this->area_ : "none, the tariff is the whole price", this->settings_.currency,
+                this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml", this->settings_.capacity_kwh,
+                this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -251,14 +251,14 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `text`, a plan's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
-std::string SchedulerComponent::apply_grid_(const std::string &text) {
-  Grid grid;
-  const std::string error = make_grid(text, this->own_, this->settings_.currency, grid);
+// Uses `text`, a plan's text, with the tariff: settings of config.yaml. Returns what's wrong, or "".
+std::string SchedulerComponent::apply_tariff_(const std::string &text) {
+  Tariff tariff;
+  const std::string error = make_tariff(text, this->own_, this->settings_.currency, tariff);
   if (!error.empty())
     return error;
-  grid.vat = this->vat_;
-  this->controller_.set_grid(grid);
+  tariff.vat = this->vat_;
+  this->controller_.set_tariff(tariff);
   this->plan_text_ = text;
   return "";
 }
@@ -316,7 +316,7 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
 }
 
 // The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use with
-// the grid: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
+// the tariff: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
 void SchedulerComponent::fetch_plan_(int64_t now) {
   this->plan_tried_at_ = now;
   this->plan_usable_ = false;
@@ -336,7 +336,7 @@ void SchedulerComponent::fetch_plan_(int64_t now) {
   } else if (*text == this->plan_text_) {
     this->plan_usable_ = true;
   } else {
-    const std::string error = this->apply_grid_(*text);
+    const std::string error = this->apply_tariff_(*text);
     this->plan_usable_ = error.empty();
     if (error.empty())
       ESP_LOGI(TAG, "Plan %s: new prices", this->plan_);

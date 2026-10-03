@@ -1,11 +1,11 @@
 #pragma once
 // The schedule: the cheapest quarter-hours before the deadline, priced at Nord Pool's spot price (market.h) plus VAT
-// and the grid fee (grid.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17, with
+// and the tariff (tariff.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17, with
 // nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
-#include "grid.h"
 #include "market.h"
+#include "tariff.h"
 
 #include <algorithm>
 #include <cmath>
@@ -36,7 +36,7 @@ struct Settings {
   float capacity_kwh = 75.0f;
   float charge_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
-  const char *currency = "EUR";  // of the Nord Pool prices and the grid fees
+  const char *currency = "EUR";  // of the Nord Pool prices and the tariff
 };
 
 struct ScheduleRequest {
@@ -44,7 +44,7 @@ struct ScheduleRequest {
   int64_t deadline = 0;
   float soc = NAN;
   float limit = NAN;
-  Grid grid;
+  Tariff tariff;
   Settings settings;  // for capacity_kwh, charge_kw and standard_offset
 };
 
@@ -85,7 +85,7 @@ inline Schedule make_schedule(const PriceTable &prices, const ScheduleRequest &r
   for (int64_t t = first; t + SLOT_SECONDS <= priced_end; t += SLOT_SECONDS)
     // Up to known_until(), every slot has a price.
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access,clang-analyzer-core.CallAndMessage)
-    totals.push_back(total_price(*prices.get(t), t, request.grid, request.settings.standard_offset));
+    totals.push_back(total_price(*prices.get(t), t, request.tariff, request.settings.standard_offset));
   schedule.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
   const float missing_kwh = (request.limit - request.soc) / 100.0f * request.settings.capacity_kwh;
   const float slot_kwh = request.settings.charge_kw * (SLOT_SECONDS / 3600.0f) * EFFICIENCY;

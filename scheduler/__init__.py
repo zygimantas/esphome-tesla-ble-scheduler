@@ -1,7 +1,7 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
 charger.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
-grid.py the grid: block and its plan, and creates the web page's entities.
+tariff.py the tariff: block and its plan, and creates the web page's entities.
 """
 
 import re
@@ -12,17 +12,17 @@ from esphome.components import button, datetime, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
 from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
 
-from .grid import CONF_CURRENCY, CONF_PLAN, GRID_SCHEMA, PLANS, plan, write_grid
+from .tariff import CONF_CURRENCY, CONF_PLAN, PLANS, TARIFF_SCHEMA, plan, write_tariff
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
 CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
-CONF_GRID = "grid"
 CONF_MARKET = "market"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
+CONF_TARIFF = "tariff"
 CONF_VAT = "vat"
 CONF_VIN = "vin"
 
@@ -103,7 +103,7 @@ def _currency(config):
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
     if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
         raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
-    name = config[CONF_GRID].get(CONF_PLAN)
+    name = config[CONF_TARIFF].get(CONF_PLAN)
     if name and (currency := plan(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
         raise cv.Invalid(f"the plan {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
     return config
@@ -118,10 +118,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
             cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
             cv.Optional(CONF_CURRENCY): _currency_code,
-            cv.Required(CONF_GRID): GRID_SCHEMA,
             cv.Optional(CONF_MARKET): MARKET_SCHEMA,
             cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
             cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
+            cv.Required(CONF_TARIFF): TARIFF_SCHEMA,
             cv.Required(CONF_VIN): _vin,
         }
     ).extend(cv.polling_component_schema("30s")),
@@ -147,10 +147,10 @@ async def to_code(config):
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    grid = config[CONF_GRID]
-    name = grid.get(CONF_PLAN, "")
+    tariff = config[CONF_TARIFF]
+    name = tariff.get(CONF_PLAN, "")
     text = (PLANS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
-    cg.add(var.set_grid(market[CONF_VAT] if market else 0.0, name, text, write_grid(grid)))
+    cg.add(var.set_tariff(market[CONF_VAT] if market else 0.0, name, text, write_tariff(tariff)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

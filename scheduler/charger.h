@@ -7,10 +7,10 @@
 // Plain C++17 with nothing from ESPHome, like the headers it includes, so it can be unit-tested on a computer.
 
 #include "calendar.h"
-#include "grid.h"
 #include "market.h"
 #include "savings.h"
 #include "schedule.h"
+#include "tariff.h"
 
 #include <algorithm>
 #include <cmath>
@@ -99,11 +99,11 @@ class Controller {
     return true;
   }
   const Schedule &schedule() const { return schedule_; }
-  // Without market prices to download, every quarter-hour's spot price is 0: the grid fees are the whole price.
+  // Without market prices to download, every quarter-hour's spot price is 0: the tariff is the whole price.
   void without_market_prices() { market_ = false; }
-  // The grid's VAT and fees, from the plan and config.yaml; until they're set, schedules use spot prices only.
-  void set_grid(const Grid &grid) {
-    grid_ = grid;
+  // The tariff and VAT, from the plan and config.yaml; until they're set, schedules use spot prices only.
+  void set_tariff(const Tariff &tariff) {
+    tariff_ = tariff;
     reschedule_ = true;
   }
 
@@ -290,7 +290,7 @@ class Controller {
   // Schedules from the current quarter-hour; the schedule stands until the next one or reschedule().
   void update_schedule_(int64_t now, const Settings &settings) {
     // A car that says Complete is at its limit, whatever the level reads: it won't take a start.
-    const ScheduleRequest request{now, deadline_(now, settings), complete_ ? limit_ : soc_, limit_, grid_, settings};
+    const ScheduleRequest request{now, deadline_(now, settings), complete_ ? limit_ : soc_, limit_, tariff_, settings};
     schedule_ = battery_known_() ? make_schedule(prices, request) : Schedule{};
     scheduled_slot_ = floor_to_slot(now);
     reschedule_ = false;
@@ -327,7 +327,7 @@ class Controller {
       const int64_t slot = floor_to_slot(at_once_from_) + static_cast<int64_t>(i) * SLOT_SECONDS;
       const std::optional<float> spot = std::isnan(at_once_prices_[i]) ? prices.get(slot) : std::nullopt;
       if (spot)
-        at_once_prices_[i] = total_price(*spot, slot, grid_, settings.standard_offset);
+        at_once_prices_[i] = total_price(*spot, slot, tariff_, settings.standard_offset);
     }
 
     const bool charging = car.charging_state == "Charging";
@@ -344,7 +344,7 @@ class Controller {
       at_once_charged_ += to - from;
       const int64_t day = local_day_of(slot, settings.standard_offset);
       if (const std::optional<float> spot = prices.get(slot)) {
-        add_energy_(day, kwh, total_price(*spot, slot, grid_, settings.standard_offset), average, at_once);
+        add_energy_(day, kwh, total_price(*spot, slot, tariff_, settings.standard_offset), average, at_once);
       } else {
         const float neutral = std::isnan(average) ? 0.0f : average;
         add_energy_(day, kwh, neutral, neutral, neutral);
@@ -387,7 +387,7 @@ class Controller {
     float sum = 0;
     int count = 0;
     prices.for_each(start_of_delivery_day(t), end_of_delivery_day(t), [&](int64_t slot, float spot) {
-      sum += total_price(spot, slot, grid_, standard_offset);
+      sum += total_price(spot, slot, tariff_, standard_offset);
       ++count;
     });
     return sum / static_cast<float>(count);  // NaN (0 / 0) without prices
@@ -502,7 +502,7 @@ class Controller {
   bool in_schedule_() const { return !schedule_.valid || schedule_.contains(scheduled_slot_); }
 
   Schedule schedule_;
-  Grid grid_;
+  Tariff tariff_;
   float soc_ = NAN;
   float limit_ = NAN;
   bool plugged_ = false;

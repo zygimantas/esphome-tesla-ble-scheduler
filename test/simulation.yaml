@@ -48,16 +48,16 @@ number:
 scheduler:
   battery_kwh: 75
   charging_kw: 11
-  grid:
+  id: scheduler_id
+  market:
+    area: LT
+    vat: 0.21
+  tariff:
     calendar:
       jan-dec:
         mon-sun: flat
     rates:
       flat: 0.11132
-  id: scheduler_id
-  market:
-    area: LT
-    vat: 0.21
   time_id: sntp_time
   vin: 5YJ3E1EA0KF000000
 
