@@ -12,7 +12,7 @@ The board follows market prices where Nord Pool or SMARD, Germany's Federal Netw
 | Croatia | `HR` | `EUR` | |
 | Czechia | `CZ` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | |
-| Estonia | `EE` | `EUR` | |
+| Estonia | `EE` | `EUR` | [Elektrilevi's plans](elektrilevi.md). |
 | Finland | `FI` | `EUR` | |
 | France | `FR` | `EUR` | |
 | Germany and Luxembourg | `DE` or `LU` | `EUR` | |
@@ -22,7 +22,7 @@ The board follows market prices where Nord Pool or SMARD, Germany's Federal Netw
 | Lithuania | `LT` | `EUR` | [ESO's plans](eso.md). |
 | Netherlands | `NL` | `EUR` | |
 | Norway | `NO1` to `NO5` | `NOK` or `EUR` | The capacity step isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| Poland | `PL` | `PLN` or `EUR` | |
+| Poland | `PL` | `PLN` or `EUR` | [The five big operators' plans](poland.md). |
 | Romania | `RO` | `RON` or `EUR` | |
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](omreznina.md), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | Power fees at some network companies aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |

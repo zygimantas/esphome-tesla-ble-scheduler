@@ -57,6 +57,7 @@ scheduler:
   id: scheduler_id
   market:
     area: LT
+    margin: 0.01
     vat: 0.21
   tariff:
     calendar:

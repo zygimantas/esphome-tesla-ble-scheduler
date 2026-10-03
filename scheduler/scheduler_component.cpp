@@ -253,6 +253,7 @@ std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   if (!error.empty())
     return error;
   tariff.vat = this->vat_;
+  tariff.margin = this->margin_;
   this->controller_.set_tariff(tariff);
   this->plan_text_ = text;
   return "";

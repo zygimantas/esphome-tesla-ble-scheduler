@@ -1,0 +1,27 @@
+# Enea Operator's G12w tariff, prices with VAT: https://www.operator.enea.pl/media/3988/enea-operatorwyciag-z-taryfy01022026-31122026pdf.pdf
+# The tariff prints the prices without VAT: these add 23% VAT.
+# Maintained by @zygimantas
+currency: PLN
+clock: winter
+calendar:
+  jan-dec:
+    mon-fri: off-peak 06:00 peak 21:00 off-peak
+    sat-sun: off-peak
+exceptions:
+  01-01: off-peak
+  01-06: off-peak
+  # Easter Monday, 2027
+  03-29: off-peak
+  05-01: off-peak
+  05-03: off-peak
+  # Corpus Christi, 2027
+  05-27: off-peak
+  08-15: off-peak
+  11-01: off-peak
+  11-11: off-peak
+  12-24: off-peak
+  12-25: off-peak
+  12-26: off-peak
+rates:
+  off-peak: 0.1
+  peak: 0.33235
