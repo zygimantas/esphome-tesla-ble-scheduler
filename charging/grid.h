@@ -42,7 +42,7 @@ inline std::string read_grid(const std::string &text, GridText &grid) {
   std::string section;
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
-    const size_t end = std::min(text.find('\n', start), text.size());
+    const size_t end = text.find('\n', start);
     std::string line = text.substr(start, end - start);
     start = end + 1;
     line.erase(line.find_last_not_of(" \r") + 1);
@@ -61,7 +61,7 @@ inline std::string read_grid(const std::string &text, GridText &grid) {
       section.clear();
       (key == "clock" ? grid.clock : grid.currency) = value;
     } else if (indent == 2 && value.empty() && section == "calendar") {
-      grid.calendar.emplace_back(key, std::vector<std::pair<std::string, std::string>>{});
+      grid.calendar.push_back({key, {}});
     } else if (indent == 4 && !value.empty() && section == "calendar" && !grid.calendar.empty()) {
       grid.calendar.back().second.emplace_back(key, value);
     } else if (indent == 2 && !value.empty() && (section == "exceptions" || section == "rates")) {
@@ -141,17 +141,21 @@ struct Grid {
 };
 
 constexpr const char *DAY_NAMES[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
+constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
+                                       "jul", "aug", "sep", "oct", "nov", "dec"};
 // A day's rates are letters from 'a', so a grid has 26 at most. Prices are per kWh and below MAX_PRICE. grid.py
 // checks the same before the board gets the settings.
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
-constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
-                                       "jul", "aug", "sep", "oct", "nov", "dec"};
 
-// The grid of a price list's settings and config.yaml's own: your calendar and clock replace the list's, and your
-// exceptions and rates replace or add to its own, one key at a time. The list's prices are in `currency`. Returns
-// what's wrong, or "".
-inline std::string make_grid(const GridText &list, const GridText &own, const std::string &currency, Grid &grid) {
+// The grid of a price list's text and config.yaml's grid: settings, both as read_grid() reads them: your calendar and
+// clock replace the list's, and your exceptions and rates replace or add to its own, one key at a time. The list's
+// prices are in `currency`. Returns what's wrong, or "".
+inline std::string make_grid(const std::string &list_text, const std::string &own_text, const std::string &currency,
+                             Grid &grid) {
+  GridText list, own;
+  if (const std::string error = read_grid(list_text, list) + read_grid(own_text, own); !error.empty())
+    return error;
   if (!list.rates.empty() && list.currency != currency)
     return concat({"the price list's prices are in ", list.currency, ", not ", currency});
   GridText all = list;
@@ -188,7 +192,6 @@ inline std::string make_grid(const GridText &list, const GridText &own, const st
     made.fee.push_back(fee);
   }
   std::vector<bool> used(names.size());
-  std::string error;
   unsigned months_seen = 0;
   for (const auto &[months, week] : all.calendar) {
     const std::vector<size_t> in = named(months, MONTH_NAMES);
@@ -204,11 +207,10 @@ inline std::string make_grid(const GridText &list, const GridText &own, const st
     }
     for (const auto &[days, line] : week) {
       const std::vector<size_t> on = named(days, DAY_NAMES);
-      std::string rates;
       if (on.empty())
         return concat({"calendar: ", months, ": ", days, " isn't a day or a range like mon-fri"});
-      error = day_rates(line, names, rates, used);
-      if (!error.empty())
+      std::string rates;
+      if (const std::string error = day_rates(line, names, rates, used); !error.empty())
         return concat({"calendar: ", months, ": ", days, ": ", error});
       for (const size_t day : on) {
         if (days_seen & 1U << day)
@@ -231,8 +233,7 @@ inline std::string make_grid(const GridText &list, const GridText &own, const st
         std::any_of(made.exceptions.begin(), made.exceptions.end(),
                     [&](const auto &other) { return other.first == month_day; }))
       return concat({"exceptions: ", date, " isn't a date like 12-25, or it's there twice"});
-    error = day_rates(line, names, rates, used);
-    if (!error.empty())
+    if (const std::string error = day_rates(line, names, rates, used); !error.empty())
       return concat({"exceptions: ", date, ": ", error});
     made.exceptions.emplace_back(month_day, rates);
   }
@@ -260,16 +261,16 @@ inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
   return fee_of(grid.weeks[grid.week_of_month[date.month - 1]][weekday(local_day)]);
 }
 
-// Whether to download the price list at `now`: daily after a try that brought a list the board can use, the one in
-// use or a new one, and hourly after any other. Not before the clock is set: 0 is never past a try.
-inline bool price_list_due(int64_t now, int64_t tried_at, bool usable) {
-  return now - tried_at >= (usable ? DAY_SECONDS : 3600);
-}
-
 // The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that
 // are the same in every quarter-hour (the supplier's margin, public service obligations).
 inline float total_price(float spot_price, int64_t slot_start, const Grid &grid, int32_t standard_offset) {
   return spot_price * (1.0f + grid.vat) + grid_fee(slot_start, grid, standard_offset);
+}
+
+// Whether to download the price list at `now`: daily after a try that brought a list the board can use, the one in
+// use or a new one, and hourly after any other. Not before the clock is set: 0 is never past a try.
+inline bool price_list_due(int64_t now, int64_t tried_at, bool usable) {
+  return now - tried_at >= (usable ? DAY_SECONDS : 3600);
 }
 
 }  // namespace esphome::charging

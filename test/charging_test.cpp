@@ -425,22 +425,15 @@ rates:
 )";
 
 // What's wrong with a price list's settings and config.yaml's together, as the board puts them, or "".
-static std::string grid_error(const std::string &list, const std::string &own, Grid &grid,
-                              const char *currency = "EUR") {
-  GridText list_settings, own_settings;
-  std::string error = read_grid(list, list_settings);
-  error += read_grid(own, own_settings);
-  return error + make_grid(list_settings, own_settings, currency, grid);
-}
 static std::string grid_error(const std::string &list, const std::string &own = "", const char *currency = "EUR") {
   Grid ignored;
-  return grid_error(list, own, ignored, currency);
+  return make_grid(list, own, currency, ignored);
 }
 
 // The grid of a price list and config.yaml's settings, with 21% VAT.
 static Grid grid_of(const std::string &list, const std::string &own = "") {
   Grid grid;
-  CHECK_STR(grid_error(list, own, grid), "");
+  CHECK_STR(make_grid(list, own, "EUR", grid), "");
   grid.vat = 0.21f;
   return grid;
 }
@@ -556,6 +549,7 @@ static void test_makes_grids() {
   CHECK_STR(grid_error(calendar_of("    mon-sun: flat")), "the price list's prices are in , not EUR");
   CHECK_STR(grid_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\n", "", "NOK"),
             "calendar: jan-dec: mon-sun: rate flat has no price");
+  CHECK_STR(grid_error("calendar\n"), "line 1 isn't a key and a value");
   // A rate the list renamed or dropped, which yours still sets.
   CHECK_STR(grid_error(FOUR_ZONES, "rates:\n  nakts: 0.05\n"), "rate nakts isn't used on any day");
 
@@ -822,11 +816,13 @@ static void test_price_lists_in_the_repository() {
     GridText list;
     Grid grid;
     CHECK_STR(name + read_grid(text.str(), list), name);
-    CHECK_STR(name + make_grid(list, GridText(), list.currency, grid), name);
+    CHECK_STR(name + make_grid(text.str(), "", list.currency, grid), name);
     CHECK(list.currency.size() == 3 &&
           std::all_of(list.currency.begin(), list.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
-    for (const auto &[rate, price] : list.rates)
+    for (const auto &[rate, price] : list.rates) {
       CHECK_STR(name + (install_takes(rate) ? "" : rate), name);
+      CHECK_STR(name + (std::regex_match(price, std::regex("[0-9]*\\.?[0-9]+")) ? "" : price), name);
+    }
     for (const char *key : {"calendar:", "clock:", "currency:", "exceptions:", "rates:"}) {
       int found = 0;
       for (size_t at = 0; (at = text.str().find(std::string("\n") + key, at)) != std::string::npos; at++)

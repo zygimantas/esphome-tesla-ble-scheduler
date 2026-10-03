@@ -4,8 +4,7 @@
 // Every 30 s ChargingComponent (charging_component.h) passes the car's state to Controller::tick(), which re-plans
 // when needed (planner.h), counts what charging cost and saved (savings.h), and returns what to do.
 //
-// Plain C++17 plus ArduinoJson, like the headers it includes, with nothing from ESPHome, so it can be unit-tested on
-// a computer.
+// Plain C++17 with nothing from ESPHome, like the headers it includes, so it can be unit-tested on a computer.
 
 #include "calendar.h"
 #include "grid.h"
@@ -88,9 +87,8 @@ class Controller {
   // Recompute the plan on the next tick (new prices or settings).
   void replan() { replan_ = true; }
   // Whether to download prices now, which counts as a try: every 5 minutes while there's no price for this
-  // quarter-hour, else hourly until 12:45 CET and every 5 minutes from then, when Nord Pool publishes the
-  // next day, until tomorrow's are in. Never without market prices, and not before the clock is set: 0 is never past a
-  // try.
+  // quarter-hour, else hourly until 12:45 CET and every 5 minutes from then, when Nord Pool publishes the next day,
+  // until tomorrow's are in. Never without market prices, and not before the clock is set: 0 is never past a try.
   bool fetch_prices_due(int64_t now) {
     const int64_t until = prices.known_until(now);
     const int64_t cet_minute = floor_div(now + eu_offset(now, CET_STANDARD_OFFSET), 60) % 1440;
@@ -103,7 +101,7 @@ class Controller {
   const Plan &plan() const { return plan_; }
   // Without market prices to download, every quarter-hour's spot price is 0: the grid fees are the whole price.
   void without_market_prices() { market_ = false; }
-  // The grid fees from config.yaml; until they're set, plans use spot prices only.
+  // The grid's VAT and fees, from the price list and config.yaml; until they're set, plans use spot prices only.
   void set_grid(const Grid &grid) {
     grid_ = grid;
     replan_ = true;

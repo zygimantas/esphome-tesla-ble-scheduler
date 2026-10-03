@@ -104,7 +104,7 @@ class ChargingComponent : public PollingComponent {
  protected:
   void tick_soon_();
   std::string apply_grid_(const std::string &list);
-  std::optional<std::string> read_body_(http_request::HttpContainer &response, size_t max);
+  std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
   void fetch_price_list_(int64_t now);
   void send_unsent_(int64_t now);

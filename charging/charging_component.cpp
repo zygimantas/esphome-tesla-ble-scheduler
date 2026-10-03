@@ -12,12 +12,11 @@ static const char *const TAG = "charging";
 // Keys of ESPHome's template time and datetime, so Ready by keeps the value saved before this component.
 static constexpr uint32_t READY_BY_KEY = 194434060U;
 static constexpr uint32_t READY_BY_ONCE_KEY = 194434090U;
-// One day of LT prices is about 11 kB.
-static constexpr size_t MAX_PRICES_BYTES = 24 * 1024;
-// The price lists as their maintainers keep them current, on GitHub; one is about 1 kB.
+// The most the board reads of an answer: a day of LT prices is about 11 kB, and a price list about 1 kB.
+static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
+// The price lists as their maintainers keep them current, on GitHub.
 static const char *const PRICE_LISTS =
     "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/pricelists/";
-static constexpr size_t MAX_PRICE_LIST_BYTES = 16 * 1024;
 
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>(READY_BY_KEY);
@@ -255,13 +254,8 @@ void ChargingComponent::tick_soon_() {
 
 // Uses `list`, a price list's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
 std::string ChargingComponent::apply_grid_(const std::string &list) {
-  GridText list_settings, own;
   Grid grid;
-  std::string error = read_grid(list, list_settings);
-  if (error.empty())
-    error = read_grid(this->own_, own);
-  if (error.empty())
-    error = make_grid(list_settings, own, this->settings_.currency, grid);
+  const std::string error = make_grid(list, this->own_, this->settings_.currency, grid);
   if (!error.empty())
     return error;
   grid.vat = this->vat_;
@@ -270,13 +264,13 @@ std::string ChargingComponent::apply_grid_(const std::string &list) {
   return "";
 }
 
-// A response's whole body, or nothing when the read fails, times out or passes `max` bytes before it's complete.
-std::optional<std::string> ChargingComponent::read_body_(http_request::HttpContainer &response, size_t max) {
+// A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
+std::optional<std::string> ChargingComponent::read_body_(http_request::HttpContainer &response) {
   std::string body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
-  while (body.size() < max) {
-    const int read = response.read(chunk, std::min(sizeof(chunk), max - body.size()));
+  while (body.size() < MAX_BODY_BYTES) {
+    const int read = response.read(chunk, std::min(sizeof(chunk), MAX_BODY_BYTES - body.size()));
     App.feed_wdt();
     yield();
     const auto result =
@@ -302,7 +296,7 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
-      const std::optional<std::string> body = this->read_body_(*response, MAX_PRICES_BYTES);
+      const std::optional<std::string> body = this->read_body_(*response);
       response->end();  // before the parse: the connection's memory isn't needed any more
       const int stored = body ? this->controller_.prices.add_nord_pool(body->data(), body->size(), this->area_) : -1;
       if (stored < 0) {
@@ -334,7 +328,7 @@ void ChargingComponent::fetch_price_list_(int64_t now) {
   }
   const int status = response->status_code;
   const std::optional<std::string> list =
-      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response, MAX_PRICE_LIST_BYTES) : std::nullopt;
+      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response) : std::nullopt;
   response->end();
   if (status != http_request::HTTP_STATUS_OK) {
     ESP_LOGW(TAG, "Price list %s: GitHub answered HTTP %d", this->pricelist_, status);
