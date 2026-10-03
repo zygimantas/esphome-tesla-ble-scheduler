@@ -22,7 +22,7 @@ const E = {
   ble: "sensor/BLE Signal",
   chargeNow: "button/Start charging now",
   charging: "text_sensor/Charging",
-  createSchedule: "button/Create charging schedule",
+  createSchedule: "button/Create schedule",
   limit: "number/Charging Limit",
   mode: "text_sensor/Charging mode",
   pair: "button/Pair BLE Key",
@@ -66,13 +66,13 @@ const PAGE = `
   <section id="schedule-card" class="card" hidden>
     <div class="title">Schedule</div>
     <div id="schedule-start">
-      <button id="create-schedule" class="primary">Create charging schedule</button>
+      <button id="create-schedule" class="primary">Create schedule</button>
       <div class="or">or</div>
       <button id="charge-now">Start charging now</button>
     </div>
     <div id="schedule-rows">
       <div id="windows"></div>
-      <button id="delete-schedule" class="red">Delete charging schedule</button>
+      <button id="delete-schedule" class="red">Delete schedule</button>
     </div>
     <button id="stop-charging" class="red">Stop charging</button>
   </section>
@@ -209,7 +209,7 @@ async function sendLimit() {
 
 const HALF_HOUR_MS = 30 * 60 * 1000;
 const CLEAR_ONCE = "2000-01-01 00:00:00"; // Ready by once's "unset" value
-// After Create charging schedule, keeps the dropdown on the deadline just sent for a moment, so the board's old one
+// After Create schedule, keeps the dropdown on the deadline just sent for a moment, so the board's old one
 // doesn't flash back.
 let readyLockUntil = 0;
 
@@ -280,7 +280,7 @@ function renderSchedule() {
   // No schedule without prices: the board downloads them after it starts, which takes about a minute.
   const priced = pricesUntil() > Date.now();
   $("create-schedule").disabled = !priced || busy;
-  $("create-schedule").textContent = priced ? "Create charging schedule" : "Getting prices …";
+  $("create-schedule").textContent = priced ? "Create schedule" : "Getting prices …";
   renderWindows();
 }
 
@@ -331,7 +331,7 @@ async function chargeNow() {
   requestRender();
 }
 
-// Stop charging and Delete charging schedule: the board stops charging and keeps the car waiting until a
+// Stop charging and Delete schedule: the board stops charging and keeps the car waiting until a
 // button here, or the car is unplugged.
 async function stopCharging(message) {
   if (await post(E.stopCharging, "press")) {
@@ -422,7 +422,7 @@ async function post(entity, action, param) {
 }
 
 // One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
-// and renderSchedule() keeps Create charging schedule off meanwhile.
+// and renderSchedule() keeps Create schedule off meanwhile.
 let busy = false;
 function press(button, handler) {
   button.addEventListener("click", async () => {
@@ -521,7 +521,7 @@ function bind() {
   $("ready-select").addEventListener("change", (e) => (draft.deadline = Number(e.target.value)));
   press($("create-schedule"), createSchedule);
   press($("charge-now"), chargeNow);
-  press($("delete-schedule"), () => stopCharging("Charging schedule deleted"));
+  press($("delete-schedule"), () => stopCharging("Schedule deleted"));
   press($("stop-charging"), () => stopCharging("Charging stopped"));
   confirmPress(
     "pair",

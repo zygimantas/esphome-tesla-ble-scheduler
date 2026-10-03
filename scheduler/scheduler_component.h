@@ -49,7 +49,7 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerCo
 
 enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
-// The page's Create charging schedule, Start charging now, Stop charging and Reset savings.
+// The page's Create schedule, Start charging now, Stop charging and Reset savings.
 class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }

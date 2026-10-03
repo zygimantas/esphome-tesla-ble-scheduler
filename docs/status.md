@@ -24,7 +24,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 ## Charging without a schedule
 
 - **Charging now**: you pressed Start charging now, or charging was started from the car or the Tesla app. The car charges at any price until you unplug.
-- **No schedule**: you pressed Stop charging or Delete charging schedule. Press Create charging schedule or Start charging now, or plug in again.
+- **No schedule**: you pressed Stop charging or Delete schedule. Press Create schedule or Start charging now, or plug in again.
 - **Charging (no prices)**: the board has no price for this quarter-hour, because the download failed for the 10 minutes after a start or the prices ran out later, so the car charges as usual. Check that the board has internet, and `market: area` in `config.yaml`.
 - **Charging (battery unknown)**: the car didn't report its battery level in half an hour, so it charges as usual. Check the Bluetooth signal under Board.
 

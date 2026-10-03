@@ -160,7 +160,7 @@ async def to_code(config):
     cg.add(var.set_ready_by_once(ready_by_once))
 
     for key, name, action in (
-        ("create_schedule", "Create charging schedule", Action.CREATE_SCHEDULE),
+        ("create_schedule", "Create schedule", Action.CREATE_SCHEDULE),
         ("charge_now", "Start charging now", Action.CHARGE_NOW),
         ("stop_charging", "Stop charging", Action.STOP_CHARGING),
         ("reset_savings", "Reset savings", Action.RESET_SAVINGS),

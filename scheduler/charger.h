@@ -444,7 +444,7 @@ class Controller {
     std::snprintf(text, sizeof(text), "%.0f to %.0f%% by %s; avg %.3f %s/kWh over %d window(s)", soc_, limit_,
                   format_day_hhmm(deadline_(now, settings), settings.standard_offset).c_str(), schedule_.avg_price,
                   settings.currency, windows);
-    n.title = "Tesla charging schedule created";
+    n.title = "Tesla schedule created";
     n.message = text;
     if (schedule_.soc_at_end < limit_ - 0.5f)
       n.message += "\nNot enough time to reach the limit";

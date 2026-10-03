@@ -918,7 +918,7 @@ static void test_charges_only_in_the_cheap_window() {
   CHECK(run.messages[0].first == SEP24_1700Z + 2 * 60);  // once the schedule has settled
   // 01:30-05:00 local is the bottom of the night trough. The car needs 12.1 of its 14 slots, which
   // average 21.2 EUR/MWh: (28+26+24+22+20+18+16+16+18+20+22+24 + 0.12*26) / 12.12.
-  CHECK_STR(run.messages[0].second.title, "Tesla charging schedule created");
+  CHECK_STR(run.messages[0].second.title, "Tesla schedule created");
   CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
 }
 
@@ -1070,7 +1070,7 @@ static void test_tells_its_own_starts_from_the_cars() {
   CHECK_STR(mode_when_charging_after(179), "schedule");
   CHECK_STR(mode_when_charging_after(180), "now");
 
-  // The board's own start may take 5 minutes to show: Start charging now, then Create charging schedule.
+  // The board's own start may take 5 minutes to show: Start charging now, then Create schedule.
   const auto mode_when_started_after = [](int64_t seconds) {
     Controller controller = with_prices();
     FakeTesla car = plugged_in(false);
@@ -1545,7 +1545,7 @@ static void test_stop_charging_until_a_button_or_plug_in() {
   CHECK(d.command == Command::STOP_CHARGING);
   CHECK_STR(d.mode, "none");
 
-  controller.create_schedule();  // Create charging schedule
+  controller.create_schedule();  // Create schedule
   car.charging = false;
   CHECK_STR(controller.tick(car.state(TROUGH + 17 * 60), Settings()).mode, "schedule");
 
@@ -1771,7 +1771,7 @@ static void test_plug_in_message_when_charging_now() {
 }
 
 static void test_no_plug_in_message_after_stop_charging() {
-  // Stop charging before the message, then Create charging schedule: no message for this plug-in.
+  // Stop charging before the message, then Create schedule: no message for this plug-in.
   Controller controller = with_prices();
   const Run run = simulate(controller, FakeTesla(), SEP24_1700Z - 60, SEP24_1700Z + HOUR,
                            {{SEP24_1700Z, &FakeTesla::plug_in},
