@@ -1,5 +1,5 @@
-"""Checks the grid settings when you build: the grid: block of config.yaml and the plan it starts from (format
-in docs/grid-fees.md), as grid.h reads them on the board. Writes config.yaml's out for the board.
+"""Checks the tariff when you build: the tariff: block of config.yaml and the plan it starts from (format in
+docs/tariff.md), as tariff.h reads them on the board. Writes config.yaml's out for the board.
 """
 
 import re
@@ -17,11 +17,11 @@ CONF_RATES = "rates"
 # The plans, which the build reads from this release and the board downloads from GitHub every day.
 PLANS = Path(__file__).resolve().parent.parent / "plans"
 
-# The days from Sunday and the months from January, as in grid.h.
+# The days from Sunday and the months from January, as in tariff.h.
 DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-# A day's rates are letters on the board, so a grid has 26 at most, and prices are below MAX_PRICE, as MAX_RATES and
-# MAX_PRICE in grid.h.
+# A day's rates are letters on the board, so a tariff has 26 at most, and prices are below MAX_PRICE, as MAX_RATES
+# and MAX_PRICE in tariff.h.
 MAX_RATES = 26
 MAX_PRICE = 1e6
 # Words YAML reads as true, false or nothing.
@@ -139,7 +139,7 @@ def _plan_name(value):
 
 
 def _read(text):
-    """Grid settings as the board reads them (read_grid() in grid.h), into tables with each key once."""
+    """A tariff as the board reads it (read_tariff() in tariff.h), into tables with each key once."""
     if text and not text.endswith("\n"):
         raise cv.Invalid("ends inside a line, as if cut off")
     settings, section, week = {}, None, None
@@ -179,7 +179,7 @@ def plan(name):
 
 
 def _with_plan(config):
-    """config.yaml's grid settings over the plan's, as make_grid() in grid.h puts them together: every rate the
+    """config.yaml's tariff over the plan's, as make_tariff() in tariff.h puts them together: every rate the
     days use has a price, and every rate config.yaml sets is used."""
     settings = plan(config[CONF_PLAN]) if CONF_PLAN in config else {}
     calendar = config.get(CONF_CALENDAR, settings.get(CONF_CALENDAR))
@@ -198,22 +198,22 @@ def _with_plan(config):
     return config
 
 
-GRID_SCHEMA = cv.All(
+TARIFF_SCHEMA = cv.All(
     cv.Schema({cv.Optional(CONF_CALENDAR): CALENDAR, **TABLES, cv.Optional(CONF_PLAN): _plan_name}),
     _with_plan,
 )
 
 
-def write_grid(grid):
-    """config.yaml's grid settings as the board reads them (read_grid() in grid.h)."""
+def write_tariff(tariff):
+    """config.yaml's tariff as the board reads it (read_tariff() in tariff.h)."""
     lines = []
-    if CONF_CALENDAR in grid:
+    if CONF_CALENDAR in tariff:
         lines.append(f"{CONF_CALENDAR}:")
-        for months, week in grid[CONF_CALENDAR].items():
+        for months, week in tariff[CONF_CALENDAR].items():
             lines += [f"  {months}:", *(f"    {days}: {line}" for days, line in week.items())]
-    if CONF_CLOCK in grid:
-        lines.append(f"{CONF_CLOCK}: {grid[CONF_CLOCK]}")
+    if CONF_CLOCK in tariff:
+        lines.append(f"{CONF_CLOCK}: {tariff[CONF_CLOCK]}")
     for table in (CONF_EXCEPTIONS, CONF_RATES):
-        if table in grid:
-            lines += [f"{table}:", *(f"  {key}: {value}" for key, value in grid[table].items())]
+        if table in tariff:
+            lines += [f"{table}:", *(f"  {key}: {value}" for key, value in tariff[table].items())]
     return "".join(f"{line}\n" for line in lines)

@@ -10,11 +10,11 @@ packages:
   device: github://zygimantas/esphome-tesla-ble-scheduler/device.yaml@${version}
 
 scheduler:
-  grid:
-    plan: lt/eso-standartinis-4-zones
   market:
     area: LT
     vat: 0.21
+  tariff:
+    plan: lt/eso-standartinis-4-zones
 
 substitutions:
   ntfy_server: https://ntfy.sh

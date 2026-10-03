@@ -1,14 +1,14 @@
-# Grid fees
+# Tariff
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name their grid operator's plan:
+The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Most people only name their grid operator's plan:
 
 ```yaml
 scheduler:
-  grid:
-    plan: lt/eso-standartinis-4-zones
   market:
     area: LT
     vat: 0.21
+  tariff:
+    plan: lt/eso-standartinis-4-zones
 ```
 
 The board starts with the plan from the release you installed, and downloads the current one every day, so new prices reach it without a reinstall. Each plan has a maintainer from its country who keeps it up to date. [Plans](#plans) says which there are.
@@ -23,7 +23,7 @@ Next to `plan:`, these change the plan for you alone:
 
 ```yaml
 scheduler:
-  grid:
+  tariff:
     plan: lt/eso-standartinis-4-zones
     exceptions:
       12-31: night 07:00 day 22:00 night
@@ -33,9 +33,9 @@ scheduler:
 
 A rate you set has to be one your days use. If a plan later drops or renames it, the board keeps the plan it has and says why in its log.
 
-## Your own grid
+## Your own tariff
 
-Without your grid operator's plan here, write the grid yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it:
+Without your grid operator's plan here, write the tariff yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it:
 
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
@@ -49,7 +49,7 @@ A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:
 
 ```yaml
 scheduler:
-  grid:
+  tariff:
     calendar:
       apr-oct:
         mon-sun: low
@@ -70,7 +70,7 @@ If something is wrong, the install stops and says what: a rate without a price, 
 Leave `market:` out: no market prices are downloaded, and each rate's price is your whole price per kWh, the supplier's price and the grid fee together, with VAT. One price for every hour:
 
 ```yaml
-  grid:
+  tariff:
     calendar:
       jan-dec:
         mon-sun: flat
@@ -83,7 +83,7 @@ All hours then cost the same, so the board charges at once. With day and night p
 ```yaml
 scheduler:
   currency: GBP
-  grid:
+  tariff:
     calendar:
       jan-dec:
         mon-sun: standard 00:30 cheap 05:30 standard

@@ -78,9 +78,9 @@ class SchedulerComponent : public PollingComponent {
     this->ntfy_server_ = server;
     this->ntfy_topic_ = topic;
   }
-  // The VAT on market prices; the plan's name and the copy built in, both empty without a plan; and the grid: settings
-  // of config.yaml, written as read_grid() reads them.
-  void set_grid(float vat, const char *plan, const char *text, const char *own) {
+  // The VAT on market prices; the plan's name and the copy built in, both empty without a plan; and the tariff:
+  // settings of config.yaml, written as read_tariff() reads them.
+  void set_tariff(float vat, const char *plan, const char *text, const char *own) {
     this->vat_ = vat;
     this->plan_ = plan;
     this->plan_text_ = text;
@@ -103,7 +103,7 @@ class SchedulerComponent : public PollingComponent {
 
  protected:
   void tick_soon_();
-  std::string apply_grid_(const std::string &text);
+  std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
   void fetch_plan_(int64_t now);

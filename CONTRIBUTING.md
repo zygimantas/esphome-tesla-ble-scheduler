@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `grid.h`, `market.h`, `savings.h` and `schedule.h` for dates, grid fees, Nord Pool prices, the savings and the schedule (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the plan when you build. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, Nord Pool prices, the savings, the schedule and the tariff (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` and `tariff.py` check the settings and the plan when you build. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -12,7 +12,7 @@ In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the 
 
 ## Branching
 
-1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/grid-fees`, using the commit types below.
+1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/tariff`, using the commit types below.
 2. Keep branches short-lived and scoped to one change.
 3. Open a pull request early.
 
@@ -77,7 +77,7 @@ The PR title becomes the commit subject on `main`, so it follows [Conventional C
 | `chore`    | Maintenance with no product impact |
 | `revert`   | Reverting a previous change        |
 
-**Scopes** (optional but preferred) follow the repository layout: `scheduler` (the component in `scheduler/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the plans in `plans/`) and `docs`. Tests take the scope of what they test.
+**Scopes** (optional but preferred) follow the repository layout: `scheduler` (the component in `scheduler/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `plans` (the plans in `plans/`) and `docs`. Tests take the scope of what they test.
 
 A workflow labels the pull request from the type: `fix` is bug, `feat` is enhancement, `docs` is documentation, and the rest maintenance. A `!` before the colon, as in `feat(board)!: ...`, marks a change users must act on, and adds breaking. The release notes list breaking changes first, group the rest by those labels and leave maintenance out.
 
@@ -86,14 +86,14 @@ Write the summary in the imperative mood, lower case, with no trailing period:
 ```
 feat(scheduler): suggest a later ready-by when it's much cheaper
 fix(web): keep ready by hidden until prices arrive
-chore(grid): update the ESO fees for 2027
+chore(plans): update ESO's plans for 2027
 ```
 
 ## Plans
 
 A plan is a grid operator's prices and hours, in `plans/`, in a folder for its country: `plans/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
 
-- **The format** is that of `grid:` in [Grid fees](docs/grid-fees.md), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
+- **The format** is that of `tariff:` in [Tariff](docs/tariff.md), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
 - **A comment at the top** says what the plan is, with a link to the operator's prices, and who maintains it: `# Maintained by @your-github-name`.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their plan from `main` every day, so merging publishes it, without a release.
 - **CI checks every plan** in the unit tests: as the board reads it, and by the install's own rules.

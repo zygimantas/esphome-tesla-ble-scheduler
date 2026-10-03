@@ -65,11 +65,11 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
-| `grid` | Your grid fees: your grid operator's plan, or your own rates (see [Grid fees](#grid-fees)). |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
+| `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Tariff](#tariff)). |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
@@ -96,11 +96,11 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price: for lack of prices or of a battery level, or because charging was started from the car or the Tesla app.
 
-## Grid fees
+## Tariff
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Grid fees](docs/grid-fees.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
+The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
-With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `grid:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
+With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 
