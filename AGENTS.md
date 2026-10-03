@@ -48,4 +48,4 @@ Parked for later, as issues #12 and #25: a per-start penalty, so the scheduler s
 - zsh doesn't split `$flags` into words: use `${=flags}` or an array. It also reads `$sha:r` as a modifier, so write `${sha}:refs/heads/main`.
 - sed and grep are BSD's: `sed -i ''`, and `grep -F` for patterns like `][scheduler`.
 - `script -q` fails when its output is redirected. Give a program a terminal with `python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' <command>`.
-- Docker runs `ubuntu:24.04`, which has CI's compilers.
+- Docker runs `ubuntu:24.04`, which has CI's compilers. Run clang-tidy there too before pushing C++: `int64_t` is `long long` on macOS and `long` on Linux, so some checks fire only in CI.
