@@ -261,9 +261,9 @@ inline float grid_fee(int64_t utc, const Grid &grid, int32_t standard_offset) {
 }
 
 // Whether to download the price list at `now`: daily after a try that brought a list the board can use, the one in
-// use or a new one, and hourly after any other. Not before the clock is set.
+// use or a new one, and hourly after any other. Not before the clock is set: 0 is never past a try.
 inline bool price_list_due(int64_t now, int64_t tried_at, bool usable) {
-  return now != 0 && now - tried_at >= (usable ? DAY_SECONDS : 3600);
+  return now - tried_at >= (usable ? DAY_SECONDS : 3600);
 }
 
 // The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that
