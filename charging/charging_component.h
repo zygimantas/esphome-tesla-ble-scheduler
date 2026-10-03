@@ -104,7 +104,7 @@ class ChargingComponent : public PollingComponent {
  protected:
   void tick_soon_();
   std::string apply_grid_(const std::string &list);
-  std::string read_body_(http_request::HttpContainer &response, size_t max);
+  std::optional<std::string> read_body_(http_request::HttpContainer &response, size_t max);
   void fetch_prices_(int64_t now);
   void fetch_price_list_(int64_t now);
   void send_unsent_(int64_t now);
@@ -120,7 +120,7 @@ class ChargingComponent : public PollingComponent {
   const char *own_{""};
   std::string list_;  // the price list in use: the copy built in until a download brings another
   int64_t list_tried_at_{0};
-  bool list_downloaded_{false};
+  bool list_usable_{false};  // whether the latest download brought a list the board can use
   const char *ntfy_server_{""};
   const char *ntfy_topic_{""};          // empty: no phone messages
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it

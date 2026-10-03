@@ -69,9 +69,13 @@ CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 # The price lists, which the build reads from this release and the board downloads from GitHub every day.
 PRICE_LISTS = Path(__file__).resolve().parent.parent / "pricelists"
 
-# The names of the days and months, in charging.h's order, from Sunday.
+# The names of the days and months, in grid.h's order, from Sunday.
 DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+# A day's rates are letters on the board, so a grid has 26 at most, and prices are below MAX_PRICE, as MAX_RATES and
+# MAX_PRICE in grid.h.
+MAX_RATES = 26
+MAX_PRICE = 1e6
 # Words YAML reads as true, false or nothing.
 NOT_NAMES = ["on", "off", "yes", "no", "true", "false", "null"]
 
@@ -186,6 +190,8 @@ def _check_rates(settings, own):
         raise cv.Invalid(f"rate {missing[0]} needs a price per kWh, with VAT", [CONF_RATES])
     if unused := sorted(set(own) - used):
         raise cv.Invalid(f"rate {unused[0]} isn't used on any day", [CONF_RATES, unused[0]])
+    if len(settings.get(CONF_RATES, {})) > MAX_RATES:
+        raise cv.Invalid(f"has more than {MAX_RATES} rates, the price list's and yours together", [CONF_RATES])
 
 
 # The weeks by month, and the tables both price lists and config.yaml have.
@@ -198,7 +204,7 @@ CALENDAR = cv.All(
 TABLES = {
     cv.Optional(CONF_CLOCK): cv.one_of("local", "winter"),
     cv.Optional(CONF_EXCEPTIONS): _keys(_date, _line),
-    cv.Optional(CONF_RATES): _keys(_rate, cv.float_range(min=0.0)),
+    cv.Optional(CONF_RATES): _keys(_rate, cv.float_range(min=0.0, max=MAX_PRICE, max_included=False)),
 }
 PRICE_LIST_SCHEMA = cv.Schema(
     {cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): _currency_code}
@@ -215,7 +221,9 @@ def _price_list_name(value):
 
 
 def _read(text):
-    """Grid settings as the board reads them (read_grid() in charging.h), into tables with each key once."""
+    """Grid settings as the board reads them (read_grid() in grid.h), into tables with each key once."""
+    if text and not text.endswith("\n"):
+        raise cv.Invalid("ends inside a line, as if cut off")
     settings, section, week = {}, None, None
     for number, line in enumerate(text.split("\n"), 1):
         line = line.rstrip(" \r")
@@ -255,7 +263,7 @@ def _price_list(name):
 
 
 def _with_price_list(config):
-    """config.yaml's grid settings over the price list's, as make_grid() in charging.h puts them together."""
+    """config.yaml's grid settings over the price list's, as make_grid() in grid.h puts them together."""
     settings = _price_list(config[CONF_PRICELIST]) if CONF_PRICELIST in config else {}
     if CONF_CALENDAR in config:
         settings[CONF_CALENDAR] = config[CONF_CALENDAR]
@@ -327,7 +335,7 @@ CONFIG_SCHEMA = cv.All(
 
 
 def _write(grid):
-    """config.yaml's grid settings as the board reads them (read_grid() in charging.h)."""
+    """config.yaml's grid settings as the board reads them (read_grid() in grid.h)."""
     lines = []
     if CONF_CALENDAR in grid:
         lines.append(f"{CONF_CALENDAR}:")
@@ -338,7 +346,7 @@ def _write(grid):
     for table in (CONF_EXCEPTIONS, CONF_RATES):
         if table in grid:
             lines += [f"{table}:", *(f"  {key}: {value}" for key, value in grid[table].items())]
-    return "\n".join(lines)
+    return "".join(f"{line}\n" for line in lines)
 
 
 # The web page finds these entities by name, and the board keeps Ready by and Ready by once under theirs, so the

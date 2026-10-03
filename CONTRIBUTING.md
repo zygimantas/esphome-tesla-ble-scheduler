@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides, with `calendar.h`, `grid.h` and `prices.h` for dates, grid fees and Nord Pool prices (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -37,19 +37,19 @@ esphome compile config.yaml
 
 New behavior comes with a unit test in `test/charging_test.cpp`. Try changes on the simulation before flashing a real board.
 
-The unit tests cover every line and branch of `charging/charging.h`, and CI fails when they don't. Mutation testing shows what they'd still miss:
+The unit tests cover every line and branch of those four headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
 
 ```sh
 # Coverage, with clang (on macOS, run llvm-profdata and llvm-cov through xcrun)
 clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/charging_test.cpp -o charging_test
 LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
 llvm-profdata merge charging_test.profraw -o charging_test.profdata
-llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/charging.h
+llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/calendar.h charging/charging.h charging/grid.h charging/prices.h
 # Mutation testing, about half an hour
 python3 test/mutation_test.py path/to/ArduinoJson/src
 ```
 
-A surviving mutant is a change to `charging.h` that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
+A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
 
 The C++ follows ESPHome's own style. Comments say why, not what. YAML config files have no comments.
 
@@ -93,7 +93,7 @@ chore(grid): update the ESO fees for 2027
 
 A price list is a grid operator's plan in `pricelists/`, in a folder for its country: `pricelists/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
 
-- **The format** is that of `grid:` in [Grid fees](docs/grid-fees.md), with the list's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, and no quotes.
+- **The format** is that of `grid:` in [Grid fees](docs/grid-fees.md), with the list's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
 - **A comment at the top** says what the list is, with a link to the operator's prices, and who maintains it: `# Maintained by @your-github-name`.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their list from `main` every day, so merging publishes it, without a release.
 - **CI checks every list** in the unit tests: as the board reads it, and by the install's own rules.

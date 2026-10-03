@@ -149,7 +149,7 @@ void ChargingComponent::update() {
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 #endif
 
-  // The clock's time zone without summer time: charging.h applies EU summer time itself.
+  // The clock's time zone without summer time: calendar.h applies EU summer time itself.
   Settings &settings = this->settings_;
   settings.standard_offset = ESPTime::timezone_offset() - (now.is_dst ? 3600 : 0);
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
@@ -161,9 +161,8 @@ void ChargingComponent::update() {
   // The clock keeps running through a restart, so wait for the network too.
   if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
     this->fetch_prices_(car.now);
-  // Daily, and hourly until a download comes through.
-  if (network::is_connected() && car.now != 0 && this->pricelist_[0] != '\0' &&
-      car.now - this->list_tried_at_ >= (this->list_downloaded_ ? DAY_SECONDS : 3600))
+  if (network::is_connected() && this->pricelist_[0] != '\0' &&
+      price_list_due(car.now, this->list_tried_at_, this->list_usable_))
     this->fetch_price_list_(car.now);
 
   Decision d = this->controller_.tick(car, settings);
@@ -271,8 +270,8 @@ std::string ChargingComponent::apply_grid_(const std::string &list) {
   return "";
 }
 
-// A response's body, up to `max` bytes.
-std::string ChargingComponent::read_body_(http_request::HttpContainer &response, size_t max) {
+// A response's whole body, or nothing when the read fails, times out or passes `max` bytes before it's complete.
+std::optional<std::string> ChargingComponent::read_body_(http_request::HttpContainer &response, size_t max) {
   std::string body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
@@ -282,13 +281,14 @@ std::string ChargingComponent::read_body_(http_request::HttpContainer &response,
     yield();
     const auto result =
         http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(), response.is_read_complete());
-    if (result == http_request::HttpReadLoopResult::RETRY)
-      continue;
-    if (result != http_request::HttpReadLoopResult::DATA)
+    if (result == http_request::HttpReadLoopResult::COMPLETE)
+      return body;
+    if (result == http_request::HttpReadLoopResult::DATA)
+      body.append(reinterpret_cast<const char *>(chunk), read);
+    else if (result != http_request::HttpReadLoopResult::RETRY)
       break;
-    body.append(reinterpret_cast<const char *>(chunk), read);
   }
-  return body;
+  return std::nullopt;
 }
 
 // Today's and tomorrow's CET delivery days, today's only while some of it is missing. A day not published
@@ -302,11 +302,11 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
-      const std::string body = this->read_body_(*response, MAX_PRICES_BYTES);
+      const std::optional<std::string> body = this->read_body_(*response, MAX_PRICES_BYTES);
       response->end();  // before the parse: the connection's memory isn't needed any more
-      const int stored = this->controller_.prices.add_nord_pool(body.data(), body.size(), this->area_);
+      const int stored = body ? this->controller_.prices.add_nord_pool(body->data(), body->size(), this->area_) : -1;
       if (stored < 0) {
-        ESP_LOGW(TAG, "Nord Pool: could not parse %u bytes (cut off?)", static_cast<unsigned>(body.size()));
+        ESP_LOGW(TAG, "Nord Pool: %s", body ? "could not parse the answer" : "the answer was cut off");
       } else if (stored == 0) {
         ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check market: area", this->area_);
       } else {
@@ -322,31 +322,34 @@ void ChargingComponent::fetch_prices_(int64_t now) {
   }
 }
 
-// The price list as its maintainer keeps it, from GitHub. One the board can't use with the grid: settings of
-// config.yaml leaves the one in use, and so does a failed download, which is tried again in an hour.
+// The price list as its maintainer keeps it, from GitHub. A failed or cut-off download, or a list the board can't use
+// with the grid: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
 void ChargingComponent::fetch_price_list_(int64_t now) {
   this->list_tried_at_ = now;
+  this->list_usable_ = false;
   auto response = this->http_->get(std::string(PRICE_LISTS) + this->pricelist_ + ".yaml");
   if (response == nullptr) {
     ESP_LOGW(TAG, "Price list %s: request failed", this->pricelist_);
     return;
   }
   const int status = response->status_code;
-  const std::string list =
-      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response, MAX_PRICE_LIST_BYTES) : "";
+  const std::optional<std::string> list =
+      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response, MAX_PRICE_LIST_BYTES) : std::nullopt;
   response->end();
   if (status != http_request::HTTP_STATUS_OK) {
     ESP_LOGW(TAG, "Price list %s: GitHub answered HTTP %d", this->pricelist_, status);
-    return;
+  } else if (!list) {
+    ESP_LOGW(TAG, "Price list %s: the download was cut off, so the one in use stays", this->pricelist_);
+  } else if (*list == this->list_) {
+    this->list_usable_ = true;
+  } else {
+    const std::string error = this->apply_grid_(*list);
+    this->list_usable_ = error.empty();
+    if (error.empty())
+      ESP_LOGI(TAG, "Price list %s: new prices", this->pricelist_);
+    else
+      ESP_LOGW(TAG, "Price list %s: %s, so the one in use stays", this->pricelist_, error.c_str());
   }
-  this->list_downloaded_ = true;
-  if (list == this->list_)
-    return;
-  const std::string error = this->apply_grid_(list);
-  if (error.empty())
-    ESP_LOGI(TAG, "Price list %s: new prices", this->pricelist_);
-  else
-    ESP_LOGW(TAG, "Price list %s: %s, so the one in use stays", this->pricelist_, error.c_str());
 }
 
 // Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an

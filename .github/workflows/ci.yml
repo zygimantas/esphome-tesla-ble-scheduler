@@ -69,13 +69,14 @@ jobs:
         run: |
           clang++ @flags -fsanitize=address,undefined -fno-sanitize-recover=all test/charging_test.cpp -o charging_test
           ./charging_test
-      - name: Coverage of charging.h, all of it
+      - name: Coverage of charging.h and the headers it includes, all of it
         run: |
+          headers=(charging/calendar.h charging/charging.h charging/grid.h charging/prices.h)
           clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/charging_test.cpp -o charging_test
           LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
           llvm-profdata merge charging_test.profraw -o charging_test.profdata
-          llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/charging.h
-          llvm-cov export charging_test -instr-profile=charging_test.profdata -summary-only charging/charging.h |
+          llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary "${headers[@]}"
+          llvm-cov export charging_test -instr-profile=charging_test.profdata -summary-only "${headers[@]}" |
             python3 -c 'import json, sys
           totals = json.load(sys.stdin)["data"][0]["totals"]
           missed = {k: totals[k]["count"] - totals[k]["covered"] for k in ("lines", "functions", "regions", "branches")}

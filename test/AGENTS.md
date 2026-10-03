@@ -16,6 +16,6 @@
 
 ## Mutation testing
 
-- A run takes about half an hour on 8 cores and builds charging_test.cpp for every mutant: don't edit it while a run is going. Survivor line numbers refer to charging.h as it was when the run started.
+- A run takes about half an hour on 8 cores and builds charging_test.cpp for every mutant: don't edit it while a run is going. Survivor line numbers refer to the headers as they were when the run started.
 - Around 130 survivors are equivalent; don't chase them: spare buffer sizes, the order of declarations, defaults overwritten before use, `a % b` standing in for a time difference `a - b`, swapped std::min and std::max arguments, `<=` for `==` on values that can't be negative or on an enum's last value, iterator `<` for `!=`, a `continue;` at the end of a loop body, constants with slack in the calendar formulas or within a test's float tolerance, comparisons with `npos` or within a closed set of names (read_grid()'s sections, the clock's two values), and -2 for the -1 that marks a non-digit or `% '0'` for `- '0'` on a digit in two_digits().
 - Look closely at any other survivor: one found a real bug, where a button erased the board's memory of its own start.

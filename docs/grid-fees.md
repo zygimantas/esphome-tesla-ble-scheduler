@@ -112,4 +112,4 @@ The lists are in [pricelists](../pricelists), a folder for each country:
 
 - Lithuania: [ESO price lists](eso.md).
 
-If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, or a price list in another currency than yours.
+If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a price list in another currency than yours.
