@@ -49,7 +49,7 @@ inline std::string smard_url(int filter, int64_t now, int day_offset) {
   const int64_t monday = local_to_utc(day - (weekday(day) + 6) % 7, 0, CET_STANDARD_OFFSET);
   char buf[128];
   std::snprintf(buf, sizeof(buf), "https://www.smard.de/app/chart_data/%d/DE/%d_DE_quarterhour_%lld.json", filter,
-                filter, static_cast<long long>(monday * 1000));
+                filter, static_cast<long long>(monday) * 1000);
   return buf;
 }
 
