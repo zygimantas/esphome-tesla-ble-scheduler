@@ -1,6 +1,6 @@
 // Unit tests for charger.h and the headers it includes; CONTRIBUTING.md says how to build and run them.
-#include "charging_test_tesla.h"
 #include "scheduler/charger.h"
+#include "scheduler_test_tesla.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,8 +17,8 @@
 #include <vector>
 
 using namespace esphome::scheduler;
-using charging_test::FakeTesla;
-using charging_test::plugged_in;
+using scheduler_test::FakeTesla;
+using scheduler_test::plugged_in;
 
 static int failures = 0;
 

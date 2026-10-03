@@ -10,7 +10,7 @@
 #include "scheduler/charger.h"
 #endif
 
-namespace charging_test {
+namespace scheduler_test {
 
 // Stands in for the esphome-tesla-ble component and the car.
 struct FakeTesla {
@@ -102,4 +102,4 @@ inline void load_synthetic_prices(esphome::scheduler::PriceTable &prices, int64_
   }
 }
 
-}  // namespace charging_test
+}  // namespace scheduler_test

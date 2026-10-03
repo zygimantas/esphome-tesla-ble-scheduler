@@ -1,5 +1,5 @@
 binary_sensor:
-  - lambda: return charging_test::tesla().plugged;
+  - lambda: return scheduler_test::tesla().plugged;
     name: "Charger"
     platform: template
 
@@ -9,14 +9,14 @@ button:
 
 esphome:
   includes:
-    - charging_test_tesla.h
+    - scheduler_test_tesla.h
   name: simulation
   on_boot:
     priority: -100
     then:
       - lambda: |-
           auto &controller = id(scheduler_id).controller();
-          charging_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
+          scheduler_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
           controller.replan();
 
 external_components:
@@ -30,18 +30,18 @@ http_request:
 interval:
   - interval: 5s
     then:
-      - lambda: charging_test::tesla().advance(5);
+      - lambda: scheduler_test::tesla().advance(5);
 
 logger:
 
 number:
-  - lambda: return charging_test::tesla().limit;
+  - lambda: return scheduler_test::tesla().limit;
     max_value: 100
     min_value: 50
     name: "Charging Limit"
     platform: template
     set_action:
-      - lambda: charging_test::tesla().limit = x;
+      - lambda: scheduler_test::tesla().limit = x;
     step: 1
     update_interval: 5s
 
@@ -62,27 +62,27 @@ scheduler:
   vin: 5YJ3E1EA0KF000000
 
 sensor:
-  - lambda: return charging_test::tesla().soc;
+  - lambda: return scheduler_test::tesla().soc;
     name: "Battery"
     platform: template
     update_interval: 5s
-  - lambda: return charging_test::tesla().power_kw();
+  - lambda: return scheduler_test::tesla().power_kw();
     name: "Charger Power"
     platform: template
     update_interval: 5s
 
 switch:
-  - lambda: return charging_test::tesla().charging;
+  - lambda: return scheduler_test::tesla().charging;
     name: "Charger"
     platform: template
     restore_mode: DISABLED
     turn_off_action:
-      - lambda: charging_test::tesla().set_charging(false);
+      - lambda: scheduler_test::tesla().set_charging(false);
     turn_on_action:
-      - lambda: charging_test::tesla().set_charging(true);
+      - lambda: scheduler_test::tesla().set_charging(true);
 
 text_sensor:
-  - lambda: return charging_test::tesla().charging_state();
+  - lambda: return scheduler_test::tesla().charging_state();
     name: "Charging"
     platform: template
     update_interval: 5s

@@ -43,10 +43,10 @@ def build(headers, work, json_src):
     (work / "scheduler").mkdir(parents=True)
     for path, text in headers.items():
         (work / path).write_text(text)
-    test = Path("test/charging_test.cpp").resolve()
-    command = ["c++", "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "charging_test"]
+    test = Path("test/scheduler_test.cpp").resolve()
+    command = ["c++", "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "scheduler_test"]
     built = subprocess.run(command, cwd=work, capture_output=True).returncode == 0
-    return work / "charging_test" if built else None
+    return work / "scheduler_test" if built else None
 
 
 def change(original, mutant):

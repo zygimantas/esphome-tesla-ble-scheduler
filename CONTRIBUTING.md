@@ -25,26 +25,26 @@ CI runs these on every pull request and every push to `main` (see `.github/workf
 # `uvx pre-commit install` runs them on each commit.
 uvx pre-commit run --all-files
 # Unit tests, with CI's flags and ArduinoJson (ARDUINOJSON_VERSION in ci.yml) on the include path
-g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src test/charging_test.cpp -o charging_test && ./charging_test
+g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src test/scheduler_test.cpp -o scheduler_test && ./scheduler_test
 # Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
 # -isysroot $(xcrun --show-sdk-path)
-uvx "clang-tidy==22.1.8" test/charging_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src
+uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src
 # The board's logic on your computer, with a simulated Tesla; CHEAP_NOW=1 START_STOPPED=1 tries the start path
 esphome run test/simulation.yaml
 # The firmware, from your config.yaml pointed at this folder (see The code, above)
 esphome compile config.yaml
 ```
 
-New behavior comes with a unit test in `test/charging_test.cpp`. Try changes on the simulation before flashing a real board.
+New behavior comes with a unit test in `test/scheduler_test.cpp`. Try changes on the simulation before flashing a real board.
 
 The unit tests cover every line and branch of those six headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
 
 ```sh
 # Coverage, with clang (on macOS, run llvm-profdata and llvm-cov through xcrun)
-clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/charging_test.cpp -o charging_test
-LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
-llvm-profdata merge charging_test.profraw -o charging_test.profdata
-llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary scheduler/calendar.h scheduler/charger.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h
+clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
+LLVM_PROFILE_FILE=scheduler_test.profraw ./scheduler_test
+llvm-profdata merge scheduler_test.profraw -o scheduler_test.profdata
+llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary scheduler/calendar.h scheduler/charger.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h
 # Mutation testing, about half an hour
 python3 test/mutation_test.py path/to/ArduinoJson/src
 ```
