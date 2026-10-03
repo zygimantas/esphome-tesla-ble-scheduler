@@ -68,6 +68,7 @@ text_sensor:
     platform: template
 
 time:
+  - id: !remove homeassistant_time
   - id: sntp_time
     platform: sntp
     timezone: ${timezone}

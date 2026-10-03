@@ -15,6 +15,11 @@
 #include <string>
 #include <vector>
 
+// make_schedule() relies on 0.0f / 0.0f giving NaN for a schedule without energy.
+#if defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__
+#error "build without -ffast-math and -ffinite-math-only"
+#endif
+
 namespace esphome::scheduler {
 
 constexpr float EFFICIENCY = 0.9f;  // share of the grid energy that reaches the battery
@@ -33,8 +38,8 @@ inline std::vector<int> cheapest_slots(const std::vector<float> &prices, int cou
 struct Settings {
   int ready_by_minutes = 7 * 60;  // local time
   int64_t ready_by_once = 0;      // UTC; a one-off deadline used instead of the daily time while it's ahead
-  float capacity_kwh = 75.0f;
-  float charge_kw = 11.0f;
+  float battery_kwh = 75.0f;
+  float charging_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
   const char *currency = "EUR";  // of the Nord Pool prices and the tariff
 };
@@ -45,7 +50,7 @@ struct ScheduleRequest {
   float soc = NAN;
   float limit = NAN;
   Tariff tariff;
-  Settings settings;  // for capacity_kwh, charge_kw and standard_offset
+  Settings settings;  // for battery_kwh, charging_kw and standard_offset
 };
 
 // A run of consecutive chosen slots.
@@ -53,8 +58,8 @@ struct Window {
   int64_t start;
   int64_t end;
   float energy_kwh = 0;   // expected from the grid
-  float cost_eur = 0;     // what energy_kwh costs
-  float avg_price = NAN;  // EUR/kWh: cost_eur / energy_kwh, or its slots' plain average when it takes no energy
+  float cost = 0;         // what energy_kwh costs
+  float avg_price = NAN;  // per kWh: cost / energy_kwh, or its slots' plain average when it takes no energy
 
   // Holds only the buffer: the car should be full before it.
   bool spare() const { return energy_kwh < 0.05f; }
@@ -65,7 +70,7 @@ struct Schedule {
   int needed_slots = 0;    // to reach the limit, plus the buffer
   int unpriced_slots = 0;  // the last ones before the deadline, whose prices aren't out yet
   std::vector<Window> windows;
-  float avg_price = NAN;   // EUR/kWh at total prices (see total_price()) for the energy the car is expected to take
+  float avg_price = NAN;   // per kWh at total prices (see total_price()) for the energy the car is expected to take
   float soc_at_end = NAN;  // the battery level after the windows, in %
 
   bool contains(int64_t t) const {
@@ -87,38 +92,40 @@ inline Schedule make_schedule(const PriceTable &prices, const ScheduleRequest &r
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access,clang-analyzer-core.CallAndMessage)
     totals.push_back(total_price(*prices.get(t), t, request.tariff, request.settings.standard_offset));
   schedule.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
-  const float missing_kwh = (request.limit - request.soc) / 100.0f * request.settings.capacity_kwh;
-  const float slot_kwh = request.settings.charge_kw * (SLOT_SECONDS / 3600.0f) * EFFICIENCY;
-  schedule.needed_slots = missing_kwh > 0.05f ? static_cast<int>(std::ceil(missing_kwh / slot_kwh)) + BUFFER_SLOTS : 0;
+  const float missing_kwh = (request.limit - request.soc) / 100.0f * request.settings.battery_kwh;
+  const float slot_kwh = request.settings.charging_kw * (SLOT_SECONDS / 3600.0f) * EFFICIENCY;
+  // Less a little float error: 49.5 kWh at 2.475 kWh a slot is 20 slots, not 21.
+  schedule.needed_slots =
+      missing_kwh > 0.05f ? static_cast<int>(std::ceil(missing_kwh / slot_kwh - 1e-3f)) + BUFFER_SLOTS : 0;
   // No guessing: while the quarter-hours without prices could still do all the charging, it waits for
   // their prices; else it buys only what they can't do.
   const int buy = schedule.needed_slots - schedule.unpriced_slots;
-  // The car charges through the chosen slots in turn at charge_kw, from now in the current one, and
+  // The car charges through the chosen slots in turn at charging_kw, from now in the current one, and
   // stops at the limit: the last slot is often only partly used, or spare (the buffer).
-  float soc = request.soc, energy_kwh = 0, cost_eur = 0;
+  float soc = request.soc, energy_kwh = 0, cost = 0;
   for (int i : cheapest_slots(totals, buy)) {
     const int64_t start = first + i * SLOT_SECONDS;
     const float hours = static_cast<float>(start + SLOT_SECONDS - std::max(start, request.now)) / 3600.0f;
-    const float room_kwh = std::max(0.0f, (request.limit - soc) / 100.0f * request.settings.capacity_kwh);
-    const float stored_kwh = std::min(request.settings.charge_kw * hours * EFFICIENCY, room_kwh);
-    soc += stored_kwh / request.settings.capacity_kwh * 100.0f;
+    const float room_kwh = std::max(0.0f, (request.limit - soc) / 100.0f * request.settings.battery_kwh);
+    const float stored_kwh = std::min(request.settings.charging_kw * hours * EFFICIENCY, room_kwh);
+    soc += stored_kwh / request.settings.battery_kwh * 100.0f;
     const float grid_kwh = stored_kwh / EFFICIENCY;
     energy_kwh += grid_kwh;
-    cost_eur += grid_kwh * totals[i];
+    cost += grid_kwh * totals[i];
     if (schedule.windows.empty() || schedule.windows.back().end != start)
       schedule.windows.push_back({start, start});
     Window &w = schedule.windows.back();
     w.end = start + SLOT_SECONDS;
     w.energy_kwh += grid_kwh;
-    w.cost_eur += grid_kwh * totals[i];
+    w.cost += grid_kwh * totals[i];
   }
   for (Window &w : schedule.windows) {
     const auto begin = totals.begin() + (w.start - first) / SLOT_SECONDS;
     const int64_t count = (w.end - w.start) / SLOT_SECONDS;
-    w.avg_price = w.energy_kwh > 0 ? w.cost_eur / w.energy_kwh
+    w.avg_price = w.energy_kwh > 0 ? w.cost / w.energy_kwh
                                    : std::accumulate(begin, begin + count, 0.0f) / static_cast<float>(count);
   }
-  schedule.avg_price = cost_eur / energy_kwh;  // NaN (0 / 0) when the car takes nothing
+  schedule.avg_price = cost / energy_kwh;  // NaN (0 / 0) when the car takes nothing
   schedule.soc_at_end = soc;
   return schedule;
 }

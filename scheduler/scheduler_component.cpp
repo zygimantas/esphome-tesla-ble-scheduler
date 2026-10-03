@@ -9,16 +9,13 @@ namespace esphome::scheduler {
 
 static const char *const TAG = "scheduler";
 
-// Keys of ESPHome's template time and datetime, so Ready by keeps the value saved before this component.
-static constexpr uint32_t READY_BY_KEY = 194434060U;
-static constexpr uint32_t READY_BY_ONCE_KEY = 194434090U;
 // The most the board reads of an answer: a day of LT prices is about 11 kB, and a plan about 1 kB.
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
 
 void ReadyBy::restore() {
-  this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>(READY_BY_KEY);
+  this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>();
   datetime::TimeEntityRestoreState saved{};
   if (this->pref_.load(&saved)) {
     saved.apply(this);
@@ -44,7 +41,7 @@ void ReadyBy::control(const datetime::TimeCall &call) {
 }
 
 void ReadyByOnce::restore() {
-  this->pref_ = this->make_entity_preference<datetime::DateTimeEntityRestoreState>(READY_BY_ONCE_KEY);
+  this->pref_ = this->make_entity_preference<datetime::DateTimeEntityRestoreState>();
   datetime::DateTimeEntityRestoreState saved{};
   if (this->pref_.load(&saved)) {
     saved.apply(this);
@@ -98,14 +95,13 @@ void SchedulerComponent::setup() {
     ESP_LOGE(TAG, "Tariff: %s", error.c_str());
   this->ready_by_->restore();
   this->ready_by_once_->restore();
-  // This key and the savings' keep the component's old name, so what boards saved before carries over.
-  this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("charging_held_mode"));
+  this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("scheduler_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
   if (this->area_[0] == '\0')
     this->controller_.without_market_prices();
   // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
-  this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("charging_savings"));
+  this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("scheduler_savings"));
   this->savings_pref_.load(&this->controller_.savings);
 
   this->plug_ = find(App.get_binary_sensors(), "Charger");
@@ -125,12 +121,10 @@ void SchedulerComponent::setup() {
       }
     });
   }
-#ifdef USE_COVER
   // The charge port flap, which the car reports even while it sleeps.
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
-#endif
 }
 
 void SchedulerComponent::update() {
@@ -144,9 +138,7 @@ void SchedulerComponent::update() {
   car.soc = this->battery_ != nullptr ? this->battery_->state : NAN;
   car.limit = this->limit_ != nullptr && this->limit_->has_state() ? this->limit_->state : NAN;
   car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
-#ifdef USE_COVER
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
-#endif
 
   // The clock's time zone without summer time: calendar.h applies EU summer time itself.
   Settings &settings = this->settings_;
@@ -178,7 +170,7 @@ void SchedulerComponent::update() {
     this->unsent_since_ = car.now;
     this->message_tried_at_ = 0;
   }
-  if (d.status == "Unplugged")  // whatever the message said is over
+  if (d.mode == "unplugged")  // whatever the message said is over
     this->unsent_.reset();
   this->send_unsent_(car.now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
@@ -191,7 +183,8 @@ void SchedulerComponent::update() {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
-  if (this->charger_ == nullptr || this->plug_ == nullptr)
+  if (this->plug_ == nullptr || this->charging_state_ == nullptr || this->battery_ == nullptr ||
+      this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
     d.status = "Tesla entities not found";
 
   auto publish = [](text_sensor::TextSensor *sensor, const std::string &value) {
@@ -214,12 +207,12 @@ void SchedulerComponent::dump_config() {
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
                 this->area_[0] != '\0' ? this->area_ : "none, the tariff is the whole price", this->settings_.currency,
-                this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml", this->settings_.capacity_kwh,
-                this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml", this->settings_.battery_kwh,
+                this->settings_.charging_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
-// A new Ready by, or a button: the message about the old schedule, if still unsent, isn't true any more.
+// A new Ready by: the message about the old schedule, if still unsent, isn't true any more.
 void SchedulerComponent::reschedule() {
   this->unsent_.reset();
   this->controller_.reschedule();

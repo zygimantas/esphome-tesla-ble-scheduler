@@ -45,8 +45,9 @@ struct Decision {
   Command command = Command::NONE;
   std::string status;
   std::string windows;  // format_windows() while the schedule decides, else empty
-  // "schedule", "now" (charging regardless of price), "none" (no schedule) or "wait" (no schedule possible yet:
-  // no clock, plug state, battery level or prices).
+  // "schedule", "now" (charging regardless of price), "none" (no schedule), "unplugged" (the board's plug state, which
+  // ignores the Charger reading while the charging state is Unknown) or "wait" (no schedule possible yet: no clock,
+  // plug state, battery level or prices).
   std::string mode;
   std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, and once more
                                              // when the board falls back to charging at any price or a
@@ -86,14 +87,14 @@ class Controller {
   void restore_mode(int mode) { hold_ = mode == 1 ? Hold::NOW : mode == 2 ? Hold::NONE : Hold::SCHEDULE; }
   // Recompute the schedule on the next tick (new prices or settings).
   void reschedule() { reschedule_ = true; }
-  // Whether to download prices now, which counts as a try: every 5 minutes while there's no price for this
-  // quarter-hour, else hourly until 12:45 CET and every 5 minutes from then, when Nord Pool publishes the next day,
-  // until tomorrow's are in. Never without market prices, and not before the clock is set: 0 is never past a try.
+  // Whether to download prices now, which counts as a try: every 5 minutes while some of today's prices are missing,
+  // or from 12:45 CET, when Nord Pool publishes the next day, until tomorrow's are in. Never without market prices, and
+  // not before the clock is set: 0 is never past a try.
   bool fetch_prices_due(int64_t now) {
     const int64_t until = prices.known_until(now);
     const int64_t cet_minute = floor_div(now + eu_offset(now, CET_STANDARD_OFFSET), 60) % 1440;
-    const int64_t wait = until > now && cet_minute < 12 * 60 + 45 ? 60 * 60 : 5 * 60;
-    if (!market_ || now - prices_tried_at_ < wait || until >= end_of_next_delivery_day(now))
+    if (!market_ || now - prices_tried_at_ < 5 * 60 ||
+        (until >= end_of_delivery_day(now) && cet_minute < 12 * 60 + 45) || until >= end_of_next_delivery_day(now))
       return false;
     prices_tried_at_ = now;
     return true;
@@ -119,7 +120,9 @@ class Controller {
   // What the buttons (or a start from the car) chose. It holds until the car is unplugged; a real plug-in
   // also starts afresh, in case the board missed the unplug. The board persists it as an int: keep the values.
   enum class Hold { SCHEDULE = 0, NOW = 1, NONE = 2 };
-  static constexpr int64_t WAKE_FOR = 30 * 60;  // how long it wakes the car to learn the plug state or battery level
+  static constexpr int64_t WAKE_FOR = 30 * 60;     // how long it wakes the car to learn the plug state or battery level
+  static constexpr int64_t COMMAND_GAP = 2 * 60;   // the least time between the board's own starts and stops
+  static constexpr int COMMANDS_PER_SCHEDULE = 3;  // the most of them for one schedule
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
@@ -158,6 +161,7 @@ class Controller {
     }
     if (!plugged_) {
       d.status = "Unplugged";
+      d.mode = "unplugged";
       return d;
     }
 
@@ -192,10 +196,10 @@ class Controller {
       fallback = true;
     } else {
       want_charge = in_schedule_();
-      // A schedule made in a window's last 2 minutes: not worth a start that the next quarter-hour's schedule
-      // stops, which the command limit delays into that quarter-hour.
-      if (!charging && !schedule_.contains(scheduled_slot_ + SLOT_SECONDS) &&
-          scheduled_slot_ + SLOT_SECONDS - now < 2 * 60)
+      // In a window's last 2 minutes, with the car not charging: not worth a start that the next quarter-hour's
+      // schedule stops, which the command gap delays into that quarter-hour. A full car takes no start anyway.
+      if (!charging && !full_() && !schedule_.contains(scheduled_slot_ + SLOT_SECONDS) &&
+          scheduled_slot_ + SLOT_SECONDS - now < COMMAND_GAP)
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(schedule_, settings.currency);
@@ -207,8 +211,8 @@ class Controller {
     }
     if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
       notify_fallback_();
-    const bool reported = !car.charging_state.empty() && car.charging_state != "Unknown";
-    if (reported && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
+    const bool charging_known = !car.charging_state.empty() && car.charging_state != "Unknown";
+    if (charging_known && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
       no_power_asked_ = false;
     // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
     // charges as soon as power comes, and another every 10 minutes in case its request lapsed. The board's
@@ -223,7 +227,9 @@ class Controller {
       return d;
     }
     if (starting && !charging)
-      d.status = commands_this_schedule_ >= 3 && now - last_command_at_ >= 2 * 60 ? "Can't start charging" : "Starting";
+      d.status = commands_this_schedule_ >= COMMANDS_PER_SCHEDULE && now - last_command_at_ >= COMMAND_GAP
+                     ? "Can't start charging"
+                     : "Starting";
     d.command = command_(want_charge, charging || no_power_asked_, now);  // a stop ends the request the charger holds
     if (d.command == Command::STOP_CHARGING)
       no_power_asked_ = false;
@@ -263,7 +269,6 @@ class Controller {
         hold_ = Hold::SCHEDULE;
         battery_unknown_since_ = 0;
         notify_pending_ = false;
-        notify_car_start_ = false;
       }
     }
     if (plugged.has_value())
@@ -282,7 +287,10 @@ class Controller {
         hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
       }
       charging_ = charging;
-      complete_ = car.charging_state == "Complete";
+      const bool complete = car.charging_state == "Complete";
+      if (complete != complete_)
+        reschedule_ = true;  // a car no longer full schedules from its battery level
+      complete_ = complete;
     }
     return charging_;  // the last known state: "Unknown" says nothing about it
   }
@@ -450,10 +458,11 @@ class Controller {
       n.message += "\nNot enough time to reach the limit";
   }
 
-  // The board's own starts and stops: at most one every 2 minutes, and 3 per schedule, which is made anew each
-  // quarter-hour and on reschedule().
+  // The board's own starts and stops: at most one every COMMAND_GAP, and COMMANDS_PER_SCHEDULE for each schedule, which
+  // is made anew each quarter-hour and on reschedule().
   Command command_(bool want_charge, bool charging, int64_t now) {
-    if (want_charge == charging || now - last_command_at_ < 2 * 60 || commands_this_schedule_ >= 3)
+    if (want_charge == charging || now - last_command_at_ < COMMAND_GAP ||
+        commands_this_schedule_ >= COMMANDS_PER_SCHEDULE)
       return Command::NONE;
     last_command_at_ = now;
     started_at_ = want_charge ? now : 0;
@@ -486,16 +495,17 @@ class Controller {
     return next_local_time(now, settings.ready_by_minutes, settings.standard_offset);
   }
 
-  // The status while the schedule doesn't charge; its windows are all ahead then.
+  // The status while the schedule doesn't charge now: its next window that hasn't started.
   std::string next_window_status_(int64_t now, int32_t standard_offset) const {
-    if (!schedule_.windows.empty())
-      return "Charges at " + format_when(schedule_.windows.front().start, now, standard_offset);
+    for (const Window &w : schedule_.windows)
+      if (w.start > now)
+        return "Charges at " + format_when(w.start, now, standard_offset);
     return schedule_.needed_slots == 0 ? "Charged" : schedule_.unpriced_slots > 0 ? "Waiting for prices" : "Waiting";
   }
 
   bool battery_known_() const { return !std::isnan(soc_) && !std::isnan(limit_); }
 
-  // At the limit by the car's word, or within half a percent; false while the battery level is unknown (NaN).
+  // At the limit by the car's word, or within half a percent; without a battery level, only by the car's word.
   bool full_() const { return complete_ || soc_ >= limit_ - 0.5f; }
 
   // Whether the schedule charges in the quarter-hour it was made for (always without prices or battery level).

@@ -8,7 +8,7 @@
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
-In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down.
+In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down. `- id: !remove homeassistant_time` drops the package's Home Assistant clock, which would otherwise set the time zone from the build computer or from Home Assistant instead of `timezone`.
 
 ## Branching
 
@@ -21,14 +21,16 @@ In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the 
 CI runs these on every pull request and every push to `main` (see `.github/workflows/ci.yml`). Run them before you push; uv runs the tools without installing them (`brew install uv`):
 
 ```sh
-# Formatters and linters: clang-format, ruff, Biome for the page, codespell and file hygiene.
-# `uvx pre-commit install` runs them on each commit.
+# ArduinoJson, as CI gets it (ARDUINOJSON_VERSION in ci.yml)
+mkdir ArduinoJson && curl -sSfL https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v7.4.3.tar.gz | tar xz --strip-components=1 -C ArduinoJson
+# Formatters and linters: clang-format, ruff, Biome for the page, actionlint for the workflows, codespell and file
+# hygiene. `uvx pre-commit install` runs them on each commit.
 uvx pre-commit run --all-files
-# Unit tests, with CI's flags and ArduinoJson (ARDUINOJSON_VERSION in ci.yml) on the include path
-g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src test/scheduler_test.cpp -o scheduler_test && ./scheduler_test
+# Unit tests, with CI's flags
+g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/scheduler_test.cpp -o scheduler_test && ./scheduler_test
 # Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
 # -isysroot $(xcrun --show-sdk-path)
-uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem path/to/ArduinoJson/src
+uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src
 # The board's logic on your computer, with a simulated Tesla; CHEAP_NOW=1 START_STOPPED=1 tries the start path
 esphome run test/simulation.yaml
 # The firmware, from your config.yaml pointed at this folder (see The code, above)
@@ -41,12 +43,12 @@ The unit tests cover every line and branch of those six headers, and CI fails wh
 
 ```sh
 # Coverage, with clang (on macOS, run llvm-profdata and llvm-cov through xcrun)
-clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
+clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -isystem ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
 LLVM_PROFILE_FILE=scheduler_test.profraw ./scheduler_test
 llvm-profdata merge scheduler_test.profraw -o scheduler_test.profdata
 llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary scheduler/*.h
 # Mutation testing, about 40 minutes
-python3 test/mutation_test.py path/to/ArduinoJson/src
+python3 test/mutation_test.py ArduinoJson/src
 ```
 
 A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
@@ -65,17 +67,18 @@ The PR title becomes the commit subject on `main`, so it follows [Conventional C
 
 **Types**
 
-| Type       | Use for                            |
-| ---------- | ---------------------------------- |
-| `feat`     | New user-facing behavior           |
-| `fix`      | Bug fix                            |
-| `refactor` | Behavior-preserving restructuring  |
-| `perf`     | Performance improvement            |
-| `docs`     | Documentation only                 |
-| `test`     | Tests only                         |
-| `build`    | Build, dependencies, packaging     |
-| `chore`    | Maintenance with no product impact |
-| `revert`   | Reverting a previous change        |
+| Type       | Use for                                |
+| ---------- | -------------------------------------- |
+| `feat`     | New user-facing behavior               |
+| `fix`      | Bug fix                                |
+| `refactor` | Behavior-preserving restructuring      |
+| `perf`     | Performance improvement                |
+| `docs`     | Documentation only                     |
+| `test`     | Tests only                             |
+| `build`    | Build, dependencies, packaging         |
+| `ci`       | CI workflows and repository automation |
+| `chore`    | Maintenance with no product impact     |
+| `revert`   | Reverting a previous change            |
 
 **Scopes** (optional but preferred) follow the repository layout: `scheduler` (the component in `scheduler/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `plans` (the plans in `plans/`) and `docs`. Tests take the scope of what they test.
 
@@ -100,4 +103,4 @@ A plan is a grid operator's prices and hours, in `plans/`, in a folder for its c
 
 ## Releases
 
-Releases are what users install, numbered vMAJOR.MINOR.PATCH: a new major number when users must edit their settings files, a new minor one for new behavior and a new patch one for fixes. To release, set `version` under `project:` in `device.yaml` and `version` in `config.example.yaml`, and merge that as `chore(board): release v0.2.0`: once CI passes on `main`, it tags the merge and publishes the release with `config.example.yaml` and `secrets.example.yaml`, which users download, and notes listing the merged pull requests. Add to the notes anything users must do, such as settings to change for a new major number. Users get it when they change their `version`.
+Releases are what users install, numbered vMAJOR.MINOR.PATCH: a new major number when users must edit their settings files, a new minor one for new behavior and a new patch one for fixes. To release, set `version` under `project:` in `device.yaml` and `version` in `config.example.yaml`, and merge that as `chore(board): release v3.1.0`: once CI passes on `main`, it tags the merge and publishes the release with `config.example.yaml` and `secrets.example.yaml`, which users download, and notes listing the merged pull requests. Add to the notes anything users must do, such as settings to change for a new major number. Users get it when they change their `version`.

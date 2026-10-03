@@ -7,6 +7,12 @@ button:
   - name: "Wake up"
     platform: template
 
+cover:
+  - lambda: |-
+      return scheduler_test::tesla().plugged ? cover::COVER_OPEN : cover::COVER_CLOSED;
+    name: "Charge Port Door"
+    platform: template
+
 esphome:
   includes:
     - scheduler_test_tesla.h

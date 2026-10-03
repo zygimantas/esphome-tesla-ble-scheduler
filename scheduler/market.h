@@ -61,12 +61,11 @@ class PriceTable {
   }
 
  public:
-  // Stores the quarter-hour prices (EUR/kWh) from a Nord Pool DayAheadPrices response.
-  // Returns how many quarter-hours were stored, or -1 if the JSON could not be parsed.
+  // Stores the quarter-hour prices (per kWh) from a Nord Pool DayAheadPrices response, each at its entry's start.
+  // Returns how many were stored, or -1 if the JSON could not be parsed.
   int add_nord_pool(const char *json, size_t length, const char *area) {
     JsonDocument filter;
     filter["multiAreaEntries"][0]["deliveryStart"] = true;
-    filter["multiAreaEntries"][0]["deliveryEnd"] = true;
     filter["multiAreaEntries"][0]["entryPerArea"][area] = true;
     JsonDocument doc;
     if (deserializeJson(doc, json, length, DeserializationOption::Filter(filter)) != DeserializationError::Ok)
@@ -75,12 +74,10 @@ class PriceTable {
     for (JsonObject entry : doc["multiAreaEntries"].as<JsonArray>()) {
       JsonVariant value = entry["entryPerArea"][area];
       const auto start = parse_iso8601(entry["deliveryStart"].as<const char *>());
-      const auto end = parse_iso8601(entry["deliveryEnd"].as<const char *>());
-      if (value.isNull() || !start || !end)
+      if (value.isNull() || !start)
         continue;
-      // Hourly entries (before Nord Pool's October 2025 switch to 15-minute prices) become four slots.
-      for (int64_t t = *start; t < *end; t += SLOT_SECONDS, ++stored)
-        set(t, value.as<float>() / 1000.0f);
+      set(*start, value.as<float>() / 1000.0f);
+      ++stored;
     }
     return stored;
   }

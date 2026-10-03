@@ -76,6 +76,14 @@ MARKET_SCHEMA = cv.Schema(
 )
 
 
+def _ntfy_topic(value):
+    """Checked here because ntfy refuses any other topic, and the board would only log it."""
+    value = cv.string(value)
+    if not re.fullmatch(r"[-_A-Za-z0-9]{0,64}", value):
+        raise cv.Invalid("must be the topic's name, not its address: up to 64 letters, digits, - and _")
+    return value
+
+
 def _vin(value):
     """The car's VIN, checked here because the Tesla component takes any string and a wrong one leaves the board
     waiting for the car forever. Lower case is wrong too: the Bluetooth name is made from the text as typed."""
@@ -120,7 +128,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_CURRENCY): _currency_code,
             cv.Optional(CONF_MARKET): MARKET_SCHEMA,
             cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
-            cv.Optional(CONF_NTFY_TOPIC, default=""): cv.string,
+            cv.Optional(CONF_NTFY_TOPIC, default=""): _ntfy_topic,
             cv.Required(CONF_TARIFF): TARIFF_SCHEMA,
             cv.Required(CONF_VIN): _vin,
         }

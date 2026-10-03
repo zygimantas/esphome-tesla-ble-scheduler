@@ -36,13 +36,13 @@ A coding agent on your computer, such as Claude Code or Codex, can do the manual
 Set up a Tesla charging board for me by following the manual setup in the README of
 https://github.com/zygimantas/esphome-tesla-ble-scheduler. The board, an ESP32-S3-DevKitC-1, is
 connected to this computer by USB, and this folder is for its files. Install what is missing first.
-Download the two files the README names from the latest release, then ask me in one message for
-every setting and secret they need, except the API key, which you generate yourself. Fill in the
-files without ever showing my Wi-Fi password, the key or the VIN back to me. Build and install the
-firmware with esphome run config.yaml --device <the board's USB port> --no-logs, since the port prompt
-and the log stream of a plain esphome run never return, and wait until the board answers at
-http://tesla.local. Then tell me exactly what to do in the car to pair it and what to turn off in the
-Tesla app.
+Download the two files the README names from the latest release, then ask me in one message for every
+setting and secret they need, except the API key, which you generate yourself. Fill in the files
+without ever showing my Wi-Fi password, the key, the VIN or the ntfy topic back to me. Build and
+install the firmware with esphome run config.yaml --device <the board's USB port> --no-logs, since
+the port prompt and the log stream of a plain esphome run never return, and wait until the board
+answers at http://tesla.local. Then tell me exactly what to do in the car to pair it and what to turn
+off in the Tesla app.
 ```
 
 Answer its questions, then do what it tells you to do at the car.
@@ -51,7 +51,7 @@ Answer its questions, then do what it tells you to do at the car.
 
 1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux, install [Git](https://git-scm.com) and then ESPHome as its [install guide](https://esphome.io/guides/installing_esphome) says.
 2. **Download the settings files**: download `config.example.yaml` and `secrets.example.yaml` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) into a new folder.
-3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, any password for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/#:~:text=randomly%20generated%20by%20your%20browser), shown next to **key** under **encryption** with a **Copy** button.
+3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, a password of at least 8 characters for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/#:~:text=randomly%20generated%20by%20your%20browser), shown next to **key** under **encryption** with a **Copy** button.
 4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
 5. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open a terminal in that folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 6. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
@@ -65,7 +65,7 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
-| `market: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
+| `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
@@ -74,7 +74,7 @@ Your settings in `config.yaml`:
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
 | `timezone` | The time zone the car lives in, like `Europe/Vilnius`, `Europe/Helsinki` or `Europe/Oslo`. |
-| `version` | The release the board runs, like `v2.0.0`. |
+| `version` | The release the board runs, like `v3.0.0`. |
 
 After a change, run `esphome run config.yaml` again and choose the board's network address: it updates over Wi-Fi. If a setting is wrong, ESPHome stops and says what.
 
@@ -84,7 +84,7 @@ After a change, run `esphome run config.yaml` again and choose the board's netwo
 
 Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it.
 
-- **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the status says **Waiting for prices** until they're out.
+- **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the board waits for them, and charges now only what the hours after them can't fit.
 - **To change the schedule**, press **Delete schedule**, pick **Charge limit** and **Ready by**, then **Create schedule**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
 - **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a schedule, start charging or plug in again.
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
@@ -94,7 +94,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price: for lack of prices or of a battery level, or because charging was started from the car or the Tesla app.
+Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price: for lack of prices or of a battery level, or because charging was started from the car or the Tesla app.
 
 ## Tariff
 
