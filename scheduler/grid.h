@@ -1,5 +1,5 @@
 #pragma once
-// What a kWh costs on the grid in each quarter-hour: a price list from pricelists/, and the grid: settings of
+// What a kWh costs on the grid in each quarter-hour: a plan from plans/, and the grid: settings of
 // config.yaml over it (format in docs/grid-fees.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
@@ -16,7 +16,7 @@
 
 namespace esphome::scheduler {
 
-// The grid settings as written (format in docs/grid-fees.md): a price list from pricelists/, or the grid: block of
+// The grid settings as written (format in docs/grid-fees.md): a plan from plans/, or the grid: block of
 // config.yaml, which the build writes out the same way. Keys and lines stay text, in the order written.
 struct GridText {
   std::string clock;
@@ -34,7 +34,7 @@ inline std::string concat(std::initializer_list<std::string_view> pieces) {
   return joined;
 }
 
-// Reads grid settings in the YAML of price lists: two-space indents, `key: value` or `key:` lines, and comments on
+// Reads grid settings in the YAML of plans: two-space indents, `key: value` or `key:` lines, and comments on
 // lines of their own, without quotes, flow style or anchors, ending with a line break. Returns what's wrong, or "".
 inline std::string read_grid(const std::string &text, GridText &grid) {
   if (!text.empty() && text.back() != '\n')
@@ -148,17 +148,17 @@ constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 
-// The grid of a price list's text and config.yaml's grid: settings, both as read_grid() reads them: your calendar and
-// clock replace the list's, and your exceptions and rates replace or add to its own, one key at a time. The list's
-// prices are in `currency`. Returns what's wrong, or "".
-inline std::string make_grid(const std::string &list_text, const std::string &own_text, const std::string &currency,
+// The grid of a plan's text and config.yaml's grid: settings, both as read_grid() reads them: your calendar and clock
+// replace the plan's, and your exceptions and rates replace or add to its own, one key at a time. The plan's prices are
+// in `currency`. Returns what's wrong, or "".
+inline std::string make_grid(const std::string &plan_text, const std::string &own_text, const std::string &currency,
                              Grid &grid) {
-  GridText list, own;
-  if (const std::string error = read_grid(list_text, list) + read_grid(own_text, own); !error.empty())
+  GridText plan, own;
+  if (const std::string error = read_grid(plan_text, plan) + read_grid(own_text, own); !error.empty())
     return error;
-  if (!list.rates.empty() && list.currency != currency)
-    return concat({"the price list's prices are in ", list.currency, ", not ", currency});
-  GridText all = list;
+  if (!plan.rates.empty() && plan.currency != currency)
+    return concat({"the plan's prices are in ", plan.currency, ", not ", currency});
+  GridText all = plan;
   if (!own.clock.empty())
     all.clock = own.clock;
   if (!own.calendar.empty())
@@ -267,9 +267,9 @@ inline float total_price(float spot_price, int64_t slot_start, const Grid &grid,
   return spot_price * (1.0f + grid.vat) + grid_fee(slot_start, grid, standard_offset);
 }
 
-// Whether to download the price list at `now`: daily after a try that brought a list the board can use, the one in
-// use or a new one, and hourly after any other. Not before the clock is set: 0 is never past a try.
-inline bool price_list_due(int64_t now, int64_t tried_at, bool usable) {
+// Whether to download the plan at `now`: daily after a try that brought a plan the board can use, the one in use or a
+// new one, and hourly after any other. Not before the clock is set: 0 is never past a try.
+inline bool plan_due(int64_t now, int64_t tried_at, bool usable) {
   return now - tried_at >= (usable ? DAY_SECONDS : 3600);
 }
 

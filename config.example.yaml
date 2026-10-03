@@ -11,7 +11,7 @@ packages:
 
 scheduler:
   grid:
-    pricelist: lt/eso-standartinis-4-zones
+    plan: lt/eso-standartinis-4-zones
   market:
     area: LT
     vat: 0.21

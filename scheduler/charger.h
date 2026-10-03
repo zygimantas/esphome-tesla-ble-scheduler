@@ -101,7 +101,7 @@ class Controller {
   const Schedule &schedule() const { return schedule_; }
   // Without market prices to download, every quarter-hour's spot price is 0: the grid fees are the whole price.
   void without_market_prices() { market_ = false; }
-  // The grid's VAT and fees, from the price list and config.yaml; until they're set, schedules use spot prices only.
+  // The grid's VAT and fees, from the plan and config.yaml; until they're set, schedules use spot prices only.
   void set_grid(const Grid &grid) {
     grid_ = grid;
     reschedule_ = true;

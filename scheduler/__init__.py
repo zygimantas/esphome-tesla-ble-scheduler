@@ -1,7 +1,7 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
 charger.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
-grid.py the grid: block and its price list, and creates the web page's entities.
+grid.py the grid: block and its plan, and creates the web page's entities.
 """
 
 import re
@@ -12,7 +12,7 @@ from esphome.components import button, datetime, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
 from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
 
-from .grid import CONF_CURRENCY, CONF_PRICELIST, GRID_SCHEMA, PRICE_LISTS, price_list, write_grid
+from .grid import CONF_CURRENCY, CONF_PLAN, GRID_SCHEMA, PLANS, plan, write_grid
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
@@ -96,16 +96,16 @@ def _currency_code(value):
 
 
 def _currency(config):
-    """The market area's currency unless set, otherwise euros. Without a market, any currency. A price list's must be
+    """The market area's currency unless set, otherwise euros. Without a market, any currency. A plan's must be
     the same."""
     market = config.get(CONF_MARKET)
     area = market[CONF_AREA] if market else ""
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
     if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
         raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
-    name = config[CONF_GRID].get(CONF_PRICELIST)
-    if name and (currency := price_list(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
-        raise cv.Invalid(f"the price list {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
+    name = config[CONF_GRID].get(CONF_PLAN)
+    if name and (currency := plan(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
+        raise cv.Invalid(f"the plan {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
     return config
 
 
@@ -148,8 +148,8 @@ async def to_code(config):
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
     cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
     grid = config[CONF_GRID]
-    name = grid.get(CONF_PRICELIST, "")
-    text = (PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
+    name = grid.get(CONF_PLAN, "")
+    text = (PLANS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
     cg.add(var.set_grid(market[CONF_VAT] if market else 0.0, name, text, write_grid(grid)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
