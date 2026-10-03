@@ -11,7 +11,7 @@ The board follows market prices where Nord Pool publishes the day-ahead prices o
 | Bulgaria | `BG` | `EUR` | |
 | Croatia | `HR` | `EUR` | |
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | |
-| Estonia | `EE` | `EUR` | |
+| Estonia | `EE` | `EUR` | [Elektrilevi's plans](elektrilevi.md). |
 | Finland | `FI` | `EUR` | |
 | France | `FR` | `EUR` | |
 | Germany and Luxembourg | `DE` or `LU` | `EUR` | |
