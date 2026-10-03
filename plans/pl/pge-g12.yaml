@@ -1,0 +1,13 @@
+# PGE Dystrybucja's G12 tariff, prices with VAT: https://pgedystrybucja.pl/uslugi-dystrybucyjne/taryfa-i-cenniki/taryfa2
+# The tariff prints the prices without VAT: these add 23% VAT.
+# Maintained by @zygimantas
+currency: PLN
+clock: winter
+calendar:
+  apr-sep:
+    mon-sun: night 06:00 day 15:00 night 17:00 day 22:00 night
+  oct-mar:
+    mon-sun: night 06:00 day 13:00 night 15:00 day 22:00 night
+rates:
+  night: 0.0941
+  day: 0.49372

@@ -98,3 +98,4 @@ The plans are in [plans](../plans), a folder for each country:
 
 - Estonia: [Elektrilevi plans](elektrilevi.md).
 - Lithuania: [ESO plans](eso.md).
+- Poland: [the five big operators' plans](poland.md).
