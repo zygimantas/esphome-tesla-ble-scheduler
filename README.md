@@ -98,9 +98,9 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 
 ## Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. It names the price list of your grid operator and plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current list every day, so new prices reach it without a reinstall. [ESO price lists](docs/eso.md) has ESO's other plans, and [Grid fees](docs/grid-fees.md) explains how to change a list's prices for yourself, or to write your own for another grid operator.
+The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. It names the price list for your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current list every day, so new prices reach it without a reinstall. [ESO price lists](docs/eso.md) has ESO's other plans, and [Grid fees](docs/grid-fees.md) explains how to change a list's prices for yourself, or to write your own for another grid operator.
 
-With a fixed price, leave `market:` out: nothing is downloaded, and each rate's price in `grid:` becomes your whole price per kWh with VAT, the supplier's rate included. With one rate for every hour, all hours cost the same, so the board charges at once.
+With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `grid:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Mutation testing of charger.h and the headers it includes, from the repository root (it takes about half an
-hour):
+"""Mutation testing of charger.h and the headers it includes, from the repository root (it takes about 40
+minutes):
 
     python3 test/mutation_test.py path/to/ArduinoJson/src
 

@@ -44,14 +44,14 @@ The unit tests cover every line and branch of those six headers, and CI fails wh
 clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
 LLVM_PROFILE_FILE=scheduler_test.profraw ./scheduler_test
 llvm-profdata merge scheduler_test.profraw -o scheduler_test.profdata
-llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary scheduler/calendar.h scheduler/charger.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h
-# Mutation testing, about half an hour
+llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary scheduler/*.h
+# Mutation testing, about 40 minutes
 python3 test/mutation_test.py path/to/ArduinoJson/src
 ```
 
 A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
 
-The C++ follows ESPHome's own style. Comments say why, not what. YAML config files have no comments.
+The C++ follows ESPHome's own style. Comments say why, not what. YAML config files have no comments; price lists have theirs.
 
 ## Pull requests
 

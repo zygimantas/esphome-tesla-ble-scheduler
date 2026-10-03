@@ -27,13 +27,13 @@ Your electricity contract or your supplier's price list names your area. Prices 
 
 ## Grid fees
 
-The board adds VAT to the price, and a grid fee that can change every quarter-hour: rates for each day of the week, other rates in some months, and their own on public holidays and other dates. A price list has a grid operator's plan, kept up to date by a maintainer from that country; [Grid fees](grid-fees.md) explains the format, and how to write your own or add a list. Taxes and charges that are the same in every hour don't change which hours are cheapest. Left out, they're missing from every price the board shows, the plan's windows, the phone message and what Savings says you paid; added to every rate's price, those show your full price.
+The board adds VAT to the price, and a grid fee that can change every quarter-hour: rates for each day of the week, other rates in some months, and their own on public holidays and other dates. [Grid fees](grid-fees.md) has the price lists and the format. Taxes and charges that are the same in every hour don't change which hours are cheapest. Left out, they're missing from every price the board shows, the plan's windows, the phone message and what Savings says you paid; added to every rate's price, those show your full price.
 
 Some fees depend on your highest power instead, like Norway's capacity step. Until the board counts them ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), set the car's charging current low enough for your step, in the car or the Tesla app, and `tesla_charging_kw` to match.
 
 ## A fixed price
 
-With a fixed price, or one that changes only with the hour of the day, leave `market:` out: nothing is downloaded, and each rate's price in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `scheduler:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
+With a fixed price, or one that changes only with the hour of the day, leave `market:` out: no market prices are downloaded, and each rate's price in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `scheduler:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
 
 ## Not supported yet
 

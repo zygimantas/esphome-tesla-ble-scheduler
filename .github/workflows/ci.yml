@@ -71,12 +71,11 @@ jobs:
           ./scheduler_test
       - name: Coverage of charger.h and the headers it includes, all of it
         run: |
-          headers=(scheduler/calendar.h scheduler/charger.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h)
           clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/scheduler_test.cpp -o scheduler_test
           LLVM_PROFILE_FILE=scheduler_test.profraw ./scheduler_test
           llvm-profdata merge scheduler_test.profraw -o scheduler_test.profdata
-          llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary "${headers[@]}"
-          llvm-cov export scheduler_test -instr-profile=scheduler_test.profdata -summary-only "${headers[@]}" |
+          llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-branch-summary scheduler/*.h
+          llvm-cov export scheduler_test -instr-profile=scheduler_test.profdata -summary-only scheduler/*.h |
             python3 -c 'import json, sys
           totals = json.load(sys.stdin)["data"][0]["totals"]
           missed = {k: totals[k]["count"] - totals[k]["covered"] for k in ("lines", "functions", "regions", "branches")}

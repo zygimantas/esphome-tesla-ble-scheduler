@@ -1,6 +1,6 @@
 # Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name the price list of their grid operator and plan:
+The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name the price list for their grid operator's plan:
 
 ```yaml
 scheduler:
@@ -35,31 +35,15 @@ A rate you set has to be one your days use. If a list later drops or renames it,
 
 ## Your own grid
 
-Without a price list for your grid operator, write the grid yourself, or [add a price list](../CONTRIBUTING.md#price-lists) for everyone with your plan:
+Without a price list for your grid operator, write the grid yourself, or [add a price list](../CONTRIBUTING.md#price-lists) for everyone on your grid operator's plan:
 
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
 - `exceptions`: public holidays and other dates that differ, like `12-25`, each with a line for the whole day. On those dates they replace the calendar.
 - `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`. YAML reads `on`, `off`, `yes`, `no`, `true`, `false` and `null` as true, false or nothing, so those can't be names.
-- `clock: winter`: all times stay on winter time all year, as some plans do. Leave it out when the plan follows the clock.
+- `clock: winter`: all times stay on winter time all year. `clock: local`, the default, follows the clock, summer time included; it undoes a price list's `clock: winter`.
 
-ESO's four zones, with a public holiday:
-
-```yaml
-scheduler:
-  grid:
-    calendar:
-      jan-dec:
-        mon-fri: night 05:00 morning 07:00 day 17:00 evening 22:00 night
-        sat-sun: night 07:00 day 22:00 night
-    exceptions:
-      01-01: night 07:00 day 22:00 night
-    rates:
-      night: 0.06292
-      morning: 0.08349
-      day: 0.10406
-      evening: 0.14641
-```
+The price lists are examples too, like [ESO's four zones](../pricelists/lt/eso-standartinis-4-zones.yaml).
 
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
@@ -79,9 +63,11 @@ scheduler:
 
 Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a price list, whose maintainer does.
 
+If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a price list in another currency than yours.
+
 ## A fixed price
 
-Leave `market:` out: nothing is downloaded, and each rate's price is your whole price per kWh, the supplier's rate and the grid fee together, with VAT. One price for every hour:
+Leave `market:` out: no market prices are downloaded, and each rate's price is your whole price per kWh, the supplier's price and the grid fee together, with VAT. One price for every hour:
 
 ```yaml
   grid:
@@ -111,5 +97,3 @@ scheduler:
 The lists are in [pricelists](../pricelists), a folder for each country:
 
 - Lithuania: [ESO price lists](eso.md).
-
-If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a price list in another currency than yours.
