@@ -1,6 +1,6 @@
 #pragma once
-// The market: Nord Pool's day-ahead prices, where to download them, and the quarter-hours' prices. Plain C++17 plus
-// ArduinoJson, with nothing from ESPHome, like charger.h.
+// The market: the day-ahead prices from Nord Pool or SMARD, where to download them, and the quarter-hours' prices.
+// Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -42,6 +42,17 @@ inline std::string nord_pool_url(const char *area, const char *currency, int64_t
   return buf;
 }
 
+// SMARD's quarter-hour prices of the area it numbers `filter`, in its file for the week (from Monday 00:00 German time)
+// of the CET delivery day `day_offset` days after `now`.
+inline std::string smard_url(int filter, int64_t now, int day_offset) {
+  const int64_t day = local_day_of(now, CET_STANDARD_OFFSET) + day_offset;
+  const int64_t monday = local_to_utc(day - (weekday(day) + 6) % 7, 0, CET_STANDARD_OFFSET);
+  char buf[128];
+  std::snprintf(buf, sizeof(buf), "https://www.smard.de/app/chart_data/%d/DE/%d_DE_quarterhour_%lld.json", filter,
+                filter, static_cast<long long>(monday * 1000));
+  return buf;
+}
+
 // Start (UTC) of the CET delivery day containing `now`, its end, and the end of the one after it.
 inline int64_t start_of_delivery_day(int64_t now) {
   return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET), 0, CET_STANDARD_OFFSET);
@@ -77,6 +88,24 @@ class PriceTable {
       if (value.isNull() || !start)
         continue;
       set(*start, value.as<float>() / 1000.0f);
+      ++stored;
+    }
+    return stored;
+  }
+
+  // Stores the quarter-hour prices (per kWh) from SMARD's file of a week: [start in ms, price per MWh] each, with null
+  // for the prices not out yet. Returns how many were stored, or -1 if the JSON could not be parsed.
+  int add_smard(const char *json, size_t length) {
+    JsonDocument filter;
+    filter["series"] = true;
+    JsonDocument doc;
+    if (deserializeJson(doc, json, length, DeserializationOption::Filter(filter)) != DeserializationError::Ok)
+      return -1;
+    int stored = 0;
+    for (JsonArray point : doc["series"].as<JsonArray>()) {
+      if (!point[0].is<int64_t>() || !point[1].is<float>())
+        continue;
+      set(point[0].as<int64_t>() / 1000, point[1].as<float>() / 1000.0f);
       ++stored;
     }
     return stored;

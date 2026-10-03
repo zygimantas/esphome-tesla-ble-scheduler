@@ -15,7 +15,7 @@ body:
     validations:
       required: true
   - attributes:
-      description: Your car, your home charger, and your Nord Pool area. Never your VIN, Wi-Fi details, key or ntfy topic.
+      description: Your car, your home charger, and your market area. Never your VIN, Wi-Fi details, key or ntfy topic.
       label: Car, charger and area
       placeholder: Model 3 2022, Wallbox Pulsar Max, LT
     id: setup

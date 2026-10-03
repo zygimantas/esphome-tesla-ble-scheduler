@@ -253,6 +253,36 @@ static void test_nord_pool_prices() {
   CHECK(!prices.get(t - DAY_SECONDS) && !prices.get(t - SLOT_SECONDS) && prices.get(t));
 }
 
+static void test_smard_prices() {
+  // SMARD keeps a file a week, from Monday 00:00 German time. These are its real files' times.
+  CHECK_STR(smard_url(262, SEP24_1700Z, 0),  // Thursday 24 September
+            "https://www.smard.de/app/chart_data/262/DE/262_DE_quarterhour_1789941600000.json");
+  const auto week = [](const char *now, int day_offset) {
+    const std::string url = smard_url(262, utc(now), day_offset);
+    return url.substr(url.rfind('_') + 1);
+  };
+  CHECK_STR(week("2026-09-24T17:00:00Z", 4), "1790546400000.json");  // Monday 28 September
+  CHECK_STR(week("2026-10-04T21:30:00Z", 0), "1790546400000.json");  // Sunday 23:30 in Germany,
+  CHECK_STR(week("2026-10-04T21:30:00Z", 1), "1791151200000.json");  // its next day,
+  CHECK_STR(week("2026-10-04T22:30:00Z", 0), "1791151200000.json");  // and Monday 00:30
+  CHECK_STR(week("2026-03-29T12:00:00Z", 0), "1774220400000.json");  // the weeks before and after summer time,
+  CHECK_STR(week("2026-03-29T12:00:00Z", 1), "1774821600000.json");
+  CHECK_STR(week("2025-10-26T12:00:00Z", 0), "1760911200000.json");  // and before and after winter time
+  CHECK_STR(week("2025-10-26T12:00:00Z", 1), "1761519600000.json");
+
+  PriceTable prices;
+  const char *json = R"({"meta_data":{"version":1,"created":1791035097048},"series":[)"
+                     R"([1790546400000,166.58],[1790547300000,-12.5],[1790548200000,null],["later",1.0]]})";
+  CHECK(prices.add_smard(json, std::strlen(json)) == 2);
+  const auto first = prices.get(1790546400);
+  CHECK(first && near(*first, 0.16658f));
+  const auto negative = prices.get(1790547300);
+  CHECK(negative && near(*negative, -0.0125f));
+  CHECK(!prices.get(1790548200));  // null: not out yet
+  CHECK(prices.add_smard("{oops", 5) == -1);
+  CHECK(prices.add_smard("{}", 2) == 0);
+}
+
 // ---------------------------------------------------------------------------
 // Schedule
 // ---------------------------------------------------------------------------
@@ -2295,6 +2325,7 @@ static void test_savings_restart_currency_and_reset() {
 int main() {
   test_calendar();
   test_nord_pool_prices();
+  test_smard_prices();
   test_cheapest_slots();
   test_schedule_picks_the_night_trough();
   test_schedule_waits_for_prices_not_out_yet();

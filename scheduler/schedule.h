@@ -1,5 +1,5 @@
 #pragma once
-// The schedule: the cheapest quarter-hours before the deadline, priced at Nord Pool's spot price (market.h) plus VAT
+// The schedule: the cheapest quarter-hours before the deadline, priced at the market's price (market.h) plus VAT
 // and the tariff (tariff.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17, with
 // nothing from ESPHome, like charger.h.
 
@@ -41,7 +41,7 @@ struct Settings {
   float battery_kwh = 75.0f;
   float charging_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
-  const char *currency = "EUR";  // of the Nord Pool prices and the tariff
+  const char *currency = "EUR";  // of the market prices and the tariff
 };
 
 struct ScheduleRequest {

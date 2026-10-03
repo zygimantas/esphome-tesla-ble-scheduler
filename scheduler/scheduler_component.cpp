@@ -9,7 +9,7 @@ namespace esphome::scheduler {
 
 static const char *const TAG = "scheduler";
 
-// The most the board reads of an answer: a day of LT prices is about 11 kB, and a plan about 1 kB.
+// The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan 1 kB.
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
@@ -199,14 +199,16 @@ void SchedulerComponent::update() {
 }
 
 void SchedulerComponent::dump_config() {
+  const char *source = this->smard_filter_ != 0 ? " from SMARD" : " from Nord Pool";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
-                "  Nord Pool area: %s, prices in %s\n"
+                "  Market: %s%s, prices in %s\n"
                 "  Tariff: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_[0] != '\0' ? this->area_ : "none, the tariff is the whole price", this->settings_.currency,
+                this->area_[0] != '\0' ? this->area_ : "none, the tariff is the whole price",
+                this->area_[0] != '\0' ? source : "", this->settings_.currency,
                 this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml", this->settings_.battery_kwh,
                 this->settings_.charging_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
@@ -281,28 +283,42 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 // yet answers 204. A failed request ends the try: the next one would fail the same way and block the loop
 // again.
 void SchedulerComponent::fetch_prices_(int64_t now) {
+  const bool smard = this->smard_filter_ != 0;
+  const char *source = smard ? "SMARD" : "Nord Pool";
+  // Not out yet: Nord Pool has no content for tomorrow, and SMARD no file for a week that hasn't begun.
+  const int not_yet = smard ? http_request::HTTP_STATUS_NOT_FOUND : http_request::HTTP_STATUS_NO_CONTENT;
+  std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
   for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
-    auto response = this->http_->get(nord_pool_url(this->area_, this->settings_.currency, now, day));
+    const std::string url = smard ? smard_url(this->smard_filter_, now, day)
+                                  : nord_pool_url(this->area_, this->settings_.currency, now, day);
+    if (url == fetched)
+      continue;
+    fetched = url;
+    auto response = this->http_->get(url);
     if (response == nullptr) {
-      ESP_LOGW(TAG, "Nord Pool request failed");
+      ESP_LOGW(TAG, "%s request failed", source);
       break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
       const std::optional<std::string> body = this->read_body_(*response);
       response->end();  // before the parse: the connection's memory isn't needed any more
-      const int stored = body ? this->controller_.prices.add_nord_pool(body->data(), body->size(), this->area_) : -1;
+      PriceTable &prices = this->controller_.prices;
+      const int64_t until = prices.known_until(now);
+      const int stored = !body   ? -1
+                         : smard ? prices.add_smard(body->data(), body->size())
+                                 : prices.add_nord_pool(body->data(), body->size(), this->area_);
       if (stored < 0) {
-        ESP_LOGW(TAG, "Nord Pool: %s", body ? "could not parse the answer" : "the answer was cut off");
-      } else if (stored == 0) {
-        ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check market: area", this->area_);
-      } else {
-        ESP_LOGI(TAG, "Nord Pool: stored %d quarter-hours", stored);
+        ESP_LOGW(TAG, "%s: %s", source, body ? "could not parse the answer" : "the answer was cut off");
+      } else if (prices.known_until(now) > until) {  // not just the week's earlier prices again, as SMARD sends
+        ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
         this->controller_.reschedule();
+      } else if (stored == 0 && day == 0) {
+        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, this->area_);
       }
-    } else if (response->status_code != http_request::HTTP_STATUS_NO_CONTENT) {
-      ESP_LOGW(TAG, "Nord Pool answered HTTP %d", response->status_code);
+    } else if (response->status_code != not_yet) {
+      ESP_LOGW(TAG, "%s answered HTTP %d", source, response->status_code);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "Nord Pool has no prices for %s today: check market: area", this->area_);
+      ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, this->area_);
     }
     response->end();
   }

@@ -16,7 +16,7 @@ The firmware (`device.yaml`, `scheduler/`, `web/`), the example settings files a
 
 - The board sending the car a command it shouldn't, or accepting one from someone who isn't on your Wi-Fi.
 - Your Wi-Fi password, API key, VIN or ntfy topic ending up somewhere they shouldn't, such as a log, the page or a release file.
-- A Nord Pool or ntfy response, or a crafted web request, crashing the board or running code on it.
+- A Nord Pool, SMARD or ntfy response, or a crafted web request, crashing the board or running code on it.
 - A workflow that could publish a release or change the repository from a pull request.
 
 ## What doesn't

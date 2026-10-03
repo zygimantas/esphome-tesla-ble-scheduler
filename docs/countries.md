@@ -1,6 +1,6 @@
 # Countries
 
-The board follows market prices where Nord Pool publishes the day-ahead prices of your area, and a fixed price anywhere. Your grid fees are a price per kWh that may change with the hour, or there are none. The board applies EU summer time, which every country here uses.
+The board follows market prices where Nord Pool or SMARD, Germany's Federal Network Agency, publishes the day-ahead prices of your area, and a fixed price anywhere. Your grid fees are a price per kWh that may change with the hour, or there are none. The board applies EU summer time, which every country here uses.
 
 ## Supported
 
@@ -10,20 +10,25 @@ The board follows market prices where Nord Pool publishes the day-ahead prices o
 | Belgium | `BE` | `EUR` | Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Bulgaria | `BG` | `EUR` | |
 | Croatia | `HR` | `EUR` | |
+| Czechia | `CZ` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | |
 | Estonia | `EE` | `EUR` | |
 | Finland | `FI` | `EUR` | |
 | France | `FR` | `EUR` | |
 | Germany and Luxembourg | `DE` or `LU` | `EUR` | |
+| Hungary | `HU` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
+| Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. |
 | Latvia | `LV` | `EUR` | |
 | Lithuania | `LT` | `EUR` | [ESO's plans](eso.md). |
 | Netherlands | `NL` | `EUR` | |
 | Norway | `NO1` to `NO5` | `NOK` or `EUR` | The capacity step isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Poland | `PL` | `PLN` or `EUR` | |
 | Romania | `RO` | `RON` or `EUR` | |
+| Slovenia | `SI` | `EUR` | Prices from SMARD. |
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | Power fees at some network companies aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| Switzerland | `CH` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 
-Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, and your grid fees are in the same.
+Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD, and your grid fees are in the same.
 
 ## Grid fees
 
@@ -39,7 +44,7 @@ With a fixed price, or one that changes only with the hour of the day, leave `ma
 
 | Where | Why | Issue |
 | --- | --- | --- |
-| Spain, Portugal, Italy, Czechia, Slovakia, Hungary, Slovenia, Greece, Switzerland, Ireland and other countries outside Nord Pool | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. A fixed price works already. | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
+| Spain, Portugal, the rest of Italy, Slovakia, Greece, Ireland and other countries outside Nord Pool and SMARD | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. A fixed price works already. | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
 | United Kingdom | Neither Nord Pool nor ENTSO-E has British prices. Suppliers like Octopus Agile publish their own. A fixed price works already, also with a night rate on the half-hour like Octopus Go's ([Tariff](tariff.md#a-fixed-price)). | [#81](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/81) |
 
 The page and these documents are in English.

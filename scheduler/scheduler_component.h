@@ -1,5 +1,5 @@
 #pragma once
-// Connects the controller in charger.h to ESPHome: the web page's entities, Nord Pool and plan downloads, phone
+// Connects the controller in charger.h to ESPHome: the web page's entities, market price and plan downloads, phone
 // messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
 #include "charger.h"
@@ -66,7 +66,11 @@ class SchedulerComponent : public PollingComponent {
 
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
-  void set_nord_pool_area(const char *area) { this->area_ = area; }
+  // The market area as Nord Pool names it, or SMARD's number for it, which then has its prices.
+  void set_market(const char *area, int smard_filter) {
+    this->area_ = area;
+    this->smard_filter_ = smard_filter;
+  }
   void set_currency(const char *currency) { this->settings_.currency = currency; }
   void set_battery_kwh(float kwh) { this->settings_.battery_kwh = kwh; }
   void set_charging_kw(float kw) { this->settings_.charging_kw = kw; }
@@ -111,6 +115,7 @@ class SchedulerComponent : public PollingComponent {
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
   const char *area_{""};
+  int smard_filter_{0};
   float vat_{0.0f};
   const char *plan_{""};
   const char *own_{""};
