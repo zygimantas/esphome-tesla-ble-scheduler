@@ -25,7 +25,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 - A USB-C cable with the plug your computer takes, for the setup.
 - A USB-C phone charger, with a socket near the car, to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
-- Electricity priced by the day-ahead market, such as in the Baltics, the Nordics or central Europe: [Countries](docs/countries.md) lists them. Contracts often call this the exchange or spot price.
+- Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Romania, Slovenia, Sweden or Switzerland. [Countries](docs/countries.md) has the details, and how to use a fixed price instead.
 - A computer to install and update the board.
 
 ## AI assisted setup
