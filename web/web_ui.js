@@ -26,7 +26,6 @@ const E = {
   limit: "number/Charging Limit",
   mode: "text_sensor/Charging mode",
   pair: "button/Pair BLE Key",
-  plugged: "binary_sensor/Charger",
   power: "sensor/Charger Power",
   pricesUntil: "text_sensor/Prices until",
   readyBy: "time/Ready by",
@@ -108,9 +107,9 @@ const states = {}; // entity id -> latest state event
 let live = null;
 // Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
-// The mode a button should bring and the limit just sent, as { value, until }, shown until the board reports them or
-// `until` passes.
-const pending = { mode: null, limit: null };
+// The mode a button should bring, and the limit and Ready by just sent, as { value, until }, shown until the board
+// reports them or `until` passes.
+const pending = { mode: null, limit: null, deadline: null };
 
 // Numbers arrive as JSON numbers from sensors but as strings ("80") from number entities.
 const value = (id) => {
@@ -209,9 +208,6 @@ async function sendLimit() {
 
 const HALF_HOUR_MS = 30 * 60 * 1000;
 const CLEAR_ONCE = "2000-01-01 00:00:00"; // Ready by once's "unset" value
-// After Create schedule, keeps the dropdown on the deadline just sent for a moment, so the board's old one
-// doesn't flash back.
-let readyLockUntil = 0;
 
 // The daily time, the one-off while it's ahead, and the deadline in force.
 function readyBy() {
@@ -222,7 +218,8 @@ function readyBy() {
 }
 
 // Fills the dropdown with each half-hour that can be picked, "23:30" or "07:00 +1", and the deadline
-// shown, greyed out when it can't be (a daily time whose prices aren't out yet).
+// shown, greyed out when it can't be (a daily time whose prices aren't out yet). The hour repeated when the clocks
+// go back is offered once, as the board takes a time in it as the first.
 function fillReady(deadline) {
   const now = Date.now();
   const until = pricesUntil();
@@ -230,16 +227,18 @@ function fillReady(deadline) {
   for (let t = (Math.floor(now / HALF_HOUR_MS) + 1) * HALF_HOUR_MS; t <= until; t += HALF_HOUR_MS) times.push(t);
   if (!times.includes(deadline)) times.push(deadline);
   times.sort((a, b) => a - b);
-  const options = times.map((t) =>
-    Object.assign(new Option(`${hhmm(t)}${plus(t)}`, t), { disabled: t <= now || t > until }),
-  );
+  const options = times
+    .map((t) => Object.assign(new Option(`${hhmm(t)}${plus(t)}`, t), { disabled: t <= now || t > until }))
+    .filter((o, i, all) => all.findIndex((p) => p.text === o.text) === i);
   setOptions($("ready-select"), options, deadline);
 }
 
 function renderReady() {
   $("ready-row").hidden = pricesUntil() <= Date.now(); // nothing to pick until the board has prices
-  if (Date.now() < readyLockUntil || document.activeElement === $("ready-select")) return;
-  const deadline = draft.deadline ?? readyBy().deadline;
+  if (document.activeElement === $("ready-select")) return;
+  const board = readyBy().deadline;
+  pending.deadline = stillPending(pending.deadline, board);
+  const deadline = draft.deadline ?? pending.deadline?.value ?? board;
   if (deadline != null) fillReady(deadline);
 }
 
@@ -253,7 +252,8 @@ async function sendReadyBy(time, once, current) {
 
 // --- Schedule --------------------------------------------------------------
 
-// The board's mode ("schedule", "now", "none" or "wait"), or the one a button just asked for until the board has it.
+// The board's mode ("schedule", "now", "none", "unplugged" or "wait"), or the one a button just asked for until the
+// board has it.
 function shownMode() {
   const board = text(E.mode) || "wait";
   pending.mode = stillPending(pending.mode, board);
@@ -267,14 +267,13 @@ function expectMode(mode) {
 // Both buttons, the schedule with Delete, or Stop while charging regardless of price. Charge limit and Ready by are for
 // a new schedule or charge, so only then can they change.
 function renderSchedule() {
-  const plugged = states[E.plugged]?.value === true;
   const mode = shownMode();
   $("target-card").hidden = mode === "wait"; // nothing to set or show until the board can schedule
-  $("schedule-card").hidden = !plugged || mode === "wait";
+  $("schedule-card").hidden = mode === "unplugged" || mode === "wait";
   $("schedule-start").hidden = mode !== "none";
   $("schedule-rows").hidden = mode !== "schedule";
   $("stop-charging").hidden = mode !== "now";
-  const editable = plugged && mode === "none";
+  const editable = mode === "none";
   if (!editable) draft.limit = draft.deadline = null;
   for (const id of ["limit-select", "ready-select"]) $(id).disabled = !editable;
   // No schedule without prices: the board downloads them after it starts, which takes about a minute.
@@ -310,15 +309,13 @@ async function createSchedule() {
   const time = hhmm(deadline);
   if (deadline <= Date.now()) deadline = nextAt(time);
   const once = deadline === nextAt(time) ? null : deadline;
-  fillReady(deadline);
-  readyLockUntil = Date.now() + 3000;
+  pending.deadline = { value: deadline, until: Date.now() + 20000 };
   const ok = (await sendLimit()) && (await sendReadyBy(time, once, current)) && (await post(E.createSchedule, "press"));
   if (ok) {
     expectMode("schedule");
-    toast(`Schedule: ${shownLimit()}% by ${deadlineText(deadline)}`);
+    toast(`Schedule: ${shownLimit()}% by ${hhmm(deadline)}${plus(deadline)}`);
   } else {
-    readyLockUntil = 0;
-    requestRender();
+    pending.deadline = null;
   }
 }
 
@@ -461,14 +458,6 @@ const daysAhead = (ms) => Math.round((midnight(ms) - midnight(Date.now())) / DAY
 function plus(ms) {
   const days = daysAhead(ms);
   return days ? ` +${days}` : "";
-}
-
-// "Today 23:30", "Tomorrow 07:00" or "Mon 00:00".
-function deadlineText(ms) {
-  const days = daysAhead(ms);
-  const day =
-    days === 0 ? "Today" : days === 1 ? "Tomorrow" : new Date(ms).toLocaleDateString("en-GB", { weekday: "short" });
-  return `${day} ${hhmm(ms)}`;
 }
 
 // The next time the clock shows "HH:MM": today if it's still ahead, else tomorrow.

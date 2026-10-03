@@ -36,6 +36,7 @@ struct Savings {
   int32_t day = 0;                // the last day in `days`, as a local day number
   SavingsDay days[SAVINGS_DAYS];  // by ring_index() of the local day number
 };
+static_assert(sizeof(Savings) == 5848, "saved byte for byte: another size starts every board's savings afresh");
 
 inline int ring_index(int64_t day) { return static_cast<int>(day - floor_div(day, SAVINGS_DAYS) * SAVINGS_DAYS); }
 

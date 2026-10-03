@@ -227,24 +227,23 @@ static void test_nord_pool_prices() {
   PriceTable prices;
   const char *json =
       R"({"multiAreaEntries":[)"
-      R"({"deliveryStart":"2025-09-29T22:00:00Z","deliveryEnd":"2025-09-29T23:00:00Z","entryPerArea":{"LT":80.0}},)"
       R"({"deliveryStart":"2025-09-30T22:00:00Z","deliveryEnd":"2025-09-30T22:15:00Z","entryPerArea":{"LT":-12.5}},)"
       R"({"deliveryStart":"2025-09-30T22:15:00Z","deliveryEnd":"2025-09-30T22:30:00Z","entryPerArea":{"EE":1.0}},)"
-      R"({"deliveryStart":"2025-09-30T22:30:00Z","deliveryEnd":"later","entryPerArea":{"LT":1.0}},)"
-      R"({"deliveryEnd":"2025-09-30T22:45:00Z","entryPerArea":{"LT":1.0}}]})";
-  CHECK(prices.add_nord_pool(json, std::strlen(json), "LT") == 5);
+      R"({"deliveryStart":"later","deliveryEnd":"2025-09-30T22:45:00Z","entryPerArea":{"LT":1.0}},)"
+      R"({"deliveryEnd":"2025-09-30T23:00:00Z","entryPerArea":{"LT":1.0}}]})";
+  CHECK(prices.add_nord_pool(json, std::strlen(json), "LT") == 1);
   const int64_t t = utc("2025-09-30T22:00:00Z");
-  const auto hourly = prices.get(utc("2025-09-29T22:45:00Z"));
-  CHECK(hourly && near(*hourly, 0.08f));
   const auto negative = prices.get(t);
   CHECK(negative && near(*negative, -0.0125f));
   CHECK(!prices.get(t + SLOT_SECONDS));
   CHECK(prices.add_nord_pool("{oops", 5, "LT") == -1);
   CHECK(prices.add_nord_pool("{}", 2, "LT") == 0);
 
+  for (int64_t slot = t - DAY_SECONDS; slot < t - DAY_SECONDS + HOUR; slot += SLOT_SECONDS)
+    prices.set(slot, 0.08f);
   CHECK(prices.known_until(t + 5 * 60) == t + SLOT_SECONDS);             // up to the gap after 22:00
   CHECK(prices.known_until(t + SLOT_SECONDS) == t + SLOT_SECONDS);       // no price: its own start
-  CHECK(prices.known_until(t - DAY_SECONDS) == t - DAY_SECONDS + HOUR);  // the hourly entry's four slots
+  CHECK(prices.known_until(t - DAY_SECONDS) == t - DAY_SECONDS + HOUR);  // an hour of four slots
   prices.set(t - DAY_SECONDS + SLOT_SECONDS, 0.25f);                     // a later download replaces a price
   prices.set(t - SLOT_SECONDS, 0.5f);                                    // and fills a gap
   CHECK(prices.get(t - DAY_SECONDS + SLOT_SECONDS) == 0.25f &&
@@ -292,8 +291,9 @@ static void test_schedule_picks_the_night_trough() {
   // 30 kWh at 11 kW x 90% = 12.1 -> 13 quarter-hours, plus one buffer slot.
   CHECK(schedule.valid && schedule.needed_slots == 14 && schedule.unpriced_slots == 0);
   CHECK_STR(only_window(schedule), "01:30-05:00");
+  CHECK(make_schedule(prices, overnight(SEP24_1700Z, 47)).needed_slots == 11);  // 24.75 kWh: exactly 10 quarter-hours
   ScheduleRequest slow = request;
-  slow.settings.charge_kw = 2.3f;  // 30 kWh takes 58 quarter-hours: all 44 to 07:00
+  slow.settings.charging_kw = 2.3f;  // 30 kWh takes 58 quarter-hours: all 44 to 07:00
   CHECK_STR(only_window(make_schedule(prices, slow)), "20:00-07:00");
 
   request.soc = 80;  // at the limit: nothing to charge
@@ -316,7 +316,7 @@ static void test_schedule_waits_for_prices_not_out_yet() {
   // 10% to 100% needs 29: it buys the 5 that 01:00-07:00 can't do, in the midday dip.
   ScheduleRequest request = overnight(now, 10, 100);
   CHECK_STR(only_window(make_schedule(prices, request)), "13:00-14:15");
-  request.settings.charge_kw = 2.3f;  // needs 132: all 48 quarter-hours with a price, to 01:00
+  request.settings.charging_kw = 2.3f;  // needs 132: all 48 quarter-hours with a price, to 01:00
   CHECK_STR(only_window(make_schedule(prices, request)), "13:00-01:00");
   // Once tomorrow's prices are out, the night trough.
   add_day(prices, CET_SEP25);
@@ -1148,17 +1148,58 @@ static void test_complete_under_the_limit_is_charged() {
   CHECK_STR(run.messages[0].second.message, "Not needed: battery at limit");
 }
 
+static void test_reschedules_when_no_longer_complete() {
+  // A higher limit shows a tick before the car leaves Complete. The schedule is made again when it does, so a
+  // charge the car resumes in the cheapest quarter-hour, 03:00, isn't stopped.
+  const int64_t three = SEP24_1700Z + 7 * HOUR;
+  Controller controller = with_prices();
+  CarState car = plugged_in(false).state(three - 10 * 60);
+  car.soc = 80;
+  car.charging_state = "Complete";
+  controller.tick(car, Settings());
+  car.now = three;
+  car.limit = 90;
+  CHECK_STR(controller.tick(car, Settings()).status, "Charged");
+  car.now = three + 30;
+  car.charging_state = "Charging";
+  car.power_kw = 11;
+  const Decision resumed = controller.tick(car, Settings());
+  CHECK(resumed.command == Command::NONE);
+  CHECK_STR(resumed.status, "Charging");
+}
+
+static void test_reschedules_when_charging_runs_slow() {
+  // The schedule counts on 16.5 kW and the car takes 11: each quarter-hour's schedule makes up for it.
+  Settings optimistic;
+  optimistic.charging_kw = 16.5f;
+  Controller controller = with_prices();
+  const Run run = simulate(controller, FakeTesla(), SEP24_1700Z - 60, SEP24_1700Z + 11 * HOUR,
+                           {{SEP24_1700Z, &FakeTesla::plug_in}}, optimistic);
+  CHECK(run.car.soc >= 79.9f);
+  CHECK(run.commands.size() <= 3);
+}
+
 static void test_no_start_for_a_windows_last_minutes() {
   // 20:00 is cheap and 20:15 dear: a schedule made at 20:14:30 sends no start that the next quarter-hour's
-  // schedule would stop, and a car already charging is left alone.
+  // schedule would stop, and names its next window; a car already charging is left alone.
   const auto price_at = [](int64_t t) { return t < SLOT_SECONDS || (t >= 5 * HOUR && t < 6 * HOUR) ? 0.001f : 0.5f; };
   FakeTesla car = plugged_in(false);
   car.soc = 78;
   Controller stopped = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
-  CHECK(stopped.tick(car.state(SEP24_1700Z + 14 * 60 + 30), Settings()).command == Command::NONE);
+  const Decision late = stopped.tick(car.state(SEP24_1700Z + 14 * 60 + 30), Settings());
+  CHECK(late.command == Command::NONE);
+  CHECK_STR(late.status, "Charges at 01:00");
   car.charging = true;
   Controller charging = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
   CHECK(charging.tick(car.state(SEP24_1700Z + 13 * 60 + 30), Settings()).command == Command::NONE);
+
+  // A car that stops within half a percent of the limit is Charged, also in the window's last minutes.
+  FakeTesla stops = plugged_in(false);
+  stops.soc = 78;
+  Controller full = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
+  full.tick(stops.state(SEP24_1700Z), Settings());
+  stops.soc = 79.6f;
+  CHECK_STR(full.tick(stops.state(SEP24_1700Z + 14 * 60 + 30), Settings()).status, "Charged");
 }
 
 static void test_charges_as_usual_without_prices() {
@@ -1192,17 +1233,18 @@ static void test_fetch_prices_due() {
   CHECK(controller.fetch_prices_due(noon));                // no prices: at once,
   CHECK(!controller.fetch_prices_due(noon + 5 * 60 - 1));  // then every 5 minutes
   CHECK(controller.fetch_prices_due(noon + 5 * 60));
-  CHECK(controller.fetch_prices_due(noon + 15 * 60));              // also at the start of a quarter-hour
-  add_day(controller.prices, CET_SEP24);                           // today's, to 01:00
-  CHECK(!controller.fetch_prices_due(noon + 15 * 60 + HOUR - 1));  // tomorrow's: hourly
-  CHECK(controller.fetch_prices_due(noon + 15 * 60 + HOUR));
+  CHECK(controller.fetch_prices_due(noon + 15 * 60));
+  add_day(controller.prices, CET_SEP24);                         // today's, to 01:00
+  CHECK(!controller.fetch_prices_due(noon + 15 * 60 + HOUR));    // tomorrow's: not before 12:45 CET
   const int64_t publication = SEP24_1700Z - 6 * HOUR - 15 * 60;  // 12:45 CET: every 5 minutes
   CHECK(controller.fetch_prices_due(publication));
   CHECK(!controller.fetch_prices_due(publication + 4 * 60));
   CHECK(controller.fetch_prices_due(publication + 5 * 60));
   add_day(controller.prices, CET_SEP25);
   CHECK(!controller.fetch_prices_due(noon + 3 * HOUR));  // all in
-  CHECK(controller.fetch_prices_due(CET_SEP25 + 60));    // 01:00: the next delivery day is due
+  CHECK(!controller.fetch_prices_due(CET_SEP25 + 60));   // 01:00: the next delivery day,
+  CHECK(!controller.fetch_prices_due(publication + 24 * HOUR - 60));
+  CHECK(controller.fetch_prices_due(publication + 24 * HOUR));  // from 12:45 CET
 
   // A tick keeps the delivery day's prices, for its average, and drops the days before.
   Controller scheduling = with_prices();
@@ -1526,6 +1568,7 @@ static void test_windows_while_the_schedule_decides() {
   const Decision unplugged = with_prices().tick(FakeTesla().state(SEP24_1700Z), Settings());
   CHECK(unplugged.windows.empty());
   CHECK_STR(unplugged.status, "Unplugged");
+  CHECK_STR(unplugged.mode, "unplugged");
 }
 
 // ---------------------------------------------------------------------------
@@ -1564,7 +1607,7 @@ static void test_stop_charging_until_a_button_or_plug_in() {
   controller.stop_charging();  // unplugging ends it, and the next plug-in schedules again
   controller.tick(car.state(TROUGH + 18 * 60), Settings());
   car.unplug();
-  CHECK_STR(controller.tick(car.state(TROUGH + 19 * 60), Settings()).mode, "schedule");
+  CHECK_STR(controller.tick(car.state(TROUGH + 19 * 60), Settings()).mode, "unplugged");
   car.plug_in();
   CHECK_STR(controller.tick(car.state(TROUGH + 20 * 60), Settings()).mode, "schedule");
 
@@ -2268,6 +2311,8 @@ int main() {
   test_reads_the_charging_state();
   test_tells_its_own_starts_from_the_cars();
   test_complete_under_the_limit_is_charged();
+  test_reschedules_when_no_longer_complete();
+  test_reschedules_when_charging_runs_slow();
   test_no_start_for_a_windows_last_minutes();
   test_charges_as_usual_without_prices();
   test_waits_for_tomorrows_prices();

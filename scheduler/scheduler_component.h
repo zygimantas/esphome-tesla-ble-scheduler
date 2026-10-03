@@ -5,6 +5,7 @@
 #include "charger.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/button/button.h"
+#include "esphome/components/cover/cover.h"
 #include "esphome/components/datetime/datetime_entity.h"
 #include "esphome/components/datetime/time_entity.h"
 #include "esphome/components/http_request/http_request.h"
@@ -14,19 +15,14 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/core/component.h"
-#include "esphome/core/defines.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
-#ifdef USE_COVER
-#include "esphome/components/cover/cover.h"
-#endif
 
 namespace esphome::scheduler {
 
 class SchedulerComponent;
 
-// "Ready by": the daily local time the car should be charged by. Saved like ESPHome's template time,
-// so the value set before this component existed carries over.
+// "Ready by": the daily local time the car should be charged by, saved under its name.
 class ReadyBy : public datetime::TimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
@@ -37,7 +33,7 @@ class ReadyBy : public datetime::TimeEntity, public Parented<SchedulerComponent>
 };
 
 // "Ready by once": a one-off date and time used instead of Ready by while it's ahead; 2000-01-01 when
-// unset. Saved like ESPHome's template datetime.
+// unset. Saved under its name.
 class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
@@ -72,8 +68,8 @@ class SchedulerComponent : public PollingComponent {
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
   void set_nord_pool_area(const char *area) { this->area_ = area; }
   void set_currency(const char *currency) { this->settings_.currency = currency; }
-  void set_battery_kwh(float kwh) { this->settings_.capacity_kwh = kwh; }
-  void set_charging_kw(float kw) { this->settings_.charge_kw = kw; }
+  void set_battery_kwh(float kwh) { this->settings_.battery_kwh = kwh; }
+  void set_charging_kw(float kw) { this->settings_.charging_kw = kw; }
   void set_ntfy(const char *server, const char *topic) {
     this->ntfy_server_ = server;
     this->ntfy_topic_ = topic;
@@ -143,10 +139,8 @@ class SchedulerComponent : public PollingComponent {
   number::Number *limit_{nullptr};
   switch_::Switch *charger_{nullptr};
   button::Button *wake_{nullptr};
-#ifdef USE_COVER
   cover::Cover *port_{nullptr};
   bool port_reported_{false};  // the cover reads open until the car reports it
-#endif
   float last_limit_{NAN};
 
   // What the buttons chose, kept across a restart (Controller::held_mode()).

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest release gets fixes. Updating is one line in `config.yaml` (see Updating in the README), so there is no reason to stay on an older one.
+Only the latest release gets fixes. Updating is one line in `config.yaml` (see [Settings](README.md#settings) in the README), so there is no reason to stay on an older one.
 
 ## Reporting a vulnerability
 

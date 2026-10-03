@@ -2,7 +2,7 @@
 """Mutation testing of charger.h and the headers it includes, from the repository root (it takes about 40
 minutes):
 
-    python3 test/mutation_test.py path/to/ArduinoJson/src
+    python3 test/mutation_test.py ArduinoJson/src
 
 universalmutator (run with uvx, from uv) writes copies of each header with one small change each. The unit tests
 build against every copy that changes the code, with the other headers as they are, and run with undefined behavior
@@ -87,13 +87,13 @@ def main():
             out = tmp / path.stem
             out.mkdir()
             mutate = ["uvx", "--from", "universalmutator", "mutate", path, "cpp", "--noCheck", "--mutantDir", out]
-            subprocess.run(mutate, check=True, capture_output=True)
+            subprocess.run(mutate, check=True, stdout=subprocess.DEVNULL)  # its errors and uv's show
             files = sorted(out.glob(f"{path.stem}.mutant.*.h"), key=lambda f: int(f.name.split(".")[2]))
             texts = (f.read_text() for f in files)
             mutants += [(path, m) for m in texts if code(m) != code(originals[path])]  # not just comments
         reference = build(originals, tmp / "original", json_src)
         if reference is None or not passes(reference):
-            sys.exit("The unit tests fail without mutants")
+            sys.exit("The unit tests don't build, or fail, without mutants")
         same = digest(reference)
         tested = {same}
         lock = threading.Lock()

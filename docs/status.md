@@ -31,6 +31,6 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 ## The board and the page
 
 - **Unplugged**: the car isn't plugged in.
-- **Tesla entities not found**: the Tesla part of the firmware is missing. Install again from a clean folder with the example `config.yaml`.
+- **Tesla entities not found**: the Tesla part of the firmware is missing. Install again from a clean folder with `config.example.yaml`.
 - **Connecting …**: the page has just opened and waits for the board.
 - **No connection**: the page lost the board. Check that the phone is on the same Wi-Fi and the board has power; the page reconnects by itself.

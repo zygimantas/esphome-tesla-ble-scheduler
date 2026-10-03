@@ -31,7 +31,7 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
       - run: uvx pre-commit run --all-files --show-diff-on-failure
-      - name: The versions agree, in config.example.yaml, device.yaml, ci.yml and codeql.yml
+      - name: The versions agree, in config.example.yaml, device.yaml, the workflows and CONTRIBUTING.md
         run: |
           version=$(yq '.esphome.project.version' device.yaml)
           template=$(yq '.substitutions.version' config.example.yaml)
@@ -43,10 +43,13 @@ jobs:
             echo "::error file=device.yaml::min_version differs from ESPHOME_VERSION in ci.yml ($ESPHOME_VERSION)"
             exit 1
           fi
-          if [ "$(yq '.env.ESPHOME_VERSION' .github/workflows/codeql.yml)" != "$ESPHOME_VERSION" ]; then
-            echo "::error file=.github/workflows/codeql.yml::ESPHOME_VERSION differs from ci.yml ($ESPHOME_VERSION)"
+          if [ "$(yq '.env' .github/workflows/codeql.yml)" != "$(yq '.env | del(.CLANG_TIDY_VERSION)' .github/workflows/ci.yml)" ]; then
+            echo "::error file=.github/workflows/codeql.yml::env differs from ci.yml's"
             exit 1
           fi
+          for pin in "clang-tidy==$CLANG_TIDY_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
+            grep -q -F "$pin" CONTRIBUTING.md || { echo "::error file=CONTRIBUTING.md::should say $pin, as ci.yml does"; exit 1; }
+          done
 
   unit-tests:
     name: Unit tests, coverage and clang-tidy
@@ -91,13 +94,18 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: false
-      - name: Secrets, from the example with a random API key
-        run: sed "s|random-key-from-esphome.io/components/api|$(openssl rand -base64 32)|" secrets.example.yaml > secrets.yaml
+      - name: Secrets, from the example with a random API key and a hotspot password
+        run: |
+          sed -e "s|random-key-from-esphome.io/components/api|$(openssl rand -base64 32)|" \
+            -e 's|"REPLACEME"|"ci-hotspot-password"|' secrets.example.yaml > secrets.yaml
       - name: Simulation, starting a stopped car in a cheap quarter-hour
         run: |
           uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
-          CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' \
-            timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log
+          # pty.spawn gives the program a terminal. Anything that ends it before the timeout (124) fails the step.
+          CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c \
+            'import os, pty, sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(sys.argv[1:])) != 124)' \
+            timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log ||
+            { cat simulation.log; exit 1; }
           grep -F '][scheduler' simulation.log
           grep -q -F 'Start charging (Starting)' simulation.log
       - name: Firmware, as users build it, from this commit on GitHub
