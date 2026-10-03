@@ -12,7 +12,7 @@ You get an answer within a week. A confirmed problem is fixed in a release, with
 
 ## What counts
 
-The firmware (`device.yaml`, `charging/`, `web/`), the example settings files and the GitHub workflows are in scope. Examples of things worth reporting:
+The firmware (`device.yaml`, `scheduler/`, `web/`), the example settings files and the GitHub workflows are in scope. Examples of things worth reporting:
 
 - The board sending the car a command it shouldn't, or accepting one from someone who isn't on your Wi-Fi.
 - Your Wi-Fi password, API key, VIN or ntfy topic ending up somewhere they shouldn't, such as a log, the page or a release file.

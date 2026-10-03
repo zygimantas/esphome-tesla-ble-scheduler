@@ -1,35 +1,5 @@
-charging:
-  grid:
-    holidays:
-      - 01-01
-      - 02-16
-      - 03-11
-      - easter
-      - easter+1
-      - 05-01
-      - 06-24
-      - 07-06
-      - 08-15
-      - 11-01
-      - 11-02
-      - 12-24
-      - 12-25
-      - 12-26
-    hours:
-      holiday:  nnnnnnndddddddddddddddnn
-      weekend:  nnnnnnndddddddddddddddnn
-      workday:  nnnnnmmddddddddddeeeeenn
-    prices:
-      n: 0.06292
-      m: 0.08349
-      d: 0.10406
-      e: 0.14641
-  market:
-    area: LT
-    vat: 0.21
-
 external_components:
-  - components: [charging]
+  - components: [scheduler]
     source:
       path: .
       ref: ${version}
@@ -38,6 +8,13 @@ external_components:
 
 packages:
   device: github://zygimantas/esphome-tesla-ble-scheduler/device.yaml@${version}
+
+scheduler:
+  grid:
+    pricelist: lt/eso-standartinis-4-zones
+  market:
+    area: LT
+    vat: 0.21
 
 substitutions:
   ntfy_server: https://ntfy.sh

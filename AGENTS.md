@@ -9,7 +9,7 @@ What the code, README.md and CONTRIBUTING.md don't say. Each folder has its own 
 - Keep answers short. No en or em dashes in anything a user reads: the page, phone messages, the docs.
 - No AI attribution: no Co-Authored-By trailer in commits and no "Generated with" line in pull requests.
 - `gh pr create` and `gh issue create` skip GitHub's templates, so write what they would ask for. A pull request body has the two headings of .github/PULL_REQUEST_TEMPLATE.md, "What changed and why" and "How it was checked". An issue has the fields of the matching form in .github/ISSUE_TEMPLATE as headings: for a bug, What happened, Release, Car, charger and area, What the page showed, Log; for an improvement, The problem, The proposal, Who it helps. Label it bug or enhancement.
-- The owner's names: "charging", not "smart charging"; "grid" for the network's fees (`grid: prices:`, by zone) and "market" for Nord Pool's prices (`market:`), not "tariff"; "prices" are Nord Pool prices; a "slot" is one quarter-hour and a "window" a run of them; car settings start with `tesla_`.
+- The owner's names: "charging", not "smart charging"; "grid" for the network's fees (`grid: rates:`) and "market" for Nord Pool's prices (`market:`), not "tariff"; "prices" are Nord Pool prices; a "price list" is a file in pricelists/ with a grid operator's plan (`grid: pricelist:`); "plan" alone is the charging plan, and an operator's is named, like "ESO's Standartinis plan"; a "slot" is one quarter-hour and a "window" a run of them; car settings start with `tesla_`.
 - README.md and docs/ are for non-technical users: short, plain and in English only (a translation was removed on request).
 - Install tools with Homebrew or mise, never pip; run one-off tools with uvx or npx.
 
@@ -27,7 +27,8 @@ It charges the owner's car every night.
 
 ## How users get it
 
-- Users' config.yaml loads device.yaml and the charging component from a release tag on GitHub; the owner's points at this folder instead (`source: .` for the component, `!include device.yaml`). A change to device.yaml reaches users only with a release.
+- Users' config.yaml loads device.yaml and the scheduler component from a release tag on GitHub; the owner's points at this folder instead (`source: .` for the component, `!include device.yaml`). A change to device.yaml reaches users only with a release.
+- Boards download their price list from pricelists/ on `main` every day, while the build checks the one in the release it installs. A change there reaches every board within a day, without a release, so it has to read with the code that's out: a format change needs a new folder.
 - In device.yaml, a relative path that's missing next to the user's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the user's folder: that's why the component's source is in config.yaml, not in device.yaml. It's also why users download only config.example.yaml and secrets.example.yaml, attached to each release: a web/ folder next to their config.yaml would win over the release's page.
 
 ## Settled; don't propose again
@@ -45,6 +46,6 @@ Parked for later, as issues #12 and #25: a per-start penalty, so the planner spl
 ## The owner's Mac
 
 - zsh doesn't split `$flags` into words: use `${=flags}` or an array. It also reads `$sha:r` as a modifier, so write `${sha}:refs/heads/main`.
-- sed and grep are BSD's: `sed -i ''`, and `grep -F` for patterns like `][charging`.
+- sed and grep are BSD's: `sed -i ''`, and `grep -F` for patterns like `][scheduler`.
 - `script -q` fails when its output is redirected. Give a program a terminal with `python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' <command>`.
 - Docker runs `ubuntu:24.04`, which has CI's compilers.

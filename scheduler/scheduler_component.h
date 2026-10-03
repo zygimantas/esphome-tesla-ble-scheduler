@@ -1,8 +1,8 @@
 #pragma once
-// Connects the planner and controller in charging.h to ESPHome: the web page's entities, Nord Pool
-// downloads, phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
+// Connects the controller in charger.h to ESPHome: the web page's entities, Nord Pool and price list downloads,
+// phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
-#include "charging.h"
+#include "charger.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/button/button.h"
 #include "esphome/components/datetime/datetime_entity.h"
@@ -21,13 +21,13 @@
 #include "esphome/components/cover/cover.h"
 #endif
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
-class ChargingComponent;
+class SchedulerComponent;
 
 // "Ready by": the daily local time the car should be charged by. Saved like ESPHome's template time,
 // so the value set before this component existed carries over.
-class ReadyBy : public datetime::TimeEntity, public Parented<ChargingComponent> {
+class ReadyBy : public datetime::TimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
 
@@ -38,7 +38,7 @@ class ReadyBy : public datetime::TimeEntity, public Parented<ChargingComponent> 
 
 // "Ready by once": a one-off date and time used instead of Ready by while it's ahead; 2000-01-01 when
 // unset. Saved like ESPHome's template datetime.
-class ReadyByOnce : public datetime::DateTimeEntity, public Parented<ChargingComponent> {
+class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
 
@@ -50,7 +50,7 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<ChargingCom
 enum class Action { CREATE_PLAN, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
 // The page's Create charging plan, Start charging now, Stop charging and Reset savings.
-class ActionButton : public button::Button, public Parented<ChargingComponent> {
+class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }
 
@@ -59,7 +59,7 @@ class ActionButton : public button::Button, public Parented<ChargingComponent> {
   Action action_{};
 };
 
-class ChargingComponent : public PollingComponent {
+class SchedulerComponent : public PollingComponent {
  public:
   void setup() override;
   // One tick: read the car, decide, carry out the command and publish the results.
@@ -78,7 +78,14 @@ class ChargingComponent : public PollingComponent {
     this->ntfy_server_ = server;
     this->ntfy_topic_ = topic;
   }
-  void set_grid(const Grid &grid) { this->controller_.set_grid(grid); }
+  // The VAT on market prices; the price list's name and the copy built in, both empty without a list; and the
+  // grid: settings of config.yaml, written as read_grid() reads them.
+  void set_grid(float vat, const char *pricelist, const char *list, const char *own) {
+    this->vat_ = vat;
+    this->pricelist_ = pricelist;
+    this->list_ = list;
+    this->own_ = own;
+  }
   void set_ready_by(ReadyBy *ready_by) { this->ready_by_ = ready_by; }
   void set_ready_by_once(ReadyByOnce *ready_by_once) { this->ready_by_once_ = ready_by_once; }
   void set_status(text_sensor::TextSensor *status) { this->status_ = status; }
@@ -96,7 +103,10 @@ class ChargingComponent : public PollingComponent {
 
  protected:
   void tick_soon_();
+  std::string apply_grid_(const std::string &list);
+  std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
+  void fetch_price_list_(int64_t now);
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);
 
@@ -105,6 +115,12 @@ class ChargingComponent : public PollingComponent {
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
   const char *area_{""};
+  float vat_{0.0f};
+  const char *pricelist_{""};
+  const char *own_{""};
+  std::string list_;  // the price list in use: the copy built in until a download brings another
+  int64_t list_tried_at_{0};
+  bool list_usable_{false};  // whether the latest download brought a list the board can use
   const char *ntfy_server_{""};
   const char *ntfy_topic_{""};          // empty: no phone messages
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it
@@ -139,4 +155,4 @@ class ChargingComponent : public PollingComponent {
   ESPPreferenceObject savings_pref_;  // Controller::savings
 };
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

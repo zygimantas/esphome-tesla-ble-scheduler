@@ -1,19 +1,22 @@
-#include "charging_component.h"
+#include "scheduler_component.h"
 
 #include "esphome/components/json/json_util.h"
 #include "esphome/components/network/util.h"
 #include "esphome/core/application.h"
 #include "esphome/core/log.h"
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
-static const char *const TAG = "charging";
+static const char *const TAG = "scheduler";
 
 // Keys of ESPHome's template time and datetime, so Ready by keeps the value saved before this component.
 static constexpr uint32_t READY_BY_KEY = 194434060U;
 static constexpr uint32_t READY_BY_ONCE_KEY = 194434090U;
-// One day of LT prices is about 11 kB.
-static constexpr size_t MAX_PRICES_BYTES = 24 * 1024;
+// The most the board reads of an answer: a day of LT prices is about 11 kB, and a price list about 1 kB.
+static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
+// The price lists as their maintainers keep them current, on GitHub.
+static const char *const PRICE_LISTS =
+    "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/pricelists/";
 
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>(READY_BY_KEY);
@@ -90,9 +93,13 @@ static auto find(const List &entities, const char *name) {
   return found;
 }
 
-void ChargingComponent::setup() {
+void SchedulerComponent::setup() {
+  const std::string error = this->apply_grid_(this->list_);
+  if (!error.empty())
+    ESP_LOGE(TAG, "Grid: %s", error.c_str());
   this->ready_by_->restore();
   this->ready_by_once_->restore();
+  // This key and the savings' keep the component's old name, so what boards saved before carries over.
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("charging_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
@@ -127,7 +134,7 @@ void ChargingComponent::setup() {
 #endif
 }
 
-void ChargingComponent::update() {
+void SchedulerComponent::update() {
   const ESPTime now = this->clock_->now();
   CarState car;
   car.now = now.is_valid() ? now.timestamp : 0;
@@ -142,7 +149,7 @@ void ChargingComponent::update() {
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 #endif
 
-  // The clock's time zone without summer time: charging.h applies EU summer time itself.
+  // The clock's time zone without summer time: calendar.h applies EU summer time itself.
   Settings &settings = this->settings_;
   settings.standard_offset = ESPTime::timezone_offset() - (now.is_dst ? 3600 : 0);
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
@@ -154,6 +161,9 @@ void ChargingComponent::update() {
   // The clock keeps running through a restart, so wait for the network too.
   if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
     this->fetch_prices_(car.now);
+  if (network::is_connected() && this->pricelist_[0] != '\0' &&
+      price_list_due(car.now, this->list_tried_at_, this->list_usable_))
+    this->fetch_price_list_(car.now);
 
   Decision d = this->controller_.tick(car, settings);
   if (this->controller_.held_mode() != this->held_) {
@@ -197,27 +207,28 @@ void ChargingComponent::update() {
   publish(this->savings_, d.savings);
 }
 
-void ChargingComponent::dump_config() {
+void SchedulerComponent::dump_config() {
   ESP_LOGCONFIG(TAG,
-                "Charging:\n"
+                "Scheduler:\n"
                 "  Nord Pool area: %s, prices in %s\n"
+                "  Grid: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
                 this->area_[0] != '\0' ? this->area_ : "none, the grid prices are the whole price",
-                this->settings_.currency, this->settings_.capacity_kwh, this->settings_.charge_kw,
-                this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->settings_.currency, this->pricelist_[0] != '\0' ? this->pricelist_ : "the rates in config.yaml",
+                this->settings_.capacity_kwh, this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
 // A new Ready by, or a button: the message about the old plan, if still unsent, isn't true any more.
-void ChargingComponent::replan() {
+void SchedulerComponent::replan() {
   this->unsent_.reset();
   this->controller_.replan();
   this->tick_soon_();
 }
 
-void ChargingComponent::press(Action action) {
+void SchedulerComponent::press(Action action) {
   if (action != Action::RESET_SAVINGS)  // a plan button: a message about the old plan isn't true any more
     this->unsent_.reset();
   switch (action) {
@@ -238,14 +249,47 @@ void ChargingComponent::press(Action action) {
 }
 
 // On the next loop, so a tick never runs inside another entity's callback.
-void ChargingComponent::tick_soon_() {
+void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
+}
+
+// Uses `list`, a price list's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
+std::string SchedulerComponent::apply_grid_(const std::string &list) {
+  Grid grid;
+  const std::string error = make_grid(list, this->own_, this->settings_.currency, grid);
+  if (!error.empty())
+    return error;
+  grid.vat = this->vat_;
+  this->controller_.set_grid(grid);
+  this->list_ = list;
+  return "";
+}
+
+// A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
+std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response) {
+  std::string body;
+  uint8_t chunk[512];
+  uint32_t last_data = millis();
+  while (body.size() < MAX_BODY_BYTES) {
+    const int read = response.read(chunk, std::min(sizeof(chunk), MAX_BODY_BYTES - body.size()));
+    App.feed_wdt();
+    yield();
+    const auto result =
+        http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(), response.is_read_complete());
+    if (result == http_request::HttpReadLoopResult::COMPLETE)
+      return body;
+    if (result == http_request::HttpReadLoopResult::DATA)
+      body.append(reinterpret_cast<const char *>(chunk), read);
+    else if (result != http_request::HttpReadLoopResult::RETRY)
+      break;
+  }
+  return std::nullopt;
 }
 
 // Today's and tomorrow's CET delivery days, today's only while some of it is missing. A day not published
 // yet answers 204. A failed request ends the try: the next one would fail the same way and block the loop
 // again.
-void ChargingComponent::fetch_prices_(int64_t now) {
+void SchedulerComponent::fetch_prices_(int64_t now) {
   for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
     auto response = this->http_->get(nord_pool_url(this->area_, this->settings_.currency, now, day));
     if (response == nullptr) {
@@ -253,25 +297,11 @@ void ChargingComponent::fetch_prices_(int64_t now) {
       break;
     }
     if (response->status_code == http_request::HTTP_STATUS_OK) {
-      std::string body;
-      uint8_t chunk[512];
-      uint32_t last_data = millis();
-      while (body.size() < MAX_PRICES_BYTES) {
-        const int read = response->read(chunk, std::min(sizeof(chunk), MAX_PRICES_BYTES - body.size()));
-        App.feed_wdt();
-        yield();
-        const auto result = http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(),
-                                                                response->is_read_complete());
-        if (result == http_request::HttpReadLoopResult::RETRY)
-          continue;
-        if (result != http_request::HttpReadLoopResult::DATA)
-          break;
-        body.append(reinterpret_cast<const char *>(chunk), read);
-      }
+      const std::optional<std::string> body = this->read_body_(*response);
       response->end();  // before the parse: the connection's memory isn't needed any more
-      const int stored = this->controller_.prices.add_nord_pool(body.data(), body.size(), this->area_);
+      const int stored = body ? this->controller_.prices.add_nord_pool(body->data(), body->size(), this->area_) : -1;
       if (stored < 0) {
-        ESP_LOGW(TAG, "Nord Pool: could not parse %u bytes (cut off?)", static_cast<unsigned>(body.size()));
+        ESP_LOGW(TAG, "Nord Pool: %s", body ? "could not parse the answer" : "the answer was cut off");
       } else if (stored == 0) {
         ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check market: area", this->area_);
       } else {
@@ -287,9 +317,39 @@ void ChargingComponent::fetch_prices_(int64_t now) {
   }
 }
 
+// The price list as its maintainer keeps it, from GitHub. A failed or cut-off download, or a list the board can't use
+// with the grid: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
+void SchedulerComponent::fetch_price_list_(int64_t now) {
+  this->list_tried_at_ = now;
+  this->list_usable_ = false;
+  auto response = this->http_->get(std::string(PRICE_LISTS) + this->pricelist_ + ".yaml");
+  if (response == nullptr) {
+    ESP_LOGW(TAG, "Price list %s: request failed", this->pricelist_);
+    return;
+  }
+  const int status = response->status_code;
+  const std::optional<std::string> list =
+      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response) : std::nullopt;
+  response->end();
+  if (status != http_request::HTTP_STATUS_OK) {
+    ESP_LOGW(TAG, "Price list %s: GitHub answered HTTP %d", this->pricelist_, status);
+  } else if (!list) {
+    ESP_LOGW(TAG, "Price list %s: the download was cut off, so the one in use stays", this->pricelist_);
+  } else if (*list == this->list_) {
+    this->list_usable_ = true;
+  } else {
+    const std::string error = this->apply_grid_(*list);
+    this->list_usable_ = error.empty();
+    if (error.empty())
+      ESP_LOGI(TAG, "Price list %s: new prices", this->pricelist_);
+    else
+      ESP_LOGW(TAG, "Price list %s: %s, so the one in use stays", this->pricelist_, error.c_str());
+  }
+}
+
 // Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an
 // hour: a plan from then is still worth reading, an older one isn't.
-void ChargingComponent::send_unsent_(int64_t now) {
+void SchedulerComponent::send_unsent_(int64_t now) {
   if (!this->unsent_ || now - this->message_tried_at_ < 60)
     return;
   if (now - this->unsent_since_ > 30 * 60) {
@@ -305,7 +365,7 @@ void ChargingComponent::send_unsent_(int64_t now) {
 }
 
 // Whether ntfy took the message. Without a topic there's nothing to send.
-bool ChargingComponent::send_message_(const Notification &message) {
+bool SchedulerComponent::send_message_(const Notification &message) {
   if (this->ntfy_topic_[0] == '\0')
     return true;
   const std::string body = json::build_json([this, &message](JsonObject root) {
@@ -327,4 +387,4 @@ bool ChargingComponent::send_message_(const Notification &message) {
   return taken;
 }
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

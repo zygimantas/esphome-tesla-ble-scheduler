@@ -284,7 +284,7 @@ function renderPlan() {
   renderWindows();
 }
 
-// "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in charging.h: the windows in UTC
+// "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in planner.h: the windows in UTC
 // seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
 function renderWindows() {
   const [currency, ...entries] = text(E.windows).split(";");
@@ -342,7 +342,7 @@ async function stopCharging(message) {
 
 // --- Savings ---------------------------------------------------------------
 
-// "<currency>;<last 30 days>;<last 365 days>" from format_savings() in charging.h, each period as
+// "<currency>;<last 30 days>;<last 365 days>" from format_savings() in savings.h, each period as
 // "<Wh>,<paid>,<at the day's average>,<at once>" with the money in hundredths. Saved is the difference.
 function renderSavings() {
   const [currency, ...periods] = text(E.savings).split(";");

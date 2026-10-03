@@ -14,4 +14,4 @@ Checks: >-
   portability-*,
   -portability-avoid-pragma-once
 WarningsAsErrors: "*"
-HeaderFilterRegex: "charging/.*"
+HeaderFilterRegex: "(^|/)scheduler/[^/]*$"

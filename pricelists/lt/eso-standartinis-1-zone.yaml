@@ -1,0 +1,8 @@
+# ESO's Standartinis plan with one zone, prices with VAT: https://www.eso.lt
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.11132

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Mutation testing of charging/charging.h, from the repository root (it takes about half an hour):
+"""Mutation testing of charger.h and the headers it includes, from the repository root (it takes about 40
+minutes):
 
     python3 test/mutation_test.py path/to/ArduinoJson/src
 
-universalmutator (run with uvx, from uv) writes copies of charging.h with one small change each. The
-unit tests build against every copy that changes the code, and run with undefined behavior caught; a
-failing run kills the mutant. A survivor is a change no test notices: a missing test, or code that
-makes no difference. Copies that build the same program as charging.h or another copy count once.
+universalmutator (run with uvx, from uv) writes copies of each header with one small change each. The unit tests
+build against every copy that changes the code, with the other headers as they are, and run with undefined behavior
+caught; a failing run kills the mutant. A survivor is a change no test notices: a missing test, or code that makes no
+difference. Copies that build the same program as the headers or another copy count once.
 """
 
 import concurrent.futures
@@ -21,7 +22,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-SOURCE = Path("charging/charging.h")
+SOURCES = [Path("scheduler") / f"{name}.h" for name in ("calendar", "charger", "grid", "planner", "prices", "savings")]
 CHECKS = [
     "-fsanitize=address,undefined",
     "-fno-sanitize-recover=all",
@@ -36,15 +37,16 @@ def code(text):
     return " ".join(re.sub(literal_or_comment, lambda m: m.group(1) or " ", text, flags=re.S).split())
 
 
-def build(header, work, json_src):
-    """The unit tests built against `header` in `work`, or None when they don't build. The paths in the
-    program are the same in every `work`, so the same code builds the same program."""
-    (work / "charging").mkdir(parents=True)
-    (work / "charging" / "charging.h").write_text(header)
-    test = Path("test/charging_test.cpp").resolve()
-    command = ["c++", "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "charging_test"]
+def build(headers, work, json_src):
+    """The unit tests built against `headers`, the text of each of SOURCES, in `work`, or None when they don't build.
+    The paths in the program are the same in every `work`, so the same code builds the same program."""
+    (work / "scheduler").mkdir(parents=True)
+    for path, text in headers.items():
+        (work / path).write_text(text)
+    test = Path("test/scheduler_test.cpp").resolve()
+    command = ["c++", "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "scheduler_test"]
     built = subprocess.run(command, cwd=work, capture_output=True).returncode == 0
-    return work / "charging_test" if built else None
+    return work / "scheduler_test" if built else None
 
 
 def change(original, mutant):
@@ -75,14 +77,19 @@ def passes(binary):
 
 def main():
     json_src = Path(sys.argv[1]).resolve()
-    original = SOURCE.read_text()
+    originals = {path: path.read_text() for path in SOURCES}
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        mutate = ["uvx", "--from", "universalmutator", "mutate", SOURCE, "cpp", "--noCheck", "--mutantDir", tmp]
-        subprocess.run(mutate, check=True, capture_output=True)
-        files = sorted(tmp.glob("charging.mutant.*.h"), key=lambda f: int(f.name.split(".")[2]))
-        mutants = [m for m in (f.read_text() for f in files) if code(m) != code(original)]  # not just comments
-        reference = build(original, tmp / "original", json_src)
+        mutants = []  # (the header, its text with one change)
+        for path in SOURCES:
+            out = tmp / path.stem
+            out.mkdir()
+            mutate = ["uvx", "--from", "universalmutator", "mutate", path, "cpp", "--noCheck", "--mutantDir", out]
+            subprocess.run(mutate, check=True, capture_output=True)
+            files = sorted(out.glob(f"{path.stem}.mutant.*.h"), key=lambda f: int(f.name.split(".")[2]))
+            texts = (f.read_text() for f in files)
+            mutants += [(path, m) for m in texts if code(m) != code(originals[path])]  # not just comments
+        reference = build(originals, tmp / "original", json_src)
         if reference is None or not passes(reference):
             sys.exit("The unit tests fail without mutants")
         same = digest(reference)
@@ -93,8 +100,9 @@ def main():
             """The program's digest (None when it doesn't build), and whether its tests pass when it's the first
             mutant to build that program."""
             work = tmp / str(index)
+            path, text = mutants[index]
             try:
-                binary = build(mutants[index], work, json_src)
+                binary = build({**originals, path: text}, work, json_src)
                 if binary is None:
                     return None, None
                 program = digest(binary)
@@ -116,13 +124,14 @@ def main():
             first.setdefault(program, index)
     for program, index in first.items():
         if passed[program]:
-            number, before, after = change(original.splitlines(), mutants[index].splitlines())
-            print(f"{SOURCE}:{number}: {before}  ->  {after}")
+            path, text = mutants[index]
+            number, before, after = change(originals[path].splitlines(), text.splitlines())
+            print(f"{path}:{number}: {before}  ->  {after}")
     survivors = sum(passed[program] for program in first)
     invalid = sum(program is None for program, _ in outcomes)
     unchanged = sum(program == same for program, _ in outcomes)
     print(
-        f"{len(mutants)} mutants: {invalid} don't build, {unchanged} build the same program as {SOURCE.name}, "
+        f"{len(mutants)} mutants: {invalid} don't build, {unchanged} build the same program as the headers, "
         f"{len(mutants) - invalid - unchanged - len(first)} the same as another mutant. Of the other {len(first)}, "
         f"{len(first) - survivors} were killed and {survivors} survived: score {1 - survivors / max(1, len(first)):.1%}"
     )

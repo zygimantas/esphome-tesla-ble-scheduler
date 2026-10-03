@@ -65,7 +65,7 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
-| `grid` | Your grid fees, by zone and hour (see [Grid fees](#grid-fees)). |
+| `grid` | Your grid fees: the price list of your grid operator and plan, or your own rates (see [Grid fees](#grid-fees)). |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
@@ -98,9 +98,9 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 
 ## Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. It comes with ESO's 2026 Standartinis plan with four zones (Lithuania). [ESO plans](docs/eso.md) has ESO's other plans ready to paste, and [Grid fees](docs/grid-fees.md) explains the format for any other grid operator.
+The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. It names the price list for your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). The board downloads the current list every day, so new prices reach it without a reinstall. [ESO price lists](docs/eso.md) has ESO's other plans, and [Grid fees](docs/grid-fees.md) explains how to change a list's prices for yourself, or to write your own for another grid operator.
 
-With a fixed price, leave `market:` out: nothing is downloaded, and each zone's price in `grid:` becomes your whole price per kWh with VAT, the supplier's rate included. With one zone for every hour, all hours cost the same, so the board charges at once.
+With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `grid:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 
