@@ -29,8 +29,9 @@ CONF_VIN = "vin"
 
 # Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
 # area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, has the prices of the areas in
-# SMARD_AREAS, under its numbers and in euros only. Nord Pool has the rest, named as here unless NORD_POOL_AREAS says
-# otherwise, in NORD_POOL_CURRENCIES: in euros unless CURRENCIES has the country.
+# SMARD_AREAS, under its numbers, and OMIE, the Iberian market, those in OMIE_AREAS, both in euros only. Nord Pool has
+# the rest, named as here unless NORD_POOL_AREAS says otherwise, in NORD_POOL_CURRENCIES: in euros unless CURRENCIES has
+# the country.
 AREAS = [
     "AT",
     "BE",
@@ -41,6 +42,7 @@ AREAS = [
     "DK1",
     "DK2",
     "EE",
+    "ES",
     "FI",
     "FR",
     "HR",
@@ -56,6 +58,7 @@ AREAS = [
     "NO4",
     "NO5",
     "PL",
+    "PT",
     "RO",
     "SE1",
     "SE2",
@@ -67,6 +70,7 @@ NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
 NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
 CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 SMARD_AREAS = {"CH": 259, "CZ": 261, "HU": 262, "IT-NORTH": 255, "SI": 260}
+OMIE_AREAS = ["ES", "PT"]
 
 scheduler_ns = cg.esphome_ns.namespace("scheduler")
 SchedulerComponent = scheduler_ns.class_("SchedulerComponent", cg.PollingComponent)
@@ -74,6 +78,7 @@ ReadyBy = scheduler_ns.class_("ReadyBy", datetime.TimeEntity)
 ReadyByOnce = scheduler_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
 ActionButton = scheduler_ns.class_("ActionButton", button.Button)
 Action = scheduler_ns.enum("Action", is_class=True)
+Market = scheduler_ns.enum("Market", is_class=True)
 
 
 MARKET_SCHEMA = cv.Schema(
@@ -83,6 +88,15 @@ MARKET_SCHEMA = cv.Schema(
         cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
     }
 )
+
+
+def _market(area):
+    """Where an area's prices come from, the area as that source names it, and SMARD's number for it."""
+    if area in SMARD_AREAS:
+        return Market.SMARD, area, SMARD_AREAS[area]
+    if area in OMIE_AREAS:
+        return Market.OMIE, area, 0
+    return Market.NORD_POOL, NORD_POOL_AREAS.get(area, area), 0
 
 
 def _ntfy_topic(value):
@@ -118,7 +132,8 @@ def _currency(config):
     market = config.get(CONF_MARKET)
     area = market[CONF_AREA] if market else ""
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
-    source, currencies = ("SMARD", ["EUR"]) if area in SMARD_AREAS else ("Nord Pool", NORD_POOL_CURRENCIES)
+    source = "SMARD" if area in SMARD_AREAS else "OMIE" if area in OMIE_AREAS else "Nord Pool"
+    currencies = NORD_POOL_CURRENCIES if source == "Nord Pool" else ["EUR"]
     if market and config[CONF_CURRENCY] not in currencies:
         raise cv.Invalid(f"{source}'s prices come in {', '.join(currencies)}", [CONF_CURRENCY])
     name = config[CONF_TARIFF].get(CONF_PLAN)
@@ -160,8 +175,7 @@ async def to_code(config):
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
     market = config.get(CONF_MARKET)
     if market:
-        area = market[CONF_AREA]
-        cg.add(var.set_market(NORD_POOL_AREAS.get(area, area), SMARD_AREAS.get(area, 0)))
+        cg.add(var.set_market(*_market(market[CONF_AREA])))
     cg.add(var.set_currency(config[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))

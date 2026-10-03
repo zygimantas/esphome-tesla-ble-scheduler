@@ -45,6 +45,9 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerCo
 
 enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
+// Where the board downloads the market prices.
+enum class Market { NORD_POOL, SMARD, OMIE };
+
 // The page's Create schedule, Start charging now, Stop charging and Reset savings.
 class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
@@ -66,8 +69,9 @@ class SchedulerComponent : public PollingComponent {
 
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
-  // The market area as Nord Pool names it, or SMARD's number for it, which then has its prices.
-  void set_market(const char *area, int smard_filter) {
+  // Where the market prices come from, the area as that source names it, and SMARD's number for it.
+  void set_market(Market market, const char *area, int smard_filter) {
+    this->market_ = market;
     this->area_ = area;
     this->smard_filter_ = smard_filter;
   }
@@ -107,6 +111,9 @@ class SchedulerComponent : public PollingComponent {
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
+  const char *market_name_() const;
+  std::string prices_url_(int64_t now, int day) const;
+  int store_prices_(const std::string &body);
   void fetch_plan_(int64_t now);
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);
@@ -115,6 +122,7 @@ class SchedulerComponent : public PollingComponent {
   Settings settings_;
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
+  Market market_{Market::NORD_POOL};
   const char *area_{""};
   int smard_filter_{0};
   float vat_{0.0f};

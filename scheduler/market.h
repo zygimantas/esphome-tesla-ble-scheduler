@@ -1,6 +1,6 @@
 #pragma once
-// The market: the day-ahead prices from Nord Pool or SMARD, where to download them, and the quarter-hours' prices.
-// Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
+// The market: the day-ahead prices from Nord Pool, SMARD or OMIE, where to download them, and the quarter-hours'
+// prices. Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <optional>
 #include <string>
 #include <utility>
@@ -50,6 +51,16 @@ inline std::string smard_url(int filter, int64_t now, int day_offset) {
   char buf[128];
   std::snprintf(buf, sizeof(buf), "https://www.smard.de/app/chart_data/%d/DE/%d_DE_quarterhour_%lld.json", filter,
                 filter, static_cast<long long>(monday) * 1000);
+  return buf;
+}
+
+// OMIE's file of the day-ahead prices of Spain and Portugal for the CET delivery day `day_offset` days after `now`.
+inline std::string omie_url(int64_t now, int day_offset) {
+  const CivilDate date = civil_from_days(local_day_of(now, CET_STANDARD_OFFSET) + day_offset);
+  char buf[128];
+  std::snprintf(buf, sizeof(buf),
+                "https://www.omie.es/es/file-download?parents=marginalpdbc&filename=marginalpdbc_%04d%02u%02u.1",
+                static_cast<int>(date.year), date.month, date.day);
   return buf;
 }
 
@@ -106,6 +117,27 @@ class PriceTable {
       if (!point[0].is<int64_t>() || !point[1].is<float>())
         continue;
       set(point[0].as<int64_t>() / 1000, point[1].as<float>() / 1000.0f);
+      ++stored;
+    }
+    return stored;
+  }
+
+  // Stores the quarter-hour prices (per kWh) from OMIE's file of a day: a line per quarter-hour of the CET day,
+  // year;month;day;quarter-hour from 1;Portugal's price;Spain's price; per MWh. Returns how many were stored for
+  // `area`, ES or PT, or -1 if it isn't such a file.
+  int add_omie(const char *text, size_t length, const char *area) {
+    const std::string file(text, length);
+    if (file.rfind("MARGINALPDBC;", 0) != 0)
+      return -1;
+    const bool portugal = std::strcmp(area, "PT") == 0;
+    int stored = 0;
+    for (size_t at = file.find('\n'); at != std::string::npos; at = file.find('\n', at + 1)) {
+      int year, month, day, quarter;
+      float pt, es;
+      if (std::sscanf(file.c_str() + at + 1, "%d;%d;%d;%d;%f;%f;", &year, &month, &day, &quarter, &pt, &es) != 6)
+        continue;
+      const int64_t midnight = local_to_utc(days_from_civil(year, month, day), 0, CET_STANDARD_OFFSET);
+      set(midnight + (quarter - 1) * SLOT_SECONDS, (portugal ? pt : es) / 1000.0f);
       ++stored;
     }
     return stored;

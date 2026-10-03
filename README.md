@@ -25,7 +25,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 - A USB-C cable with the plug your computer takes, for the setup.
 - A USB-C phone charger, with a socket near the car, to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
-- Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Romania, Slovenia, Sweden or Switzerland. [Countries](docs/countries.md) has the details, and how to use a fixed price instead.
+- Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovenia, Spain, Sweden or Switzerland. [Countries](docs/countries.md) has the details, and how to use a fixed price instead.
 - A computer to install and update the board.
 
 ## AI assisted setup
@@ -122,6 +122,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits and license
 
-The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal and from SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur or any grid operator. Use it at your own risk.
+The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal, from SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0) and from OMIE (OMI-Polo Español, S.A.). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur, OMIE or any grid operator. Use it at your own risk.
 
 Licensed under the GNU Affero General Public License v3.0; see [LICENSE](LICENSE).
