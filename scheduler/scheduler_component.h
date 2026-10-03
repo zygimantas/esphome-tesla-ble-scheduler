@@ -21,13 +21,13 @@
 #include "esphome/components/cover/cover.h"
 #endif
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
-class ChargingComponent;
+class SchedulerComponent;
 
 // "Ready by": the daily local time the car should be charged by. Saved like ESPHome's template time,
 // so the value set before this component existed carries over.
-class ReadyBy : public datetime::TimeEntity, public Parented<ChargingComponent> {
+class ReadyBy : public datetime::TimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
 
@@ -38,7 +38,7 @@ class ReadyBy : public datetime::TimeEntity, public Parented<ChargingComponent> 
 
 // "Ready by once": a one-off date and time used instead of Ready by while it's ahead; 2000-01-01 when
 // unset. Saved like ESPHome's template datetime.
-class ReadyByOnce : public datetime::DateTimeEntity, public Parented<ChargingComponent> {
+class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerComponent> {
  public:
   void restore();
 
@@ -50,7 +50,7 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<ChargingCom
 enum class Action { CREATE_PLAN, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
 // The page's Create charging plan, Start charging now, Stop charging and Reset savings.
-class ActionButton : public button::Button, public Parented<ChargingComponent> {
+class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }
 
@@ -59,7 +59,7 @@ class ActionButton : public button::Button, public Parented<ChargingComponent> {
   Action action_{};
 };
 
-class ChargingComponent : public PollingComponent {
+class SchedulerComponent : public PollingComponent {
  public:
   void setup() override;
   // One tick: read the car, decide, carry out the command and publish the results.
@@ -155,4 +155,4 @@ class ChargingComponent : public PollingComponent {
   ESPPreferenceObject savings_pref_;  // Controller::savings
 };
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

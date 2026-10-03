@@ -1,6 +1,6 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
-charging.h decides; charging_component.h connects it to ESPHome. This file checks the settings when you build,
+charging.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
 grid.py the grid: block and its price list, and creates the web page's entities.
 """
 
@@ -60,12 +60,12 @@ NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
 NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
 CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
 
-charging_ns = cg.esphome_ns.namespace("charging")
-ChargingComponent = charging_ns.class_("ChargingComponent", cg.PollingComponent)
-ReadyBy = charging_ns.class_("ReadyBy", datetime.TimeEntity)
-ReadyByOnce = charging_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
-ActionButton = charging_ns.class_("ActionButton", button.Button)
-Action = charging_ns.enum("Action", is_class=True)
+scheduler_ns = cg.esphome_ns.namespace("scheduler")
+SchedulerComponent = scheduler_ns.class_("SchedulerComponent", cg.PollingComponent)
+ReadyBy = scheduler_ns.class_("ReadyBy", datetime.TimeEntity)
+ReadyByOnce = scheduler_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
+ActionButton = scheduler_ns.class_("ActionButton", button.Button)
+Action = scheduler_ns.enum("Action", is_class=True)
 
 
 MARKET_SCHEMA = cv.Schema(
@@ -112,7 +112,7 @@ def _currency(config):
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(ChargingComponent),
+            cv.GenerateID(): cv.declare_id(SchedulerComponent),
             cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
             cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
             cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
@@ -132,7 +132,7 @@ CONFIG_SCHEMA = cv.All(
 # The web page finds these entities by name, and the board keeps Ready by and Ready by once under theirs, so the
 # names are fixed.
 def _entity(cls, key, name, **extra):
-    return {CONF_ID: cv.declare_id(cls)(f"charging_{key}"), CONF_NAME: name, CONF_DISABLED_BY_DEFAULT: False, **extra}
+    return {CONF_ID: cv.declare_id(cls)(f"scheduler_{key}"), CONF_NAME: name, CONF_DISABLED_BY_DEFAULT: False, **extra}
 
 
 async def to_code(config):

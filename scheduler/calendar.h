@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <string>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 // A slot is one quarter-hour, Nord Pool's price period.
 constexpr int64_t SLOT_SECONDS = 15 * 60;
@@ -109,4 +109,4 @@ inline std::string format_when(int64_t utc, int64_t now, int32_t standard_offset
              : format_day_hhmm(utc, standard_offset);
 }
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

@@ -7,22 +7,6 @@ button:
   - name: "Wake up"
     platform: template
 
-charging:
-  battery_kwh: 75
-  charging_kw: 11
-  grid:
-    calendar:
-      jan-dec:
-        mon-sun: flat
-    rates:
-      flat: 0.11132
-  id: charging_id
-  market:
-    area: LT
-    vat: 0.21
-  time_id: sntp_time
-  vin: 5YJ3E1EA0KF000000
-
 esphome:
   includes:
     - charging_test_tesla.h
@@ -31,12 +15,12 @@ esphome:
     priority: -100
     then:
       - lambda: |-
-          auto &controller = id(charging_id).controller();
+          auto &controller = id(scheduler_id).controller();
           charging_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
           controller.replan();
 
 external_components:
-  - components: [charging]
+  - components: [scheduler]
     source: ..
 
 host:
@@ -60,6 +44,22 @@ number:
       - lambda: charging_test::tesla().limit = x;
     step: 1
     update_interval: 5s
+
+scheduler:
+  battery_kwh: 75
+  charging_kw: 11
+  grid:
+    calendar:
+      jan-dec:
+        mon-sun: flat
+    rates:
+      flat: 0.11132
+  id: scheduler_id
+  market:
+    area: LT
+    vat: 0.21
+  time_id: sntp_time
+  vin: 5YJ3E1EA0KF000000
 
 sensor:
   - lambda: return charging_test::tesla().soc;

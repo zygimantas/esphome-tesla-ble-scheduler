@@ -1,5 +1,5 @@
 // Unit tests for charging.h and the headers it includes; CONTRIBUTING.md says how to build and run them.
-#include "charging/charging.h"
+#include "scheduler/charging.h"
 #include "charging_test_tesla.h"
 
 #include <algorithm>
@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-using namespace esphome::charging;
+using namespace esphome::scheduler;
 using charging_test::FakeTesla;
 using charging_test::plugged_in;
 
@@ -843,7 +843,7 @@ static void test_price_lists_in_the_repository() {
   CHECK(lists >= 8);
 
   // grid.py checks the same limits before the board gets the settings.
-  std::ifstream source("charging/grid.py");
+  std::ifstream source("scheduler/grid.py");
   std::stringstream python;
   python << source.rdbuf();
   const std::string code = python.str();

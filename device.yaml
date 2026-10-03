@@ -3,14 +3,6 @@ api:
     key: !secret api_encryption_key
   reboot_timeout: 0s
 
-charging:
-  battery_kwh: ${tesla_battery_kwh}
-  charging_kw: ${tesla_charging_kw}
-  ntfy_server: ${ntfy_server}
-  ntfy_topic: ${ntfy_topic}
-  time_id: sntp_time
-  vin: ${tesla_vin}
-
 debug:
   update_interval: never
 
@@ -48,6 +40,14 @@ packages:
 psram:
   mode: octal
   speed: 80MHz
+
+scheduler:
+  battery_kwh: ${tesla_battery_kwh}
+  charging_kw: ${tesla_charging_kw}
+  ntfy_server: ${ntfy_server}
+  ntfy_topic: ${ntfy_topic}
+  time_id: sntp_time
+  vin: ${tesla_vin}
 
 substitutions:
   ble_mac_address: "00:00:00:00:00:00"

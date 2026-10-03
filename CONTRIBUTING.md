@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` decides, with `calendar.h`, `grid.h`, `planner.h`, `prices.h` and `savings.h` for dates, grid fees, the plan, Nord Pool prices and the savings (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charging.h` decides, with `calendar.h`, `grid.h`, `planner.h`, `prices.h` and `savings.h` for dates, grid fees, the plan, Nord Pool prices and the savings (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -44,7 +44,7 @@ The unit tests cover every line and branch of those six headers, and CI fails wh
 clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/charging_test.cpp -o charging_test
 LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
 llvm-profdata merge charging_test.profraw -o charging_test.profdata
-llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/calendar.h charging/charging.h charging/grid.h charging/planner.h charging/prices.h charging/savings.h
+llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary scheduler/calendar.h scheduler/charging.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h
 # Mutation testing, about half an hour
 python3 test/mutation_test.py path/to/ArduinoJson/src
 ```
@@ -77,7 +77,7 @@ The PR title becomes the commit subject on `main`, so it follows [Conventional C
 | `chore`    | Maintenance with no product impact |
 | `revert`   | Reverting a previous change        |
 
-**Scopes** (optional but preferred) follow the repository layout: `charging` (the component in `charging/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the price lists in `pricelists/`) and `docs`. Tests take the scope of what they test.
+**Scopes** (optional but preferred) follow the repository layout: `scheduler` (the component in `scheduler/`), `web` (the page in `web/`), `board` (`device.yaml` and the example files), `grid` (the price lists in `pricelists/`) and `docs`. Tests take the scope of what they test.
 
 A workflow labels the pull request from the type: `fix` is bug, `feat` is enhancement, `docs` is documentation, and the rest maintenance. A `!` before the colon, as in `feat(board)!: ...`, marks a change users must act on, and adds breaking. The release notes list breaking changes first, group the rest by those labels and leave maintenance out.
 

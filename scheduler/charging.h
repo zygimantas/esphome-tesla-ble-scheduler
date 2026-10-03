@@ -1,7 +1,7 @@
 #pragma once
 // Charges the Tesla in the cheapest quarter-hours before Ready by.
 //
-// Every 30 s ChargingComponent (charging_component.h) passes the car's state to Controller::tick(), which re-plans
+// Every 30 s SchedulerComponent (scheduler_component.h) passes the car's state to Controller::tick(), which re-plans
 // when needed (planner.h), counts what charging cost and saved (savings.h), and returns what to do.
 //
 // Plain C++17 with nothing from ESPHome, like the headers it includes, so it can be unit-tested on a computer.
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 enum class Command { NONE, START_CHARGING, STOP_CHARGING, WAKE };
 
@@ -544,4 +544,4 @@ class Controller {
   int64_t at_once_charged_ = 0;
 };
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

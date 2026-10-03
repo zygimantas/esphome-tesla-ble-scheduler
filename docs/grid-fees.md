@@ -3,7 +3,7 @@
 The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name the price list of their grid operator and plan:
 
 ```yaml
-charging:
+scheduler:
   grid:
     pricelist: lt/eso-standartinis-4-zones
   market:
@@ -22,7 +22,7 @@ Next to `pricelist:`, these change the list for you alone:
 - `calendar` and `clock`: your own calendar or clock, instead of the list's whole one.
 
 ```yaml
-charging:
+scheduler:
   grid:
     pricelist: lt/eso-standartinis-4-zones
     exceptions:
@@ -46,7 +46,7 @@ Without a price list for your grid operator, write the grid yourself, or [add a 
 ESO's four zones, with a public holiday:
 
 ```yaml
-charging:
+scheduler:
   grid:
     calendar:
       jan-dec:
@@ -64,7 +64,7 @@ charging:
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
 ```yaml
-charging:
+scheduler:
   grid:
     calendar:
       apr-oct:
@@ -95,7 +95,7 @@ Leave `market:` out: nothing is downloaded, and each rate's price is your whole 
 All hours then cost the same, so the board charges at once. With day and night prices, give each its rate, and the board charges in the cheap one. A night rate that starts on the half-hour, like Octopus Go's from 00:30 to 05:30 in the UK, with your rates:
 
 ```yaml
-charging:
+scheduler:
   currency: GBP
   grid:
     calendar:

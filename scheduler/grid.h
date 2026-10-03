@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 // The grid settings as written (format in docs/grid-fees.md): a price list from pricelists/, or the grid: block of
 // config.yaml, which the build writes out the same way. Keys and lines stay text, in the order written.
@@ -273,4 +273,4 @@ inline bool price_list_due(int64_t now, int64_t tried_at, bool usable) {
   return now - tried_at >= (usable ? DAY_SECONDS : 3600);
 }
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

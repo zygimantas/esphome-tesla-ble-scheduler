@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <string>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 // The energy the car took from the grid on one local day, what it cost, and what it would have cost at the
 // delivery day's average total price and charging at once (see Controller::count_() in charging.h). Money in
@@ -60,4 +60,4 @@ inline std::string format_savings(const Savings &savings) {
   return text;
 }
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

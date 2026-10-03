@@ -4,10 +4,10 @@
 #include <string>
 
 // The ESPHome build has the component's copy; the unit tests use the repository's.
-#if __has_include("esphome/components/charging/charging.h")
-#include "esphome/components/charging/charging.h"
+#if __has_include("esphome/components/scheduler/charging.h")
+#include "esphome/components/scheduler/charging.h"
 #else
-#include "charging/charging.h"
+#include "scheduler/charging.h"
 #endif
 
 namespace charging_test {
@@ -49,11 +49,11 @@ struct FakeTesla {
   // Into a 75 kWh pack at the planner's EFFICIENCY; stops at the limit.
   void advance(int seconds) {
     if (charging && soc < limit)
-      soc = std::fmin(limit, soc + power_kw() * esphome::charging::EFFICIENCY * seconds / 3600.0f / 75.0f * 100.0f);
+      soc = std::fmin(limit, soc + power_kw() * esphome::scheduler::EFFICIENCY * seconds / 3600.0f / 75.0f * 100.0f);
     charging = charging && soc < limit;
   }
-  esphome::charging::CarState state(int64_t now) const {
-    esphome::charging::CarState s;
+  esphome::scheduler::CarState state(int64_t now) const {
+    esphome::scheduler::CarState s;
     s.now = now;
     s.plugged = plugged;
     s.charging_state = charging_state();
@@ -81,8 +81,8 @@ inline FakeTesla &tesla() {
 // Three days of synthetic prices from a day before `now`: cheap 01:00-05:00 local, expensive 17:00-22:00.
 // CHEAP_NOW=1 shifts them so that now is 01:30, in the cheap hours, and makes those negative, so they
 // win whatever grid fee applies at this time of day.
-inline void load_synthetic_prices(esphome::charging::PriceTable &prices, int64_t now) {
-  using namespace esphome::charging;
+inline void load_synthetic_prices(esphome::scheduler::PriceTable &prices, int64_t now) {
+  using namespace esphome::scheduler;
   const int64_t first = floor_to_slot(now) - DAY_SECONDS;
   const bool cheap_now = std::getenv("CHEAP_NOW") != nullptr;
   int64_t shift = 0;

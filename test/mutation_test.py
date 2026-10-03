@@ -22,7 +22,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-SOURCES = [Path("charging") / f"{name}.h" for name in ("calendar", "charging", "grid", "planner", "prices", "savings")]
+SOURCES = [Path("scheduler") / f"{name}.h" for name in ("calendar", "charging", "grid", "planner", "prices", "savings")]
 CHECKS = [
     "-fsanitize=address,undefined",
     "-fno-sanitize-recover=all",
@@ -40,7 +40,7 @@ def code(text):
 def build(headers, work, json_src):
     """The unit tests built against `headers`, the text of each of SOURCES, in `work`, or None when they don't build.
     The paths in the program are the same in every `work`, so the same code builds the same program."""
-    (work / "charging").mkdir(parents=True)
+    (work / "scheduler").mkdir(parents=True)
     for path, text in headers.items():
         (work / path).write_text(text)
     test = Path("test/charging_test.cpp").resolve()

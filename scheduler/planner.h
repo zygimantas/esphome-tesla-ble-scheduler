@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 constexpr float EFFICIENCY = 0.9f;  // share of the grid energy that reaches the battery
 constexpr int BUFFER_SLOTS = 1;     // one slot more than needed, in case charging runs slow
@@ -139,4 +139,4 @@ inline std::string format_windows(const Plan &plan, const char *currency) {
   return text;
 }
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler

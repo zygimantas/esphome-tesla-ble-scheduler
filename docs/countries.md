@@ -33,7 +33,7 @@ Some fees depend on your highest power instead, like Norway's capacity step. Unt
 
 ## A fixed price
 
-With a fixed price, or one that changes only with the hour of the day, leave `market:` out: nothing is downloaded, and each rate's price in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `charging:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
+With a fixed price, or one that changes only with the hour of the day, leave `market:` out: nothing is downloaded, and each rate's price in `grid:` is your whole price per kWh with VAT. It works in any country whose clocks change on the EU's dates, in any currency, like `currency: GBP` under `scheduler:`. [Grid fees](grid-fees.md#a-fixed-price) has an example.
 
 ## Not supported yet
 

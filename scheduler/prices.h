@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-namespace esphome::charging {
+namespace esphome::scheduler {
 
 // Nord Pool delivery days run midnight to midnight CET.
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
@@ -122,4 +122,4 @@ class PriceTable {
   std::vector<std::pair<int64_t, float>> slots_;
 };
 
-}  // namespace esphome::charging
+}  // namespace esphome::scheduler
