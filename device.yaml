@@ -23,7 +23,7 @@ esphome:
   name: tesla
   project:
     name: zygimantas.esphome-tesla-ble-scheduler
-    version: 3.1.0
+    version: 3.2.0
 
 http_request:
   timeout: 15s
