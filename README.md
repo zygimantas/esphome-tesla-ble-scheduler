@@ -66,7 +66,7 @@ Your settings in `config.yaml`:
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
-| `market: margin` | Your supplier's own price per kWh on top of the market price, without VAT, as your contract says, like `0.01`. Leave it out if there's none. |
+| `market: margin` | Your supplier's own price per kWh on top of the market price, with VAT, like `0.012`. Leave it out if there's none. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
@@ -76,6 +76,8 @@ Your settings in `config.yaml`:
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
 | `timezone` | The time zone the car lives in, like `Europe/Vilnius`, `Europe/Helsinki` or `Europe/Oslo`. |
 | `version` | The release the board runs, like `v3.0.0`. |
+
+Every price you write, here and in `tariff:`, is per kWh with VAT, as on your bill. The board adds `market: vat` only to the market prices it downloads.
 
 After a change, run `esphome run config.yaml` again and choose the board's network address: it updates over Wi-Fi. If a setting is wrong, ESPHome stops and says what.
 

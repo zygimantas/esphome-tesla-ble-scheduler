@@ -128,12 +128,12 @@ inline std::string day_rates(const std::string &line, const std::vector<std::str
   return "";
 }
 
-// What the tariff adds to a kWh: the supplier's margin on market prices and the VAT on both, and the tariff's rates for
-// each quarter-hour, from make_tariff(). The times are local time, or winter time all year with clock: winter. Without
-// a calendar, no rates: market prices only.
+// What the tariff adds to a kWh: the VAT on market prices, the supplier's margin, and the tariff's rates for each
+// quarter-hour, from make_tariff(). The times are local time, or winter time all year with clock: winter. Without a
+// calendar, no rates: market prices only.
 struct Tariff {
-  float margin = 0.0f;  // per kWh, without VAT, like the market prices
   float vat = 0.0f;
+  float margin = 0.0f;  // per kWh with VAT, like the rates
   bool winter_clock = false;
   std::vector<std::array<std::string, 7>> weeks;        // the calendar: a day's rates by day of the week from Sunday
   std::array<uint8_t, 12> week_of_month{};              // which of the weeks each month has, from January
@@ -265,7 +265,7 @@ inline float tariff_fee(int64_t utc, const Tariff &tariff, int32_t standard_offs
 // The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that
 // are the same in every quarter-hour (the supplier's margin, public service obligations).
 inline float total_price(float spot_price, int64_t slot_start, const Tariff &tariff, int32_t standard_offset) {
-  return (spot_price + tariff.margin) * (1.0f + tariff.vat) + tariff_fee(slot_start, tariff, standard_offset);
+  return spot_price * (1.0f + tariff.vat) + tariff.margin + tariff_fee(slot_start, tariff, standard_offset);
 }
 
 // Whether to download the plan at `now`: daily after a try that brought a plan the board can use, the one in use or a

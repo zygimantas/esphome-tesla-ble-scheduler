@@ -160,8 +160,8 @@ async def to_code(config):
     tariff = config[CONF_TARIFF]
     name = tariff.get(CONF_PLAN, "")
     text = (PLANS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
-    margin, vat = (market[CONF_MARGIN], market[CONF_VAT]) if market else (0.0, 0.0)
-    cg.add(var.set_tariff(margin, vat, name, text, write_tariff(tariff)))
+    vat, margin = (market[CONF_VAT], market[CONF_MARGIN]) if market else (0.0, 0.0)
+    cg.add(var.set_tariff(vat, margin, name, text, write_tariff(tariff)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)
