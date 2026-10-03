@@ -1,6 +1,6 @@
 #pragma once
-// Nord Pool's day-ahead prices: where to download them, and the quarter-hours' prices. Plain C++17 plus ArduinoJson,
-// with nothing from ESPHome, like charger.h.
+// The market: Nord Pool's day-ahead prices, where to download them, and the quarter-hours' prices. Plain C++17 plus
+// ArduinoJson, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 

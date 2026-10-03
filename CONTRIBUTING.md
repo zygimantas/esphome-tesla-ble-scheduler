@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `grid.h`, `planner.h`, `prices.h` and `savings.h` for dates, grid fees, the plan, Nord Pool prices and the savings (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `grid.h`, `market.h`, `planner.h` and `savings.h` for dates, grid fees, Nord Pool prices, the plan and the savings (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -84,7 +84,7 @@ A workflow labels the pull request from the type: `fix` is bug, `feat` is enhanc
 Write the summary in the imperative mood, lower case, with no trailing period:
 
 ```
-feat(charging): suggest a later ready-by when it's much cheaper
+feat(scheduler): suggest a later ready-by when it's much cheaper
 fix(web): keep ready by hidden until prices arrive
 chore(grid): update the ESO fees for 2027
 ```

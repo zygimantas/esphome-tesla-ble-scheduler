@@ -8,8 +8,8 @@
 
 #include "calendar.h"
 #include "grid.h"
+#include "market.h"
 #include "planner.h"
-#include "prices.h"
 #include "savings.h"
 
 #include <algorithm>
