@@ -62,7 +62,7 @@ def _line(value):
         _rate(rate)
     minutes = 0
     for when in words[1::2]:
-        m = re.fullmatch(r"(\d\d):(00|15|30|45)", when)
+        m = re.fullmatch(r"([0-9]{2}):(00|15|30|45)", when)
         if not m or not minutes < int(m[1]) * 60 + int(m[2]) < 24 * 60:
             raise cv.Invalid(f"{when} isn't a later quarter-hour, like 07:00 or 22:15")
         minutes = int(m[1]) * 60 + int(m[2])
@@ -91,7 +91,7 @@ def _each_once(names, what, example):
 def _date(value):
     """A date like 12-25. 02-29 passes: it exists in leap years."""
     value = cv.string_strict(value)
-    m = re.fullmatch(r"(\d\d)-(\d\d)", value)
+    m = re.fullmatch(r"([0-9]{2})-([0-9]{2})", value)
     if (
         not m
         or not 1 <= int(m[1]) <= 12
