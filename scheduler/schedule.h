@@ -1,7 +1,7 @@
 #pragma once
-// The charging plan: the cheapest quarter-hours before the deadline, priced at Nord Pool's spot price (market.h) plus
-// VAT and the grid fee (grid.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17,
-// with nothing from ESPHome, like charger.h.
+// The schedule: the cheapest quarter-hours before the deadline, priced at Nord Pool's spot price (market.h) plus VAT
+// and the grid fee (grid.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17, with
+// nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 #include "grid.h"
@@ -39,7 +39,7 @@ struct Settings {
   const char *currency = "EUR";  // of the Nord Pool prices and the grid fees
 };
 
-struct PlanRequest {
+struct ScheduleRequest {
   int64_t now = 0;
   int64_t deadline = 0;
   float soc = NAN;
@@ -60,7 +60,7 @@ struct Window {
   bool spare() const { return energy_kwh < 0.05f; }
 };
 
-struct Plan {
+struct Schedule {
   bool valid = false;      // false when this quarter-hour has no price
   int needed_slots = 0;    // to reach the limit, plus the buffer
   int horizon_slots = 0;   // from this quarter-hour to the deadline
@@ -74,12 +74,12 @@ struct Plan {
   }
 };
 
-inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
-  Plan plan;
+inline Schedule make_schedule(const PriceTable &prices, const ScheduleRequest &request) {
+  Schedule schedule;
   const int64_t known_until = prices.known_until(request.now);
   if (known_until <= request.now)
-    return plan;
-  plan.valid = true;
+    return schedule;
+  schedule.valid = true;
   const int64_t priced_end = std::min(request.deadline, known_until);
   const int64_t first = floor_to_slot(request.now);
   std::vector<float> totals;  // total_price() of each slot from `first` to priced_end
@@ -87,14 +87,14 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
     // Up to known_until(), every slot has a price.
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access,clang-analyzer-core.CallAndMessage)
     totals.push_back(total_price(*prices.get(t), t, request.grid, request.settings.standard_offset));
-  plan.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
-  plan.horizon_slots = static_cast<int>(totals.size()) + plan.unpriced_slots;
+  schedule.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
+  schedule.horizon_slots = static_cast<int>(totals.size()) + schedule.unpriced_slots;
   const float missing_kwh = (request.limit - request.soc) / 100.0f * request.settings.capacity_kwh;
   const float slot_kwh = request.settings.charge_kw * (SLOT_SECONDS / 3600.0f) * EFFICIENCY;
-  plan.needed_slots = missing_kwh > 0.05f ? static_cast<int>(std::ceil(missing_kwh / slot_kwh)) + BUFFER_SLOTS : 0;
+  schedule.needed_slots = missing_kwh > 0.05f ? static_cast<int>(std::ceil(missing_kwh / slot_kwh)) + BUFFER_SLOTS : 0;
   // No guessing: while the quarter-hours without prices could still do all the charging, it waits for
   // their prices; else it buys only what they can't do.
-  const int buy = plan.needed_slots - plan.unpriced_slots;
+  const int buy = schedule.needed_slots - schedule.unpriced_slots;
   // The car charges through the chosen slots in turn at charge_kw, from now in the current one, and
   // stops at the limit: the last slot is often only partly used, or spare (the buffer).
   float soc = request.soc, energy_kwh = 0, cost_eur = 0;
@@ -107,31 +107,31 @@ inline Plan make_plan(const PriceTable &prices, const PlanRequest &request) {
     const float grid_kwh = stored_kwh / EFFICIENCY;
     energy_kwh += grid_kwh;
     cost_eur += grid_kwh * totals[i];
-    if (plan.windows.empty() || plan.windows.back().end != start)
-      plan.windows.push_back({start, start});
-    Window &w = plan.windows.back();
+    if (schedule.windows.empty() || schedule.windows.back().end != start)
+      schedule.windows.push_back({start, start});
+    Window &w = schedule.windows.back();
     w.end = start + SLOT_SECONDS;
     w.energy_kwh += grid_kwh;
     w.cost_eur += grid_kwh * totals[i];
   }
-  for (Window &w : plan.windows) {
+  for (Window &w : schedule.windows) {
     const auto begin = totals.begin() + (w.start - first) / SLOT_SECONDS;
     const int64_t count = (w.end - w.start) / SLOT_SECONDS;
     w.avg_price = w.energy_kwh > 0 ? w.cost_eur / w.energy_kwh
                                    : std::accumulate(begin, begin + count, 0.0f) / static_cast<float>(count);
   }
-  plan.avg_price = cost_eur / energy_kwh;  // NaN (0 / 0) when the car takes nothing
-  plan.soc_at_end = soc;
-  return plan;
+  schedule.avg_price = cost_eur / energy_kwh;  // NaN (0 / 0) when the car takes nothing
+  schedule.soc_at_end = soc;
+  return schedule;
 }
 
-// The plan's windows for the web page: "<currency>;<start>,<end>,<price per kWh>[,spare];...", in UTC seconds with each
-// window's price (see Window::avg_price), marked spare when the car shouldn't need it. For example
+// The schedule's windows for the web page: "<currency>;<start>,<end>,<price per kWh>[,spare];...", in UTC seconds with
+// each window's price (see Window::avg_price), marked spare when the car shouldn't need it. For example
 // "EUR;1790463600,1790466300,0.203;1790467200,1790468100,0.211,spare". Just the currency without windows.
-inline std::string format_windows(const Plan &plan, const char *currency) {
+inline std::string format_windows(const Schedule &schedule, const char *currency) {
   std::string text = currency;
   char part[64];
-  for (const Window &w : plan.windows) {
+  for (const Window &w : schedule.windows) {
     std::snprintf(part, sizeof(part), ";%lld,%lld,%.3f%s", static_cast<long long>(w.start),
                   static_cast<long long>(w.end), w.avg_price, w.spare() ? ",spare" : "");
     text += part;

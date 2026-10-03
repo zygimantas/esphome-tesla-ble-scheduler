@@ -186,8 +186,8 @@ button:disabled {
   opacity: 0.4;
 }
 
-/* --- Plan card --- */
-#create-plan,
+/* --- Schedule card --- */
+#create-schedule,
 #stop-charging {
   margin-top: 0;
 }

@@ -41,7 +41,7 @@ void ReadyBy::control(const datetime::TimeCall &call) {
   this->publish_state();
   datetime::TimeEntityRestoreState saved{this->hour_, this->minute_, this->second_};
   this->pref_.save(&saved);
-  this->parent_->replan();
+  this->parent_->reschedule();
 }
 
 void ReadyByOnce::restore() {
@@ -77,7 +77,7 @@ void ReadyByOnce::control(const datetime::DateTimeCall &call) {
   datetime::DateTimeEntityRestoreState saved{this->year_, this->month_,  this->day_,
                                              this->hour_, this->minute_, this->second_};
   this->pref_.save(&saved);
-  this->parent_->replan();
+  this->parent_->reschedule();
 }
 
 void ActionButton::press_action() { this->parent_->press(this->action_); }
@@ -116,12 +116,12 @@ void SchedulerComponent::setup() {
   this->charger_ = find(App.get_switches(), "Charger");
   this->wake_ = find(App.get_buttons(), "Wake up");
   this->limit_ = find(App.get_numbers(), "Charging Limit");
-  // A new limit, from the web page, the car or the Tesla app, re-plans right away.
+  // A new limit, from the web page, the car or the Tesla app, reschedules right away.
   if (this->limit_ != nullptr) {
     this->limit_->add_on_state_callback([this](float value) {
       if (value != this->last_limit_) {
         this->last_limit_ = value;
-        this->unsent_.reset();  // a message about the old plan isn't true any more
+        this->unsent_.reset();  // a message about the old schedule isn't true any more
         this->tick_soon_();
       }
     });
@@ -221,19 +221,19 @@ void SchedulerComponent::dump_config() {
   LOG_UPDATE_INTERVAL(this);
 }
 
-// A new Ready by, or a button: the message about the old plan, if still unsent, isn't true any more.
-void SchedulerComponent::replan() {
+// A new Ready by, or a button: the message about the old schedule, if still unsent, isn't true any more.
+void SchedulerComponent::reschedule() {
   this->unsent_.reset();
-  this->controller_.replan();
+  this->controller_.reschedule();
   this->tick_soon_();
 }
 
 void SchedulerComponent::press(Action action) {
-  if (action != Action::RESET_SAVINGS)  // a plan button: a message about the old plan isn't true any more
+  if (action != Action::RESET_SAVINGS)  // a schedule button: a message about the old schedule isn't true any more
     this->unsent_.reset();
   switch (action) {
-    case Action::CREATE_PLAN:
-      this->controller_.create_plan();
+    case Action::CREATE_SCHEDULE:
+      this->controller_.create_schedule();
       break;
     case Action::CHARGE_NOW:
       this->controller_.charge_now();
@@ -306,7 +306,7 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
         ESP_LOGW(TAG, "Nord Pool: no prices for %s in the answer: check market: area", this->area_);
       } else {
         ESP_LOGI(TAG, "Nord Pool: stored %d quarter-hours", stored);
-        this->controller_.replan();
+        this->controller_.reschedule();
       }
     } else if (response->status_code != http_request::HTTP_STATUS_NO_CONTENT) {
       ESP_LOGW(TAG, "Nord Pool answered HTTP %d", response->status_code);
@@ -348,7 +348,7 @@ void SchedulerComponent::fetch_price_list_(int64_t now) {
 }
 
 // Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an
-// hour: a plan from then is still worth reading, an older one isn't.
+// hour: a schedule from then is still worth reading, an older one isn't.
 void SchedulerComponent::send_unsent_(int64_t now) {
   if (!this->unsent_ || now - this->message_tried_at_ < 60)
     return;

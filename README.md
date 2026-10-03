@@ -14,9 +14,9 @@ An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices av
 |---|---|
 | Plugged in and left to charge at once, as a Tesla does | 15.42 EUR |
 | The car's own schedule, starting at 23:00 | 6.27 EUR |
-| The board's plan, 00:45 to 05:30 | 4.05 EUR |
+| The board's schedule, 00:45 to 05:30 | 4.05 EUR |
 
-The board picks the quarter-hours by price, grid fee included, so it finds the cheap hours wherever they fall that day, which a fixed schedule can't. The numbers come from the board's planner run on the published prices. On a weekday the evening costs more still, as the evening fee applies.
+The board picks the quarter-hours by price, grid fee included, so it finds the cheap hours wherever they fall that day, which a fixed schedule can't. The numbers come from the board's scheduler run on the published prices. On a weekday the evening costs more still, as the evening fee applies.
 
 ## Prerequisites
 
@@ -65,7 +65,7 @@ Your settings in `config.yaml`:
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
-| `grid` | Your grid fees: the price list of your grid operator and plan, or your own rates (see [Grid fees](#grid-fees)). |
+| `grid` | Your grid fees: the price list for your grid operator's plan, or your own rates (see [Grid fees](#grid-fees)). |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several: `AT`, `BE`, `BG`, `DE` or `LU` (Germany and Luxembourg), `DK1`, `DK2`, `EE`, `FI`, `FR`, `HR`, `LT`, `LV`, `NL`, `NO1` to `NO5`, `PL`, `RO`, `SE1` to `SE4`. [Countries](docs/countries.md) has more. Leave `market:` out with a fixed price. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
@@ -84,9 +84,9 @@ After a change, run `esphome run config.yaml` again and choose the board's netwo
 
 Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it.
 
-- **When you plug in**, the board plans by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The plan lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the status says **Waiting for prices** until they're out.
-- **To change the plan**, press **Delete charging plan**, pick **Charge limit** and **Ready by**, then **Create charging plan**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
-- **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a plan, start charging or plug in again.
+- **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the status says **Waiting for prices** until they're out.
+- **To change the schedule**, press **Delete schedule**, pick **Charge limit** and **Ready by**, then **Create schedule**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
+- **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a schedule, start charging or plug in again.
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
@@ -94,7 +94,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the plan, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price: for lack of prices or of a battery level, or because charging was started from the car or the Tesla app.
+Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price: for lack of prices or of a battery level, or because charging was started from the car or the Tesla app.
 
 ## Grid fees
 
@@ -110,7 +110,7 @@ With a fixed price, leave `market:` out: no market prices are downloaded, and ea
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The plan's times are an hour or two off**: check `timezone` in `config.yaml`.
+- **The schedule's times are an hour or two off**: check `timezone` in `config.yaml`.
 - **ESPHome warns about the web_server OTA platform**: that's expected. The page accepts updates only on the board's backup Wi-Fi.
 
 ## Development

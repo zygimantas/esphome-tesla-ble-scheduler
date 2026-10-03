@@ -5,8 +5,8 @@
 - Build and run them from the repository root; the include paths assume it, and the tests read pricelists/ and scheduler/grid.py.
 - scheduler_test_tesla.h, the simulated Tesla, is also the simulation's car: keep it free of unit-test code.
 - CHECK is a macro: a comma outside parentheses, as in `std::vector<std::pair<A, B>>`, splits its argument. Use a type alias.
-- A plug-in counts as one (the phone message, a fresh plan mode) only after a tick with the car unplugged: the first plug state the controller sees is taken as the state after a restart.
-- On the first tick there's no plan yet, so a start from the car on that tick doesn't switch to charging now, unless Stop charging was in force. Tick once before.
+- A plug-in counts as one (the phone message, a fresh schedule mode) only after a tick with the car unplugged: the first plug state the controller sees is taken as the state after a restart.
+- On the first tick there's no schedule yet, so a start from the car on that tick doesn't switch to charging now, unless Stop charging was in force. Tick once before.
 - simulate() ticks every 30 s and can't tell a 2-minute limit from a 1:58 one. Test limits with your own ticks just before and at the boundary.
 
 ## The simulation

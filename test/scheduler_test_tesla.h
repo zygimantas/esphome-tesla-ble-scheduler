@@ -46,7 +46,7 @@ struct FakeTesla {
   }
   // 11 kW from the charger while charging, as in simulation.yaml.
   float power_kw() const { return charging ? 11.0f : 0.0f; }
-  // Into a 75 kWh pack at the planner's EFFICIENCY; stops at the limit.
+  // Into a 75 kWh pack at schedule.h's EFFICIENCY; stops at the limit.
   void advance(int seconds) {
     if (charging && soc < limit)
       soc = std::fmin(limit, soc + power_kw() * esphome::scheduler::EFFICIENCY * seconds / 3600.0f / 75.0f * 100.0f);
