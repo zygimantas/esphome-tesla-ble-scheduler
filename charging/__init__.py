@@ -1,7 +1,7 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
-charging.h plans and decides; charging_component.h connects it to ESPHome. This file checks the settings when you
-build, grid.py the grid's rates and the price list they start from, and creates the web page's entities.
+charging.h decides; charging_component.h connects it to ESPHome. This file checks the settings when you build,
+grid.py the grid: block and its price list, and creates the web page's entities.
 """
 
 import re
@@ -12,7 +12,7 @@ from esphome.components import button, datetime, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
 from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
 
-from .grid import CONF_CURRENCY, CONF_PRICELIST, GRID_SCHEMA, PRICE_LISTS, currency_code, price_list, write_grid
+from .grid import CONF_CURRENCY, CONF_PRICELIST, GRID_SCHEMA, PRICE_LISTS, price_list, write_grid
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
@@ -88,6 +88,13 @@ def _vin(value):
     return value
 
 
+def _currency_code(value):
+    value = cv.string_strict(value).upper()
+    if not re.fullmatch(r"[A-Z]{3}", value):
+        raise cv.Invalid("must be a currency's three-letter code, like EUR")
+    return value
+
+
 def _currency(config):
     """The market area's currency unless set, otherwise euros. Without a market, any currency. A price list's must be
     the same."""
@@ -110,7 +117,7 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
             cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
             cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
-            cv.Optional(CONF_CURRENCY): currency_code,
+            cv.Optional(CONF_CURRENCY): _currency_code,
             cv.Required(CONF_GRID): GRID_SCHEMA,
             cv.Optional(CONF_MARKET): MARKET_SCHEMA,
             cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,

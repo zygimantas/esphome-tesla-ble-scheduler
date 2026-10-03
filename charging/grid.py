@@ -17,7 +17,7 @@ CONF_RATES = "rates"
 # The price lists, which the build reads from this release and the board downloads from GitHub every day.
 PRICE_LISTS = Path(__file__).resolve().parent.parent / "pricelists"
 
-# The names of the days and months, in grid.h's order, from Sunday.
+# The days from Sunday and the months from January, as in grid.h.
 DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 MONTH_NAMES = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 # A day's rates are letters on the board, so a grid has 26 at most, and prices are below MAX_PRICE, as MAX_RATES and
@@ -31,7 +31,7 @@ NOT_NAMES = ["on", "off", "yes", "no", "true", "false", "null"]
 def _named(key, names):
     """The indexes `key` names among `names`: one name, or a range like fri-mon or nov-mar, which may wrap. None if
     it's neither."""
-    first, dash, last = str(key).partition("-")
+    first, dash, last = key.partition("-")
     last = last if dash else first
     if first not in names or last not in names:
         return None
@@ -107,32 +107,11 @@ def _keys(check, values):
     def validate(config):
         config = cv.Schema({cv.valid: values})(config)
         for key in config:
-            try:
+            with cv.prepend_path(key):
                 check(key)
-            except cv.Invalid as error:
-                raise cv.Invalid(error.msg, [key]) from error
         return config
 
     return validate
-
-
-def currency_code(value):
-    value = cv.string_strict(value).upper()
-    if not re.fullmatch(r"[A-Z]{3}", value):
-        raise cv.Invalid("must be a currency's three-letter code, like EUR")
-    return value
-
-
-def _check_rates(settings, own):
-    """Every rate the days use has a price, and every rate in `own` is used."""
-    lines = [rates for week in settings[CONF_CALENDAR].values() for rates in week.values()]
-    used = {rate for line in [*lines, *settings.get(CONF_EXCEPTIONS, {}).values()] for rate in _words(line)[::2]}
-    if missing := sorted(used - set(settings.get(CONF_RATES, {}))):
-        raise cv.Invalid(f"rate {missing[0]} needs a price per kWh, with VAT", [CONF_RATES])
-    if unused := sorted(set(own) - used):
-        raise cv.Invalid(f"rate {unused[0]} isn't used on any day", [CONF_RATES, unused[0]])
-    if len(settings.get(CONF_RATES, {})) > MAX_RATES:
-        raise cv.Invalid(f"has more than {MAX_RATES} rates, the price list's and yours together", [CONF_RATES])
 
 
 # The weeks by month, and the tables both price lists and config.yaml have.
@@ -148,7 +127,7 @@ TABLES = {
     cv.Optional(CONF_RATES): _keys(_rate, cv.float_range(min=0.0, max=MAX_PRICE, max_included=False)),
 }
 PRICE_LIST_SCHEMA = cv.Schema(
-    {cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): currency_code}
+    {cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): cv.string_strict}
 )
 
 
@@ -194,25 +173,30 @@ def _read(text):
 
 
 def price_list(name):
-    """A price list's settings, checked as the build checks config.yaml's, with every rate used."""
+    """A price list's settings, checked as the build checks config.yaml's."""
     try:
-        settings = PRICE_LIST_SCHEMA(_read((PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8")))
-        _check_rates(settings, settings.get(CONF_RATES, {}))
+        return PRICE_LIST_SCHEMA(_read((PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8")))
     except cv.Invalid as error:
         raise cv.Invalid(f"price list {name}: {error}") from error
-    return settings
 
 
 def _with_price_list(config):
-    """config.yaml's grid settings over the price list's, as make_grid() in grid.h puts them together."""
+    """config.yaml's grid settings over the price list's, as make_grid() in grid.h puts them together: every rate the
+    days use has a price, and every rate config.yaml sets is used."""
     settings = price_list(config[CONF_PRICELIST]) if CONF_PRICELIST in config else {}
-    if CONF_CALENDAR in config:
-        settings[CONF_CALENDAR] = config[CONF_CALENDAR]
-    for table in (CONF_EXCEPTIONS, CONF_RATES):
-        settings[table] = {**settings.get(table, {}), **config.get(table, {})}
-    if CONF_CALENDAR not in settings:
+    calendar = config.get(CONF_CALENDAR, settings.get(CONF_CALENDAR))
+    if calendar is None:
         raise cv.Invalid("needs a pricelist, or a calendar of its own")
-    _check_rates(settings, config.get(CONF_RATES, {}))
+    exceptions = {**settings.get(CONF_EXCEPTIONS, {}), **config.get(CONF_EXCEPTIONS, {})}
+    rates = {**settings.get(CONF_RATES, {}), **config.get(CONF_RATES, {})}
+    lines = [*(line for week in calendar.values() for line in week.values()), *exceptions.values()]
+    used = {rate for line in lines for rate in _words(line)[::2]}
+    if missing := sorted(used - set(rates)):
+        raise cv.Invalid(f"rate {missing[0]} needs a price per kWh, with VAT", [CONF_RATES])
+    if unused := sorted(set(config.get(CONF_RATES, {})) - used):
+        raise cv.Invalid(f"rate {unused[0]} isn't used on any day", [CONF_RATES, unused[0]])
+    if len(rates) > MAX_RATES:
+        raise cv.Invalid(f"has more than {MAX_RATES} rates, the price list's and yours together", [CONF_RATES])
     return config
 
 
@@ -228,7 +212,7 @@ def write_grid(grid):
     if CONF_CALENDAR in grid:
         lines.append(f"{CONF_CALENDAR}:")
         for months, week in grid[CONF_CALENDAR].items():
-            lines += [f"  {months}:", *(f"    {days}: {rates}" for days, rates in week.items())]
+            lines += [f"  {months}:", *(f"    {days}: {line}" for days, line in week.items())]
     if CONF_CLOCK in grid:
         lines.append(f"{CONF_CLOCK}: {grid[CONF_CLOCK]}")
     for table in (CONF_EXCEPTIONS, CONF_RATES):

@@ -808,9 +808,9 @@ static bool install_takes(const std::string &name) {
 static void test_price_lists_in_the_repository() {
   CHECK(install_takes("night") && install_takes("p1") && install_takes("højlast") && install_takes("winter-peak"));
   CHECK(!install_takes("") && !install_takes("1st") && !install_takes("Off") && !install_takes("a:b"));
-  // Each list reads on the board, alone and with its own currency, and uses all its rates. The install's own
-  // rules, in _read() and PRICE_LIST_SCHEMA in grid.py, also take its rate names, an upper-case currency, and
-  // each top-level key once, which the board doesn't ask.
+  // Each list reads on the board, alone and with its own currency, and uses all its rates. Its currency is one a
+  // board can have, three capital letters, and the install's own rules, in _read() and PRICE_LIST_SCHEMA in grid.py,
+  // also take its rate names and each top-level key once, which the board doesn't ask.
   int lists = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
     if (entry.path().extension() != ".yaml")
