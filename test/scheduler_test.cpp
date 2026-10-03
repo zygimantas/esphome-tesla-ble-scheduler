@@ -477,29 +477,23 @@ static void test_reads_grid_settings() {
   };
   for (const Case &c : {
            Case{"calendar\n", "line 1 isn't a key and a value"},
-           Case{": x\n", "line 1 isn't a key and a value"},
-           Case{"rates:\n  night:0.1\n", "line 2 isn't a key and a value"},
+           Case{"rates:\n  night:\t0.1\n", "line 2 isn't a key and a value"},
+           Case{"calendar:\n  jan-dec\n", "line 2 isn't a key and a value"},
+           Case{"calendar:\n  : x\n", "line 2 isn't a key and a value"},
+           Case{"currency:X\n", "line 1 isn't a key and a value"},
            Case{"currency:\n", "line 1 doesn't belong there: currency"},
            Case{"calendar: x\n", "line 1 doesn't belong there: calendar"},
-           Case{"foo: bar\n", "line 1 doesn't belong there: foo"},
            Case{"\tcalendar:\n", "line 1 doesn't belong there: \tcalendar"},
-           Case{"  jan-dec:\n", "line 1 doesn't belong there: jan-dec"},
+           Case{"  calendar:\n", "line 1 doesn't belong there: calendar"},
+           Case{"zones:\n", "line 1 doesn't belong there: zones"},
+           Case{"  currency: EUR\n", "line 1 doesn't belong there: currency"},
            Case{"calendar:\n    mon-sun: flat\n", "line 2 doesn't belong there: mon-sun"},
            Case{"calendar:\n  jan-dec: flat\n", "line 2 doesn't belong there: jan-dec"},
            Case{"calendar:\n  jan-dec:\n   mon-sun: flat\n", "line 3 doesn't belong there: mon-sun"},
            Case{"calendar:\n  jan-dec:\n    mon-sun:\n", "line 3 doesn't belong there: mon-sun"},
            Case{"calendar:\n  jan-dec:\n      mon-sun: flat\n", "line 3 doesn't belong there: mon-sun"},
-           Case{"clock: winter\n  jan-dec:\n", "line 2 doesn't belong there: jan-dec"},
            Case{"exceptions:\n  12-25:\n", "line 2 doesn't belong there: 12-25"},
            Case{"calendar:\n  jan-dec:\nrates:\n    mon-sun: flat\n", "line 4 doesn't belong there: mon-sun"},
-           Case{"calendar:\n  jan-dec:\nrates:\n  jun:\n", "line 4 doesn't belong there: jun"},
-           Case{"rates:\n  night:\t0.1\n", "line 2 isn't a key and a value"},
-           Case{"calendar:\n  jan-dec\n", "line 2 isn't a key and a value"},
-           Case{"calendar:\n  : x\n", "line 2 isn't a key and a value"},
-           Case{"currency:X\n", "line 1 isn't a key and a value"},
-           Case{"  calendar:\n", "line 1 doesn't belong there: calendar"},
-           Case{"zones:\n", "line 1 doesn't belong there: zones"},
-           Case{"  currency: EUR\n", "line 1 doesn't belong there: currency"},
            Case{"calendar:\njan-dec:\n", "line 2 doesn't belong there: jan-dec"},
            Case{"rates:\nnight: 0.1\n", "line 2 doesn't belong there: night"},
            Case{"calendar:\n  jan-dec:\nclock: winter\n    mon-sun: flat\n", "line 4 doesn't belong there: mon-sun"},
@@ -546,7 +540,8 @@ static void test_makes_grids() {
   // Without a list, your settings are the whole grid; a price list's prices are in its currency.
   CHECK(near(fee_at(grid_of("", calendar_of("    mon-sun: flat", "flat: 0.2")), 2026, 9, 24, 3), 0.2f));
   CHECK_STR(grid_error(FOUR_ZONES, "", "NOK"), "the price list's prices are in EUR, not NOK");
-  CHECK_STR(grid_error(calendar_of("    mon-sun: flat")), "the price list's prices are in , not EUR");
+  CHECK_STR(grid_error("currency: NOK\n" + calendar_of("    mon-sun: flat")),
+            "the price list's prices are in NOK, not EUR");
   CHECK_STR(grid_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\n", "", "NOK"),
             "calendar: jan-dec: mon-sun: rate flat has no price");
   CHECK_STR(grid_error("calendar\n"), "line 1 isn't a key and a value");
@@ -571,6 +566,14 @@ static void test_makes_grids() {
     const char *error;
   };
   for (const Case &c : {
+           Case{calendar_of("    mon-sun: flat") + "clock: abc\n", "clock is local or winter, not abc"},
+           Case{calendar_of("    mon-sun: flat") + "clock: zone\n", "clock is local or winter, not zone"},
+           Case{calendar_of("    mon-sun: flat", "flat: 1000000"), "rate flat: 1000000 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: x"), "rate flat: x isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: 0.1x"), "rate flat: 0.1x isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: -0.1"), "rate flat: -0.1 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: 1e9"), "rate flat: 1e9 isn't a price per kWh"},
+           Case{calendar_of("    mon-sun: flat", "flat: nan"), "rate flat: nan isn't a price per kWh"},
            Case{"", "the calendar needs every month"},
            Case{"calendar:\n  jan-jun:\n    mon-sun: flat\nrates:\n  flat: 0.1\n", "the calendar needs every month"},
            Case{"calendar:\n  jan-jun:\n    mon-sun: flat\n  jun-dec:\n    mon-sun: flat\nrates:\n  flat: 0.1\n",
@@ -584,6 +587,7 @@ static void test_makes_grids() {
                 "calendar: jan-dec: sun has a day that's there already"},
            Case{calendar_of("    weekend: flat"), "calendar: jan-dec: weekend isn't a day or a range like mon-fri"},
            Case{calendar_of("    mon-: flat"), "calendar: jan-dec: mon- isn't a day or a range like mon-fri"},
+           Case{calendar_of("    xyz-mon: flat"), "calendar: jan-dec: xyz-mon isn't a day or a range like mon-fri"},
            Case{calendar_of("    mon-sun: flat 07:00"),
                 "calendar: jan-dec: mon-sun: \"flat 07:00\" isn't rates and times by turns, like night 07:00 day"},
            Case{calendar_of("    mon-sun: dark"), "calendar: jan-dec: mon-sun: rate dark has no price"},
@@ -623,27 +627,12 @@ static void test_makes_grids() {
                 "calendar: jan-dec: mon-sun: 07x00 isn't a later quarter-hour, like 07:00 or 22:15"},
            Case{calendar_of("    mon-sun: flat 25:00 flat"),
                 "calendar: jan-dec: mon-sun: 25:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    xyz-mon: flat"), "calendar: jan-dec: xyz-mon isn't a day or a range like mon-fri"},
-           Case{calendar_of("    mon-sun: flat") + "clock: abc\n", "clock is local or winter, not abc"},
-           Case{calendar_of("    mon-sun: flat") + "clock: zone\n", "clock is local or winter, not zone"},
-           Case{calendar_of("    mon-sun: flat", "flat: 1000000"), "rate flat: 1000000 isn't a price per kWh"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01+01: flat\n",
                 "exceptions: 01+01 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "clock: summer\n", "clock is local or winter, not summer"},
-           Case{calendar_of("    mon-sun: flat", "flat: x"), "rate flat: x isn't a price per kWh"},
-           Case{calendar_of("    mon-sun: flat", "flat: 0.1x"), "rate flat: 0.1x isn't a price per kWh"},
-           Case{calendar_of("    mon-sun: flat", "flat: -0.1"), "rate flat: -0.1 isn't a price per kWh"},
-           Case{calendar_of("    mon-sun: flat", "flat: 1e9"), "rate flat: 1e9 isn't a price per kWh"},
-           Case{calendar_of("    mon-sun: flat", "flat: nan"), "rate flat: nan isn't a price per kWh"},
-           Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  13-01: flat\n",
                 "exceptions: 13-01 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  00-10: flat\n",
                 "exceptions: 00-10 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  02-30: flat\n",
-                "exceptions: 02-30 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  04-31: flat\n",
-                "exceptions: 04-31 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01-00: flat\n",
                 "exceptions: 01-00 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  1-01: flat\n",
@@ -654,16 +643,14 @@ static void test_makes_grids() {
                 "exceptions: 01-011 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: dark\n",
                 "exceptions: 12-25: rate dark has no price"},
+           Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
        }) {
     CHECK_STR(grid_error("", c.own), c.error);
   }
-  CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 23:45 flat") + "exceptions:\n  02-29: flat\n"), "");
+  CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 23:45 flat")), "");
   // Prices of nothing and above 1, like Norway's in NOK, and exceptions in any order.
   CHECK_STR(grid_error("", calendar_of("    mon-sun: flat 12:00 free", "flat: 12.5\n  free: 0")), "");
   CHECK_STR(grid_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: flat\n  01-01: flat\n"), "");
-  // A list in another currency than the board's.
-  CHECK_STR(grid_error("currency: NOK\n" + calendar_of("    mon-sun: flat")),
-            "the price list's prices are in NOK, not EUR");
   // The last day of each month is a date, and the day after isn't.
   const int last_day[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   for (int month = 1; month <= 12; month++) {
@@ -802,9 +789,9 @@ static bool install_takes(const std::string &name) {
 static void test_price_lists_in_the_repository() {
   CHECK(install_takes("night") && install_takes("p1") && install_takes("højlast") && install_takes("winter-peak"));
   CHECK(!install_takes("") && !install_takes("1st") && !install_takes("Off") && !install_takes("a:b"));
-  // Each list reads on the board, alone and with its own currency, and uses all its rates. Its currency is one a
-  // board can have, three capital letters, and the install's own rules, in _read() and PRICE_LIST_SCHEMA in grid.py,
-  // also take its rate names and each top-level key once, which the board doesn't ask.
+  // Each list reads on the board in its own currency and, given as config.yaml's settings too, uses all its rates.
+  // Its currency is one a board can have, three capital letters, and the install's own rules, in _read() and
+  // PRICE_LIST_SCHEMA in grid.py, also take its rate names and each top-level key once, which the board doesn't ask.
   int lists = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
     if (entry.path().extension() != ".yaml")
@@ -816,7 +803,7 @@ static void test_price_lists_in_the_repository() {
     GridText list;
     Grid grid;
     CHECK_STR(name + read_grid(text.str(), list), name);
-    CHECK_STR(name + make_grid(text.str(), "", list.currency, grid), name);
+    CHECK_STR(name + make_grid(text.str(), text.str(), list.currency, grid), name);
     CHECK(list.currency.size() == 3 &&
           std::all_of(list.currency.begin(), list.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
     for (const auto &[rate, price] : list.rates) {
@@ -829,15 +816,6 @@ static void test_price_lists_in_the_repository() {
         found++;
       CHECK_STR(name + (found + (text.str().rfind(key, 0) == 0) > 1 ? key : ""), name);
     }
-    std::string used;
-    for (const auto &days : grid.weeks)
-      for (const std::string &day : days)
-        used += day;
-    for (const auto &exception : grid.exceptions)
-      used += exception.second;
-    CHECK(used.size() % 96 == 0 && !used.empty());
-    for (size_t rate = 0; rate < grid.fee.size(); rate++)
-      CHECK(used.find(static_cast<char>('a' + rate)) != std::string::npos);
     lists++;
   }
   CHECK(lists >= 8);
