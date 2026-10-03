@@ -71,7 +71,7 @@ jobs:
           ./charging_test
       - name: Coverage of charging.h and the headers it includes, all of it
         run: |
-          headers=(charging/calendar.h charging/charging.h charging/grid.h charging/prices.h)
+          headers=(charging/calendar.h charging/charging.h charging/grid.h charging/planner.h charging/prices.h charging/savings.h)
           clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/charging_test.cpp -o charging_test
           LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
           llvm-profdata merge charging_test.profraw -o charging_test.profdata

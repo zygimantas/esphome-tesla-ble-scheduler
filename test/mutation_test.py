@@ -22,7 +22,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-SOURCES = [Path("charging") / f"{name}.h" for name in ("calendar", "charging", "grid", "prices")]
+SOURCES = [Path("charging") / f"{name}.h" for name in ("calendar", "charging", "grid", "planner", "prices", "savings")]
 CHECKS = [
     "-fsanitize=address,undefined",
     "-fno-sanitize-recover=all",

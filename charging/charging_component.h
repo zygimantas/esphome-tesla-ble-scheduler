@@ -1,6 +1,6 @@
 #pragma once
-// Connects the planner and controller in charging.h to ESPHome: the web page's entities, Nord Pool and price
-// list downloads, phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
+// Connects the controller in charging.h to ESPHome: the web page's entities, Nord Pool and price list downloads,
+// phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
 #include "charging.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"

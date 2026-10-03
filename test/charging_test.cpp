@@ -791,7 +791,7 @@ static void test_calendar_and_exceptions() {
   CHECK(uk(12, 1, 23 * 60 + 59) == 0.245f);
 }
 
-// Whether `name` is a rate name the install takes (_rate() in __init__.py): a word, not one YAML reads as true, false
+// Whether `name` is a rate name the install takes (_rate() in grid.py): a word, not one YAML reads as true, false
 // or nothing. Any byte past ASCII counts as a letter, as UTF-8 letters like the ø of højlast need.
 static bool install_takes(const std::string &name) {
   const auto letter = [](char c) { return std::isalpha(static_cast<unsigned char>(c)) || (c & 0x80); };
@@ -809,7 +809,7 @@ static void test_price_lists_in_the_repository() {
   CHECK(install_takes("night") && install_takes("p1") && install_takes("højlast") && install_takes("winter-peak"));
   CHECK(!install_takes("") && !install_takes("1st") && !install_takes("Off") && !install_takes("a:b"));
   // Each list reads on the board, alone and with its own currency, and uses all its rates. The install's own
-  // rules, in _read() and PRICE_LIST_SCHEMA in __init__.py, also take its rate names, an upper-case currency, and
+  // rules, in _read() and PRICE_LIST_SCHEMA in grid.py, also take its rate names, an upper-case currency, and
   // each top-level key once, which the board doesn't ask.
   int lists = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
@@ -846,10 +846,10 @@ static void test_price_lists_in_the_repository() {
   }
   CHECK(lists >= 8);
 
-  // __init__.py checks the same limits before the board gets the settings.
-  std::ifstream init("charging/__init__.py");
+  // grid.py checks the same limits before the board gets the settings.
+  std::ifstream source("charging/grid.py");
   std::stringstream python;
-  python << init.rdbuf();
+  python << source.rdbuf();
   const std::string code = python.str();
   std::smatch found;
   CHECK(std::regex_search(code, found, std::regex("\nMAX_RATES = (\\d+)\n")) && std::stoul(found[1]) == MAX_RATES);

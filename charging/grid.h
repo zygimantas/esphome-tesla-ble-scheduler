@@ -141,7 +141,7 @@ struct Grid {
 };
 
 constexpr const char *DAY_NAMES[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
-// A day's rates are letters from 'a', so a grid has 26 at most. Prices are per kWh and below MAX_PRICE. __init__.py
+// A day's rates are letters from 'a', so a grid has 26 at most. Prices are per kWh and below MAX_PRICE. grid.py
 // checks the same before the board gets the settings.
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;

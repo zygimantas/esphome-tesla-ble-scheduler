@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` plans and decides, with `calendar.h`, `grid.h` and `prices.h` for dates, grid fees and Nord Pool prices (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` checks the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `charging` component in `charging/`: `charging.h` decides, with `calendar.h`, `grid.h`, `planner.h`, `prices.h` and `savings.h` for dates, grid fees, the plan, Nord Pool prices and the savings (plain C++, unit-tested on a computer), `charging_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and price list downloads, phone messages and the Tesla's entities), and `__init__.py` and `grid.py` check the settings and the price list when you build. `pricelists/` holds the grid operators' price lists, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
@@ -37,14 +37,14 @@ esphome compile config.yaml
 
 New behavior comes with a unit test in `test/charging_test.cpp`. Try changes on the simulation before flashing a real board.
 
-The unit tests cover every line and branch of those four headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
+The unit tests cover every line and branch of those six headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
 
 ```sh
 # Coverage, with clang (on macOS, run llvm-profdata and llvm-cov through xcrun)
 clang++ -std=c++17 -fprofile-instr-generate -fcoverage-mapping -I . -I path/to/ArduinoJson/src test/charging_test.cpp -o charging_test
 LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
 llvm-profdata merge charging_test.profraw -o charging_test.profdata
-llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/calendar.h charging/charging.h charging/grid.h charging/prices.h
+llvm-cov report charging_test -instr-profile=charging_test.profdata -show-branch-summary charging/calendar.h charging/charging.h charging/grid.h charging/planner.h charging/prices.h charging/savings.h
 # Mutation testing, about half an hour
 python3 test/mutation_test.py path/to/ArduinoJson/src
 ```
