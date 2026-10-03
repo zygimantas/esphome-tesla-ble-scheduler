@@ -4,10 +4,10 @@
 #include <string>
 
 // The ESPHome build has the component's copy; the unit tests use the repository's.
-#if __has_include("esphome/components/scheduler/charging.h")
-#include "esphome/components/scheduler/charging.h"
+#if __has_include("esphome/components/scheduler/charger.h")
+#include "esphome/components/scheduler/charger.h"
 #else
-#include "scheduler/charging.h"
+#include "scheduler/charger.h"
 #endif
 
 namespace charging_test {

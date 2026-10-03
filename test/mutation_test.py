@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mutation testing of charging.h and the headers it includes, from the repository root (it takes about half an
+"""Mutation testing of charger.h and the headers it includes, from the repository root (it takes about half an
 hour):
 
     python3 test/mutation_test.py path/to/ArduinoJson/src
@@ -22,7 +22,7 @@ import tempfile
 import threading
 from pathlib import Path
 
-SOURCES = [Path("scheduler") / f"{name}.h" for name in ("calendar", "charging", "grid", "planner", "prices", "savings")]
+SOURCES = [Path("scheduler") / f"{name}.h" for name in ("calendar", "charger", "grid", "planner", "prices", "savings")]
 CHECKS = [
     "-fsanitize=address,undefined",
     "-fno-sanitize-recover=all",

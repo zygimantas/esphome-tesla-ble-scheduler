@@ -1,6 +1,6 @@
 """Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
 
-charging.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
+charger.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
 grid.py the grid: block and its price list, and creates the web page's entities.
 """
 

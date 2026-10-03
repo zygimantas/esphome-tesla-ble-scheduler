@@ -1,7 +1,7 @@
 #pragma once
 // The charging plan: the cheapest quarter-hours before the deadline, priced at Nord Pool's spot price (prices.h) plus
 // VAT and the grid fee (grid.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17,
-// with nothing from ESPHome, like charging.h.
+// with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 #include "grid.h"

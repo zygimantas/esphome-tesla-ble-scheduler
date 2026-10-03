@@ -69,9 +69,9 @@ jobs:
         run: |
           clang++ @flags -fsanitize=address,undefined -fno-sanitize-recover=all test/charging_test.cpp -o charging_test
           ./charging_test
-      - name: Coverage of charging.h and the headers it includes, all of it
+      - name: Coverage of charger.h and the headers it includes, all of it
         run: |
-          headers=(scheduler/calendar.h scheduler/charging.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h)
+          headers=(scheduler/calendar.h scheduler/charger.h scheduler/grid.h scheduler/planner.h scheduler/prices.h scheduler/savings.h)
           clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/charging_test.cpp -o charging_test
           LLVM_PROFILE_FILE=charging_test.profraw ./charging_test
           llvm-profdata merge charging_test.profraw -o charging_test.profdata

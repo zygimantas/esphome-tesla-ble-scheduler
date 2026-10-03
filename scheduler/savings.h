@@ -1,6 +1,6 @@
 #pragma once
 // What charging cost and saved, by local day, as the board keeps it in flash and the page shows it. Plain C++17, with
-// nothing from ESPHome, like charging.h.
+// nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -11,7 +11,7 @@
 namespace esphome::scheduler {
 
 // The energy the car took from the grid on one local day, what it cost, and what it would have cost at the
-// delivery day's average total price and charging at once (see Controller::count_() in charging.h). Money in
+// delivery day's average total price and charging at once (see Controller::count_() in charger.h). Money in
 // hundredths of the currency, rounded from the day's sum rather than from each tick.
 struct SavingsDay {
   uint32_t wh = 0;

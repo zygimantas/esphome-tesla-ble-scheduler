@@ -1,6 +1,6 @@
 #pragma once
 // Dates and times without libc's time zones: the proleptic Gregorian calendar in UTC, EU summer time, and local
-// times as the page and the phone messages show them. Plain C++17, with nothing from ESPHome, like charging.h.
+// times as the page and the phone messages show them. Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include <cstdint>
 #include <cstdio>

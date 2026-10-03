@@ -1,8 +1,8 @@
 #pragma once
-// Connects the controller in charging.h to ESPHome: the web page's entities, Nord Pool and price list downloads,
+// Connects the controller in charger.h to ESPHome: the web page's entities, Nord Pool and price list downloads,
 // phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
-#include "charging.h"
+#include "charger.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
 #include "esphome/components/button/button.h"
 #include "esphome/components/datetime/datetime_entity.h"

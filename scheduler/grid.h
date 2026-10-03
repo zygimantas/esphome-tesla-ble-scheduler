@@ -1,6 +1,6 @@
 #pragma once
 // What a kWh costs on the grid in each quarter-hour: a price list from pricelists/, and the grid: settings of
-// config.yaml over it (format in docs/grid-fees.md). Plain C++17, with nothing from ESPHome, like charging.h.
+// config.yaml over it (format in docs/grid-fees.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 

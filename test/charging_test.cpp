@@ -1,6 +1,6 @@
-// Unit tests for charging.h and the headers it includes; CONTRIBUTING.md says how to build and run them.
-#include "scheduler/charging.h"
+// Unit tests for charger.h and the headers it includes; CONTRIBUTING.md says how to build and run them.
 #include "charging_test_tesla.h"
+#include "scheduler/charger.h"
 
 #include <algorithm>
 #include <cmath>
