@@ -63,7 +63,6 @@ struct Window {
 struct Schedule {
   bool valid = false;      // false when this quarter-hour has no price
   int needed_slots = 0;    // to reach the limit, plus the buffer
-  int horizon_slots = 0;   // from this quarter-hour to the deadline
   int unpriced_slots = 0;  // the last ones before the deadline, whose prices aren't out yet
   std::vector<Window> windows;
   float avg_price = NAN;   // EUR/kWh at total prices (see total_price()) for the energy the car is expected to take
@@ -88,7 +87,6 @@ inline Schedule make_schedule(const PriceTable &prices, const ScheduleRequest &r
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access,clang-analyzer-core.CallAndMessage)
     totals.push_back(total_price(*prices.get(t), t, request.grid, request.settings.standard_offset));
   schedule.unpriced_slots = static_cast<int>((request.deadline - priced_end) / SLOT_SECONDS);
-  schedule.horizon_slots = static_cast<int>(totals.size()) + schedule.unpriced_slots;
   const float missing_kwh = (request.limit - request.soc) / 100.0f * request.settings.capacity_kwh;
   const float slot_kwh = request.settings.charge_kw * (SLOT_SECONDS / 3600.0f) * EFFICIENCY;
   schedule.needed_slots = missing_kwh > 0.05f ? static_cast<int>(std::ceil(missing_kwh / slot_kwh)) + BUFFER_SLOTS : 0;

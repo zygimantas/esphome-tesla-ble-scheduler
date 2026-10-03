@@ -290,8 +290,11 @@ static void test_schedule_picks_the_night_trough() {
   ScheduleRequest request = overnight(SEP24_1700Z);
   const Schedule schedule = make_schedule(prices, request);
   // 30 kWh at 11 kW x 90% = 12.1 -> 13 quarter-hours, plus one buffer slot.
-  CHECK(schedule.valid && schedule.needed_slots == 14 && schedule.horizon_slots == 44);
+  CHECK(schedule.valid && schedule.needed_slots == 14 && schedule.unpriced_slots == 0);
   CHECK_STR(only_window(schedule), "01:30-05:00");
+  ScheduleRequest slow = request;
+  slow.settings.charge_kw = 2.3f;  // 30 kWh takes 58 quarter-hours: all 44 to 07:00
+  CHECK_STR(only_window(make_schedule(prices, slow)), "20:00-07:00");
 
   request.soc = 80;  // at the limit: nothing to charge
   const Schedule full = make_schedule(prices, request);
@@ -309,9 +312,12 @@ static void test_schedule_waits_for_prices_not_out_yet() {
   const int64_t now = SEP24_1700Z - 7 * HOUR;  // 13:00 local: prices run to 01:00, tomorrow's aren't out
   // 01:00-07:00 has no prices yet but could do all 14 quarter-hours, so it buys nothing yet.
   const Schedule waiting = make_schedule(prices, overnight(now));
-  CHECK(waiting.valid && waiting.windows.empty() && waiting.unpriced_slots == 24 && waiting.horizon_slots == 72);
+  CHECK(waiting.valid && waiting.windows.empty() && waiting.unpriced_slots == 24);
   // 10% to 100% needs 29: it buys the 5 that 01:00-07:00 can't do, in the midday dip.
-  CHECK_STR(only_window(make_schedule(prices, overnight(now, 10, 100))), "13:00-14:15");
+  ScheduleRequest request = overnight(now, 10, 100);
+  CHECK_STR(only_window(make_schedule(prices, request)), "13:00-14:15");
+  request.settings.charge_kw = 2.3f;  // needs 132: all 48 quarter-hours with a price, to 01:00
+  CHECK_STR(only_window(make_schedule(prices, request)), "13:00-01:00");
   // Once tomorrow's prices are out, the night trough.
   add_day(prices, CET_SEP25);
   CHECK_STR(only_window(make_schedule(prices, overnight(now))), "01:30-05:00");
@@ -1470,25 +1476,29 @@ static void test_one_off_ready_by() {
   CHECK(sat_midnight == SEP24_1700Z + 28 * HOUR);
   Settings once;
   once.ready_by_once = sat_midnight;
+  FakeTesla trip;
+  trip.limit = 100;
   Controller controller = with_prices();
-  const Run run = simulate(controller, FakeTesla(), SEP24_1700Z - 60, SEP24_1700Z + 180,
-                           {{SEP24_1700Z, &FakeTesla::plug_in}}, once);
-  CHECK(controller.schedule().horizon_slots == 28 * 4);  // until Saturday 00:00, not the daily 07:00
+  const Run run =
+      simulate(controller, trip, SEP24_1700Z - 60, SEP24_1700Z + 180, {{SEP24_1700Z, &FakeTesla::plug_in}}, once);
+  // 20 quarter-hours: the night trough's 16, then 11:00-12:00 Friday, after the daily 07:00.
+  const std::vector<Window> &windows = controller.schedule().windows;
+  CHECK(windows.size() == 2 && windows[1].start == SEP24_1700Z + 15 * HOUR);
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.message, "40 to 80% by Sat 00:00; avg 0.021 EUR/kWh over 1 window(s)");
+  CHECK_STR(run.messages[0].second.message, "40 to 100% by Sat 00:00; avg 0.026 EUR/kWh over 2 window(s)");
 
   const FakeTesla car = plugged_in();
   Settings stale;
   stale.ready_by_once = SEP24_1700Z;  // reached: back to the daily time
   Controller daily = with_prices();
   daily.tick(car.state(SEP24_1700Z), stale);
-  CHECK(daily.schedule().horizon_slots == 44);
+  CHECK_STR(only_window(daily.schedule()), "01:30-05:00");
 
   Settings far;
   far.ready_by_once = SEP24_1700Z + 30 * DAY_SECONDS;  // clamped to a week
   Controller week = with_prices();
   week.tick(car.state(SEP24_1700Z), far);
-  CHECK(week.schedule().horizon_slots == 7 * 96);
+  CHECK(week.schedule().unpriced_slots == 7 * 96 - 29 * 4);  // a week, less the 29 hours with prices
 }
 
 static void test_schedules_with_the_grid_fees() {
