@@ -701,8 +701,8 @@ static void test_eso_plans() {
   CHECK(near(total_price(0.10f, SEP24_1700Z + 6 * HOUR, t, VILNIUS_STANDARD_OFFSET), 0.10f * 1.21f + night));
   Tariff margin = t;
   margin.margin = 0.01f;  // the supplier's, with VAT like the rates
-  CHECK(
-      near(total_price(0.10f, SEP24_1700Z + 6 * HOUR, margin, VILNIUS_STANDARD_OFFSET), 0.10f * 1.21f + 0.01f + night));
+  const float with_margin = total_price(0.10f, SEP24_1700Z + 6 * HOUR, margin, VILNIUS_STANDARD_OFFSET);
+  CHECK(near(with_margin, 0.10f * 1.21f + 0.01f + night));
   CHECK(tariff_fee(SEP24_1700Z, Tariff(), VILNIUS_STANDARD_OFFSET) == 0.0f);  // no tariff: spot prices only
 
   const Tariff two = two_zones();
