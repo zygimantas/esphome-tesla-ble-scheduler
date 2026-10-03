@@ -88,8 +88,8 @@ class Controller {
   // Recompute the schedule on the next tick (new prices or settings).
   void reschedule() { reschedule_ = true; }
   // Whether to download prices now, which counts as a try: every 5 minutes while some of today's prices are missing,
-  // or from 12:45 CET, when Nord Pool publishes the next day, until tomorrow's are in. Never without market prices, and
-  // not before the clock is set: 0 is never past a try.
+  // or from 12:45 CET, when the next day's prices start to come out, until tomorrow's are in. Never without market
+  // prices, and not before the clock is set: 0 is never past a try.
   bool fetch_prices_due(int64_t now) {
     const int64_t until = prices.known_until(now);
     const int64_t cet_minute = floor_div(now + eu_offset(now, CET_STANDARD_OFFSET), 60) % 1440;
@@ -134,7 +134,7 @@ class Controller {
     const int64_t now = car.now;
     if (first_tick_at_ == 0)
       first_tick_at_ = now;
-    if (!market_)  // as far ahead as Nord Pool's prices go, so the page offers the same times for Ready by
+    if (!market_)  // as far ahead as market prices go, so the page offers the same times for Ready by
       for (int64_t t = start_of_delivery_day(now); t < end_of_next_delivery_day(now); t += SLOT_SECONDS)
         prices.set(t, 0.0f);
     const bool charging = observe_(car, now);
@@ -524,7 +524,7 @@ class Controller {
   bool fallback_told_ = false;
   bool notify_car_start_ = false;
   bool plug_state_seen_ = false;
-  bool market_ = true;  // prices come from Nord Pool (see without_market_prices())
+  bool market_ = true;  // prices come from the market (see without_market_prices())
   int64_t scheduled_slot_ = -1;
   int64_t plugged_since_ = 0;
   int64_t limit_raised_at_ = 0;

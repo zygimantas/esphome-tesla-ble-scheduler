@@ -1,4 +1,4 @@
-"""Charges a Tesla in the cheapest Nord Pool quarter-hours before Ready by.
+"""Charges a Tesla in the cheapest quarter-hours of the day-ahead market before Ready by.
 
 charger.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
 tariff.py the tariff: block and its plan, and creates the web page's entities.
@@ -28,12 +28,15 @@ CONF_VAT = "vat"
 CONF_VIN = "vin"
 
 # Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
-# area Germany and Luxembourg share. Nord Pool names an area as here unless NORD_POOL_AREAS says otherwise, and has
-# its prices in NORD_POOL_CURRENCIES, in euros unless CURRENCIES has the country.
+# area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, has the prices of the areas in
+# SMARD_AREAS, under its numbers and in euros only. Nord Pool has the rest, named as here unless NORD_POOL_AREAS says
+# otherwise, in NORD_POOL_CURRENCIES: in euros unless CURRENCIES has the country.
 AREAS = [
     "AT",
     "BE",
     "BG",
+    "CH",
+    "CZ",
     "DE",
     "DK1",
     "DK2",
@@ -41,6 +44,8 @@ AREAS = [
     "FI",
     "FR",
     "HR",
+    "HU",
+    "IT-NORTH",
     "LT",
     "LU",
     "LV",
@@ -56,10 +61,12 @@ AREAS = [
     "SE2",
     "SE3",
     "SE4",
+    "SI",
 ]
 NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
 NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
 CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
+SMARD_AREAS = {"CH": 259, "CZ": 261, "HU": 262, "IT-NORTH": 255, "SI": 260}
 
 scheduler_ns = cg.esphome_ns.namespace("scheduler")
 SchedulerComponent = scheduler_ns.class_("SchedulerComponent", cg.PollingComponent)
@@ -111,8 +118,9 @@ def _currency(config):
     market = config.get(CONF_MARKET)
     area = market[CONF_AREA] if market else ""
     config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
-    if market and config[CONF_CURRENCY] not in NORD_POOL_CURRENCIES:
-        raise cv.Invalid(f"Nord Pool's prices come in {', '.join(NORD_POOL_CURRENCIES)}", [CONF_CURRENCY])
+    source, currencies = ("SMARD", ["EUR"]) if area in SMARD_AREAS else ("Nord Pool", NORD_POOL_CURRENCIES)
+    if market and config[CONF_CURRENCY] not in currencies:
+        raise cv.Invalid(f"{source}'s prices come in {', '.join(currencies)}", [CONF_CURRENCY])
     name = config[CONF_TARIFF].get(CONF_PLAN)
     if name and (currency := plan(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
         raise cv.Invalid(f"the plan {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
@@ -152,7 +160,8 @@ async def to_code(config):
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
     market = config.get(CONF_MARKET)
     if market:
-        cg.add(var.set_nord_pool_area(NORD_POOL_AREAS.get(market[CONF_AREA], market[CONF_AREA])))
+        area = market[CONF_AREA]
+        cg.add(var.set_market(NORD_POOL_AREAS.get(area, area), SMARD_AREAS.get(area, 0)))
     cg.add(var.set_currency(config[CONF_CURRENCY]))
     cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
     cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))

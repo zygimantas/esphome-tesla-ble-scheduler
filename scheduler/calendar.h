@@ -8,7 +8,7 @@
 
 namespace esphome::scheduler {
 
-// A slot is one quarter-hour, Nord Pool's price period.
+// A slot is one quarter-hour, the market's price period.
 constexpr int64_t SLOT_SECONDS = 15 * 60;
 constexpr int64_t DAY_SECONDS = 24 * 3600;
 // The default winter offset from UTC; the YAML sets the board's own from its clock's time zone.
