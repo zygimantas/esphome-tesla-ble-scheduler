@@ -283,6 +283,34 @@ static void test_smard_prices() {
   CHECK(prices.add_smard("{}", 2) == 0);
 }
 
+static void test_omie_prices() {
+  // A file a CET day: Thursday 24 September until 23:59 in Spain, 00:59 in Vilnius.
+  CHECK_STR(omie_url(SEP24_1700Z, 0),
+            "https://www.omie.es/es/file-download?parents=marginalpdbc&filename=marginalpdbc_20260924.1");
+  CHECK(omie_url(SEP24_1700Z + 4 * HOUR + 30 * 60, 0).find("_20260924.1") != std::string::npos);
+  CHECK(omie_url(SEP24_1700Z + 5 * HOUR + 30 * 60, 0).find("_20260925.1") != std::string::npos);
+  CHECK(omie_url(SEP24_1700Z, 1).find("_20260925.1") != std::string::npos);
+
+  // Quarter-hour 81 of 30 September, 20:00 in Spain, split the two countries' prices; the autumn day has 100.
+  const char *file =
+      "MARGINALPDBC;\r\n"
+      "2026;09;30;81;255;249.79;\r\n"
+      "2026;09;30;82;bad;1;\r\n"
+      "2025;10;26;100;-1.5;-2;\r\n"
+      "*\r\n";
+  PriceTable spain, portugal;
+  CHECK(spain.add_omie(file, std::strlen(file), "ES") == 2);
+  CHECK(portugal.add_omie(file, std::strlen(file), "PT") == 2);
+  const int64_t quarter_81 = utc("2026-09-30T18:00:00Z");
+  const auto es = spain.get(quarter_81), pt = portugal.get(quarter_81);
+  CHECK(es && near(*es, 0.24979f));
+  CHECK(pt && near(*pt, 0.255f));
+  CHECK(!spain.get(quarter_81 + SLOT_SECONDS));
+  const auto last = spain.get(utc("2025-10-26T22:45:00Z"));  // 23:45 CET, after the clocks went back
+  CHECK(last && near(*last, -0.002f));
+  CHECK(spain.add_omie("<!DOCTYPE html>", 15, "ES") == -1);
+}
+
 // ---------------------------------------------------------------------------
 // Schedule
 // ---------------------------------------------------------------------------
@@ -2384,6 +2412,7 @@ int main() {
   test_calendar();
   test_nord_pool_prices();
   test_smard_prices();
+  test_omie_prices();
   test_cheapest_slots();
   test_schedule_picks_the_night_trough();
   test_schedule_waits_for_prices_not_out_yet();

@@ -199,18 +199,17 @@ void SchedulerComponent::update() {
 }
 
 void SchedulerComponent::dump_config() {
-  const char *source = this->smard_filter_ != 0 ? " from SMARD" : " from Nord Pool";
+  const std::string market = std::string(this->area_) + " from " + this->market_name_();
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
-                "  Market: %s%s, prices in %s\n"
+                "  Market: %s, prices in %s\n"
                 "  Tariff: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_[0] != '\0' ? this->area_ : "none, the tariff is the whole price",
-                this->area_[0] != '\0' ? source : "", this->settings_.currency,
-                this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml", this->settings_.battery_kwh,
-                this->settings_.charging_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                this->area_[0] != '\0' ? market.c_str() : "none, the tariff is the whole price",
+                this->settings_.currency, this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml",
+                this->settings_.battery_kwh, this->settings_.charging_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -280,18 +279,54 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
   return std::nullopt;
 }
 
-// Today's and tomorrow's CET delivery days, today's only while some of it is missing. A day not published
-// yet answers 204. A failed request ends the try: the next one would fail the same way and block the loop
-// again.
+// The source of the market prices, as the log names it.
+const char *SchedulerComponent::market_name_() const {
+  switch (this->market_) {
+    case Market::SMARD:
+      return "SMARD";
+    case Market::OMIE:
+      return "OMIE";
+    default:
+      return "Nord Pool";
+  }
+}
+
+// Where the prices of the CET delivery day `day` days after `now` are.
+std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
+  switch (this->market_) {
+    case Market::SMARD:
+      return smard_url(this->smard_filter_, now, day);
+    case Market::OMIE:
+      return omie_url(now, day);
+    default:
+      return nord_pool_url(this->area_, this->settings_.currency, now, day);
+  }
+}
+
+// Stores an answer's prices: how many, or -1 if it can't be read.
+int SchedulerComponent::store_prices_(const std::string &body) {
+  PriceTable &prices = this->controller_.prices;
+  switch (this->market_) {
+    case Market::SMARD:
+      return prices.add_smard(body.data(), body.size());
+    case Market::OMIE:
+      return prices.add_omie(body.data(), body.size(), this->area_);
+    default:
+      return prices.add_nord_pool(body.data(), body.size(), this->area_);
+  }
+}
+
+// Today's and tomorrow's CET delivery days, today's only while some of it is missing. A failed request ends the
+// try: the next one would fail the same way and block the loop again.
 void SchedulerComponent::fetch_prices_(int64_t now) {
-  const bool smard = this->smard_filter_ != 0;
-  const char *source = smard ? "SMARD" : "Nord Pool";
-  // Not out yet: Nord Pool has no content for tomorrow, and SMARD no file for a week that hasn't begun.
-  const int not_yet = smard ? http_request::HTTP_STATUS_NOT_FOUND : http_request::HTTP_STATUS_NO_CONTENT;
+  const char *source = this->market_name_();
+  // Not out yet: Nord Pool has no content for tomorrow, SMARD no file for a week that hasn't begun, OMIE none for the
+  // day.
+  const int not_yet =
+      this->market_ == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
   for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
-    const std::string url = smard ? smard_url(this->smard_filter_, now, day)
-                                  : nord_pool_url(this->area_, this->settings_.currency, now, day);
+    const std::string url = this->prices_url_(now, day);
     if (url == fetched)
       continue;
     fetched = url;
@@ -305,9 +340,7 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
       response->end();  // before the parse: the connection's memory isn't needed any more
       PriceTable &prices = this->controller_.prices;
       const int64_t until = prices.known_until(now);
-      const int stored = !body   ? -1
-                         : smard ? prices.add_smard(body->data(), body->size())
-                                 : prices.add_nord_pool(body->data(), body->size(), this->area_);
+      const int stored = body ? this->store_prices_(*body) : -1;
       if (stored < 0) {
         ESP_LOGW(TAG, "%s: %s", source, body ? "could not parse the answer" : "the answer was cut off");
       } else if (prices.known_until(now) > until) {  // not just the week's earlier prices again, as SMARD sends
