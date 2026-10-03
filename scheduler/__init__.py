@@ -19,6 +19,7 @@ AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
 CONF_BATTERY_KWH = "battery_kwh"
 CONF_CHARGING_KW = "charging_kw"
+CONF_MARGIN = "margin"
 CONF_MARKET = "market"
 CONF_NTFY_SERVER = "ntfy_server"
 CONF_NTFY_TOPIC = "ntfy_topic"
@@ -71,6 +72,7 @@ Action = scheduler_ns.enum("Action", is_class=True)
 MARKET_SCHEMA = cv.Schema(
     {
         cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
+        cv.Optional(CONF_MARGIN, default=0.0): cv.positive_float,
         cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
     }
 )
@@ -158,7 +160,8 @@ async def to_code(config):
     tariff = config[CONF_TARIFF]
     name = tariff.get(CONF_PLAN, "")
     text = (PLANS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
-    cg.add(var.set_tariff(market[CONF_VAT] if market else 0.0, name, text, write_tariff(tariff)))
+    vat, margin = (market[CONF_VAT], market[CONF_MARGIN]) if market else (0.0, 0.0)
+    cg.add(var.set_tariff(vat, margin, name, text, write_tariff(tariff)))
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

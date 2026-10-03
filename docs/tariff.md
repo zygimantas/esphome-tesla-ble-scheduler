@@ -1,6 +1,6 @@
 # Tariff
 
-The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Most people only name their grid operator's plan:
+The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Your supplier's own price per kWh on top of the market price goes in `market: margin` instead. Most people only name their grid operator's plan:
 
 ```yaml
 scheduler:
