@@ -262,8 +262,8 @@ inline float tariff_fee(int64_t utc, const Tariff &tariff, int32_t standard_offs
   return fee_of(tariff.weeks[tariff.week_of_month[date.month - 1]][weekday(local_day)]);
 }
 
-// The price of a kWh bought in the quarter-hour starting at `slot_start`, leaving out charges that
-// are the same in every quarter-hour (the supplier's margin, public service obligations).
+// The price of a kWh bought in the quarter-hour starting at `slot_start`: the market price with VAT, the supplier's
+// margin and the tariff's fee. Other charges that are the same in every quarter-hour are left out.
 inline float total_price(float spot_price, int64_t slot_start, const Tariff &tariff, int32_t standard_offset) {
   return spot_price * (1.0f + tariff.vat) + tariff.margin + tariff_fee(slot_start, tariff, standard_offset);
 }
