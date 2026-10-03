@@ -381,10 +381,10 @@ static void test_schedule_windows_and_prices() {
 }
 
 // ---------------------------------------------------------------------------
-// Grid: VAT, and the grid's rates from a price list and config.yaml
+// Grid: VAT, and the grid's rates from a plan and config.yaml
 // ---------------------------------------------------------------------------
 
-// ESO's 2026 plans as price lists (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
+// ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
 // of 2026.
 static const char *const FOUR_ZONES = R"(# ESO's Standartinis schedule with four zones
 currency: EUR
@@ -430,16 +430,16 @@ rates:
   flat: 0.11132
 )";
 
-// What's wrong with a price list's settings and config.yaml's together, as the board puts them, or "".
-static std::string grid_error(const std::string &list, const std::string &own = "", const char *currency = "EUR") {
+// What's wrong with a plan's settings and config.yaml's together, as the board puts them, or "".
+static std::string grid_error(const std::string &plan, const std::string &own = "", const char *currency = "EUR") {
   Grid ignored;
-  return make_grid(list, own, currency, ignored);
+  return make_grid(plan, own, currency, ignored);
 }
 
-// The grid of a price list and config.yaml's settings, with 21% VAT.
-static Grid grid_of(const std::string &list, const std::string &own = "") {
+// The grid of a plan and config.yaml's settings, with 21% VAT.
+static Grid grid_of(const std::string &plan, const std::string &own = "") {
   Grid grid;
-  CHECK_STR(make_grid(list, own, "EUR", grid), "");
+  CHECK_STR(make_grid(plan, own, "EUR", grid), "");
   grid.vat = 0.21f;
   return grid;
 }
@@ -514,44 +514,43 @@ static void test_reads_grid_settings() {
   CHECK_STR(read_grid(whole.substr(0, whole.find("4641\n")), cut), "the text ends inside a line, as if cut off");
 }
 
-static void test_price_list_downloads() {
-  // At the first chance, but not before the clock is set. Then daily after a try that brought a list the board can
-  // use, and hourly after any other, also when the one before brought a list.
-  CHECK(!price_list_due(0, 0, false));
-  CHECK(price_list_due(SEP24_1700Z, 0, false));
-  CHECK(!price_list_due(SEP24_1700Z + HOUR - 1, SEP24_1700Z, false));
-  CHECK(price_list_due(SEP24_1700Z + HOUR, SEP24_1700Z, false));
-  CHECK(!price_list_due(SEP24_1700Z + DAY_SECONDS - 1, SEP24_1700Z, true));
-  CHECK(price_list_due(SEP24_1700Z + DAY_SECONDS, SEP24_1700Z, true));
+static void test_plan_downloads() {
+  // At the first chance, but not before the clock is set. Then daily after a try that brought a plan the board can
+  // use, and hourly after any other, also when the one before brought a plan.
+  CHECK(!plan_due(0, 0, false));
+  CHECK(plan_due(SEP24_1700Z, 0, false));
+  CHECK(!plan_due(SEP24_1700Z + HOUR - 1, SEP24_1700Z, false));
+  CHECK(plan_due(SEP24_1700Z + HOUR, SEP24_1700Z, false));
+  CHECK(!plan_due(SEP24_1700Z + DAY_SECONDS - 1, SEP24_1700Z, true));
+  CHECK(plan_due(SEP24_1700Z + DAY_SECONDS, SEP24_1700Z, true));
 }
 
 static void test_makes_grids() {
-  // Your rates replace the list's, and add to them.
+  // Your rates replace the plan's, and add to them.
   const Grid cheaper = grid_of(FOUR_ZONES, "rates:\n  night: 0.05\n");
   CHECK(near(fee_at(cheaper, 2026, 9, 24, 3), 0.05f));
   CHECK(near(fee_at(cheaper, 2026, 9, 24, 12), 0.10406f));
   const Grid peak = grid_of(FOUR_ZONES, "exceptions:\n  12-28: peak\nrates:\n  peak: 0.2\n");
   CHECK(near(fee_at(peak, 2026, 12, 28, 3), 0.2f));
-  // Your exceptions replace the list's on the same date, and add others.
+  // Your exceptions replace the plan's on the same date, and add others.
   const Grid special = grid_of(FOUR_ZONES, "exceptions:\n  12-31: night 07:00 day 22:00 night\n  12-25: evening\n");
   CHECK(near(fee_at(special, 2026, 12, 31, 18), 0.10406f));  // a Thursday, now a holiday
   CHECK(near(fee_at(special, 2026, 12, 25, 3), 0.14641f));
-  CHECK(near(fee_at(special, 2026, 12, 24, 18), 0.10406f));  // the list's holiday stays
-  // Your calendar replaces the list's whole calendar, and your clock its clock.
+  CHECK(near(fee_at(special, 2026, 12, 24, 18), 0.10406f));  // the plan's holiday stays
+  // Your calendar replaces the plan's whole calendar, and your clock its clock.
   const Grid own_week = grid_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: day\n");
   CHECK(near(fee_at(own_week, 2026, 9, 26, 3), 0.12947f));
   CHECK(near(fee_at(grid_of(TWO_ZONES, "clock: local\n"), 2026, 9, 24, 7, 30), 0.12947f));
   CHECK(near(fee_at(grid_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: night  07:00   day\n"), 2026, 9, 24, 8),
              0.12947f));
-  // Without a list, your settings are the whole grid; a price list's prices are in its currency.
+  // Without a plan, your settings are the whole grid; a plan's prices are in its currency.
   CHECK(near(fee_at(grid_of("", calendar_of("    mon-sun: flat", "flat: 0.2")), 2026, 9, 24, 3), 0.2f));
-  CHECK_STR(grid_error(FOUR_ZONES, "", "NOK"), "the price list's prices are in EUR, not NOK");
-  CHECK_STR(grid_error("currency: NOK\n" + calendar_of("    mon-sun: flat")),
-            "the price list's prices are in NOK, not EUR");
+  CHECK_STR(grid_error(FOUR_ZONES, "", "NOK"), "the plan's prices are in EUR, not NOK");
+  CHECK_STR(grid_error("currency: NOK\n" + calendar_of("    mon-sun: flat")), "the plan's prices are in NOK, not EUR");
   CHECK_STR(grid_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\n", "", "NOK"),
             "calendar: jan-dec: mon-sun: rate flat has no price");
   CHECK_STR(grid_error("calendar\n"), "line 1 isn't a key and a value");
-  // A rate the list renamed or dropped, which yours still sets.
+  // A rate the plan renamed or dropped, which yours still sets.
   CHECK_STR(grid_error(FOUR_ZONES, "rates:\n  nakts: 0.05\n"), "rate nakts isn't used on any day");
 
   std::string rates = "rates:";
@@ -667,7 +666,7 @@ static void test_makes_grids() {
     CHECK_STR(grid_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + after + ": flat\n"),
               std::string("exceptions: ") + after + " isn't a date like 12-25, or it's there twice");
   }
-  // A key twice can only be in a price list: config.yaml's settings come from YAML, without it.
+  // A key twice can only be in a plan: config.yaml's settings come from YAML, without it.
   CHECK_STR(grid_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
             "rate flat: a rate is there twice, or there are more than 26");
   CHECK_STR(
@@ -792,27 +791,27 @@ static bool install_takes(const std::string &name) {
   return word && std::find(std::begin(NOT_NAMES), std::end(NOT_NAMES), lower) == std::end(NOT_NAMES);
 }
 
-static void test_price_lists_in_the_repository() {
+static void test_plans_in_the_repository() {
   CHECK(install_takes("night") && install_takes("p1") && install_takes("højlast") && install_takes("winter-peak"));
   CHECK(!install_takes("") && !install_takes("1st") && !install_takes("Off") && !install_takes("a:b"));
-  // Each list reads on the board in its own currency and, given as config.yaml's settings too, uses all its rates.
+  // Each plan reads on the board in its own currency and, given as config.yaml's settings too, uses all its rates.
   // Its currency is one a board can have, three capital letters, and the install's own rules, in _read() and
-  // PRICE_LIST_SCHEMA in grid.py, also take its rate names and each top-level key once, which the board doesn't ask.
-  int lists = 0;
-  for (const auto &entry : std::filesystem::recursive_directory_iterator("pricelists")) {
+  // PLAN_SCHEMA in grid.py, also take its rate names and each top-level key once, which the board doesn't ask.
+  int plans = 0;
+  for (const auto &entry : std::filesystem::recursive_directory_iterator("plans")) {
     if (entry.path().extension() != ".yaml")
       continue;
     std::ifstream file(entry.path());
     std::stringstream text;
     text << file.rdbuf();
     const std::string name = entry.path().string() + ": ";
-    GridText list;
+    GridText plan;
     Grid grid;
-    CHECK_STR(name + read_grid(text.str(), list), name);
-    CHECK_STR(name + make_grid(text.str(), text.str(), list.currency, grid), name);
-    CHECK(list.currency.size() == 3 &&
-          std::all_of(list.currency.begin(), list.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
-    for (const auto &[rate, price] : list.rates) {
+    CHECK_STR(name + read_grid(text.str(), plan), name);
+    CHECK_STR(name + make_grid(text.str(), text.str(), plan.currency, grid), name);
+    CHECK(plan.currency.size() == 3 &&
+          std::all_of(plan.currency.begin(), plan.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
+    for (const auto &[rate, price] : plan.rates) {
       CHECK_STR(name + (install_takes(rate) ? "" : rate), name);
       CHECK_STR(name + (std::regex_match(price, std::regex("[0-9]*\\.?[0-9]+")) ? "" : price), name);
     }
@@ -822,9 +821,9 @@ static void test_price_lists_in_the_repository() {
         found++;
       CHECK_STR(name + (found + (text.str().rfind(key, 0) == 0) > 1 ? key : ""), name);
     }
-    lists++;
+    plans++;
   }
-  CHECK(lists >= 8);
+  CHECK(plans >= 8);
 
   // grid.py checks the same limits before the board gets the settings.
   std::ifstream source("scheduler/grid.py");
@@ -2255,11 +2254,11 @@ int main() {
   test_schedule_waits_for_prices_not_out_yet();
   test_schedule_windows_and_prices();
   test_reads_grid_settings();
-  test_price_list_downloads();
+  test_plan_downloads();
   test_makes_grids();
   test_eso_plans();
   test_calendar_and_exceptions();
-  test_price_lists_in_the_repository();
+  test_plans_in_the_repository();
   test_schedule_counts_the_grid_fee();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();

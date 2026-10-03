@@ -1,4 +1,4 @@
-"""Checks the grid settings when you build: the grid: block of config.yaml and the price list it starts from (format
+"""Checks the grid settings when you build: the grid: block of config.yaml and the plan it starts from (format
 in docs/grid-fees.md), as grid.h reads them on the board. Writes config.yaml's out for the board.
 """
 
@@ -11,11 +11,11 @@ CONF_CALENDAR = "calendar"
 CONF_CLOCK = "clock"
 CONF_CURRENCY = "currency"
 CONF_EXCEPTIONS = "exceptions"
-CONF_PRICELIST = "pricelist"
+CONF_PLAN = "plan"
 CONF_RATES = "rates"
 
-# The price lists, which the build reads from this release and the board downloads from GitHub every day.
-PRICE_LISTS = Path(__file__).resolve().parent.parent / "pricelists"
+# The plans, which the build reads from this release and the board downloads from GitHub every day.
+PLANS = Path(__file__).resolve().parent.parent / "plans"
 
 # The days from Sunday and the months from January, as in grid.h.
 DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
@@ -114,7 +114,7 @@ def _keys(check, values):
     return validate
 
 
-# The weeks by month, and the tables both price lists and config.yaml have.
+# The weeks by month, and the tables both plans and config.yaml have.
 CALENDAR = cv.All(
     cv.Schema(
         {cv.string_strict: cv.All(cv.Schema({cv.string_strict: _line}), _each_once(DAY_NAMES, "day", "mon-fri"))}
@@ -126,17 +126,15 @@ TABLES = {
     cv.Optional(CONF_EXCEPTIONS): _keys(_date, _line),
     cv.Optional(CONF_RATES): _keys(_rate, cv.float_range(min=0.0, max=MAX_PRICE, max_included=False)),
 }
-PRICE_LIST_SCHEMA = cv.Schema(
-    {cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): cv.string_strict}
-)
+PLAN_SCHEMA = cv.Schema({cv.Required(CONF_CALENDAR): CALENDAR, **TABLES, cv.Required(CONF_CURRENCY): cv.string_strict})
 
 
-def _price_list_name(value):
-    """A price list's name, like lt/eso-standartinis-4-zones."""
+def _plan_name(value):
+    """A plan's name, like lt/eso-standartinis-4-zones."""
     value = cv.string_strict(value)
-    if not re.fullmatch(r"[a-z]{2}/[a-z0-9-]+", value) or not (PRICE_LISTS / f"{value}.yaml").is_file():
-        names = sorted(str(path.relative_to(PRICE_LISTS).with_suffix("")) for path in PRICE_LISTS.glob("*/*.yaml"))
-        raise cv.Invalid(f"there's no price list {value}; there are {', '.join(names)}")
+    if not re.fullmatch(r"[a-z]{2}/[a-z0-9-]+", value) or not (PLANS / f"{value}.yaml").is_file():
+        names = sorted(str(path.relative_to(PLANS).with_suffix("")) for path in PLANS.glob("*/*.yaml"))
+        raise cv.Invalid(f"there's no plan {value}; there are {', '.join(names)}")
     return value
 
 
@@ -172,21 +170,21 @@ def _read(text):
     return settings
 
 
-def price_list(name):
-    """A price list's settings, checked as the build checks config.yaml's."""
+def plan(name):
+    """A plan's settings, checked as the build checks config.yaml's."""
     try:
-        return PRICE_LIST_SCHEMA(_read((PRICE_LISTS / f"{name}.yaml").read_text(encoding="utf-8")))
+        return PLAN_SCHEMA(_read((PLANS / f"{name}.yaml").read_text(encoding="utf-8")))
     except cv.Invalid as error:
-        raise cv.Invalid(f"price list {name}: {error}") from error
+        raise cv.Invalid(f"plan {name}: {error}") from error
 
 
-def _with_price_list(config):
-    """config.yaml's grid settings over the price list's, as make_grid() in grid.h puts them together: every rate the
+def _with_plan(config):
+    """config.yaml's grid settings over the plan's, as make_grid() in grid.h puts them together: every rate the
     days use has a price, and every rate config.yaml sets is used."""
-    settings = price_list(config[CONF_PRICELIST]) if CONF_PRICELIST in config else {}
+    settings = plan(config[CONF_PLAN]) if CONF_PLAN in config else {}
     calendar = config.get(CONF_CALENDAR, settings.get(CONF_CALENDAR))
     if calendar is None:
-        raise cv.Invalid("needs a pricelist, or a calendar of its own")
+        raise cv.Invalid("needs a plan, or a calendar of its own")
     exceptions = {**settings.get(CONF_EXCEPTIONS, {}), **config.get(CONF_EXCEPTIONS, {})}
     rates = {**settings.get(CONF_RATES, {}), **config.get(CONF_RATES, {})}
     lines = [*(line for week in calendar.values() for line in week.values()), *exceptions.values()]
@@ -196,13 +194,13 @@ def _with_price_list(config):
     if unused := sorted(set(config.get(CONF_RATES, {})) - used):
         raise cv.Invalid(f"rate {unused[0]} isn't used on any day", [CONF_RATES, unused[0]])
     if len(rates) > MAX_RATES:
-        raise cv.Invalid(f"has more than {MAX_RATES} rates, the price list's and yours together", [CONF_RATES])
+        raise cv.Invalid(f"has more than {MAX_RATES} rates, the plan's and yours together", [CONF_RATES])
     return config
 
 
 GRID_SCHEMA = cv.All(
-    cv.Schema({cv.Optional(CONF_CALENDAR): CALENDAR, **TABLES, cv.Optional(CONF_PRICELIST): _price_list_name}),
-    _with_price_list,
+    cv.Schema({cv.Optional(CONF_CALENDAR): CALENDAR, **TABLES, cv.Optional(CONF_PLAN): _plan_name}),
+    _with_plan,
 )
 
 
