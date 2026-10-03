@@ -1,0 +1,27 @@
+# Energa-Operator's G12w tariff, prices with VAT: https://energa-operator.pl/dokumenty-i-formularze/taryfa
+# The tariff prints the prices without VAT: these add 23% VAT.
+# Maintained by @zygimantas
+currency: PLN
+clock: winter
+calendar:
+  jan-dec:
+    mon-fri: night 06:00 day 13:00 night 15:00 day 22:00 night
+    sat-sun: night
+exceptions:
+  01-01: night
+  01-06: night
+  # Easter Monday, 2027
+  03-29: night
+  05-01: night
+  05-03: night
+  # Corpus Christi, 2027
+  05-27: night
+  08-15: night
+  11-01: night
+  11-11: night
+  12-24: night
+  12-25: night
+  12-26: night
+rates:
+  night: 0.10467
+  day: 0.49409

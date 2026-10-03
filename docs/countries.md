@@ -19,7 +19,7 @@ The board follows market prices where Nord Pool publishes the day-ahead prices o
 | Lithuania | `LT` | `EUR` | [ESO's plans](eso.md). |
 | Netherlands | `NL` | `EUR` | |
 | Norway | `NO1` to `NO5` | `NOK` or `EUR` | The capacity step isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| Poland | `PL` | `PLN` or `EUR` | |
+| Poland | `PL` | `PLN` or `EUR` | [The five big operators' plans](poland.md). |
 | Romania | `RO` | `RON` or `EUR` | |
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | Power fees at some network companies aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 

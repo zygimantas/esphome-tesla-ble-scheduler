@@ -97,3 +97,4 @@ scheduler:
 The plans are in [plans](../plans), a folder for each country:
 
 - Lithuania: [ESO plans](eso.md).
+- Poland: [the five big operators' plans](poland.md).
