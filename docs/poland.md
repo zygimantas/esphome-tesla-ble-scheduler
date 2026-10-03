@@ -1,8 +1,11 @@
 # Polish plans
 
-The household tariffs G11, G12 and G12w of Poland's five big distribution operators, with prices with VAT, in złoty. Name yours under `tariff:` in `config.yaml`, and leave `market:` as it is:
+The household tariffs G11, G12 and G12w of Poland's five big distribution operators, with prices with VAT, in złoty. Name yours under `tariff:` in `config.yaml`, with Poland's market area and VAT, which make złoty the currency:
 
 ```yaml
+  market:
+    area: PL
+    vat: 0.23
   tariff:
     plan: pl/tauron-g12w
 ```
