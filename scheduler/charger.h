@@ -49,9 +49,10 @@ struct Decision {
   // ignores the Charger reading while the charging state is Unknown) or "wait" (no schedule possible yet: no clock,
   // plug state, battery level or prices).
   std::string mode;
-  std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, and once more
+  std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, once more
                                              // when the board falls back to charging at any price or a
-                                             // start from the car takes over
+                                             // start from the car takes over, and when Ready by passes
+                                             // with the car short of its limit
   std::string savings;                       // format_savings() once the clock is set, else empty
   bool save_savings = false;                 // Controller::savings changed: time to write it to flash
 };
@@ -411,8 +412,10 @@ class Controller {
 
   // After a plug-in, one message once its schedule has settled: the battery levels, deadline, average price
   // and window count, why nothing was bought, or else the status. A start from the car or the Tesla app
-  // outside the schedule sends one at once, as the board then charges at any price.
+  // outside the schedule sends one at once, as the board then charges at any price. So does Ready by passing
+  // with the car short while the schedule decides, after the plug-in message: a night that went wrong.
   void notify_(int64_t now, const Settings &settings, Decision &d) {
+    const bool deadline_passed = deadline_passed_(now, settings);
     if (notify_car_start_) {
       notify_car_start_ = false;
       notify_pending_ = false;  // a plug-in message still pending would only repeat this
@@ -422,6 +425,13 @@ class Controller {
       if (!std::isnan(limit_))
         n.message += " to " + std::to_string(std::lround(limit_)) + "%";
       n.message += " at any price until you unplug";
+      return;
+    }
+    if (deadline_passed && plugged_ && hold_ == Hold::SCHEDULE && battery_known_() && !full_() && !notify_pending_) {
+      Notification &n = d.notification.emplace();
+      n.title = "Tesla charging";
+      n.message = "Ready by passed at " + std::to_string(std::lround(soc_)) + "% of " +
+                  std::to_string(std::lround(limit_)) + "%";
       return;
     }
     if (!notify_pending_)
@@ -495,6 +505,13 @@ class Controller {
     return next_local_time(now, settings.ready_by_minutes, settings.standard_offset);
   }
 
+  // Whether the deadline in force at the last tick has passed. One that only moved, as when Ready by changes, hasn't.
+  bool deadline_passed_(int64_t now, const Settings &settings) {
+    const int64_t last = deadline_at_;
+    deadline_at_ = now != 0 ? deadline_(now, settings) : 0;
+    return last != 0 && now >= last;
+  }
+
   // The status while the schedule doesn't charge now: its next window that hasn't started.
   std::string next_window_status_(int64_t now, int32_t standard_offset) const {
     for (const Window &w : schedule_.windows)
@@ -527,6 +544,7 @@ class Controller {
   bool market_ = true;  // prices come from the market (see without_market_prices())
   int64_t scheduled_slot_ = -1;
   int64_t plugged_since_ = 0;
+  int64_t deadline_at_ = 0;  // the deadline in force at the last tick, 0 before the clock is set
   int64_t limit_raised_at_ = 0;
   int64_t battery_unknown_since_ = 0;
   int64_t plug_unknown_since_ = 0;

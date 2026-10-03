@@ -1945,11 +1945,65 @@ static void test_fallback_message_mid_stay() {
   // When the prices run out at 01:00 with none for tomorrow, the board charges at any price and says so;
   // not when tomorrow's prices came first.
   const auto out = fallback_night(false);
-  REQUIRE(out.size() == 2);
+  REQUIRE(out.size() == 3);
   CHECK(out[0].first == SEP24_1700Z + 2 * 60);
-  CHECK(out[1].first == CET_SEP25);  // 01:00 local, the first quarter-hour without a price
-  CHECK_STR(out[1].second.message, "Charging (no prices)");
-  CHECK(fallback_night(true).size() == 1);
+  CHECK(out[1].first == SEP24_1700Z + 4 * HOUR);  // 00:00, the one-off Ready by, with too little time to charge
+  CHECK_STR(out[1].second.message, "Ready by passed at 73% of 80%");
+  CHECK(out[2].first == CET_SEP25);  // 01:00 local, the first quarter-hour without a price
+  CHECK_STR(out[2].second.message, "Charging (no prices)");
+  CHECK(fallback_night(true).size() == 2);
+}
+
+static void test_message_when_ready_by_passes_short() {
+  // The charger gives no power all night: at 07:00, Ready by, the phone hears it, and only then.
+  const int64_t ready_by = SEP24_1700Z + 11 * HOUR;
+  FakeTesla stuck;
+  stuck.no_power = true;
+  Controller controller = with_prices();
+  const Run night =
+      simulate(controller, stuck, SEP24_1700Z - 60, ready_by + 3 * HOUR, {{SEP24_1700Z, &FakeTesla::plug_in}});
+  REQUIRE(night.messages.size() == 2);
+  CHECK(night.messages[1].first == ready_by);
+  CHECK_STR(night.messages[1].second.message, "Ready by passed at 40% of 80%");
+
+  // None when the car reaches its limit, after Start charging now or Stop charging, or once unplugged.
+  const auto messages = [&](FakeTesla car, Controller &c, std::vector<Step> steps) {
+    steps.insert(steps.begin(), {SEP24_1700Z, &FakeTesla::plug_in});
+    return simulate(c, car, SEP24_1700Z - 60, ready_by + HOUR, steps).messages.size();
+  };
+  Controller full = with_prices(), now = with_prices(), stopped = with_prices(), away = with_prices();
+  CHECK(messages(FakeTesla(), full, {}) == 1);
+  CHECK(messages(stuck, now, {{SEP24_1700Z + 5 * 60, [&now](FakeTesla &) { now.charge_now(); }}}) == 1);
+  CHECK(messages(stuck, stopped, {{SEP24_1700Z + 5 * 60, [&stopped](FakeTesla &) { stopped.stop_charging(); }}}) == 1);
+  CHECK(messages(stuck, away, {{ready_by - HOUR, &FakeTesla::unplug}}) == 1);
+
+  // None before the car's battery level is known, or before the plug-in message has gone out.
+  Controller unknown = with_prices();
+  FakeTesla unread = plugged_in(false);
+  unread.battery_known = false;
+  unknown.tick(unread.state(ready_by - 30), Settings());
+  CHECK(!unknown.tick(unread.state(ready_by), Settings()).notification);
+  Controller late = with_prices();
+  const Run plugged_late =
+      simulate(late, stuck, ready_by - 120, ready_by + 10 * 60, {{ready_by - 60, &FakeTesla::plug_in}});
+  for (const auto &[at, n] : plugged_late.messages)
+    CHECK(n.message.rfind("Ready by passed", 0) != 0);
+
+  // Moving Ready by later isn't passing it.
+  Controller moved = with_prices();
+  FakeTesla waiting = plugged_in(false);
+  waiting.no_power = true;
+  Settings settings;
+  moved.tick(waiting.state(ready_by - 60), settings);
+  settings.ready_by_minutes = 8 * 60;
+  CHECK(!moved.tick(waiting.state(ready_by - 30), settings).notification);
+  CHECK(!moved.tick(waiting.state(ready_by + 30), settings).notification);
+  CHECK(moved.tick(waiting.state(ready_by + HOUR), settings).notification.has_value());
+
+  // Nor does a start before the clock is set: the first deadline the board knows is still ahead.
+  Controller booting = with_prices();
+  booting.tick(waiting.state(0), Settings());
+  CHECK(!booting.tick(waiting.state(SEP24_1700Z), Settings()).notification);
 }
 
 static void test_plug_in_message_without_prices() {
@@ -2380,6 +2434,7 @@ int main() {
   test_one_plug_in_message_per_plug_in();
   test_fallback_message_after_a_restart();
   test_fallback_message_mid_stay();
+  test_message_when_ready_by_passes_short();
   test_plug_in_message_without_prices();
   test_plug_in_message_when_the_battery_level_stays_unknown();
   test_savings_count_each_quarter_hour();
