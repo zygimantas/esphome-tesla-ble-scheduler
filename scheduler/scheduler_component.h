@@ -47,9 +47,9 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerCo
   ESPPreferenceObject pref_;
 };
 
-enum class Action { CREATE_PLAN, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
+enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
-// The page's Create charging plan, Start charging now, Stop charging and Reset savings.
+// The page's Create charging schedule, Start charging now, Stop charging and Reset savings.
 class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }
@@ -97,8 +97,8 @@ class SchedulerComponent : public PollingComponent {
   // For the simulation, which loads made-up prices.
   Controller &controller() { return this->controller_; }
 
-  // A new Ready by or a button: re-plan or act, then tick at once.
-  void replan();
+  // A new Ready by or a button: reschedule or act, then tick at once.
+  void reschedule();
   void press(Action action);
 
  protected:

@@ -21,7 +21,7 @@ body:
     id: setup
     type: input
   - attributes:
-      description: The Status row on the page when it happened, and the plan if there was one.
+      description: The Status row on the page when it happened, and the schedule if there was one.
       label: What the page showed
     id: page
     type: textarea

@@ -17,7 +17,7 @@ esphome:
       - lambda: |-
           auto &controller = id(scheduler_id).controller();
           scheduler_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
-          controller.replan();
+          controller.reschedule();
 
 external_components:
   - components: [scheduler]

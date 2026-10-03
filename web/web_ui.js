@@ -7,7 +7,7 @@
 //   Render         one render per frame, from state to the page
 //   Charge limit   the limit dropdown and sending it
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
-//   Plan           the plan card: the mode, the charge windows and the plan buttons
+//   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
@@ -22,7 +22,7 @@ const E = {
   ble: "sensor/BLE Signal",
   chargeNow: "button/Start charging now",
   charging: "text_sensor/Charging",
-  createPlan: "button/Create charging plan",
+  createSchedule: "button/Create charging schedule",
   limit: "number/Charging Limit",
   mode: "text_sensor/Charging mode",
   pair: "button/Pair BLE Key",
@@ -63,16 +63,16 @@ const PAGE = `
     <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
   </section>
 
-  <section id="plan-card" class="card" hidden>
-    <div class="title">Charging plan</div>
-    <div id="plan-start">
-      <button id="create-plan" class="primary">Create charging plan</button>
+  <section id="schedule-card" class="card" hidden>
+    <div class="title">Schedule</div>
+    <div id="schedule-start">
+      <button id="create-schedule" class="primary">Create charging schedule</button>
       <div class="or">or</div>
       <button id="charge-now">Start charging now</button>
     </div>
-    <div id="plan-rows">
+    <div id="schedule-rows">
       <div id="windows"></div>
-      <button id="delete-plan" class="red">Delete charging plan</button>
+      <button id="delete-schedule" class="red">Delete charging schedule</button>
     </div>
     <button id="stop-charging" class="red">Stop charging</button>
   </section>
@@ -106,7 +106,7 @@ const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
 // they aren't.
 let live = null;
-// Charge limit and Ready by picked here but not sent yet: the plan buttons send them.
+// Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
 // The mode a button should bring and the limit just sent, as { value, until }, shown until the board reports them or
 // `until` passes.
@@ -131,7 +131,7 @@ const stillPending = (sent, board) => (sent && Date.now() < sent.until && board 
 // --- Render ----------------------------------------------------------------
 
 let renderQueued = false;
-function scheduleRender() {
+function requestRender() {
   if (renderQueued) return;
   renderQueued = true;
   requestAnimationFrame(() => {
@@ -148,7 +148,7 @@ function render() {
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
   $("status").textContent = live === false ? "No connection" : (text(E.status) || "Connecting …") + power;
-  renderPlan(); // first: it drops the draft when the dropdowns can't change
+  renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
   renderSavings();
@@ -204,13 +204,13 @@ async function sendLimit() {
 
 // --- Ready by --------------------------------------------------------------
 
-// The half-hours from now to the end of the published prices, since the board doesn't plan on guesses. The time picked
+// The half-hours from now to the end of the published prices, as the board doesn't schedule on guesses. The time picked
 // becomes the daily Ready by, which the board remembers; a later day than that time's next occurrence is a one-off.
 
 const HALF_HOUR_MS = 30 * 60 * 1000;
 const CLEAR_ONCE = "2000-01-01 00:00:00"; // Ready by once's "unset" value
-// After Create charging plan, keeps the dropdown on the deadline just sent for a moment, so the board's old one doesn't
-// flash back.
+// After Create charging schedule, keeps the dropdown on the deadline just sent for a moment, so the board's old one
+// doesn't flash back.
 let readyLockUntil = 0;
 
 // The daily time, the one-off while it's ahead, and the deadline in force.
@@ -251,9 +251,9 @@ async function sendReadyBy(time, once, current) {
   return post(E.readyByOnce, "set", once == null ? CLEAR_ONCE : boardTime(once));
 }
 
-// --- Plan ------------------------------------------------------------------
+// --- Schedule --------------------------------------------------------------
 
-// The board's mode ("plan", "now", "none" or "wait"), or the one a button just asked for until the board has it.
+// The board's mode ("schedule", "now", "none" or "wait"), or the one a button just asked for until the board has it.
 function shownMode() {
   const board = text(E.mode) || "wait";
   pending.mode = stillPending(pending.mode, board);
@@ -261,30 +261,30 @@ function shownMode() {
 }
 function expectMode(mode) {
   pending.mode = { value: mode, until: Date.now() + 10000 };
-  scheduleRender();
+  requestRender();
 }
 
-// Both buttons, the plan with Delete, or Stop while charging regardless of price. Charge limit and Ready by are for a
-// new plan or charge, so only then can they change.
-function renderPlan() {
+// Both buttons, the schedule with Delete, or Stop while charging regardless of price. Charge limit and Ready by are for
+// a new schedule or charge, so only then can they change.
+function renderSchedule() {
   const plugged = states[E.plugged]?.value === true;
   const mode = shownMode();
-  $("target-card").hidden = mode === "wait"; // nothing to set or show until the board can plan
-  $("plan-card").hidden = !plugged || mode === "wait";
-  $("plan-start").hidden = mode !== "none";
-  $("plan-rows").hidden = mode !== "plan";
+  $("target-card").hidden = mode === "wait"; // nothing to set or show until the board can schedule
+  $("schedule-card").hidden = !plugged || mode === "wait";
+  $("schedule-start").hidden = mode !== "none";
+  $("schedule-rows").hidden = mode !== "schedule";
   $("stop-charging").hidden = mode !== "now";
   const editable = plugged && mode === "none";
   if (!editable) draft.limit = draft.deadline = null;
   for (const id of ["limit-select", "ready-select"]) $(id).disabled = !editable;
-  // No plan without prices: the board downloads them after it starts, which takes about a minute.
+  // No schedule without prices: the board downloads them after it starts, which takes about a minute.
   const priced = pricesUntil() > Date.now();
-  $("create-plan").disabled = !priced || busy;
-  $("create-plan").textContent = priced ? "Create charging plan" : "Getting prices …";
+  $("create-schedule").disabled = !priced || busy;
+  $("create-schedule").textContent = priced ? "Create charging schedule" : "Getting prices …";
   renderWindows();
 }
 
-// "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in planner.h: the windows in UTC
+// "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in schedule.h: the windows in UTC
 // seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
 function renderWindows() {
   const [currency, ...entries] = text(E.windows).split(";");
@@ -302,8 +302,8 @@ function renderWindows() {
   $("windows").replaceChildren(...rows);
 }
 
-// Sends what changed in the draft, then asks the board to plan, which cancels Start charging now.
-async function createPlan() {
+// Sends what changed in the draft, then asks the board to schedule, which cancels Start charging now.
+async function createSchedule() {
   const current = readyBy();
   let deadline = draft.deadline ?? current.deadline;
   if (deadline == null) return;
@@ -312,13 +312,13 @@ async function createPlan() {
   const once = deadline === nextAt(time) ? null : deadline;
   fillReady(deadline);
   readyLockUntil = Date.now() + 3000;
-  const ok = (await sendLimit()) && (await sendReadyBy(time, once, current)) && (await post(E.createPlan, "press"));
+  const ok = (await sendLimit()) && (await sendReadyBy(time, once, current)) && (await post(E.createSchedule, "press"));
   if (ok) {
-    expectMode("plan");
-    toast(`Plan: ${shownLimit()}% by ${deadlineText(deadline)}`);
+    expectMode("schedule");
+    toast(`Schedule: ${shownLimit()}% by ${deadlineText(deadline)}`);
   } else {
     readyLockUntil = 0;
-    scheduleRender();
+    requestRender();
   }
 }
 
@@ -328,10 +328,10 @@ async function chargeNow() {
     expectMode("now");
     toast("Charging now until you unplug");
   }
-  scheduleRender();
+  requestRender();
 }
 
-// Stop charging and Delete charging plan: the board stops charging and keeps the car waiting until a
+// Stop charging and Delete charging schedule: the board stops charging and keeps the car waiting until a
 // button here, or the car is unplugged.
 async function stopCharging(message) {
   if (await post(E.stopCharging, "press")) {
@@ -375,7 +375,7 @@ function connect() {
     seen();
     const data = JSON.parse(e.data);
     states[data.id] = data;
-    scheduleRender();
+    requestRender();
   });
 }
 
@@ -395,7 +395,7 @@ setInterval(reconnectIfDead, 10000);
 function setLive(on) {
   if (live === on) return;
   live = on;
-  scheduleRender();
+  requestRender();
 }
 
 async function post(entity, action, param) {
@@ -422,7 +422,7 @@ async function post(entity, action, param) {
 }
 
 // One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
-// and renderPlan() keeps Create charging plan off meanwhile.
+// and renderSchedule() keeps Create charging schedule off meanwhile.
 let busy = false;
 function press(button, handler) {
   button.addEventListener("click", async () => {
@@ -434,7 +434,7 @@ function press(button, handler) {
     } finally {
       busy = false;
       button.disabled = false;
-      scheduleRender();
+      requestRender();
     }
   });
 }
@@ -519,9 +519,9 @@ function confirmPress(elementId, entity, message, question) {
 function bind() {
   $("limit-select").addEventListener("change", (e) => (draft.limit = Number(e.target.value)));
   $("ready-select").addEventListener("change", (e) => (draft.deadline = Number(e.target.value)));
-  press($("create-plan"), createPlan);
+  press($("create-schedule"), createSchedule);
   press($("charge-now"), chargeNow);
-  press($("delete-plan"), () => stopCharging("Charging plan deleted"));
+  press($("delete-schedule"), () => stopCharging("Charging schedule deleted"));
   press($("stop-charging"), () => stopCharging("Charging stopped"));
   confirmPress(
     "pair",
