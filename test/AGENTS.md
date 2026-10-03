@@ -2,7 +2,7 @@
 
 ## Unit tests
 
-- Build and run them from the repository root; the include paths assume it, and the tests read pricelists/ and scheduler/grid.py.
+- Build and run them from the repository root; the include paths assume it, and the tests read plans/ and scheduler/grid.py.
 - scheduler_test_tesla.h, the simulated Tesla, is also the simulation's car: keep it free of unit-test code.
 - CHECK is a macro: a comma outside parentheses, as in `std::vector<std::pair<A, B>>`, splits its argument. Use a type alias.
 - A plug-in counts as one (the phone message, a fresh schedule mode) only after a tick with the car unplugged: the first plug state the controller sees is taken as the state after a restart.

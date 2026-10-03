@@ -1,49 +1,49 @@
 # Grid fees
 
-The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name the price list for their grid operator's plan:
+The `grid:` part of `config.yaml` adds your grid fees to the market prices, so the board compares what you really pay. Most people only name their grid operator's plan:
 
 ```yaml
 scheduler:
   grid:
-    pricelist: lt/eso-standartinis-4-zones
+    plan: lt/eso-standartinis-4-zones
   market:
     area: LT
     vat: 0.21
 ```
 
-The board starts with the list from the release you installed, and downloads the current one every day, so new prices reach it without a reinstall. Each list has a maintainer from its country who keeps it up to date. [Price lists](#price-lists) says which there are.
+The board starts with the plan from the release you installed, and downloads the current one every day, so new prices reach it without a reinstall. Each plan has a maintainer from its country who keeps it up to date. [Plans](#plans) says which there are.
 
 ## Your own changes
 
-Next to `pricelist:`, these change the list for you alone:
+Next to `plan:`, these change the plan for you alone:
 
-- `rates`: your own price for a rate, or a rate the list doesn't have.
-- `exceptions`: a date of your own, or another line for one of the list's.
-- `calendar` and `clock`: your own calendar or clock, instead of the list's whole one.
+- `rates`: your own price for a rate, or a rate the plan doesn't have.
+- `exceptions`: a date of your own, or another line for one of the plan's.
+- `calendar` and `clock`: your own calendar or clock, instead of the plan's whole one.
 
 ```yaml
 scheduler:
   grid:
-    pricelist: lt/eso-standartinis-4-zones
+    plan: lt/eso-standartinis-4-zones
     exceptions:
       12-31: night 07:00 day 22:00 night
     rates:
       night: 0.05
 ```
 
-A rate you set has to be one your days use. If a list later drops or renames it, the board keeps the list it has and says why in its log.
+A rate you set has to be one your days use. If a plan later drops or renames it, the board keeps the plan it has and says why in its log.
 
 ## Your own grid
 
-Without a price list for your grid operator, write the grid yourself, or [add a price list](../CONTRIBUTING.md#price-lists) for everyone on your grid operator's plan:
+Without your grid operator's plan here, write the grid yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it:
 
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
 - `exceptions`: public holidays and other dates that differ, like `12-25`, each with a line for the whole day. On those dates they replace the calendar.
 - `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`. YAML reads `on`, `off`, `yes`, `no`, `true`, `false` and `null` as true, false or nothing, so those can't be names.
-- `clock: winter`: all times stay on winter time all year. `clock: local`, the default, follows the clock, summer time included; it undoes a price list's `clock: winter`.
+- `clock: winter`: all times stay on winter time all year. `clock: local`, the default, follows the clock, summer time included; it undoes a plan's `clock: winter`.
 
-The price lists are examples too, like [ESO's four zones](../pricelists/lt/eso-standartinis-4-zones.yaml).
+The plans are examples too, like [ESO's four zones](../plans/lt/eso-standartinis-4-zones.yaml).
 
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
@@ -61,9 +61,9 @@ scheduler:
       high: 0.08
 ```
 
-Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a price list, whose maintainer does.
+Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a plan, whose maintainer does.
 
-If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a price list in another currency than yours.
+If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a plan in another currency than yours.
 
 ## A fixed price
 
@@ -92,8 +92,8 @@ scheduler:
       cheap: 0.085
 ```
 
-## Price lists
+## Plans
 
-The lists are in [pricelists](../pricelists), a folder for each country:
+The plans are in [plans](../plans), a folder for each country:
 
-- Lithuania: [ESO price lists](eso.md).
+- Lithuania: [ESO plans](eso.md).

@@ -12,11 +12,10 @@ static const char *const TAG = "scheduler";
 // Keys of ESPHome's template time and datetime, so Ready by keeps the value saved before this component.
 static constexpr uint32_t READY_BY_KEY = 194434060U;
 static constexpr uint32_t READY_BY_ONCE_KEY = 194434090U;
-// The most the board reads of an answer: a day of LT prices is about 11 kB, and a price list about 1 kB.
+// The most the board reads of an answer: a day of LT prices is about 11 kB, and a plan about 1 kB.
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
-// The price lists as their maintainers keep them current, on GitHub.
-static const char *const PRICE_LISTS =
-    "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/pricelists/";
+// The plans as their maintainers keep them current, on GitHub.
+static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
 
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>(READY_BY_KEY);
@@ -94,7 +93,7 @@ static auto find(const List &entities, const char *name) {
 }
 
 void SchedulerComponent::setup() {
-  const std::string error = this->apply_grid_(this->list_);
+  const std::string error = this->apply_grid_(this->plan_text_);
   if (!error.empty())
     ESP_LOGE(TAG, "Grid: %s", error.c_str());
   this->ready_by_->restore();
@@ -161,9 +160,8 @@ void SchedulerComponent::update() {
   // The clock keeps running through a restart, so wait for the network too.
   if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
     this->fetch_prices_(car.now);
-  if (network::is_connected() && this->pricelist_[0] != '\0' &&
-      price_list_due(car.now, this->list_tried_at_, this->list_usable_))
-    this->fetch_price_list_(car.now);
+  if (network::is_connected() && this->plan_[0] != '\0' && plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
+    this->fetch_plan_(car.now);
 
   Decision d = this->controller_.tick(car, settings);
   if (this->controller_.held_mode() != this->held_) {
@@ -216,7 +214,7 @@ void SchedulerComponent::dump_config() {
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
                 this->area_[0] != '\0' ? this->area_ : "none, the grid prices are the whole price",
-                this->settings_.currency, this->pricelist_[0] != '\0' ? this->pricelist_ : "the rates in config.yaml",
+                this->settings_.currency, this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml",
                 this->settings_.capacity_kwh, this->settings_.charge_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
   LOG_UPDATE_INTERVAL(this);
 }
@@ -253,15 +251,15 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `list`, a price list's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
-std::string SchedulerComponent::apply_grid_(const std::string &list) {
+// Uses `text`, a plan's text, with the grid: settings of config.yaml. Returns what's wrong, or "".
+std::string SchedulerComponent::apply_grid_(const std::string &text) {
   Grid grid;
-  const std::string error = make_grid(list, this->own_, this->settings_.currency, grid);
+  const std::string error = make_grid(text, this->own_, this->settings_.currency, grid);
   if (!error.empty())
     return error;
   grid.vat = this->vat_;
   this->controller_.set_grid(grid);
-  this->list_ = list;
+  this->plan_text_ = text;
   return "";
 }
 
@@ -317,33 +315,33 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
   }
 }
 
-// The price list as its maintainer keeps it, from GitHub. A failed or cut-off download, or a list the board can't use
-// with the grid: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
-void SchedulerComponent::fetch_price_list_(int64_t now) {
-  this->list_tried_at_ = now;
-  this->list_usable_ = false;
-  auto response = this->http_->get(std::string(PRICE_LISTS) + this->pricelist_ + ".yaml");
+// The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use with
+// the grid: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
+void SchedulerComponent::fetch_plan_(int64_t now) {
+  this->plan_tried_at_ = now;
+  this->plan_usable_ = false;
+  auto response = this->http_->get(std::string(PLANS) + this->plan_ + ".yaml");
   if (response == nullptr) {
-    ESP_LOGW(TAG, "Price list %s: request failed", this->pricelist_);
+    ESP_LOGW(TAG, "Plan %s: request failed", this->plan_);
     return;
   }
   const int status = response->status_code;
-  const std::optional<std::string> list =
+  const std::optional<std::string> text =
       status == http_request::HTTP_STATUS_OK ? this->read_body_(*response) : std::nullopt;
   response->end();
   if (status != http_request::HTTP_STATUS_OK) {
-    ESP_LOGW(TAG, "Price list %s: GitHub answered HTTP %d", this->pricelist_, status);
-  } else if (!list) {
-    ESP_LOGW(TAG, "Price list %s: the download was cut off, so the one in use stays", this->pricelist_);
-  } else if (*list == this->list_) {
-    this->list_usable_ = true;
+    ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", this->plan_, status);
+  } else if (!text) {
+    ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", this->plan_);
+  } else if (*text == this->plan_text_) {
+    this->plan_usable_ = true;
   } else {
-    const std::string error = this->apply_grid_(*list);
-    this->list_usable_ = error.empty();
+    const std::string error = this->apply_grid_(*text);
+    this->plan_usable_ = error.empty();
     if (error.empty())
-      ESP_LOGI(TAG, "Price list %s: new prices", this->pricelist_);
+      ESP_LOGI(TAG, "Plan %s: new prices", this->plan_);
     else
-      ESP_LOGW(TAG, "Price list %s: %s, so the one in use stays", this->pricelist_, error.c_str());
+      ESP_LOGW(TAG, "Plan %s: %s, so the one in use stays", this->plan_, error.c_str());
   }
 }
 
