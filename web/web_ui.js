@@ -24,6 +24,7 @@ const E = {
   chargeNow: "button/Start charging now",
   charging: "text_sensor/Charging",
   createSchedule: "button/Create schedule",
+  factoryReset: "button/Factory reset",
   limit: "number/Charging Limit",
   mode: "text_sensor/Charging mode",
   pair: "button/Pair BLE Key",
@@ -116,6 +117,7 @@ const PAGE = `
     <button id="change-settings">Change settings</button>
     <button id="pair">Pair BLE key</button>
     <button id="restart" class="danger">Restart board</button>
+    <button id="factory-reset" class="danger">Factory reset</button>
   </details>
 
   <div id="toast" class="toast" role="status"></div>
@@ -747,6 +749,12 @@ function bind() {
     "Reset the savings? They start again from zero today.",
   );
   confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
+  confirmPress(
+    "factory-reset",
+    E.factoryReset,
+    "Erasing: the board restarts as new",
+    "Erase the board's settings, Wi-Fi, car key and savings? It restarts as a new board, without Wi-Fi.",
+  );
   $("set-area").addEventListener("change", () => {
     fillPlans($("set-plan").value);
     if (settings.text === "") guessFromArea();
