@@ -1,6 +1,5 @@
 api:
   encryption:
-    key: !secret api_encryption_key
   reboot_timeout: 0s
 
 debug:
@@ -22,7 +21,7 @@ esphome:
   min_version: 2026.9.0
   name: tesla
   on_boot:
-    priority: 800  # before the Tesla component starts, which takes the VIN then
+    priority: 800
     then:
       - lambda: id(tesla_ble_vehicle_id).set_vin(id(scheduler_id).vin().c_str());
   project:
@@ -32,14 +31,21 @@ esphome:
 http_request:
   timeout: 15s
 
+improv_serial:
+
 logger:
   hardware_uart: UART0
+
+ota: !remove
 
 packages:
   yoziru.esphome-tesla-ble:
     files: [packages/dashboard.yml]
     ref: ${tesla_ble_ref}
     url: https://github.com/yoziru/esphome-tesla-ble.git
+
+provisioning:
+  timeout: 15min
 
 psram:
   mode: octal
@@ -54,7 +60,7 @@ substitutions:
   board: esp32-s3-devkitc-1
   flash_size: 16MB
   tesla_ble_ref: 8b9ec1cb7312f47c8d4d3042fefabc7759eb1a07
-  tesla_vin: ""  # the settings file's, from when the board starts
+  tesla_vin: ""
   variant: esp32s3
 
 tesla_ble_vehicle:
@@ -72,7 +78,7 @@ time:
   - id: !remove homeassistant_time
   - id: sntp_time
     platform: sntp
-    timezone: UTC  # the settings file's, from when the board starts
+    timezone: UTC
 
 web_server:
   css_include: web/web_ui.css
@@ -82,9 +88,5 @@ web_server:
   ota: false
 
 wifi:
-  ap:
-    password: !secret wifi_hotspot_password
   on_connect: !remove
   on_disconnect: !remove
-  password: !secret wifi_password
-  ssid: !secret wifi_ssid
