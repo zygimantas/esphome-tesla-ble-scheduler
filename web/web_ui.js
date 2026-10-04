@@ -59,7 +59,7 @@ const PAGE = `
   </section>
 
   <section id="settings-card" class="card" hidden>
-    <div class="title">Settings</div>
+    <div id="settings-title" class="title">Settings</div>
     <label class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
     <label class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
@@ -182,12 +182,16 @@ function render() {
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
-  // Without settings the board can use, the form is the page; with them, it opens from Board.
-  const needed = settings.text === "" || text(E.status).startsWith("Settings: ");
+  // A new board's page is its setup, a short form. Without settings the board can use, the form comes first; with
+  // them, it opens from Board.
+  const setup = settings.text === "";
+  const needed = setup || text(E.status).startsWith("Settings: ");
+  document.body.classList.toggle("setup", setup);
+  $("settings-title").textContent = setup ? "Setup" : "Settings";
   $("settings-card").hidden = !needed && !settings.open;
-  for (const row of document.querySelectorAll(".more")) row.hidden = settings.text === ""; // a new board asks less
+  for (const row of document.querySelectorAll(".more")) row.hidden = setup;
   $("cancel-settings").hidden = needed;
-  $("download-settings").hidden = settings.text === "";
+  $("download-settings").hidden = setup;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board

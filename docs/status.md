@@ -31,7 +31,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 ## The board and the page
 
 - **Unplugged**: the car isn't plugged in.
-- **No settings yet**: the board has no settings yet. Fill in the form on the page and press Save, as the README's [Setup](../README.md#setup) says.
+- **No settings yet**: the board has no settings yet. Fill in Setup on the page and press Save, as the README's [Setup](../README.md#setup) says.
 - **Settings: …**: the settings the board had no longer pass its checks, after an update made one stricter. The page shows them in its form: fix what it says and press Save.
 - **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Setup](../README.md#setup) says.
 - **Connecting …**: the page has just opened and waits for the board.
