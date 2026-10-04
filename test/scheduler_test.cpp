@@ -1031,8 +1031,9 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + SETTINGS),
               "currency must be a currency's three-letter code, like EUR");
   // Phone messages
-  CHECK_STR(settings_error(settings_with("ntfy_topic", "ntfy_server: ntfy.sh\n")),
-            "ntfy_server must be the server's address, like https://ntfy.sh");
+  for (const char *server : {"ntfy.sh", "ftp://ntfy.sh"})
+    CHECK_STR(settings_error(settings_with("ntfy_topic", std::string("ntfy_server: ") + server + "\n")),
+              "ntfy_server must be the server's address, like https://ntfy.sh");
   for (const std::string &topic : {std::string("https://ntfy.sh/mine"), std::string(65, 'a')})
     CHECK_STR(settings_error(settings_with("ntfy_topic", "ntfy_topic: " + topic + "\n")),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
