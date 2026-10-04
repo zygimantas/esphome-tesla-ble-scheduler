@@ -7,9 +7,9 @@ body:
     validations:
       required: true
   - attributes:
-      description: The Version row in the Board section of the page, like 4.1.1.
+      description: The Version row in the Board section of the page, like 4.2.0.
       label: Release
-      placeholder: "4.1.1"
+      placeholder: "4.2.0"
     id: release
     type: input
     validations:
