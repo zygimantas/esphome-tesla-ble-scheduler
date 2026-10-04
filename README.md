@@ -54,7 +54,7 @@ http://tesla.local/settings and tell me what the board answered.
 
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Your settings keep their names: copy the substitutions of your `config.yaml` but `version`, and `currency`, `market:` and `tariff:` from under `scheduler:`, into the settings file, without the two spaces before them, then upload it.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Your settings keep their names: copy the substitutions of your `config.yaml` but `version`, and `currency`, `market:` and `tariff:` from under `scheduler:`, into the settings file, without the two spaces before them, then upload it. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
