@@ -79,6 +79,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
 - **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT, grid fees and the supplier's price per kWh in `market: margin`, not monthly fees. **Reset savings** starts again from zero.
+- **Factory reset**, under **Board**, erases everything the board keeps: its settings, Wi-Fi, the car's key and savings. It then starts as a new board: set it up again as in [Setup](#setup), skipping **Install**, and remove its old key in the car under **Controls** → **Locks**.
 
 ### Phone messages
 
