@@ -94,10 +94,6 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: false
-      - name: Secrets, from the example with a random API key and a hotspot password
-        run: |
-          sed -e "s|random-key-from-esphome.io/components/api|$(openssl rand -base64 32)|" \
-            -e 's|"REPLACEME"|"ci-hotspot-password"|' secrets.example.yaml > secrets.yaml
       - name: Simulation, starting a stopped car in a cheap quarter-hour
         run: |
           uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
@@ -108,13 +104,29 @@ jobs:
             { cat simulation.log; exit 1; }
           grep -F '][scheduler' simulation.log
           grep -q -F 'Start charging (Starting)' simulation.log
-      - name: Firmware, as users build it, from this commit on GitHub
+      - name: Firmware, as releases ship it, signed, for ESPHome Web and updates
         env:
-          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          SIGNING_KEY: ${{ github.event_name == 'push' && secrets.SIGNING_KEY || '' }}
         run: |
-          user=$(mktemp -d)
-          cp config.example.yaml secrets.yaml "$user"
-          uvx "esphome@$ESPHOME_VERSION" -s version "$COMMIT" -s tesla_vin 5YJ3E1EA0KF000000 compile "$user/config.example.yaml"
+          # Only builds of main get the release key: pull requests are signed with a throwaway one.
+          if [ "$GITHUB_EVENT_NAME" != push ]; then
+            openssl genrsa -out signing_key.pem 3072
+          elif [ -n "$SIGNING_KEY" ]; then
+            printf '%s\n' "$SIGNING_KEY" > signing_key.pem
+          else
+            echo "::error::The SIGNING_KEY secret is missing: boards take only releases signed with it"
+            exit 1
+          fi
+          # A key nobody keeps for the Tesla package's OTA from a computer, which ESPHome adds back to release.yaml's.
+          uvx "esphome@$ESPHOME_VERSION" -s ota_key "$(openssl rand -base64 32)" compile release.yaml
+          rm signing_key.pem
+          cp .esphome/build/tesla/build/firmware.factory.bin esphome-tesla-ble-scheduler.bin
+          cp .esphome/build/tesla/build/firmware.ota.bin esphome-tesla-ble-scheduler.ota.bin
+      - if: github.event_name == 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: firmware
+          path: esphome-tesla-ble-scheduler*.bin
 
   release:
     name: Release the version in device.yaml
@@ -126,6 +138,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: firmware
       - name: Publish it, unless it's out already
         env:
           GH_TOKEN: ${{ github.token }}
@@ -134,6 +149,13 @@ jobs:
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "v$version is out already"
           else
+            # What boards check every day, at releases/latest/download/manifest.json.
+            release="https://github.com/$GITHUB_REPOSITORY/releases"
+            jq -n --arg version "$version" --arg release "$release" \
+              --arg md5 "$(md5sum esphome-tesla-ble-scheduler.ota.bin | cut -d ' ' -f 1)" \
+              '{name: "ESPHome Tesla BLE Scheduler", version: $version, builds: [{chipFamily: "ESP32-S3", ota: {
+                path: "\($release)/download/v\($version)/esphome-tesla-ble-scheduler.ota.bin", md5: $md5,
+                release_url: "\($release)/tag/v\($version)"}}]}' > manifest.json
             gh release create "v$version" --target "$GITHUB_SHA" --title "ESPHome Tesla BLE Scheduler $version" --generate-notes \
-              config.example.yaml secrets.example.yaml
+              esphome-tesla-ble-scheduler.bin esphome-tesla-ble-scheduler.ota.bin manifest.json settings.example.yaml
           fi

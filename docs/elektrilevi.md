@@ -1,13 +1,13 @@
 # Elektrilevi plans
 
-Elektrilevi's network packages for Estonia, for connections up to 63 A, with prices with VAT. Name yours under `tariff:` in `config.yaml`, with Estonia's market area and VAT:
+Elektrilevi's network packages for Estonia, for connections up to 63 A, with prices with VAT. Name yours under `tariff:` in your settings file, with Estonia's market area and VAT:
 
 ```yaml
-  market:
-    area: EE
-    vat: 0.24
-  tariff:
-    plan: ee/elektrilevi-vork-2
+market:
+  area: EE
+  vat: 0.24
+tariff:
+  plan: ee/elektrilevi-vork-2
 ```
 
 | Package | Plan |

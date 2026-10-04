@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest release gets fixes. Updating is one line in `config.yaml` (see [Settings](README.md#settings) in the README), so there is no reason to stay on an older one.
+Only the latest release gets fixes. Boards install it by themselves within a day, so there is no reason to stay on an older one.
 
 ## Reporting a vulnerability
 
@@ -12,16 +12,18 @@ You get an answer within a week. A confirmed problem is fixed in a release, with
 
 ## What counts
 
-The firmware (`device.yaml`, `scheduler/`, `web/`), the example settings files and the GitHub workflows are in scope. Examples of things worth reporting:
+The firmware (`device.yaml`, `release.yaml`, `scheduler/`, `web/`), the example settings file and the GitHub workflows are in scope. Examples of things worth reporting:
 
 - The board sending the car a command it shouldn't, or accepting one from someone who isn't on your Wi-Fi.
-- Your Wi-Fi password, API key, VIN or ntfy topic ending up somewhere they shouldn't, such as a log, the page or a release file.
+- A board installing firmware that isn't signed with the project's key.
+- Your Wi-Fi password, API key, VIN or ntfy topic ending up somewhere they shouldn't, such as a log or a release file.
 - A Nord Pool, SMARD, OMIE or ntfy response, or a crafted web request, crashing the board or running code on it.
 - A workflow that could publish a release or change the repository from a pull request.
 
 ## What doesn't
 
-- The page has no password: anyone on your Wi-Fi can use it. That is a design choice, documented in the README.
+- The page has no password: anyone on your Wi-Fi can use it, and download its settings, the VIN and the ntfy topic included. That is a design choice, documented in the README.
+- For 15 minutes after it starts, a board that can't join your Wi-Fi opens a hotspot without a password, to set its Wi-Fi from a phone, and the first client on your Wi-Fi can set the key of ESPHome's API, as Home Assistant does.
 - Someone with physical access to the board or its USB port.
 - Reading the phone messages with a guessed ntfy topic: the README says to use a long random name.
 - Problems in ESPHome or esphome-tesla-ble themselves: report those to their projects, but tell us too if this project's settings make them worse.

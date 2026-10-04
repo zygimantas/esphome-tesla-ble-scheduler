@@ -1,10 +1,10 @@
 # ESO plans
 
-ESO's household plans for Lithuania, with prices with VAT. Your supplier, like Ignitis, Enefit or Elektrum, bills ESO's fee unchanged, and its bill names your plan. Name yours under `tariff:` in `config.yaml`, and leave `market:` as it is:
+ESO's household plans for Lithuania, with prices with VAT. Your supplier, like Ignitis, Enefit or Elektrum, bills ESO's fee unchanged, and its bill names your plan. Name yours under `tariff:` in your settings file, and leave `market:` as it is:
 
 ```yaml
-  tariff:
-    plan: lt/eso-standartinis-4-zones
+tariff:
+  plan: lt/eso-standartinis-4-zones
 ```
 
 | Plan | One zone | Two zones | Four zones |
