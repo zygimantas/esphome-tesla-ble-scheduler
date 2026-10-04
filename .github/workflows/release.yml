@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: major when users must edit their settings files, minor for new behavior, patch for fixes
+        type: choice
+        options: [minor, patch, major]
+
+permissions: {}
+
+jobs:
+  release:
+    name: Open the release's pull request
+    # From main only, as a branch made from another would bring that one's changes along.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write # to run CI on it
+      contents: write # to push its branch
+      pull-requests: write # to open it
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - env:
+          BUMP: ${{ inputs.bump }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          old=$(yq '.esphome.project.version' device.yaml)
+          IFS=. read -r major minor patch <<< "$old"
+          case "$BUMP" in
+            major) new="$((major + 1)).0.0" ;;
+            minor) new="$major.$((minor + 1)).0" ;;
+            patch) new="$major.$minor.$((patch + 1))" ;;
+          esac
+          sed -i "s/^    version: $old\$/    version: $new/" device.yaml
+          sed -i "s/^  version: v$old\$/  version: v$new/" config.example.yaml
+          sed -i "s/${old//./\\.}/$new/g" .github/ISSUE_TEMPLATE/bug_report.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "release/v$new"
+          git commit -a -m "chore(board): release v$new"
+          git push origin "release/v$new"
+          # A pull request this token opens starts no workflow, label.yml's and CI's included: label it here, and
+          # run CI on its branch, which puts the checks main requires on the pull request.
+          gh pr create --title "chore(board): release v$new" --label maintenance --body-file - <<EOF
+          ## What changed and why
+
+          The version in device.yaml, config.example.yaml and the bug report form, for v$new. Merging this publishes v$new once CI passes on main, and every board installs it within a day.
+
+          ## How it was checked
+
+          CI, which the Release workflow runs on this branch.
+          EOF
+          gh workflow run ci.yml --ref "release/v$new"
