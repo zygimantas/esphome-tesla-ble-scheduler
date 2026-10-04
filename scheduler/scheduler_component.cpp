@@ -185,6 +185,18 @@ void SchedulerComponent::setup() {
     ESP_LOGE(TAG, "Tariff: %s", error.c_str());
 }
 
+// A new release installs itself while the car isn't charging: the board restarts with it.
+void SchedulerComponent::install_update_([[maybe_unused]] const CarState &car, [[maybe_unused]] const Decision &d) {
+#ifdef USE_UPDATE
+  if (this->firmware_ == nullptr || this->firmware_->state != update::UPDATE_STATE_AVAILABLE ||
+      !update_due(car, d, this->update_tried_at_))
+    return;
+  ESP_LOGI(TAG, "Installing release %s", this->firmware_->update_info.latest_version.c_str());
+  this->update_tried_at_ = car.now;
+  this->firmware_->perform();
+#endif
+}
+
 // A text sensor's new state, if it's new.
 static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
   if (sensor->state != value)
@@ -192,11 +204,6 @@ static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
 }
 
 void SchedulerComponent::update() {
-  if (!this->settings_error_.empty()) {  // nothing to do until there are settings
-    publish(this->status_, this->settings_error_);
-    publish(this->mode_, "wait");
-    return;
-  }
   const ESPTime now = this->clock_->now();
   CarState car;
   car.now = now.is_valid() ? now.timestamp : 0;
@@ -208,6 +215,12 @@ void SchedulerComponent::update() {
   car.limit = this->limit_ != nullptr && this->limit_->has_state() ? this->limit_->state : NAN;
   car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
+  if (!this->settings_error_.empty()) {  // nothing to schedule until there are settings, but a release can come
+    publish(this->status_, this->settings_error_);
+    publish(this->mode_, "wait");
+    this->install_update_(car, Decision{});
+    return;
+  }
 
   Settings &settings = this->settings_;
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
@@ -251,14 +264,7 @@ void SchedulerComponent::update() {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
-#ifdef USE_UPDATE
-  if (this->firmware_ != nullptr && this->firmware_->state == update::UPDATE_STATE_AVAILABLE &&
-      update_due(car, d, this->update_tried_at_)) {
-    ESP_LOGI(TAG, "Installing release %s", this->firmware_->update_info.latest_version.c_str());
-    this->update_tried_at_ = car.now;
-    this->firmware_->perform();
-  }
-#endif
+  this->install_update_(car, d);
   if (this->plug_ == nullptr || this->charging_state_ == nullptr || this->battery_ == nullptr ||
       this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
     d.status = "Tesla entities not found";
