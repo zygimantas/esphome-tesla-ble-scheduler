@@ -12,13 +12,14 @@ permissions: {}
 
 jobs:
   release:
-    name: Open the release's pull request
+    name: Open the release's pull request, merge it and publish the release
     # From main only, as a branch made from another would bring that one's changes along.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    timeout-minutes: 30 # CI takes about 7
     permissions:
-      actions: write # to run CI on it
-      contents: write # to push its branch
+      actions: write # to run CI
+      contents: write # to push its branch and merge it
       pull-requests: write # to open it
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,15 +43,20 @@ jobs:
           git commit -a -m "chore(board): release v$new"
           # Forced over the branch of a run that failed after pushing it, so running again works.
           git push --force origin "release/v$new"
-          # A pull request this token opens starts no workflow, label.yml's and CI's included: label it here, and
-          # run CI on its branch, which puts the checks main requires on the pull request.
-          gh pr create --title "chore(board): release v$new" --label maintenance --body-file - <<EOF
+          # Workflows don't start for what this token does, or not always (label.yml never has): label the pull request
+          # here, run CI on its branch for the checks main requires, and once it's merged, run CI on main, which
+          # publishes the release. A run that failed after opening the pull request leaves it open for the next.
+          [ "$(gh pr view "release/v$new" --json state --jq .state 2> /dev/null)" = OPEN ] ||
+            gh pr create --title "chore(board): release v$new" --label maintenance --body-file - <<EOF
           ## What changed and why
 
-          The version in device.yaml, config.example.yaml and the bug report form, for v$new. Merging this publishes v$new once CI passes on main, and every board installs it within a day.
+          The version in device.yaml, config.example.yaml and the bug report form, for v$new. The Release workflow merges this once CI passes, then runs CI on main, which publishes v$new, and every board installs it within a day.
 
           ## How it was checked
 
           CI, which the Release workflow runs on this branch.
           EOF
           gh workflow run ci.yml --ref "release/v$new"
+          gh pr merge "release/v$new" --auto --squash
+          until [ "$(gh pr view "release/v$new" --json state --jq .state)" = MERGED ]; do sleep 30; done
+          gh workflow run ci.yml --ref main

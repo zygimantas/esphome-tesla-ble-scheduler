@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch: # for the Release workflow's pull requests, which start none by themselves
+  workflow_dispatch: # for the Release workflow, as its token's pull requests and merges may start none
 
 permissions:
   contents: read
@@ -107,10 +107,10 @@ jobs:
           grep -q -F 'Start charging (Starting)' simulation.log
       - name: Firmware, as releases ship it, signed, for ESPHome Web and updates
         env:
-          SIGNING_KEY: ${{ github.event_name == 'push' && secrets.SIGNING_KEY || '' }}
+          SIGNING_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SIGNING_KEY || '' }}
         run: |
           # Only builds of main get the release key: pull requests are signed with a throwaway one.
-          if [ "$GITHUB_EVENT_NAME" != push ]; then
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
             openssl genrsa -out signing_key.pem 3072
           elif [ -n "$SIGNING_KEY" ]; then
             printf '%s\n' "$SIGNING_KEY" > signing_key.pem
@@ -123,7 +123,7 @@ jobs:
           rm signing_key.pem
           cp .esphome/build/tesla/build/firmware.factory.bin esphome-tesla-ble-scheduler.bin
           cp .esphome/build/tesla/build/firmware.ota.bin esphome-tesla-ble-scheduler.ota.bin
-      - if: github.event_name == 'push'
+      - if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: firmware
@@ -131,7 +131,7 @@ jobs:
 
   release:
     name: Release the version in device.yaml
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     needs: [esphome, lint, unit-tests]
     runs-on: ubuntu-24.04
     concurrency: release
