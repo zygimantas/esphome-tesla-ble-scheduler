@@ -30,11 +30,11 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 ## Setup
 
-1. **Download the firmware**: `esphome-tesla-ble-scheduler.bin` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest).
+1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect** and choose the board's port, then **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
-3. **Connect it to your Wi-Fi**: once it's installed, ESPHome Web asks for your Wi-Fi: choose your network and enter its password.
+3. **Connect it to your Wi-Fi**: once it's installed, ESPHome Web offers to connect it: choose your network and enter its password. If it doesn't, press **Connect** again and choose **Configure Wi-Fi** in its **⋮** menu.
 4. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-5. **Fill in your settings**: download `settings.example.yaml` from the latest release and enter your [settings](#settings).
+5. **Fill in your settings**: download [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml) and enter your [settings](#settings) in a text editor.
 6. **Upload them**: open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak), open **Board**, press **Upload settings** and choose the file. The board restarts with them, or says in red what's wrong.
 7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
