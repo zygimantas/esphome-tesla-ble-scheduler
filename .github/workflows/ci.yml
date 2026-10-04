@@ -94,10 +94,6 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: false
-      - name: Secrets, from the example with a random API key and a hotspot password
-        run: |
-          sed -e "s|random-key-from-esphome.io/components/api|$(openssl rand -base64 32)|" \
-            -e 's|"REPLACEME"|"ci-hotspot-password"|' secrets.example.yaml > secrets.yaml
       - name: Simulation, starting a stopped car in a cheap quarter-hour
         run: |
           uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
@@ -108,13 +104,15 @@ jobs:
             { cat simulation.log; exit 1; }
           grep -F '][scheduler' simulation.log
           grep -q -F 'Start charging (Starting)' simulation.log
-      - name: Firmware, as users build it, from this commit on GitHub
-        env:
-          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Firmware, as releases ship it, for ESPHome Web
         run: |
-          user=$(mktemp -d)
-          cp config.example.yaml secrets.yaml "$user"
-          uvx "esphome@$ESPHOME_VERSION" -s version "$COMMIT" compile "$user/config.example.yaml"
+          uvx "esphome@$ESPHOME_VERSION" compile release.yaml
+          cp .esphome/build/tesla/build/firmware.factory.bin esphome-tesla-ble-scheduler.bin
+      - if: github.event_name == 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: firmware
+          path: esphome-tesla-ble-scheduler.bin
 
   release:
     name: Release the version in device.yaml
@@ -126,6 +124,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: firmware
       - name: Publish it, unless it's out already
         env:
           GH_TOKEN: ${{ github.token }}
@@ -135,5 +136,5 @@ jobs:
             echo "v$version is out already"
           else
             gh release create "v$version" --target "$GITHUB_SHA" --title "ESPHome Tesla BLE Scheduler $version" --generate-notes \
-              config.example.yaml secrets.example.yaml
+              esphome-tesla-ble-scheduler.bin settings.example.yaml
           fi

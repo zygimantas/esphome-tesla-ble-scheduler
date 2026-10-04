@@ -1,0 +1,6 @@
+external_components:
+  - components: [scheduler]
+    source: .
+
+packages:
+  device: !include device.yaml

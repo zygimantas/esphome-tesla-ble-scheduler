@@ -27,9 +27,9 @@ It charges the owner's car every night.
 
 ## How users get it
 
-- Users' config.yaml loads device.yaml and the scheduler component from a release tag on GitHub; the owner's points at this folder instead (`source: .` for the component, `!include device.yaml`). A change to device.yaml reaches users only with a release.
-- Boards download their plan from plans/ on `main` every day, while the build checks the one in the release it installs. A change there reaches every board within a day, without a release, so it has to read with the code that's out: a format change needs a new folder.
-- In device.yaml, a relative path that's missing next to the user's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the user's folder: that's why the component's source is in config.yaml, not in device.yaml. It's also why users download only config.example.yaml and secrets.example.yaml, attached to each release: a web/ folder next to their config.yaml would win over the release's page.
+- Users install the firmware CI builds from release.yaml, attached to each release with settings.example.yaml, with ESPHome Web, and upload their settings on the page. Nothing of theirs is built in: Wi-Fi comes from ESPHome Web or the hotspot, and the API's key from the first client. A change to device.yaml reaches users only with a release. Custom builds start from config.example.yaml, which loads device.yaml and the component from a release tag; the owner's config.yaml points at this folder instead (`source: .` for the component, `!include device.yaml`) and adds Wi-Fi, an API key and OTA.
+- Boards download their plan from plans/ on `main` every day, while a settings file can name only the plans built into the release. A change there reaches every board within a day, without a release, so it has to read with the code that's out: a format change needs a new folder.
+- In device.yaml, a relative path that's missing next to a custom build's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the config's folder: that's why the component's source is in config.yaml and release.yaml, not in device.yaml.
 
 ## Settled; don't propose again
 
