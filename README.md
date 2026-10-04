@@ -44,11 +44,11 @@ The board installs each new release by itself within a day, while the car isn't 
 
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then enter your settings as in step 4 and, under **Change settings**, the rest of the ones in your `config.yaml`. With rates of your own or a fixed price, copy them into a settings file instead, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then enter your settings as in step 4 and, under **Change settings**, the rest of the ones in your `config.yaml`. With rates of your own or a fixed price, upload them afterwards in a settings file, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
-The form on the page shows the settings most people need, and on a new board only the ones it can't guess. To change them later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
+The form on the page shows the settings most people need, and on a new board only the ones it can't guess. To change them later, open **Board** and press **Change settings**. They're a file on the board: once Setup is saved, **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
