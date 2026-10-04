@@ -1,14 +1,13 @@
 # Tariff
 
-The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Your supplier's own price per kWh on top of the market price goes in `market: margin` instead. Most people only name their grid operator's plan:
+The `tariff:` part of your settings file is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Your supplier's own price per kWh on top of the market price goes in `market: margin` instead. Most people only name their grid operator's plan:
 
 ```yaml
-scheduler:
-  market:
-    area: LT
-    vat: 0.21
-  tariff:
-    plan: lt/eso-standartinis-4-zones
+market:
+  area: LT
+  vat: 0.21
+tariff:
+  plan: lt/eso-standartinis-4-zones
 ```
 
 The board starts with the plan from the release you installed, and downloads the current one every day, so new prices reach it without a reinstall. Each plan has a maintainer from its country who keeps it up to date. [Plans](#plans) says which there are.
@@ -22,13 +21,12 @@ Next to `plan:`, these change the plan for you alone:
 - `calendar` and `clock`: your own calendar or clock, instead of the plan's whole one.
 
 ```yaml
-scheduler:
-  tariff:
-    plan: lt/eso-standartinis-4-zones
-    exceptions:
-      12-31: night 07:00 day 22:00 night
-    rates:
-      night: 0.05
+tariff:
+  plan: lt/eso-standartinis-4-zones
+  exceptions:
+    12-31: night 07:00 day 22:00 night
+  rates:
+    night: 0.05
 ```
 
 A rate you set has to be one your days use. If a plan later drops or renames it, the board keeps the plan it has and says why in its log.
@@ -48,48 +46,46 @@ The plans are examples too, like [ESO's four zones](../plans/lt/eso-standartinis
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
 ```yaml
-scheduler:
-  tariff:
-    calendar:
-      apr-oct:
-        mon-sun: low
-      nov-mar:
-        mon-sat: low 07:00 high 22:00 low
-        sun: low
-    rates:
-      low: 0.03
-      high: 0.08
+tariff:
+  calendar:
+    apr-oct:
+      mon-sun: low
+    nov-mar:
+      mon-sat: low 07:00 high 22:00 low
+      sun: low
+  rates:
+    low: 0.03
+    high: 0.08
 ```
 
 Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a plan, whose maintainer does.
 
-If something is wrong, the install stops and says what: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a plan in another currency than yours.
+If something is wrong, the board keeps the settings it has and says what when you upload them: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a plan in another currency than yours.
 
 ## A fixed price
 
 Leave `market:` out: no market prices are downloaded, and each rate's price is your whole price per kWh, the supplier's price and the grid fee together, with VAT. One price for every hour:
 
 ```yaml
-  tariff:
-    calendar:
-      jan-dec:
-        mon-sun: flat
-    rates:
-      flat: 0.24
+tariff:
+  calendar:
+    jan-dec:
+      mon-sun: flat
+  rates:
+    flat: 0.24
 ```
 
 All hours then cost the same, so the board charges at once. With day and night prices, give each its rate, and the board charges in the cheap one. A night rate that starts on the half-hour, like Octopus Go's from 00:30 to 05:30 in the UK, with your rates:
 
 ```yaml
-scheduler:
-  currency: GBP
-  tariff:
-    calendar:
-      jan-dec:
-        mon-sun: standard 00:30 cheap 05:30 standard
-    rates:
-      standard: 0.245
-      cheap: 0.085
+currency: GBP
+tariff:
+  calendar:
+    jan-dec:
+      mon-sun: standard 00:30 cheap 05:30 standard
+  rates:
+    standard: 0.245
+    cheap: 0.085
 ```
 
 ## Plans

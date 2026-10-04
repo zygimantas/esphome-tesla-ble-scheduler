@@ -26,41 +26,39 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 - A USB-C phone charger, with a socket near the car, to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
 - Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovenia, Spain, Sweden or Switzerland. [Countries](docs/countries.md) has the details, and how to use a fixed price instead.
-- A computer to install and update the board.
+- A computer with Chrome or Edge, for the first install. The board updates itself after that.
 
-## AI assisted setup
+## Setup
 
-A coding agent on your computer, such as Claude Code or Codex, can do the manual setup below for you. Connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, start the agent in a new, empty folder, and give it this prompt:
+1. **Download the firmware**: `esphome-tesla-ble-scheduler.bin` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest).
+2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect** and choose the board's port, then **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
+3. **Connect it to your Wi-Fi**: once it's installed, ESPHome Web asks for your Wi-Fi: choose your network and enter its password.
+4. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
+5. **Fill in your settings**: download `settings.example.yaml` from the latest release and enter your [settings](#settings).
+6. **Upload them**: open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak), open **Board**, press **Upload settings** and choose the file. The board restarts with them, or says in red what's wrong.
+7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
+8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
+
+The board installs each new release by itself within a day, while the car isn't charging. **Board** on the page shows the version it runs.
+
+A coding agent on your computer, such as Claude Code or Codex, can do steps 5 and 6 for you once the board is on your Wi-Fi. Start it in a new, empty folder and give it this prompt:
 
 ```text
-Set up a Tesla charging board for me by following the manual setup in the README of
-https://github.com/zygimantas/esphome-tesla-ble-scheduler. The board, an ESP32-S3-DevKitC-1, is
-connected to this computer by USB, and this folder is for its files. Install what is missing first.
-Download the two files the README names from the latest release, then ask me in one message for every
-setting and secret they need, except the API key, which you generate yourself. Fill in the files
-without ever showing my Wi-Fi password, the key, the VIN or the ntfy topic back to me. Build and
-install the firmware with esphome run config.yaml --device <the board's USB port> --no-logs, since
-the port prompt and the log stream of a plain esphome run never return, and wait until the board
-answers at http://tesla.local. Then tell me exactly what to do in the car to pair it and what to turn
-off in the Tesla app.
+Fill in the settings of my Tesla charging board, following the README of
+https://github.com/zygimantas/esphome-tesla-ble-scheduler and its Countries and Tariff pages.
+Download settings.example.yaml from the latest release, ask me in one message for every setting it
+needs, and save the filled-in file as settings.yaml without ever showing my VIN or ntfy topic back to
+me. Then upload it with curl --data-binary @settings.yaml -H "Content-Type: text/plain"
+http://tesla.local/settings and tell me what the board answered.
 ```
 
-Answer its questions, then do what it tells you to do at the car.
+### From 3.x
 
-## Manual setup
-
-1. **Install ESPHome**: on a Mac with [Homebrew](https://brew.sh), `brew install esphome`; on Windows or Linux, install [Git](https://git-scm.com) and then ESPHome as its [install guide](https://esphome.io/guides/installing_esphome) says.
-2. **Download the settings files**: download `config.example.yaml` and `secrets.example.yaml` from the [latest release](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest) into a new folder.
-3. **Fill in `secrets.yaml`**: copy `secrets.example.yaml` to `secrets.yaml` and enter your Wi-Fi name and password, a password of at least 8 characters for the board's backup Wi-Fi, and a random key from [ESPHome's API page](https://esphome.io/components/api/#:~:text=randomly%20generated%20by%20your%20browser), shown next to **key** under **encryption** with a **Copy** button.
-4. **Fill in `config.yaml`**: copy `config.example.yaml` to `config.yaml` and enter your [settings](#settings).
-5. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open a terminal in that folder, run `esphome run config.yaml` and choose the board's USB port. The first time takes a while. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
-6. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone (type the `http://`: phones try https on their own, which the board doesn't speak), open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
-8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Your settings keep their names: copy the substitutions of your `config.yaml` but `version`, and `currency`, `market:` and `tariff:` from under `scheduler:`, into the settings file, without the two spaces before them, then upload it. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
-Your settings in `config.yaml`:
+Your settings file, in the YAML of `settings.example.yaml`: two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
@@ -75,17 +73,14 @@ Your settings in `config.yaml`:
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
 | `timezone` | The time zone the car lives in, like `Europe/Vilnius`, `Europe/Helsinki` or `Europe/Oslo`. |
-| `version` | The release the board runs, like `v3.2.0`. |
 
 Every price you write, here and in `tariff:`, is per kWh with VAT, as on your bill. The board adds `market: vat` only to the market prices it downloads.
 
-After a change, run `esphome run config.yaml` again and choose the board's network address: it updates over Wi-Fi. If a setting is wrong, ESPHome stops and says what.
-
-**To update**, set `version` to the latest release and do the same; the **Board** section on the page shows the version the board runs. The release notes say if anything else needs changing.
+To change a setting, press **Download settings** under **Board**, change the file and upload it again. If a setting is wrong, the board keeps the ones it has and says what.
 
 ## Using it
 
-Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it.
+Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it and see your settings.
 
 - **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the board waits for them, and charges now only what the hours after them can't fit.
 - **To change the schedule**, press **Delete schedule**, pick **Charge limit** and **Ready by**, then **Create schedule**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
@@ -101,7 +96,7 @@ Install the ntfy app, subscribe to a topic with a long random name, and put that
 
 ## Tariff
 
-The `tariff:` part of `config.yaml` is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). Your supplier, like Ignitis or Enefit, usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
+The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). Your supplier, like Ignitis or Enefit, usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
 With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
@@ -110,11 +105,10 @@ With a fixed price, leave `market:` out: no market prices are downloaded, and ea
 [Statuses](docs/status.md) explains everything the Status row can say and what to do about it.
 
 - **The Tesla app says "Charging equipment not ready"**, or the page says **Charger has no power**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
-- **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla**: join it with your backup Wi-Fi password and enter the new Wi-Fi details.
+- **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The schedule's times are an hour or two off**: check `timezone` in `config.yaml`.
-- **ESPHome warns about the web_server OTA platform**: that's expected. The page accepts updates only on the board's backup Wi-Fi.
+- **The schedule's times are an hour or two off**: check `timezone` in your settings.
 
 ## Development
 
