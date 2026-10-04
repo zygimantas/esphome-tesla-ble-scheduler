@@ -1139,6 +1139,23 @@ static bool contains(const std::vector<std::string> &items, const std::string &i
   return std::find(items.begin(), items.end(), item) != items.end();
 }
 
+static void test_updates_wait_while_charging() {
+  CarState car;
+  Decision d;
+  CHECK(!update_due(car, d, 0));  // no clock yet
+  car.now = SEP24_1700Z;
+  CHECK(update_due(car, d, 0));
+  CHECK(!update_due(car, d, SEP24_1700Z - HOUR + 1) && update_due(car, d, SEP24_1700Z - HOUR));
+  for (const char *state : {"Charging", "Starting"}) {
+    car.charging_state = state;
+    CHECK(!update_due(car, d, 0));
+  }
+  car.charging_state = "Stopped";
+  CHECK(update_due(car, d, 0));
+  d.command = Command::START_CHARGING;
+  CHECK(!update_due(car, d, 0));
+}
+
 static void test_charges_only_in_the_cheap_window() {
   Controller controller = with_prices();
   const Run run = simulate(controller, FakeTesla(), SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR,
@@ -2595,6 +2612,7 @@ int main() {
   test_reads_the_settings_file();
   test_settings_file_errors();
   test_schedule_counts_the_tariff_fee();
+  test_updates_wait_while_charging();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();
   test_reads_the_charging_state();
