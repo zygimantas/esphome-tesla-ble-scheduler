@@ -1629,6 +1629,17 @@ static void test_wakes_to_learn_the_plug_state() {
   CHECK(d.command == Command::NONE);
   CHECK_STR(d.status, "Waiting for car");
 
+  CarState unpaired = closed;  // nor does a car that has never reported to the board's key: it needs pairing,
+  unpaired.paired = false;     // even before the clock is set
+  Controller pairing = with_prices();
+  for (const int64_t now : {int64_t{0}, SEP24_1700Z}) {
+    unpaired.now = now;
+    const Decision ask = pairing.tick(unpaired, Settings());
+    CHECK(ask.command == Command::NONE);
+    CHECK_STR(ask.status, "Not paired");
+    CHECK_STR(ask.mode, "wait");
+  }
+
   CarState shut;  // closing the flap stops the checks
   shut.port_open = true;
   shut.now = SEP24_1700Z;

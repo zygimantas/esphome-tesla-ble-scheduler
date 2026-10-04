@@ -182,6 +182,9 @@ class SchedulerComponent : public PollingComponent {
   ESPPreferenceObject held_pref_;
   int32_t held_{0};
   ESPPreferenceObject savings_pref_;  // Controller::savings
+  // The hash of the VIN of the car that has reported to the board's key, which pairing makes it do.
+  ESPPreferenceObject paired_pref_;
+  uint32_t paired_vin_{0};
 };
 
 }  // namespace esphome::scheduler

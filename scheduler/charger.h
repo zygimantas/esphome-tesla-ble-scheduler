@@ -33,6 +33,7 @@ struct CarState {
   float limit = NAN;            // the car's charge limit %
   float power_kw = NAN;         // what the car draws from the charger
   bool port_open = false;       // the charge port flap; the car reports it even while asleep
+  bool paired = true;           // the car has reported to the board's key since the settings named it
 };
 
 // A one-off phone message; the YAML sends it through ntfy.
@@ -127,6 +128,11 @@ class Controller {
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
+    if (!car.paired) {  // the car tells a key it doesn't know nothing
+      d.status = "Not paired";
+      d.mode = "wait";
+      return d;
+    }
     if (car.now == 0) {
       d.status = "Starting up";
       d.mode = "wait";

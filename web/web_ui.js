@@ -79,6 +79,13 @@ const PAGE = `
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
+  <section id="pair-card" class="card" hidden>
+    <div class="title">Setup 2 of 2</div>
+    <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen.</p>
+    <button id="pair-now" class="primary">Pair BLE key</button>
+    <button id="pair-back">Back</button>
+  </section>
+
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
     <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
@@ -184,17 +191,19 @@ function render() {
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
-  // A new board's page is its setup, a short form. Without settings the board can use, the form comes first; with
-  // them, it opens from Board.
-  const setup = settings.text === "";
-  const needed = setup || text(E.status).startsWith("Settings: ");
-  document.body.classList.toggle("setup", setup);
-  $("settings-title").textContent = setup ? "Setup" : "Settings";
+  // A new board's page is its setup: a short form, then pairing until the car reports to the board's key, with Back
+  // to the form. Without settings the board can use, the form comes first; with them, it opens from Board.
+  const unpaired = text(E.status) === "Not paired";
+  const form = settings.text === "" || (unpaired && settings.open);
+  const needed = settings.text === "" || text(E.status).startsWith("Settings: ");
+  document.body.classList.toggle("setup", settings.text === "" || unpaired);
+  $("settings-title").textContent = form ? "Setup 1 of 2" : "Settings";
   $("settings-card").hidden = !needed && !settings.open;
-  for (const row of document.querySelectorAll(".more")) row.hidden = setup;
-  $("cancel-settings").hidden = needed;
-  $("download-settings").hidden = setup;
-  $("upload-settings").hidden = setup;
+  $("pair-card").hidden = !unpaired || settings.open;
+  for (const row of document.querySelectorAll(".more")) row.hidden = form;
+  $("cancel-settings").hidden = needed || form;
+  $("download-settings").hidden = form;
+  $("upload-settings").hidden = form;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
@@ -760,6 +769,13 @@ function bind() {
     if (settings.text === "") guessFromArea();
   });
   press($("save-settings"), saveSettings);
+  press($("pair-now"), async () => {
+    if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
+  });
+  $("pair-back").addEventListener("click", () => {
+    settings.open = true;
+    requestRender();
+  });
   $("change-settings").addEventListener("click", () => {
     settings.open = true;
     requestRender();
