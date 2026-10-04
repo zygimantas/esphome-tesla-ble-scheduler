@@ -921,7 +921,8 @@ static void test_reads_the_settings_file() {
   CHECK(s.area == &AREAS[15] && std::string(s.area->name) == "LT" && s.currency == "EUR");
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
   CHECK(s.ntfy_server == "https://ntfy.sh" && s.ntfy_topic == "my-topic_1");
-  CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.tariff == std::string(12, '\n'));
+  CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.plan_text.rfind("# ESO", 0) == 0);
+  CHECK(s.tariff == std::string(12, '\n'));
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
@@ -955,7 +956,7 @@ static void test_reads_the_settings_file() {
   CHECK_STR(read_settings(fixed.substr(fixed.find('\n') + 1), repository_plans(), s), "");
   CHECK(s.currency == "EUR");  // without a market or a currency of its own
   CHECK_STR(read_settings(fixed, repository_plans(), s), "");
-  CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan.empty());
+  CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan_text.empty());
   CHECK(s.ntfy_server == "http://192.168.1.2:8080" && s.ntfy_topic.empty() && s.standard_offset == 0);
   TariffText own;
   CHECK_STR(read_tariff(s.tariff, own), "");
@@ -1009,13 +1010,14 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(settings_with("  plan", "")), "tariff needs a plan, or a calendar of its own");
   std::string no_tariff = SETTINGS;
   no_tariff.erase(no_tariff.find("tariff:"), std::strlen("tariff:\n  plan: lt/eso-standartinis-4-zones\n"));
-  CHECK_STR(settings_error(no_tariff), "tariff is missing");
-  CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")), "tesla_battery_kwh is missing");
-  CHECK_STR(settings_error(settings_with("  area", "")), "market: area is missing");
-  CHECK_STR(settings_error(settings_with("  vat", "")), "market: vat is missing");
+  CHECK_STR(settings_error(no_tariff), "tariff needs a plan, or a calendar of its own");
+  CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
+            "tesla_battery_kwh must be the battery's size in kWh, like 75");
+  CHECK_STR(settings_error(settings_with("  vat", "")), "market: vat must be the VAT as a fraction, like 0.21 for 21%");
   // Market
-  CHECK_STR(settings_error(settings_with("  area", "  area: GB\n")),
-            "market: area GB isn't one the board knows, like LT or SE3: see Countries");
+  for (const char *area : {"  area: GB\n", ""})
+    CHECK_STR(settings_error(settings_with("  area", area)),
+              "market: area must be one the board knows, like LT or SE3: see Countries");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: -0.1\n")),
             "market: vat must be the VAT as a fraction, like 0.21 for 21%");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 1\n")),
@@ -1058,7 +1060,7 @@ static void test_settings_file_errors() {
               "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
               "screen under Controls, Software");
   CHECK_STR(settings_error(settings_with("timezone", "timezone: America/New_York\n")),
-            "timezone: America/New_York isn't one the board knows, like Europe/Vilnius");
+            "timezone must be one the board knows, like Europe/Vilnius");
   // Quotes only around a whole value
   CHECK_STR(settings_error(settings_with("tesla_vin", "tesla_vin: \"5YJ3E1EA0KF000000'\n")),
             "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "

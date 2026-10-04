@@ -6,7 +6,7 @@
 /scheduler_test*
 /config.yaml
 /secrets.yaml
-__pycache__/
-.DS_Store
 /settings.yaml
 /signing_key.pem
+__pycache__/
+.DS_Store

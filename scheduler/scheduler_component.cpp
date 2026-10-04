@@ -182,10 +182,7 @@ void SchedulerComponent::setup() {
 #endif
   if (this->file_.area == nullptr)
     this->controller_.without_market_prices();
-  for (const auto &[name, text] : this->plans_)
-    if (name == this->file_.plan)
-      this->plan_text_ = text;
-  const std::string error = this->apply_tariff_(this->plan_text_);
+  const std::string error = this->apply_tariff_(std::string(this->file_.plan_text));
   if (!error.empty())
     ESP_LOGE(TAG, "Tariff: %s", error.c_str());
 }
@@ -522,8 +519,7 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
     return;
   }
   SettingsFile file;
-  const std::string error =
-      this->body_.empty() ? "the file is empty" : read_settings(this->body_, this->parent_->plans(), file);
+  const std::string error = read_settings(this->body_, this->parent_->plans(), file);
   if (error.empty()) {
     request->send(200, TEXT, "Saved: the board restarts");
     this->parent_->save_settings(this->body_);
