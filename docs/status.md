@@ -6,7 +6,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
-- **Waiting for car**: the board hasn't heard from the car since it started. Pair the key if you haven't yet (step 7 of the manual setup), or wait for the car to wake up.
+- **Waiting for car**: the board hasn't heard from the car since it started. Pair the key if you haven't yet, as in step 6 of the README's [Setup](../README.md#setup), or wait for the car to wake up.
 - **Reading battery**: the car is plugged in but hasn't reported its battery level. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Getting prices**: the board downloads the prices, for up to 10 minutes after a start. Wait.
 
