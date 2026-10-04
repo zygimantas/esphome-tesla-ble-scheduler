@@ -147,6 +147,27 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
+/* --- The settings form: fields like the dropdowns, and room for names --- */
+input:not([type="file"]) {
+  width: 7em;
+  font: inherit;
+  text-align: right;
+  color: var(--text);
+  background: var(--control);
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 12px;
+}
+#settings-card .dropdown,
+input.wide {
+  flex: 0 1 60%;
+  min-width: 0;
+}
+#settings-card select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
 /* --- Buttons, and links that look like one --- */
 button,
 .button {

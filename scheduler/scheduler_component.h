@@ -65,7 +65,7 @@ class ActionButton : public button::Button, public Parented<SchedulerComponent> 
 
 #ifdef USE_WEBSERVER
 // /settings: GET answers the settings file in force, and POST takes a new one, which the board checks, saves and
-// restarts with, or answers what's wrong with it.
+// restarts with, or answers what's wrong with it. GET /settings/options answers what the page's form offers.
 class SettingsPage : public AsyncWebHandler {
  public:
   explicit SettingsPage(SchedulerComponent *parent) : parent_(parent) {}
@@ -105,7 +105,7 @@ class SchedulerComponent : public PollingComponent {
   std::string use_settings(const std::string &text);
   // Saves a settings file that read_settings() took, and restarts with it.
   void save_settings(const std::string &text);
-  // The settings file in force, empty without one, and the car's VIN from it.
+  // The settings file saved, empty without one, and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
   const std::string &vin() const { return this->file_.vin; }
   void set_ready_by(ReadyBy *ready_by) { this->ready_by_ = ready_by; }

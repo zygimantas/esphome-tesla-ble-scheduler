@@ -195,8 +195,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
   if (const std::string error = read_tariff(read.tariff, own); !error.empty())
     return concat({"tariff: ", error});
-  if (plan_text.empty() && own.calendar.empty())
-    return "tariff needs a plan, or a calendar of its own";
+  if (plan_text.empty() && own.calendar.empty() && read.area == nullptr)
+    return "without market:, tariff needs a plan or a calendar of its own";
   Tariff tariff;
   if (const std::string error = make_tariff(plan_text, read.tariff, read.currency, tariff); !error.empty())
     return concat({"tariff: ", error});
@@ -219,6 +219,42 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   read.standard_offset = found->second * 3600;
   settings = read;
   return "";
+}
+
+// A plan's name for people, from its first line, like "# ESO's Standartinis plan with four zones, prices with VAT:
+// ..."; empty when the line isn't like that.
+inline std::string plan_title(std::string_view text) {
+  const size_t end = text.find(", prices with VAT");
+  return text.rfind("# ", 0) == 0 && end < text.find('\n') ? std::string(text.substr(2, end - 2)) : "";
+}
+
+// `text` as a JSON string.
+inline std::string json_string(std::string_view text) {
+  std::string json = "\"";
+  for (const char c : text) {
+    if (c == '"' || c == '\\')
+      json += '\\';
+    json += c;
+  }
+  return json + "\"";
+}
+
+// What the settings form on the page offers, as JSON: the market areas, the plans built in by name and name for people,
+// and the time zones.
+inline std::string settings_options(const Plans &plans) {
+  std::string json = "{\"areas\":[";
+  for (const Area &area : AREAS)
+    json += concat({json.back() == '[' ? "" : ",", json_string(area.name)});
+  json += "],\"plans\":[";
+  for (const auto &plan : plans) {
+    const std::string title = plan_title(plan.second);
+    json += concat({json.back() == '[' ? "" : ",", "[", json_string(plan.first), ",",
+                    json_string(title.empty() ? plan.first : title), "]"});
+  }
+  json += "],\"time_zones\":[";
+  for (const auto &zone : TIME_ZONES)
+    json += concat({json.back() == '[' ? "" : ",", json_string(zone.first)});
+  return json + "]}";
 }
 
 }  // namespace esphome::scheduler

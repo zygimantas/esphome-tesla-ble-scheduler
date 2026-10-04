@@ -439,7 +439,7 @@ static void test_schedule_windows_and_prices() {
 }
 
 // ---------------------------------------------------------------------------
-// Tariff: VAT, and the tariff's rates from a plan and config.yaml
+// Tariff: VAT, and the tariff's rates from a plan and the settings
 // ---------------------------------------------------------------------------
 
 // ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
@@ -488,13 +488,13 @@ rates:
   flat: 0.11132
 )";
 
-// What's wrong with a plan's settings and config.yaml's together, as the board puts them, or "".
+// What's wrong with a plan and the settings' own tariff together, as the board puts them, or "".
 static std::string tariff_error(const std::string &plan, const std::string &own = "", const char *currency = "EUR") {
   Tariff ignored;
   return make_tariff(plan, own, currency, ignored);
 }
 
-// The tariff of a plan and config.yaml's settings, with 21% VAT.
+// The tariff of a plan and the settings' own tariff, with 21% VAT.
 static Tariff tariff_of(const std::string &plan, const std::string &own = "") {
   Tariff tariff;
   CHECK_STR(make_tariff(plan, own, "EUR", tariff), "");
@@ -625,6 +625,7 @@ static void test_makes_tariffs() {
   CHECK_STR(tariff_error("", "calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n  extra: 0.1\n"),
             "rate extra: a rate is there twice, or there are more than 26");
 
+  CHECK_STR(tariff_error("", ""), "");  // no plan and no calendar: no grid fees
   struct Case {
     std::string own;
     const char *error;
@@ -638,7 +639,7 @@ static void test_makes_tariffs() {
            Case{calendar_of("    mon-sun: flat", "flat: -0.1"), "rate flat: -0.1 isn't a price per kWh"},
            Case{calendar_of("    mon-sun: flat", "flat: 1e9"), "rate flat: 1e9 isn't a price per kWh"},
            Case{calendar_of("    mon-sun: flat", "flat: nan"), "rate flat: nan isn't a price per kWh"},
-           Case{"", "the calendar needs every month"},
+           Case{"exceptions:\n  12-25: flat\nrates:\n  flat: 0.1\n", "the calendar needs every month"},
            Case{"calendar:\n  jan-jun:\n    mon-sun: flat\nrates:\n  flat: 0.1\n", "the calendar needs every month"},
            Case{"calendar:\n  jan-jun:\n    mon-sun: flat\n  jun-dec:\n    mon-sun: flat\nrates:\n  flat: 0.1\n",
                 "calendar: jun-dec has a month that's in the calendar already"},
@@ -725,7 +726,7 @@ static void test_makes_tariffs() {
     CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + after + ": flat\n"),
               std::string("exceptions: ") + after + " isn't a date like 12-25, or it's there twice");
   }
-  // A key twice can only be in a plan: config.yaml's settings come from YAML, without it.
+  // A key twice in a plan: the settings file turns it away before, line by line.
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
             "rate flat: a rate is there twice, or there are more than 26");
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat") +
@@ -874,6 +875,7 @@ static void test_plans_in_the_repository() {
     CHECK(read.currency.size() == 3 &&
           std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
     const std::string car = "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\n";
+    CHECK_STR(label + (plan_title(text).empty() ? "no name for people in its first line" : ""), label);
     SettingsFile settings;
     CHECK_STR(label + read_settings(concat({"currency: ", read.currency, "\ntariff:\n  plan: ", name, "\n", car,
                                             "timezone: Europe/Vilnius\n"}),
@@ -985,6 +987,22 @@ static void test_reads_the_settings_file() {
   CHECK_STR(settings_error(settings_with("  area:", "  area: PT\n")), "");
 }
 
+static void test_settings_form_options() {
+  CHECK_STR(
+      plan_title("# ESO's Standartinis plan with four zones, prices with VAT: https://www.eso.lt\ncurrency: EUR\n"),
+      "ESO's Standartinis plan with four zones");
+  CHECK_STR(plan_title("# A plan\n# prices with VAT\n"), "");
+  CHECK_STR(plan_title("A plan, prices with VAT\n"), "");
+  CHECK_STR(json_string("a \"b\" \\ c"), "\"a \\\"b\\\" \\\\ c\"");
+  const Plans plans = {{"lt/one", "# One plan, prices with VAT: https://example.com\n"}, {"lt/two", "currency: EUR\n"}};
+  const std::string options = settings_options(plans);
+  CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
+  CHECK(options.find("\"SI\"],\"plans\":[[\"lt/one\",\"One plan\"],[\"lt/two\",\"lt/two\"]],\"time_zones\":[") !=
+        std::string::npos);
+  CHECK(options.find("\"Europe/Vilnius\",") != std::string::npos);
+  CHECK(options.size() > 2 && options.compare(options.size() - 17, 17, "\"Europe/Zurich\"]}") == 0);
+}
+
 static void test_settings_file_errors() {
   CHECK_STR(settings_error(SETTINGS + std::string(MAX_SETTINGS_BYTES, '#')), "the file is longer than 4 kB");
   // Lines
@@ -1006,11 +1024,13 @@ static void test_settings_file_errors() {
             "line 6 has market: colour, which isn't a setting");
   CHECK_STR(settings_error(settings_with("tariff", "tariff: none\n")), "line 8 doesn't belong there: plan");
   CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 13 has colour, which isn't a setting");
-  // Missing
-  CHECK_STR(settings_error(settings_with("  plan", "")), "tariff needs a plan, or a calendar of its own");
+  // Missing: with a market, the tariff can go; without one, it's the whole price.
+  CHECK_STR(settings_error(settings_with("  plan", "")), "");
   std::string no_tariff = SETTINGS;
   no_tariff.erase(no_tariff.find("tariff:"), std::strlen("tariff:\n  plan: lt/eso-standartinis-4-zones\n"));
-  CHECK_STR(settings_error(no_tariff), "tariff needs a plan, or a calendar of its own");
+  CHECK_STR(settings_error(no_tariff), "");
+  CHECK_STR(settings_error(no_tariff.substr(no_tariff.find("ntfy_topic"))),
+            "without market:, tariff needs a plan or a calendar of its own");
   CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   CHECK_STR(settings_error(settings_with("  vat", "")), "market: vat must be the VAT as a fraction, like 0.21 for 21%");
@@ -2611,6 +2631,7 @@ int main() {
   test_plans_in_the_repository();
   test_reads_the_settings_file();
   test_settings_file_errors();
+  test_settings_form_options();
   test_schedule_counts_the_tariff_fee();
   test_updates_wait_while_charging();
   test_charges_only_in_the_cheap_window();

@@ -9,7 +9,7 @@
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
-//   Settings       the settings file, sent to the board and back
+//   Settings       the settings form, and the settings file it makes, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
 //   Start          wiring, then this page or ESPHome's (?full)
@@ -58,6 +58,26 @@ const PAGE = `
     <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
   </section>
 
+  <section id="settings-card" class="card" hidden>
+    <div class="title">Settings</div>
+    <label class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+    <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
+    <label class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
+    <label class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
+    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
+    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+    <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
+    <p id="settings-error" class="note" hidden></p>
+    <button id="save-settings" class="primary">Save</button>
+    <button id="cancel-settings">Cancel</button>
+    <a id="download-settings" class="button" href="/settings" download="settings.yaml">Download settings</a>
+    <button id="upload-settings">Upload settings</button>
+    <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
+  </section>
+
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
     <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
@@ -93,10 +113,7 @@ const PAGE = `
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
-    <a class="button" href="/settings" download="settings.yaml">Download settings</a>
-    <button id="upload-settings">Upload settings</button>
-    <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
-    <p id="settings-error" class="note" hidden></p>
+    <button id="change-settings">Change settings</button>
     <button id="pair">Pair BLE key</button>
     <button id="restart" class="danger">Restart board</button>
   </details>
@@ -105,6 +122,10 @@ const PAGE = `
 </main>`;
 
 // --- State -----------------------------------------------------------------
+
+// The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
+// whether Change settings opened the form.
+const settings = { text: null, options: null, open: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -161,6 +182,11 @@ function render() {
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
+  // Without settings the board can use, the form is the page; with them, it opens from Board.
+  const needed = settings.text === "" || text(E.status).startsWith("Settings: ");
+  $("settings-card").hidden = !needed && !settings.open;
+  $("cancel-settings").hidden = needed;
+  $("download-settings").hidden = settings.text === "";
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
@@ -362,27 +388,141 @@ function renderSavings() {
 
 // --- Settings --------------------------------------------------------------
 
+// The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
+const FORM_PLACES = [
+  "market",
+  "market: area",
+  "market: margin",
+  "market: vat",
+  "ntfy_topic",
+  "tariff",
+  "tariff: plan",
+  "tesla_battery_kwh",
+  "tesla_charging_kw",
+  "tesla_vin",
+  "timezone",
+];
+
+// The settings file's values by place, as the board reads them, and whether it has more than the form shows.
+function readSettings(file) {
+  const values = {};
+  let section = "";
+  let more = false;
+  for (const line of file.split("\n")) {
+    const m = /^( *)([^\s#:][^:]*):(?: +(.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
+    if (!m) continue;
+    const [, indent, key, raw = ""] = m;
+    const value = raw.replace(/^(["'])(.*)\1$/, "$2");
+    const place = indent ? `${section}: ${key}` : key;
+    if (!indent) section = raw ? "" : key;
+    if (place === "ntfy_server" && value === "https://ntfy.sh") continue;
+    if (indent.length > 2 || !FORM_PLACES.includes(place)) more = true;
+    else values[place] = value;
+  }
+  return { values, more };
+}
+
+// The plans of the market area's country, with the one to select if it's among them.
+function fillPlans(plan) {
+  const country = $("set-area").value.slice(0, 2).toLowerCase();
+  const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
+  $("set-plan").replaceChildren(new Option("None", ""), ...plans.map(([name, title]) => new Option(title, name)));
+  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : "";
+}
+
+// The form, from the board's settings file and what it offers: a new board's time zone is the phone's.
+function fillSettings() {
+  const { values, more } = readSettings(settings.text);
+  const { areas, time_zones: zones } = settings.options;
+  const country = new Intl.DisplayNames(["en"], { type: "region" });
+  const areaOptions = areas.map((area) => new Option(`${country.of(area.slice(0, 2))} (${area})`, area));
+  areaOptions.sort((a, b) => a.text.localeCompare(b.text));
+  $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
+  $("set-area").value = (values["market: area"] ?? "").toUpperCase();
+  fillPlans(values["tariff: plan"]);
+  const zone = values.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
+  $("set-zone").value = zones.includes(zone) ? zone : "";
+  const vat = values["market: vat"];
+  $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : "";
+  $("set-margin").value = values["market: margin"] ?? "";
+  $("set-vin").value = values.tesla_vin ?? "";
+  $("set-battery").value = values.tesla_battery_kwh ?? "";
+  $("set-power").value = values.tesla_charging_kw ?? "";
+  $("set-topic").value = values.ntfy_topic ?? "";
+  $("settings-more").hidden = !more;
+  $("settings-error").hidden = true;
+}
+
+// Reads the board's settings and what the form offers, when the page connects and again when the board comes back,
+// as it does after saving settings.
+async function loadSettings() {
+  try {
+    const [file, options] = await Promise.all([
+      fetch("/settings").then((r) => r.text()),
+      fetch("/settings/options").then((r) => r.json()),
+    ]);
+    if (file !== settings.text || !settings.options) {
+      settings.text = file;
+      settings.options = options;
+      fillSettings();
+    }
+  } catch {
+    // the next connection tries again
+  }
+  requestRender();
+}
+
+// The form as a settings file, which the board checks as any other.
+function formSettings() {
+  const v = (id) => $(id).value.trim();
+  const lines = ["market:", `  area: ${v("set-area")}`];
+  if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
+  lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
+  if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
+  if (v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  lines.push(
+    `tesla_battery_kwh: ${v("set-battery")}`,
+    `tesla_charging_kw: ${v("set-power")}`,
+    `tesla_vin: ${v("set-vin").toUpperCase()}`,
+    `timezone: ${v("set-zone")}`,
+  );
+  return `${lines.join("\n")}\n`;
+}
+
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
 // until the next try.
-async function uploadSettings(file) {
+async function sendSettings(file) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 8000);
   try {
     const response = await fetch("/settings", {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: await file.text(),
+      body: file,
       signal: abort.signal,
     });
     const answer = await response.text();
     $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
     $("settings-error").hidden = response.ok;
-    if (response.ok) toast("Settings saved: the board restarts");
+    if (response.ok) {
+      settings.open = false;
+      toast("Settings saved: the board restarts");
+    }
   } catch (e) {
     toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
   } finally {
     clearTimeout(timer);
+    requestRender();
   }
+}
+
+// Save: the form's own checks first, as the browser shows them by the field.
+async function saveSettings() {
+  const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
+  const wrong = [...fields].find((field) => !field.checkValidity());
+  if (wrong) wrong.reportValidity();
+  else await sendSettings(formSettings());
 }
 
 // --- Board link ------------------------------------------------------------
@@ -422,6 +562,7 @@ setInterval(reconnectIfDead, 10000);
 function setLive(on) {
   if (live === on) return;
   live = on;
+  if (on) void loadSettings(); // it catches its own errors
   requestRender();
 }
 
@@ -555,11 +696,23 @@ function bind() {
     "Reset the savings? They start again from zero today.",
   );
   confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
+  $("set-area").addEventListener("change", () => fillPlans($("set-plan").value));
+  press($("save-settings"), saveSettings);
+  $("change-settings").addEventListener("click", () => {
+    settings.open = true;
+    requestRender();
+    $("settings-card").scrollIntoView({ behavior: "smooth" });
+  });
+  $("cancel-settings").addEventListener("click", () => {
+    settings.open = false;
+    fillSettings(); // back to the board's
+    requestRender();
+  });
   $("upload-settings").addEventListener("click", () => $("settings-file").click());
-  $("settings-file").addEventListener("change", (e) => {
+  $("settings-file").addEventListener("change", async (e) => {
     const [file] = e.target.files;
     e.target.value = ""; // so the same file can go again
-    if (file) void uploadSettings(file); // it catches its own errors
+    if (file) await sendSettings(await file.text());
   });
 }
 

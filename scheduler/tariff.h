@@ -1,6 +1,6 @@
 #pragma once
-// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, and the tariff: settings of config.yaml over
-// it (format in docs/tariff.md). Plain C++17, with nothing from ESPHome, like charger.h.
+// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, and the settings' own tariff: lines over it
+// (format in docs/tariff.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -16,8 +16,8 @@
 
 namespace esphome::scheduler {
 
-// The tariff as written (format in docs/tariff.md): a plan from plans/, or the tariff: block of config.yaml, which the
-// build writes out the same way. Keys and lines stay text, in the order written.
+// The tariff as written (format in docs/tariff.md): a plan from plans/, or the tariff: block of the settings file. Keys
+// and lines stay text, in the order written.
 struct TariffText {
   std::string clock;
   std::string currency;
@@ -148,7 +148,7 @@ constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 
-// The tariff of a plan's text and config.yaml's tariff: settings, both as read_tariff() reads them: your calendar and
+// The tariff of a plan's text and the settings' own tariff: lines, both as read_tariff() reads them: your calendar and
 // clock replace the plan's, and your exceptions and rates replace or add to its own, one key at a time. The plan's
 // prices are in `currency`. Returns what's wrong, or "".
 inline std::string make_tariff(const std::string &plan_text, const std::string &own_text, const std::string &currency,
@@ -222,7 +222,7 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
     if (days_seen != 0x7FU)
       return concat({"calendar: ", months, " needs every day of the week"});
   }
-  if (months_seen != 0xFFFU)
+  if (months_seen != 0xFFFU && !(all.calendar.empty() && all.exceptions.empty()))  // none: no grid fees
     return "the calendar needs every month";
   for (const auto &[date, line] : all.exceptions) {
     static constexpr int LAST_DAY[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
