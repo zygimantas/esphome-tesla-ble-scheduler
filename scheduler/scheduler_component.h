@@ -1,6 +1,6 @@
 #pragma once
-// Connects the controller in charger.h to ESPHome: the web page's entities, market price and plan downloads, phone
-// messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
+// Connects the controller in charger.h to ESPHome: the settings file (settings.h), the web page's entities, market
+// price and plan downloads, phone messages through ntfy, and the Tesla's entities from esphome-tesla-ble.
 
 #include "charger.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
@@ -15,8 +15,13 @@
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/core/component.h"
+#include "esphome/core/defines.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
+#include "settings.h"
+#ifdef USE_WEBSERVER
+#include "esphome/components/web_server_base/web_server_base.h"
+#endif
 
 namespace esphome::scheduler {
 
@@ -45,9 +50,6 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerCo
 
 enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
 
-// Where the board downloads the market prices.
-enum class Market { NORD_POOL, SMARD, OMIE };
-
 // The page's Create schedule, Start charging now, Stop charging and Reset savings.
 class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
@@ -56,6 +58,28 @@ class ActionButton : public button::Button, public Parented<SchedulerComponent> 
  protected:
   void press_action() override;
   Action action_{};
+};
+
+#ifdef USE_WEBSERVER
+// /settings: GET answers the settings file in force, and POST takes a new one, which the board checks, saves and
+// restarts with, or answers what's wrong with it.
+class SettingsPage : public AsyncWebHandler {
+ public:
+  explicit SettingsPage(SchedulerComponent *parent) : parent_(parent) {}
+  bool canHandle(AsyncWebServerRequest *request) const override;
+  void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override;
+  void handleRequest(AsyncWebServerRequest *request) override;
+  bool isRequestHandlerTrivial() const override { return false; }
+
+ protected:
+  SchedulerComponent *parent_;
+  std::string body_;  // the file being uploaded
+};
+#endif
+
+// The settings file as saved: up to MAX_SETTINGS_BYTES and a null.
+struct SavedSettings {
+  char text[MAX_SETTINGS_BYTES + 1];
 };
 
 class SchedulerComponent : public PollingComponent {
@@ -69,28 +93,18 @@ class SchedulerComponent : public PollingComponent {
 
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
-  // Where the market prices come from, the area as that source names it, and SMARD's number for it.
-  void set_market(Market market, const char *area, int smard_filter) {
-    this->market_ = market;
-    this->area_ = area;
-    this->smard_filter_ = smard_filter;
-  }
-  void set_currency(const char *currency) { this->settings_.currency = currency; }
-  void set_battery_kwh(float kwh) { this->settings_.battery_kwh = kwh; }
-  void set_charging_kw(float kw) { this->settings_.charging_kw = kw; }
-  void set_ntfy(const char *server, const char *topic) {
-    this->ntfy_server_ = server;
-    this->ntfy_topic_ = topic;
-  }
-  // The VAT on market prices and the supplier's margin; the plan's name and the copy built in, both empty without a
-  // plan; and the tariff: settings of config.yaml, written as read_tariff() reads them.
-  void set_tariff(float vat, float margin, const char *plan, const char *text, const char *own) {
-    this->vat_ = vat;
-    this->margin_ = margin;
-    this->plan_ = plan;
-    this->plan_text_ = text;
-    this->own_ = own;
-  }
+  // A plan of this release's plans/, which a settings file can name; the board downloads it anew every day.
+  void add_plan(const char *name, const char *text) { this->plans_.emplace_back(name, text); }
+  const Plans &plans() const { return this->plans_; }
+  // The settings saved on the board, read once the plans are added and before setup().
+  void load_settings();
+  // Takes a settings file, as the simulation does: returns what's wrong with it, or "".
+  std::string use_settings(const std::string &text);
+  // Saves a settings file that read_settings() took, and restarts with it.
+  void save_settings(const std::string &text);
+  // The settings file in force, empty without one, and the car's VIN from it.
+  const std::string &settings_text() const { return this->settings_text_; }
+  const std::string &vin() const { return this->file_.vin; }
   void set_ready_by(ReadyBy *ready_by) { this->ready_by_ = ready_by; }
   void set_ready_by_once(ReadyByOnce *ready_by_once) { this->ready_by_once_ = ready_by_once; }
   void set_status(text_sensor::TextSensor *status) { this->status_ = status; }
@@ -111,7 +125,6 @@ class SchedulerComponent : public PollingComponent {
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
-  const char *market_name_() const;
   std::string prices_url_(int64_t now, int day) const;
   int store_prices_(const std::string &body);
   void fetch_plan_(int64_t now);
@@ -122,18 +135,17 @@ class SchedulerComponent : public PollingComponent {
   Settings settings_;
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
-  Market market_{Market::NORD_POOL};
-  const char *area_{""};
-  int smard_filter_{0};
-  float vat_{0.0f};
-  float margin_{0.0f};
-  const char *plan_{""};
-  const char *own_{""};
+  Plans plans_;
+  ESPPreferenceObject settings_pref_;
+  std::string settings_text_;   // the settings file in force
+  std::string settings_error_;  // why there are none, for the page's status
+  SettingsFile file_;
+#ifdef USE_WEBSERVER
+  SettingsPage settings_page_{this};
+#endif
   std::string plan_text_;  // the plan in use: the copy built in until a download brings another
   int64_t plan_tried_at_{0};
-  bool plan_usable_{false};  // whether the latest download brought a plan the board can use
-  const char *ntfy_server_{""};
-  const char *ntfy_topic_{""};          // empty: no phone messages
+  bool plan_usable_{false};             // whether the latest download brought a plan the board can use
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it
   int64_t unsent_since_{0};
   int64_t message_tried_at_{0};

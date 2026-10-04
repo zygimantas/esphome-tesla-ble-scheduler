@@ -1,0 +1,12 @@
+# The board's settings, as README.md's Settings explains them. Upload this file on the board's page, under Board.
+market:
+  area: LT
+  vat: 0.21
+ntfy_server: https://ntfy.sh
+ntfy_topic: ""
+tariff:
+  plan: lt/eso-standartinis-4-zones
+tesla_battery_kwh: 75
+tesla_charging_kw: 11
+tesla_vin: REPLACEME
+timezone: Europe/Vilnius

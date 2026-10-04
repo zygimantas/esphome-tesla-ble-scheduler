@@ -9,18 +9,5 @@ external_components:
 packages:
   device: github://zygimantas/esphome-tesla-ble-scheduler/device.yaml@${version}
 
-scheduler:
-  market:
-    area: LT
-    vat: 0.21
-  tariff:
-    plan: lt/eso-standartinis-4-zones
-
 substitutions:
-  ntfy_server: https://ntfy.sh
-  ntfy_topic: ""
-  tesla_battery_kwh: "75"
-  tesla_charging_kw: "11"
-  tesla_vin: REPLACEME
-  timezone: Europe/Vilnius
   version: v3.2.0

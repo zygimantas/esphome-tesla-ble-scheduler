@@ -144,8 +144,7 @@ struct Tariff {
 constexpr const char *DAY_NAMES[] = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
 constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
                                        "jul", "aug", "sep", "oct", "nov", "dec"};
-// A day's rates are letters from 'a', so a tariff has 26 at most. Prices are per kWh and below MAX_PRICE. tariff.py
-// checks the same before the board gets the settings.
+// A day's rates are letters from 'a', so a tariff has 26 at most. Prices are per kWh and below MAX_PRICE.
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 

@@ -1,76 +1,22 @@
 """Charges a Tesla in the cheapest quarter-hours of the day-ahead market before Ready by.
 
-charger.h decides; scheduler_component.h connects it to ESPHome. This file checks the settings when you build,
-tariff.py the tariff: block and its plan, and creates the web page's entities.
+charger.h decides; scheduler_component.h connects it to ESPHome. The settings are a file uploaded on the board's page,
+which settings.h reads and checks. This file builds in the plans of plans/ and creates the web page's entities.
 """
 
-import re
+from pathlib import Path
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import button, datetime, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
-from esphome.const import CONF_AREA, CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
-
-from .tariff import CONF_CURRENCY, CONF_PLAN, PLANS, TARIFF_SCHEMA, plan, write_tariff
+from esphome.const import CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
-CONF_BATTERY_KWH = "battery_kwh"
-CONF_CHARGING_KW = "charging_kw"
-CONF_MARGIN = "margin"
-CONF_MARKET = "market"
-CONF_NTFY_SERVER = "ntfy_server"
-CONF_NTFY_TOPIC = "ntfy_topic"
-CONF_TARIFF = "tariff"
-CONF_VAT = "vat"
-CONF_VIN = "vin"
-
-# Where electricity is bought: a country's code, or the price area where a country has several. DE and LU are the
-# area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, has the prices of the areas in
-# SMARD_AREAS, under its numbers, and OMIE, the Iberian market, those in OMIE_AREAS, both in euros only. Nord Pool has
-# the rest, named as here unless NORD_POOL_AREAS says otherwise, in NORD_POOL_CURRENCIES: in euros unless CURRENCIES has
-# the country.
-AREAS = [
-    "AT",
-    "BE",
-    "BG",
-    "CH",
-    "CZ",
-    "DE",
-    "DK1",
-    "DK2",
-    "EE",
-    "ES",
-    "FI",
-    "FR",
-    "HR",
-    "HU",
-    "IT-NORTH",
-    "LT",
-    "LU",
-    "LV",
-    "NL",
-    "NO1",
-    "NO2",
-    "NO3",
-    "NO4",
-    "NO5",
-    "PL",
-    "PT",
-    "RO",
-    "SE1",
-    "SE2",
-    "SE3",
-    "SE4",
-    "SI",
-]
-NORD_POOL_AREAS = {"DE": "GER", "LU": "GER", "RO": "TEL"}
-NORD_POOL_CURRENCIES = ["DKK", "EUR", "NOK", "PLN", "RON", "SEK"]
-CURRENCIES = {"DK": "DKK", "NO": "NOK", "PL": "PLN", "RO": "RON", "SE": "SEK"}
-SMARD_AREAS = {"CH": 259, "CZ": 261, "HU": 262, "IT-NORTH": 255, "SI": 260}
-OMIE_AREAS = ["ES", "PT"]
+# The plans a settings file can name, from this release; boards download them from GitHub every day.
+PLANS = Path(__file__).resolve().parent.parent / "plans"
 
 scheduler_ns = cg.esphome_ns.namespace("scheduler")
 SchedulerComponent = scheduler_ns.class_("SchedulerComponent", cg.PollingComponent)
@@ -78,88 +24,14 @@ ReadyBy = scheduler_ns.class_("ReadyBy", datetime.TimeEntity)
 ReadyByOnce = scheduler_ns.class_("ReadyByOnce", datetime.DateTimeEntity)
 ActionButton = scheduler_ns.class_("ActionButton", button.Button)
 Action = scheduler_ns.enum("Action", is_class=True)
-Market = scheduler_ns.enum("Market", is_class=True)
 
-
-MARKET_SCHEMA = cv.Schema(
+CONFIG_SCHEMA = cv.Schema(
     {
-        cv.Required(CONF_AREA): cv.one_of(*AREAS, upper=True),
-        cv.Optional(CONF_MARGIN, default=0.0): cv.positive_float,
-        cv.Required(CONF_VAT): cv.float_range(min=0.0, max=1.0, max_included=False),
+        cv.GenerateID(): cv.declare_id(SchedulerComponent),
+        cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
+        cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
     }
-)
-
-
-def _market(area):
-    """Where an area's prices come from, the area as that source names it, and SMARD's number for it."""
-    if area in SMARD_AREAS:
-        return Market.SMARD, area, SMARD_AREAS[area]
-    if area in OMIE_AREAS:
-        return Market.OMIE, area, 0
-    return Market.NORD_POOL, NORD_POOL_AREAS.get(area, area), 0
-
-
-def _ntfy_topic(value):
-    """Checked here because ntfy refuses any other topic, and the board would only log it."""
-    value = cv.string(value)
-    if not re.fullmatch(r"[-_A-Za-z0-9]{0,64}", value):
-        raise cv.Invalid("must be the topic's name, not its address: up to 64 letters, digits, - and _")
-    return value
-
-
-def _vin(value):
-    """The car's VIN, checked here because the Tesla component takes any string and a wrong one leaves the board
-    waiting for the car forever. Lower case is wrong too: the Bluetooth name is made from the text as typed."""
-    value = cv.string_strict(value)
-    if not re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", value):
-        raise cv.Invalid(
-            "must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, "
-            "on the car's screen under Controls, Software"
-        )
-    return value
-
-
-def _currency_code(value):
-    value = cv.string_strict(value).upper()
-    if not re.fullmatch(r"[A-Z]{3}", value):
-        raise cv.Invalid("must be a currency's three-letter code, like EUR")
-    return value
-
-
-def _currency(config):
-    """The market area's currency unless set, otherwise euros. Without a market, any currency. A plan's must be
-    the same."""
-    market = config.get(CONF_MARKET)
-    area = market[CONF_AREA] if market else ""
-    config.setdefault(CONF_CURRENCY, CURRENCIES.get(area[:2], "EUR"))
-    source = "SMARD" if area in SMARD_AREAS else "OMIE" if area in OMIE_AREAS else "Nord Pool"
-    currencies = NORD_POOL_CURRENCIES if source == "Nord Pool" else ["EUR"]
-    if market and config[CONF_CURRENCY] not in currencies:
-        raise cv.Invalid(f"{source}'s prices come in {', '.join(currencies)}", [CONF_CURRENCY])
-    name = config[CONF_TARIFF].get(CONF_PLAN)
-    if name and (currency := plan(name)[CONF_CURRENCY]) != config[CONF_CURRENCY]:
-        raise cv.Invalid(f"the plan {name} is in {currency}: set currency: {currency}", [CONF_CURRENCY])
-    return config
-
-
-CONFIG_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(SchedulerComponent),
-            cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
-            cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
-            cv.Required(CONF_BATTERY_KWH): cv.positive_not_null_float,
-            cv.Required(CONF_CHARGING_KW): cv.positive_not_null_float,
-            cv.Optional(CONF_CURRENCY): _currency_code,
-            cv.Optional(CONF_MARKET): MARKET_SCHEMA,
-            cv.Optional(CONF_NTFY_SERVER, default="https://ntfy.sh"): cv.url,
-            cv.Optional(CONF_NTFY_TOPIC, default=""): _ntfy_topic,
-            cv.Required(CONF_TARIFF): TARIFF_SCHEMA,
-            cv.Required(CONF_VIN): _vin,
-        }
-    ).extend(cv.polling_component_schema("30s")),
-    _currency,
-)
+).extend(cv.polling_component_schema("30s"))
 
 
 # The web page finds these entities by name, and the board keeps Ready by and Ready by once under theirs, so the
@@ -173,18 +45,9 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
-    market = config.get(CONF_MARKET)
-    if market:
-        cg.add(var.set_market(*_market(market[CONF_AREA])))
-    cg.add(var.set_currency(config[CONF_CURRENCY]))
-    cg.add(var.set_battery_kwh(config[CONF_BATTERY_KWH]))
-    cg.add(var.set_charging_kw(config[CONF_CHARGING_KW]))
-    cg.add(var.set_ntfy(config[CONF_NTFY_SERVER], config[CONF_NTFY_TOPIC]))
-    tariff = config[CONF_TARIFF]
-    name = tariff.get(CONF_PLAN, "")
-    text = (PLANS / f"{name}.yaml").read_text(encoding="utf-8") if name else ""
-    vat, margin = (market[CONF_VAT], market[CONF_MARGIN]) if market else (0.0, 0.0)
-    cg.add(var.set_tariff(vat, margin, name, text, write_tariff(tariff)))
+    for path in sorted(PLANS.glob("*/*.yaml")):
+        cg.add(var.add_plan(str(path.relative_to(PLANS).with_suffix("")), path.read_text(encoding="utf-8")))
+    cg.add(var.load_settings())
 
     ready_by = await datetime.new_datetime(_entity(ReadyBy, "ready_by", "Ready by", type="TIME"))
     await cg.register_parented(ready_by, var)

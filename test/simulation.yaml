@@ -18,12 +18,20 @@ esphome:
     - scheduler_test_tesla.h
   name: simulation
   on_boot:
-    priority: -100
-    then:
-      - lambda: |-
-          auto &controller = id(scheduler_id).controller();
-          scheduler_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
-          controller.reschedule();
+    - priority: 800  # the settings, as a board reads its own before it starts
+      then:
+        - lambda: |-
+            // In escapes: ESPHome indents a lambda's lines, also inside a raw string.
+            id(scheduler_id).use_settings(
+                "market:\n  area: LT\n  margin: 0.01\n  vat: 0.21\n"
+                "tariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n  rates:\n    flat: 0.11132\n"
+                "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Vilnius\n");
+    - priority: -100
+      then:
+        - lambda: |-
+            auto &controller = id(scheduler_id).controller();
+            scheduler_test::load_synthetic_prices(controller.prices, id(sntp_time).now().timestamp);
+            controller.reschedule();
 
 external_components:
   - components: [scheduler]
@@ -52,21 +60,8 @@ number:
     update_interval: 5s
 
 scheduler:
-  battery_kwh: 75
-  charging_kw: 11
   id: scheduler_id
-  market:
-    area: LT
-    margin: 0.01
-    vat: 0.21
-  tariff:
-    calendar:
-      jan-dec:
-        mon-sun: flat
-    rates:
-      flat: 0.11132
   time_id: sntp_time
-  vin: 5YJ3E1EA0KF000000
 
 sensor:
   - lambda: return scheduler_test::tesla().soc;
