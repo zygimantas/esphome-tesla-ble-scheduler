@@ -8,6 +8,10 @@ external_components:
   - components: [scheduler]
     source: .
 
+http_request:
+  buffer_size_rx: 2048
+  buffer_size_tx: 2048
+
 ota:
   - encryption:
       key: ${ota_key}

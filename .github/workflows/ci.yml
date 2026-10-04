@@ -106,16 +106,16 @@ jobs:
           grep -q -F 'Start charging (Starting)' simulation.log
       - name: Firmware, as releases ship it, signed, for ESPHome Web and updates
         env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY: ${{ github.event_name == 'push' && secrets.SIGNING_KEY || '' }}
         run: |
-          # Pull requests from forks get no secrets, so their builds are signed with a key of their own.
-          if [ -n "$SIGNING_KEY" ]; then
+          # Only builds of main get the release key: pull requests are signed with a throwaway one.
+          if [ "$GITHUB_EVENT_NAME" != push ]; then
+            openssl genrsa -out signing_key.pem 3072
+          elif [ -n "$SIGNING_KEY" ]; then
             printf '%s\n' "$SIGNING_KEY" > signing_key.pem
-          elif [ "$GITHUB_EVENT_NAME" = push ]; then
+          else
             echo "::error::The SIGNING_KEY secret is missing: boards take only releases signed with it"
             exit 1
-          else
-            openssl genrsa -out signing_key.pem 3072
           fi
           # A key nobody keeps for the Tesla package's OTA from a computer, which ESPHome adds back to release.yaml's.
           uvx "esphome@$ESPHOME_VERSION" -s ota_key "$(openssl rand -base64 32)" compile release.yaml
