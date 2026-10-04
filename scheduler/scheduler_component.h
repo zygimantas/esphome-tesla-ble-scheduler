@@ -19,6 +19,9 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
 #include "settings.h"
+#ifdef USE_UPDATE
+#include "esphome/components/update/update_entity.h"
+#endif
 #ifdef USE_WEBSERVER
 #include "esphome/components/web_server_base/web_server_base.h"
 #endif
@@ -167,6 +170,10 @@ class SchedulerComponent : public PollingComponent {
   switch_::Switch *charger_{nullptr};
   button::Button *wake_{nullptr};
   cover::Cover *port_{nullptr};
+#ifdef USE_UPDATE
+  update::UpdateEntity *firmware_{nullptr};  // the release's update from GitHub, missing in other builds
+  int64_t update_tried_at_{0};
+#endif
   bool port_reported_{false};  // the cover reads open until the car reports it
   float last_limit_{NAN};
 

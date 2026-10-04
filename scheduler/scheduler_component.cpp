@@ -159,6 +159,9 @@ void SchedulerComponent::setup() {
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
+#ifdef USE_UPDATE
+  this->firmware_ = find(App.get_updates(), "Firmware");
+#endif
 
   if (!this->settings_error_.empty())
     return;
@@ -253,6 +256,14 @@ void SchedulerComponent::update() {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
+#ifdef USE_UPDATE
+  if (this->firmware_ != nullptr && this->firmware_->state == update::UPDATE_STATE_AVAILABLE &&
+      update_due(car, d, this->update_tried_at_)) {
+    ESP_LOGI(TAG, "Installing release %s", this->firmware_->update_info.latest_version.c_str());
+    this->update_tried_at_ = car.now;
+    this->firmware_->perform();
+  }
+#endif
   if (this->plug_ == nullptr || this->charging_state_ == nullptr || this->battery_ == nullptr ||
       this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
     d.status = "Tesla entities not found";
