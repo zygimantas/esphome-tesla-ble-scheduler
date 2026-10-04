@@ -33,20 +33,22 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
-4. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-5. **Enter your settings**: open http://tesla.local on your phone or computer (type the `http://`: browsers try https on their own, which the board doesn't speak), fill in the form the board shows and press **Save**. The board restarts with them, or says in red what's wrong. [Settings](#settings) says what each one is.
-6. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
+4. **Enter your settings**: press **Visit Device**, which opens the board's page. Enter your car's VIN, from the car's screen under **Controls** → **Software**, check the market area, pick your grid plan if the page asks for one, and press **Save**. The board restarts with them, or says in red what's wrong.
+5. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
+6. **Pair it with the car**: sit in the car, open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak), open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
+
+A new board starts with a 75 kWh battery, 11 kW of charging power, your country's VAT on electricity and the computer's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
 
 The board installs each new release by itself within a day, while the car isn't charging. **Board** on the page shows the version it runs.
 
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then enter your settings as in step 5: they're the ones in your `config.yaml`. With rates of your own or a fixed price, copy them into a settings file instead, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then enter your settings as in step 4 and, under **Change settings**, the rest of the ones in your `config.yaml`. With rates of your own or a fixed price, copy them into a settings file instead, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
-The form on the page shows the settings most people need. To change them later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
+The form on the page shows the settings most people need, and on a new board only the ones it can't guess. To change them later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
@@ -80,7 +82,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Install the ntfy app, subscribe to a topic with a long random name, and put that name in `ntfy_topic`: anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
+Phone messages are optional, through the ntfy app: install it, subscribe to a topic with a long random name, and enter that name as **ntfy topic** under **Change settings**. Anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
 
 ## Tariff
 
