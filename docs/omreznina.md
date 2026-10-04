@@ -1,13 +1,13 @@
 # Slovenia's network charge
 
-The network charge (omrežnina) that households in Slovenia pay, for user group 0 with 15-minute metering, with prices with VAT. It's the same with every distribution company. Name it under `tariff:` in `config.yaml`:
+The network charge (omrežnina) that households in Slovenia pay, for user group 0 with 15-minute metering, with prices with VAT. It's the same with every distribution company. Name it under `tariff:` in your settings file:
 
 ```yaml
-  market:
-    area: SI
-    vat: 0.22
-  tariff:
-    plan: si/omreznina
+market:
+  area: SI
+  vat: 0.22
+tariff:
+  plan: si/omreznina
 ```
 
 Each quarter-hour falls in one of five time blocks, from block 1, the dearest, to block 5. The block depends on the season, higher from November to February and lower from March to October, and on the day: a workday, or a Saturday, Sunday or work-free public holiday.
