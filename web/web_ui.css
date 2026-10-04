@@ -148,7 +148,7 @@ select:disabled {
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names; a new board's page is the form alone --- */
-.setup .card:not(#settings-card) {
+.setup .card:not(#settings-card, #pair-card) {
   display: none;
 }
 input:not([type="file"]) {
@@ -240,7 +240,8 @@ button:disabled {
   font-size: 13px;
 }
 /* As far below the text as a button below a row, like Pair BLE key. */
-.note + .button {
+.note + .button,
+#pair-card .note + button {
   margin-top: 22px;
 }
 #settings-error {

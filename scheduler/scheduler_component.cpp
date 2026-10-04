@@ -135,6 +135,8 @@ void SchedulerComponent::setup() {
   // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
   this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("scheduler_savings"));
   this->savings_pref_.load(&this->controller_.savings);
+  this->paired_pref_ = global_preferences->make_preference<uint32_t>(fnv1_hash("scheduler_paired_vin"));
+  this->paired_pref_.load(&this->paired_vin_);
 
   this->plug_ = find(App.get_binary_sensors(), "Charger");
   this->charging_state_ = find(App.get_text_sensors(), "Charging");
@@ -221,6 +223,16 @@ void SchedulerComponent::update() {
     this->install_update_(car, Decision{});
     return;
   }
+
+  // The car reports only to a key it knows: its first report shows the key is paired with the car the settings
+  // name, which a factory reset or another VIN undoes.
+  const uint32_t vin = fnv1_hash(this->file_.vin);
+  if ((this->port_reported_ || car.plugged.has_value()) && this->paired_vin_ != vin) {
+    this->paired_vin_ = vin;
+    this->paired_pref_.save(&this->paired_vin_);
+    global_preferences->sync();
+  }
+  car.paired = this->paired_vin_ == vin;
 
   Settings &settings = this->settings_;
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;

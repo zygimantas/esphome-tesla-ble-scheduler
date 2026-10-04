@@ -35,7 +35,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
 4. **Enter your settings**: press **Visit Device**, which opens **Setup** on the board's page. Enter your car's VIN, from the car's screen under **Controls** → **Software**, check the market area, pick your grid plan if the page asks for one, and press **Save**. The board restarts with them, or says in red what's wrong.
 5. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-6. **Pair it with the car**: sit in the car, open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak), open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
+6. **Pair it with the car**: sit in the car with your key card and open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak). The page shows **Setup 2 of 2**: press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
 A new board starts with a 75 kWh battery, 11 kW of charging power, your country's VAT on electricity and the computer's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
