@@ -559,7 +559,7 @@ function bind() {
   $("settings-file").addEventListener("change", (e) => {
     const [file] = e.target.files;
     e.target.value = ""; // so the same file can go again
-    if (file) uploadSettings(file);
+    if (file) void uploadSettings(file); // it catches its own errors
   });
 }
 

@@ -179,7 +179,9 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
 
   if (const std::string *server = value("ntfy_server"); server != nullptr)
     read.ntfy_server = *server;
-  if (read.ntfy_server.rfind("https://", 0) != 0 && read.ntfy_server.rfind("http://", 0) != 0)
+  const size_t scheme = read.ntfy_server.find("://");
+  if (scheme == std::string::npos ||
+      (read.ntfy_server.compare(0, scheme, "https") != 0 && read.ntfy_server.compare(0, scheme, "http") != 0))
     return "ntfy_server must be the server's address, like https://ntfy.sh";
   if (const std::string *topic = value("ntfy_topic"); topic != nullptr)
     read.ntfy_topic = *topic;
