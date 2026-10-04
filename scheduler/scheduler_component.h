@@ -125,6 +125,7 @@ class SchedulerComponent : public PollingComponent {
 
  protected:
   void tick_soon_();
+  void install_update_(const CarState &car, const Decision &d);
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
