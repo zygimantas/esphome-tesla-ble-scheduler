@@ -40,7 +40,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "release/v$new"
           git commit -a -m "chore(board): release v$new"
-          git push origin "release/v$new"
+          # Forced over the branch of a run that failed after pushing it, so running again works.
+          git push --force origin "release/v$new"
           # A pull request this token opens starts no workflow, label.yml's and CI's included: label it here, and
           # run CI on its branch, which puts the checks main requires on the pull request.
           gh pr create --title "chore(board): release v$new" --label maintenance --body-file - <<EOF
