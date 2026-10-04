@@ -192,6 +192,7 @@ function render() {
   for (const row of document.querySelectorAll(".more")) row.hidden = setup;
   $("cancel-settings").hidden = needed;
   $("download-settings").hidden = setup;
+  $("upload-settings").hidden = setup;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
