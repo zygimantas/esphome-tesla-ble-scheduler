@@ -23,7 +23,8 @@ import threading
 from pathlib import Path
 
 SOURCES = [
-    Path("scheduler") / f"{name}.h" for name in ("calendar", "charger", "market", "savings", "schedule", "tariff")
+    Path("scheduler") / f"{name}.h"
+    for name in ("calendar", "charger", "market", "savings", "schedule", "settings", "tariff")
 ]
 CHECKS = [
     "-fsanitize=address,undefined",

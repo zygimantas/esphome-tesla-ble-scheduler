@@ -9,6 +9,7 @@
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
+//   Settings       the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
 //   Start          wiring, then this page or ESPHome's (?full)
@@ -92,6 +93,10 @@ const PAGE = `
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
+    <a class="button" href="/settings" download="settings.yaml">Download settings</a>
+    <button id="upload-settings">Upload settings</button>
+    <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
+    <p id="settings-error" class="note" hidden></p>
     <button id="pair">Pair BLE key</button>
     <button id="restart" class="danger">Restart board</button>
   </details>
@@ -355,6 +360,31 @@ function renderSavings() {
     `Compared with charging at once on plug-in: ${money(month[3] - month[1])} saved in the last 30 days`;
 }
 
+// --- Settings --------------------------------------------------------------
+
+// Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
+// until the next try.
+async function uploadSettings(file) {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 8000);
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: await file.text(),
+      signal: abort.signal,
+    });
+    const answer = await response.text();
+    $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
+    $("settings-error").hidden = response.ok;
+    if (response.ok) toast("Settings saved: the board restarts");
+  } catch (e) {
+    toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // --- Board link ------------------------------------------------------------
 
 let events;
@@ -525,6 +555,12 @@ function bind() {
     "Reset the savings? They start again from zero today.",
   );
   confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
+  $("upload-settings").addEventListener("click", () => $("settings-file").click());
+  $("settings-file").addEventListener("change", (e) => {
+    const [file] = e.target.files;
+    e.target.value = ""; // so the same file can go again
+    if (file) void uploadSettings(file); // it catches its own errors
+  });
 }
 
 // Last, so every declaration above is initialised before the page starts.

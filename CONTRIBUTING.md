@@ -4,11 +4,11 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the tariff (plain C++, unit-tested on a computer), `scheduler_component.h` and `.cpp` connect it to ESPHome (the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` and `tariff.py` check the settings and the plan when you build. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the tariff, and `settings.h` reads and checks the settings file uploaded on the page (plain C++, unit-tested on a computer). `scheduler_component.h` and `.cpp` connect them to ESPHome (the settings file, the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 A user's `config.yaml` loads `device.yaml` and the component from a release on GitHub. To build from this folder instead, point your `config.yaml` at it: `source: .` for the component and `!include device.yaml` for the package.
 
-In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down. `- id: !remove homeassistant_time` drops the package's Home Assistant clock, which would otherwise set the time zone from the build computer or from Home Assistant instead of `timezone`.
+In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the car by its VIN, `tesla_ble_ref` pins the esphome-tesla-ble version, `reboot_timeout: 0s` stops restarts every 15 minutes without Home Assistant, and `scan_parameters: continuous: true` with the two `!remove` lines under `wifi:` undo the package's single-core workaround, which stopped scanning for the car whenever Wi-Fi was down. `- id: !remove homeassistant_time` drops the package's Home Assistant clock, which would otherwise set the time zone from the build computer or from Home Assistant. `tesla_vin` stays empty and the clock on UTC until the board reads its settings file as it starts, which has both.
 
 ## Branching
 
@@ -58,7 +58,7 @@ The C++ follows ESPHome's own style. Comments say why, not what. YAML config fil
 ## Pull requests
 
 - The body says what changed and why, in plain prose, and how you checked it.
-- Keep your own values out: git ignores `config.yaml` and `secrets.yaml`, and `config.example.yaml` keeps ESO's plan unless the change is about it.
+- Keep your own values out: git ignores `config.yaml`, `secrets.yaml` and `settings.yaml`, and `settings.example.yaml` keeps ESO's plan unless the change is about it.
 - Pull requests merge by squash only, and the head branch is deleted on merge. Only the squash commit reaches `main`.
 
 ## Commit and PR-title format

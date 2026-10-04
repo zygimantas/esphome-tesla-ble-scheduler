@@ -10,7 +10,7 @@ esp32_ble_tracker:
   on_ble_advertise:
     - then:
         - lambda: |-
-            static const std::string car = TeslaBLE::get_vin_advertisement_name("${tesla_vin}");
+            static const std::string car = TeslaBLE::get_vin_advertisement_name(id(scheduler_id).vin().c_str());
             if (x.get_name() == car && id(ble_tesla_id).get_address() != x.address_uint64())
               id(ble_tesla_id).set_address(x.address_uint64());
   scan_parameters:
@@ -21,6 +21,10 @@ esphome:
     - <vin_utils.h>
   min_version: 2026.9.0
   name: tesla
+  on_boot:
+    priority: 800  # before the Tesla component starts, which takes the VIN then
+    then:
+      - lambda: id(tesla_ble_vehicle_id).set_vin(id(scheduler_id).vin().c_str());
   project:
     name: zygimantas.esphome-tesla-ble-scheduler
     version: 3.2.0
@@ -42,18 +46,15 @@ psram:
   speed: 80MHz
 
 scheduler:
-  battery_kwh: ${tesla_battery_kwh}
-  charging_kw: ${tesla_charging_kw}
-  ntfy_server: ${ntfy_server}
-  ntfy_topic: ${ntfy_topic}
+  id: scheduler_id
   time_id: sntp_time
-  vin: ${tesla_vin}
 
 substitutions:
   ble_mac_address: "00:00:00:00:00:00"
   board: esp32-s3-devkitc-1
   flash_size: 16MB
   tesla_ble_ref: 8b9ec1cb7312f47c8d4d3042fefabc7759eb1a07
+  tesla_vin: ""  # the settings file's, from when the board starts
   variant: esp32s3
 
 tesla_ble_vehicle:
@@ -71,7 +72,7 @@ time:
   - id: !remove homeassistant_time
   - id: sntp_time
     platform: sntp
-    timezone: ${timezone}
+    timezone: UTC  # the settings file's, from when the board starts
 
 web_server:
   css_include: web/web_ui.css

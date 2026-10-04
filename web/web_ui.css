@@ -219,6 +219,9 @@ button:disabled {
 .note + .button {
   margin-top: 22px;
 }
+#settings-error {
+  color: var(--red);
+}
 
 /* --- Toast --- */
 .toast {

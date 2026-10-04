@@ -20,6 +20,87 @@ namespace esphome::scheduler {
 // Nord Pool delivery days run midnight to midnight CET.
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
 
+// Where the board downloads the market prices.
+enum class Market { NORD_POOL, SMARD, OMIE };
+
+// The source of the market prices, as the log and the settings' messages name it.
+inline const char *market_name(Market market) {
+  switch (market) {
+    case Market::SMARD:
+      return "SMARD";
+    case Market::OMIE:
+      return "OMIE";
+    default:
+      return "Nord Pool";
+  }
+}
+
+// Where electricity is bought, as market: area names it: a country's code, or the price area where a country has
+// several. DE and LU are the area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, and OMIE, the
+// Iberian market, have their areas' prices in euros only.
+struct Area {
+  const char *name;
+  const char *source_name;  // the area as its market names it
+  Market market;
+  int smard_filter;  // SMARD's number for it
+};
+
+constexpr Area AREAS[] = {
+    {"AT", "AT", Market::NORD_POOL, 0},
+    {"BE", "BE", Market::NORD_POOL, 0},
+    {"BG", "BG", Market::NORD_POOL, 0},
+    {"CH", "CH", Market::SMARD, 259},
+    {"CZ", "CZ", Market::SMARD, 261},
+    {"DE", "GER", Market::NORD_POOL, 0},
+    {"DK1", "DK1", Market::NORD_POOL, 0},
+    {"DK2", "DK2", Market::NORD_POOL, 0},
+    {"EE", "EE", Market::NORD_POOL, 0},
+    {"ES", "ES", Market::OMIE, 0},
+    {"FI", "FI", Market::NORD_POOL, 0},
+    {"FR", "FR", Market::NORD_POOL, 0},
+    {"HR", "HR", Market::NORD_POOL, 0},
+    {"HU", "HU", Market::SMARD, 262},
+    {"IT-NORTH", "IT-NORTH", Market::SMARD, 255},
+    {"LT", "LT", Market::NORD_POOL, 0},
+    {"LU", "GER", Market::NORD_POOL, 0},
+    {"LV", "LV", Market::NORD_POOL, 0},
+    {"NL", "NL", Market::NORD_POOL, 0},
+    {"NO1", "NO1", Market::NORD_POOL, 0},
+    {"NO2", "NO2", Market::NORD_POOL, 0},
+    {"NO3", "NO3", Market::NORD_POOL, 0},
+    {"NO4", "NO4", Market::NORD_POOL, 0},
+    {"NO5", "NO5", Market::NORD_POOL, 0},
+    {"PL", "PL", Market::NORD_POOL, 0},
+    {"PT", "PT", Market::OMIE, 0},
+    {"RO", "TEL", Market::NORD_POOL, 0},
+    {"SE1", "SE1", Market::NORD_POOL, 0},
+    {"SE2", "SE2", Market::NORD_POOL, 0},
+    {"SE3", "SE3", Market::NORD_POOL, 0},
+    {"SE4", "SE4", Market::NORD_POOL, 0},
+    {"SI", "SI", Market::SMARD, 260},
+};
+
+// The currencies Nord Pool's prices come in; the other markets' come in euros.
+constexpr const char *NORD_POOL_CURRENCIES[] = {"DKK", "EUR", "NOK", "PLN", "RON", "SEK"};
+
+// The currency of an area's market prices unless the settings set one: the country's own where Nord Pool has it,
+// otherwise euros.
+inline const char *own_currency(const Area &area) {
+  static constexpr const char *OWN[][2] = {{"DK", "DKK"}, {"NO", "NOK"}, {"PL", "PLN"}, {"RO", "RON"}, {"SE", "SEK"}};
+  for (const auto &[country, currency] : OWN)
+    if (std::strncmp(area.name, country, 2) == 0)
+      return currency;
+  return "EUR";
+}
+
+// Whether an area's market prices can come in `currency`.
+inline bool comes_in(const Area &area, const std::string &currency) {
+  if (area.market != Market::NORD_POOL)
+    return currency == "EUR";
+  return std::any_of(std::begin(NORD_POOL_CURRENCIES), std::end(NORD_POOL_CURRENCIES),
+                     [&](const char *own) { return currency == own; });
+}
+
 // Parses "2025-10-01T22:00:00Z", as Nord Pool sends it.
 inline std::optional<int64_t> parse_iso8601(const char *s) {
   int year, month, day, hour, minute, second, consumed;

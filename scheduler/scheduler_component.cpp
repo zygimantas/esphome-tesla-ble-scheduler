@@ -5,6 +5,9 @@
 #include "esphome/core/application.h"
 #include "esphome/core/log.h"
 
+#include <cstring>
+#include <memory>
+
 namespace esphome::scheduler {
 
 static const char *const TAG = "scheduler";
@@ -89,17 +92,48 @@ static auto find(const List &entities, const char *name) {
   return found;
 }
 
+void SchedulerComponent::load_settings() {
+  this->settings_pref_ = global_preferences->make_preference<SavedSettings>(fnv1_hash("scheduler_settings"));
+  auto saved = std::make_unique<SavedSettings>();  // 4 kB is a lot for the stack
+  if (this->settings_pref_.load(saved.get()))
+    this->use_settings(std::string(saved->text, strnlen(saved->text, sizeof(saved->text))));
+  else
+    this->settings_error_ = "No settings: upload them under Board";
+}
+
+std::string SchedulerComponent::use_settings(const std::string &text) {
+  SettingsFile file;
+  const std::string error = read_settings(text, this->plans_, file);
+  if (!error.empty()) {
+    this->settings_error_ = "Settings: " + error;
+    return error;
+  }
+  this->file_ = file;
+  this->settings_text_ = text;
+  this->settings_error_.clear();
+  return "";
+}
+
+// On the next loop, as the web server calls from its own task.
+void SchedulerComponent::save_settings(const std::string &text) {
+  this->defer([this, text]() {
+    auto saved = std::make_unique<SavedSettings>();
+    std::snprintf(saved->text, sizeof(saved->text), "%s", text.c_str());
+    this->settings_pref_.save(saved.get());
+    global_preferences->sync();
+    App.safe_reboot();
+  });
+}
+
 void SchedulerComponent::setup() {
-  const std::string error = this->apply_tariff_(this->plan_text_);
-  if (!error.empty())
-    ESP_LOGE(TAG, "Tariff: %s", error.c_str());
+#ifdef USE_WEBSERVER
+  web_server_base::global_web_server_base->add_handler(&this->settings_page_);
+#endif
   this->ready_by_->restore();
   this->ready_by_once_->restore();
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("scheduler_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
-  if (this->area_[0] == '\0')
-    this->controller_.without_market_prices();
   // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
   this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("scheduler_savings"));
   this->savings_pref_.load(&this->controller_.savings);
@@ -125,9 +159,43 @@ void SchedulerComponent::setup() {
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
+
+  if (!this->settings_error_.empty())
+    return;
+  Settings &settings = this->settings_;
+  settings.currency = this->file_.currency.c_str();
+  settings.battery_kwh = this->file_.battery_kwh;
+  settings.charging_kw = this->file_.charging_kw;
+  settings.standard_offset = this->file_.standard_offset;
+#ifdef USE_TIME_TIMEZONE
+  // The clock's time zone: its offset in winter, and the EU's summer time from 01:00 UTC on the last Sunday of March
+  // to 01:00 UTC on the last Sunday of October, as calendar.h has it.
+  time::ParsedTimezone zone{};
+  zone.std_offset_seconds = -settings.standard_offset;
+  zone.dst_offset_seconds = -settings.standard_offset - 3600;
+  zone.dst_start = {3600 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 3, 5, 0};
+  zone.dst_end = {7200 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 10, 5, 0};
+  time::set_global_tz(zone);
+#endif
+  if (this->file_.area == nullptr)
+    this->controller_.without_market_prices();
+  const std::string error = this->apply_tariff_(std::string(this->file_.plan_text));
+  if (!error.empty())
+    ESP_LOGE(TAG, "Tariff: %s", error.c_str());
+}
+
+// A text sensor's new state, if it's new.
+static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
+  if (sensor->state != value)
+    sensor->publish_state(value);
 }
 
 void SchedulerComponent::update() {
+  if (!this->settings_error_.empty()) {  // nothing to do until there are settings
+    publish(this->status_, this->settings_error_);
+    publish(this->mode_, "wait");
+    return;
+  }
   const ESPTime now = this->clock_->now();
   CarState car;
   car.now = now.is_valid() ? now.timestamp : 0;
@@ -140,9 +208,7 @@ void SchedulerComponent::update() {
   car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 
-  // The clock's time zone without summer time: calendar.h applies EU summer time itself.
   Settings &settings = this->settings_;
-  settings.standard_offset = ESPTime::timezone_offset() - (now.is_dst ? 3600 : 0);
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
   const ReadyByOnce &once = *this->ready_by_once_;
   settings.ready_by_once = once.year >= 2020 ? local_to_utc(days_from_civil(once.year, once.month, once.day),
@@ -152,7 +218,8 @@ void SchedulerComponent::update() {
   // The clock keeps running through a restart, so wait for the network too.
   if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
     this->fetch_prices_(car.now);
-  if (network::is_connected() && this->plan_[0] != '\0' && plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
+  if (network::is_connected() && !this->file_.plan.empty() &&
+      plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
     this->fetch_plan_(car.now);
 
   Decision d = this->controller_.tick(car, settings);
@@ -187,10 +254,6 @@ void SchedulerComponent::update() {
       this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
     d.status = "Tesla entities not found";
 
-  auto publish = [](text_sensor::TextSensor *sensor, const std::string &value) {
-    if (sensor->state != value)
-      sensor->publish_state(value);
-  };
   publish(this->status_, d.status);
   publish(this->mode_, d.mode);
   publish(this->windows_, d.windows);
@@ -199,7 +262,13 @@ void SchedulerComponent::update() {
 }
 
 void SchedulerComponent::dump_config() {
-  const std::string market = std::string(this->area_) + " from " + this->market_name_();
+  const SettingsFile &file = this->file_;
+  if (!this->settings_error_.empty()) {
+    ESP_LOGCONFIG(TAG, "Scheduler:\n  %s", this->settings_error_.c_str());
+    return;
+  }
+  const std::string market =
+      file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
@@ -207,9 +276,8 @@ void SchedulerComponent::dump_config() {
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                this->area_[0] != '\0' ? market.c_str() : "none, the tariff is the whole price",
-                this->settings_.currency, this->plan_[0] != '\0' ? this->plan_ : "the rates in config.yaml",
-                this->settings_.battery_kwh, this->settings_.charging_kw, this->ntfy_topic_[0] != '\0' ? "on" : "off");
+                market.c_str(), file.currency.c_str(), file.plan.empty() ? "its own rates" : file.plan.c_str(),
+                file.battery_kwh, file.charging_kw, file.ntfy_topic.empty() ? "off" : "on");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -245,14 +313,14 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `text`, a plan's text, with the tariff: settings of config.yaml. Returns what's wrong, or "".
+// Uses `text`, a plan's text, with the settings' own tariff. Returns what's wrong, or "".
 std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   Tariff tariff;
-  const std::string error = make_tariff(text, this->own_, this->settings_.currency, tariff);
+  const std::string error = make_tariff(text, this->file_.tariff, this->file_.currency, tariff);
   if (!error.empty())
     return error;
-  tariff.vat = this->vat_;
-  tariff.margin = this->margin_;
+  tariff.vat = this->file_.vat;
+  tariff.margin = this->file_.margin;
   this->controller_.set_tariff(tariff);
   this->plan_text_ = text;
   return "";
@@ -279,51 +347,42 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
   return std::nullopt;
 }
 
-// The source of the market prices, as the log names it.
-const char *SchedulerComponent::market_name_() const {
-  switch (this->market_) {
-    case Market::SMARD:
-      return "SMARD";
-    case Market::OMIE:
-      return "OMIE";
-    default:
-      return "Nord Pool";
-  }
-}
-
 // Where the prices of the CET delivery day `day` days after `now` are.
 std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
-  switch (this->market_) {
+  const Area &area = *this->file_.area;
+  switch (area.market) {
     case Market::SMARD:
-      return smard_url(this->smard_filter_, now, day);
+      return smard_url(area.smard_filter, now, day);
     case Market::OMIE:
       return omie_url(now, day);
     default:
-      return nord_pool_url(this->area_, this->settings_.currency, now, day);
+      return nord_pool_url(area.source_name, this->settings_.currency, now, day);
   }
 }
 
 // Stores an answer's prices: how many, or -1 if it can't be read.
 int SchedulerComponent::store_prices_(const std::string &body) {
   PriceTable &prices = this->controller_.prices;
-  switch (this->market_) {
+  const Area &area = *this->file_.area;
+  switch (area.market) {
     case Market::SMARD:
       return prices.add_smard(body.data(), body.size());
     case Market::OMIE:
-      return prices.add_omie(body.data(), body.size(), this->area_);
+      return prices.add_omie(body.data(), body.size(), area.source_name);
     default:
-      return prices.add_nord_pool(body.data(), body.size(), this->area_);
+      return prices.add_nord_pool(body.data(), body.size(), area.source_name);
   }
 }
 
 // Today's and tomorrow's CET delivery days, today's only while some of it is missing. A failed request ends the
 // try: the next one would fail the same way and block the loop again.
 void SchedulerComponent::fetch_prices_(int64_t now) {
-  const char *source = this->market_name_();
+  const Area &area = *this->file_.area;
+  const char *source = market_name(area.market);
   // Not out yet: Nord Pool has no content for tomorrow, SMARD no file for a week that hasn't begun, OMIE none for the
   // day.
   const int not_yet =
-      this->market_ == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
+      area.market == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
   for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
     const std::string url = this->prices_url_(now, day);
@@ -347,25 +406,26 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
         ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
         this->controller_.reschedule();
       } else if (stored == 0 && day == 0) {
-        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, this->area_);
+        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, area.name);
       }
     } else if (response->status_code != not_yet) {
       ESP_LOGW(TAG, "%s answered HTTP %d", source, response->status_code);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, this->area_);
+      ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, area.name);
     }
     response->end();
   }
 }
 
 // The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use with
-// the tariff: settings of config.yaml, leaves the one in use, and the board tries again in an hour.
+// the settings' own tariff, leaves the one in use, and the board tries again in an hour.
 void SchedulerComponent::fetch_plan_(int64_t now) {
   this->plan_tried_at_ = now;
   this->plan_usable_ = false;
-  auto response = this->http_->get(std::string(PLANS) + this->plan_ + ".yaml");
+  const char *plan = this->file_.plan.c_str();
+  auto response = this->http_->get(std::string(PLANS) + plan + ".yaml");
   if (response == nullptr) {
-    ESP_LOGW(TAG, "Plan %s: request failed", this->plan_);
+    ESP_LOGW(TAG, "Plan %s: request failed", plan);
     return;
   }
   const int status = response->status_code;
@@ -373,18 +433,18 @@ void SchedulerComponent::fetch_plan_(int64_t now) {
       status == http_request::HTTP_STATUS_OK ? this->read_body_(*response) : std::nullopt;
   response->end();
   if (status != http_request::HTTP_STATUS_OK) {
-    ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", this->plan_, status);
+    ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", plan, status);
   } else if (!text) {
-    ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", this->plan_);
+    ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", plan);
   } else if (*text == this->plan_text_) {
     this->plan_usable_ = true;
   } else {
     const std::string error = this->apply_tariff_(*text);
     this->plan_usable_ = error.empty();
     if (error.empty())
-      ESP_LOGI(TAG, "Plan %s: new prices", this->plan_);
+      ESP_LOGI(TAG, "Plan %s: new prices", plan);
     else
-      ESP_LOGW(TAG, "Plan %s: %s, so the one in use stays", this->plan_, error.c_str());
+      ESP_LOGW(TAG, "Plan %s: %s, so the one in use stays", plan, error.c_str());
   }
 }
 
@@ -407,16 +467,16 @@ void SchedulerComponent::send_unsent_(int64_t now) {
 
 // Whether ntfy took the message. Without a topic there's nothing to send.
 bool SchedulerComponent::send_message_(const Notification &message) {
-  if (this->ntfy_topic_[0] == '\0')
+  if (this->file_.ntfy_topic.empty())
     return true;
   const std::string body = json::build_json([this, &message](JsonObject root) {
-    root["topic"] = this->ntfy_topic_;
+    root["topic"] = this->file_.ntfy_topic;
     root["title"] = message.title;
     root["message"] = message.message;
     root["tags"].to<JsonArray>().add("electric_plug");
     root["click"] = "http://" + App.get_name() + ".local";  // a tap opens the page, on the home Wi-Fi
   });
-  auto response = this->http_->post(this->ntfy_server_, body);
+  auto response = this->http_->post(this->file_.ntfy_server, body);
   if (response == nullptr) {
     ESP_LOGW(TAG, "ntfy message failed; it's tried again in a minute");
     return false;
@@ -427,5 +487,36 @@ bool SchedulerComponent::send_message_(const Notification &message) {
   response->end();
   return taken;
 }
+
+#ifdef USE_WEBSERVER
+bool SettingsPage::canHandle(AsyncWebServerRequest *request) const {
+  char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
+  return request->url_to(buffer) == "/settings" && (request->method() == HTTP_GET || request->method() == HTTP_POST);
+}
+
+// Keeps a byte past MAX_SETTINGS_BYTES at most, enough for read_settings() to tell the file is too long.
+void SettingsPage::handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  if (index == 0)
+    this->body_.clear();
+  this->body_.append(reinterpret_cast<const char *>(data), std::min(len, MAX_SETTINGS_BYTES + 1 - this->body_.size()));
+}
+
+void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
+  static const char *const TEXT = "text/plain; charset=utf-8";
+  if (request->method() == HTTP_GET) {
+    request->send(200, TEXT, this->parent_->settings_text().c_str());
+    return;
+  }
+  SettingsFile file;
+  const std::string error = read_settings(this->body_, this->parent_->plans(), file);
+  if (error.empty()) {
+    request->send(200, TEXT, "Saved: the board restarts");
+    this->parent_->save_settings(this->body_);
+  } else {
+    request->send(400, TEXT, error.c_str());
+  }
+  this->body_.clear();
+}
+#endif
 
 }  // namespace esphome::scheduler
