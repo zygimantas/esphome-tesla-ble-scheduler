@@ -34,31 +34,19 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
 4. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-5. **Fill in your settings**: download [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml) and enter your [settings](#settings) in a text editor.
-6. **Upload them**: open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak), open **Board**, press **Upload settings** and choose the file. The board restarts with them, or says in red what's wrong.
-7. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
-8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
+5. **Enter your settings**: open http://tesla.local on your phone or computer (type the `http://`: browsers try https on their own, which the board doesn't speak), fill in the form the board shows and press **Save**. The board restarts with them, or says in red what's wrong. [Settings](#settings) says what each one is.
+6. **Pair it with the car**: sit in the car, open http://tesla.local on your phone, open **Board**, press **Pair BLE key**, tap your key card on the console and confirm on the car's screen.
+7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
 The board installs each new release by itself within a day, while the car isn't charging. **Board** on the page shows the version it runs.
 
-A coding agent on your computer, such as Claude Code or Codex, can do steps 5 and 6 for you once the board is on your Wi-Fi. Start it in a new, empty folder and give it this prompt:
-
-```text
-Fill in the settings of my Tesla charging board, following the README of
-https://github.com/zygimantas/esphome-tesla-ble-scheduler and its Countries and Tariff pages.
-Download settings.example.yaml from the latest release, ask me in one message for every setting it
-needs, and save the filled-in file as settings.yaml without ever showing my VIN or ntfy topic back to
-me. Then upload it with curl --data-binary @settings.yaml -H "Content-Type: text/plain"
-http://tesla.local/settings and tell me what the board answered.
-```
-
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Your settings keep their names: copy the substitutions of your `config.yaml` but `version`, and `currency`, `market:` and `tariff:` from under `scheduler:`, into the settings file, without the two spaces before them, then upload it. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then enter your settings as in step 5: they're the ones in your `config.yaml`. With rates of your own or a fixed price, copy them into a settings file instead, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
-Your settings file, in the YAML of `settings.example.yaml`: two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
+The form on the page shows the settings most people need. To change them later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
@@ -68,7 +56,7 @@ Your settings file, in the YAML of `settings.example.yaml`: two spaces before th
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
-| `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Tariff](#tariff)). |
+| `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Tariff](#tariff)). Leave it out if your grid fees don't change with the hour. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
@@ -76,7 +64,7 @@ Your settings file, in the YAML of `settings.example.yaml`: two spaces before th
 
 Every price you write, here and in `tariff:`, is per kWh with VAT, as on your bill. The board adds `market: vat` only to the market prices it downloads.
 
-To change a setting, press **Download settings** under **Board**, change the file and upload it again. If a setting is wrong, the board keeps the ones it has and says what.
+If a setting is wrong, the board keeps the ones it has and says what.
 
 ## Using it
 

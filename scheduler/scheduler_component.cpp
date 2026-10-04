@@ -98,20 +98,18 @@ void SchedulerComponent::load_settings() {
   if (this->settings_pref_.load(saved.get()))
     this->use_settings(std::string(saved->text, strnlen(saved->text, sizeof(saved->text))));
   else
-    this->settings_error_ = "No settings: upload them under Board";
+    this->settings_error_ = "No settings yet";
 }
 
+// A file the checks turn away stays the one the page shows, to fix.
 std::string SchedulerComponent::use_settings(const std::string &text) {
+  this->settings_text_ = text;
   SettingsFile file;
   const std::string error = read_settings(text, this->plans_, file);
-  if (!error.empty()) {
-    this->settings_error_ = "Settings: " + error;
-    return error;
-  }
-  this->file_ = file;
-  this->settings_text_ = text;
-  this->settings_error_.clear();
-  return "";
+  this->settings_error_ = error.empty() ? "" : "Settings: " + error;
+  if (error.empty())
+    this->file_ = file;
+  return error;
 }
 
 // On the next loop, as the web server calls from its own task.
@@ -502,7 +500,9 @@ bool SchedulerComponent::send_message_(const Notification &message) {
 #ifdef USE_WEBSERVER
 bool SettingsPage::canHandle(AsyncWebServerRequest *request) const {
   char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
-  return request->url_to(buffer) == "/settings" && (request->method() == HTTP_GET || request->method() == HTTP_POST);
+  const StringRef url = request->url_to(buffer);
+  return (url == "/settings" && (request->method() == HTTP_GET || request->method() == HTTP_POST)) ||
+         (url == "/settings/options" && request->method() == HTTP_GET);
 }
 
 // Keeps a byte past MAX_SETTINGS_BYTES at most, enough for read_settings() to tell the file is too long.
@@ -514,6 +514,11 @@ void SettingsPage::handleBody(AsyncWebServerRequest *request, uint8_t *data, siz
 
 void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
   static const char *const TEXT = "text/plain; charset=utf-8";
+  char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
+  if (request->url_to(buffer) == "/settings/options") {
+    request->send(200, "application/json", settings_options(this->parent_->plans()).c_str());
+    return;
+  }
   if (request->method() == HTTP_GET) {
     request->send(200, TEXT, this->parent_->settings_text().c_str());
     return;

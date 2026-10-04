@@ -103,7 +103,7 @@ class Controller {
   const Schedule &schedule() const { return schedule_; }
   // Without market prices to download, every quarter-hour's spot price is 0: the tariff is the whole price.
   void without_market_prices() { market_ = false; }
-  // The tariff and VAT, from the plan and config.yaml; until they're set, schedules use spot prices only.
+  // The tariff and VAT, from the plan and the settings; until they're set, schedules use spot prices only.
   void set_tariff(const Tariff &tariff) {
     tariff_ = tariff;
     reschedule_ = true;
