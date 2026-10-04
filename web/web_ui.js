@@ -59,16 +59,16 @@ const PAGE = `
   </section>
 
   <section id="settings-card" class="card" hidden>
-    <div class="title">Settings</div>
+    <div id="settings-title" class="title">Settings</div>
     <label class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
-    <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
-    <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
-    <label class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
-    <label class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
-    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
-    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
+    <label class="row more"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <label class="row more"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label class="row more"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
+    <label class="row more"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
+    <label class="row more"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
+    <label class="row more"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
     <p id="settings-error" class="note" hidden></p>
     <button id="save-settings" class="primary">Save</button>
@@ -182,11 +182,16 @@ function render() {
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
-  // Without settings the board can use, the form is the page; with them, it opens from Board.
-  const needed = settings.text === "" || text(E.status).startsWith("Settings: ");
+  // A new board's page is its setup, a short form. Without settings the board can use, the form comes first; with
+  // them, it opens from Board.
+  const setup = settings.text === "";
+  const needed = setup || text(E.status).startsWith("Settings: ");
+  document.body.classList.toggle("setup", setup);
+  $("settings-title").textContent = setup ? "Setup" : "Settings";
   $("settings-card").hidden = !needed && !settings.open;
+  for (const row of document.querySelectorAll(".more")) row.hidden = setup;
   $("cancel-settings").hidden = needed;
-  $("download-settings").hidden = settings.text === "";
+  $("download-settings").hidden = setup;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
@@ -388,6 +393,36 @@ function renderSavings() {
 
 // --- Settings --------------------------------------------------------------
 
+// What a new board starts with, as of October 2026: each market country's VAT on household electricity in %, which
+// northern Norway (NO4) doesn't charge, and its time zones, to guess the country from the phone's.
+const COUNTRIES = {
+  AT: [20, "Europe/Vienna"],
+  BE: [6, "Europe/Brussels"],
+  BG: [20, "Europe/Sofia"],
+  CH: [8.1, "Europe/Zurich"],
+  CZ: [21, "Europe/Prague"],
+  DE: [19, "Europe/Berlin", "Europe/Busingen"],
+  DK: [25, "Europe/Copenhagen"],
+  EE: [24, "Europe/Tallinn"],
+  ES: [21, "Europe/Madrid", "Africa/Ceuta", "Atlantic/Canary"],
+  FI: [25.5, "Europe/Helsinki", "Europe/Mariehamn"],
+  FR: [20, "Europe/Paris"],
+  HR: [13, "Europe/Zagreb"],
+  HU: [27, "Europe/Budapest"],
+  IT: [10, "Europe/Rome"],
+  LT: [21, "Europe/Vilnius"],
+  LU: [8, "Europe/Luxembourg"],
+  LV: [21, "Europe/Riga"],
+  NL: [21, "Europe/Amsterdam"],
+  NO: [25, "Europe/Oslo"],
+  PL: [23, "Europe/Warsaw"],
+  PT: [23, "Europe/Lisbon", "Atlantic/Madeira"],
+  RO: [21, "Europe/Bucharest"],
+  SE: [25, "Europe/Stockholm"],
+  SI: [22, "Europe/Ljubljana"],
+};
+const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? ""));
+
 // The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
 const FORM_PLACES = [
   "market",
@@ -422,15 +457,27 @@ function readSettings(file) {
   return { values, more };
 }
 
-// The plans of the market area's country, with the one to select if it's among them.
+// The plans of the market area's country, with the one to select if it's among them; no row where there are none.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
   $("set-plan").replaceChildren(new Option("None", ""), ...plans.map(([name, title]) => new Option(title, name)));
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : "";
+  $("plan-row").hidden = !plans.length;
 }
 
-// The form, from the board's settings file and what it offers: a new board's time zone is the phone's.
+// A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
+// knows.
+function guessFromArea() {
+  const area = $("set-area").value;
+  $("set-vat").value = vatOf(area);
+  const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!settings.options.time_zones.includes(phone)) $("set-zone").value = COUNTRIES[area.slice(0, 2)]?.[1] ?? "";
+}
+
+// The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
+// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, the market area of the phone's
+// country, where it has only one.
 function fillSettings() {
   const { values, more } = readSettings(settings.text);
   const { areas, time_zones: zones } = settings.options;
@@ -438,17 +485,20 @@ function fillSettings() {
   const areaOptions = areas.map((area) => new Option(`${country.of(area.slice(0, 2))} (${area})`, area));
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
   $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
-  $("set-area").value = (values["market: area"] ?? "").toUpperCase();
+  const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const home = Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(phone));
+  const ofHome = settings.text === "" ? areas.filter((area) => area.slice(0, 2) === home) : [];
+  $("set-area").value = (values["market: area"] ?? (ofHome.length === 1 ? ofHome[0] : "")).toUpperCase();
   fillPlans(values["tariff: plan"]);
-  const zone = values.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zone = values.timezone ?? phone;
   $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
   $("set-zone").value = zones.includes(zone) ? zone : "";
   const vat = values["market: vat"];
-  $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : "";
+  $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
   $("set-margin").value = values["market: margin"] ?? "";
   $("set-vin").value = values.tesla_vin ?? "";
-  $("set-battery").value = values.tesla_battery_kwh ?? "";
-  $("set-power").value = values.tesla_charging_kw ?? "";
+  $("set-battery").value = values.tesla_battery_kwh ?? 75;
+  $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
   $("settings-more").hidden = !more;
   $("settings-error").hidden = true;
@@ -696,7 +746,10 @@ function bind() {
     "Reset the savings? They start again from zero today.",
   );
   confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
-  $("set-area").addEventListener("change", () => fillPlans($("set-plan").value));
+  $("set-area").addEventListener("change", () => {
+    fillPlans($("set-plan").value);
+    if (settings.text === "") guessFromArea();
+  });
   press($("save-settings"), saveSettings);
   $("change-settings").addEventListener("click", () => {
     settings.open = true;

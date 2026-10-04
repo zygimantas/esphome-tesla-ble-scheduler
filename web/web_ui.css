@@ -147,7 +147,10 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The settings form: fields like the dropdowns, and room for names --- */
+/* --- The settings form: fields like the dropdowns, and room for names; a new board's page is the form alone --- */
+.setup .card:not(#settings-card) {
+  display: none;
+}
 input:not([type="file"]) {
   width: 7em;
   font: inherit;
