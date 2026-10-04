@@ -6,6 +6,6 @@
 /scheduler_test*
 /config.yaml
 /secrets.yaml
+/settings.yaml
 __pycache__/
 .DS_Store
-/settings.yaml
