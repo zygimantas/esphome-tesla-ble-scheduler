@@ -31,7 +31,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 ## Setup
 
 1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
-2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect** and choose the board's port, then **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
+2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, ESPHome Web offers to connect it: choose your network and enter its password. If it doesn't, press **Connect** again and choose **Configure Wi-Fi** in its **⋮** menu.
 4. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
 5. **Fill in your settings**: download [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml) and enter your [settings](#settings) in a text editor.
