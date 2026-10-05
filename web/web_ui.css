@@ -205,15 +205,6 @@ select:disabled {
 .step:not(.done) .summary {
   display: none;
 }
-/* On a computer, the page's address as a QR code for the phone: black on white in both themes, as cameras read it,
-   6 px a module. */
-.qr svg {
-  display: block;
-  width: 222px;
-  height: 222px;
-  margin: 12px auto 4px;
-  border-radius: 6px;
-}
 .step:not(.open, .done) .title {
   opacity: 0.5;
 }
@@ -397,6 +388,37 @@ ol.note {
 }
 .note a {
   color: var(--accent);
+}
+
+/* --- The setup on a computer: only the page's address as a QR code for the phone: centred in the page with room
+   around it, without a card's frame, the code black on white in both themes, as cameras read it, 8 px a module --- */
+#phone-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  min-height: calc(100vh - 100px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: center;
+}
+#phone-card .title {
+  margin: 0;
+  font-size: 24px;
+}
+.qr svg {
+  display: block;
+  width: 296px;
+  height: 296px;
+  border-radius: 8px;
+}
+#phone-card .note {
+  max-width: 28em;
+  margin: 0;
+  font-size: 15px;
 }
 
 /* --- Toast --- */
