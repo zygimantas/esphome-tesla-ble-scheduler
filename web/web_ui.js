@@ -512,20 +512,20 @@ function renderSetup() {
 }
 
 // Next: step 1 saves the VIN, as the board needs it to find the car, with the guesses and no prices yet on a new
-// board; the last step saves the rest, which restarts a board that had settings.
+// board; the last step saves the prices, which restarts the board. Both keep the settings the setup doesn't show.
 async function nextStep() {
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.checkValidity());
   if (wrong) return wrong.reportValidity();
   if (setup.step === 1 && $("set-vin").value.trim().toUpperCase() !== readSettings(settings.text).values.tesla_vin) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
-    if (!(await sendSettings(formSettings(!unfinished())))) return;
+    if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(["tesla_vin"])))) return;
   }
   if (setup.step < lastStep()) {
     setup.step += 1;
     return requestRender();
   }
-  const file = formSettings();
+  const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
   if (file !== settings.text && !(await sendSettings(file))) return;
   setup.saving = file !== settings.text;
   setup.step = 0;
@@ -597,6 +597,33 @@ async function loadSettings() {
     // the next connection tries again
   }
   requestRender();
+}
+
+// A settings file's top-level settings, each with the lines below it, comments included; "" holds those above the
+// first.
+function settingsBlocks(text) {
+  const blocks = new Map([["", ""]]);
+  let key = "";
+  for (const line of text ? text.replace(/\n$/, "").split("\n") : []) {
+    if (/^[a-z_]+:/.test(line)) key = line.slice(0, line.indexOf(":"));
+    blocks.set(key, `${blocks.get(key) ?? ""}${line}\n`);
+  }
+  return blocks;
+}
+
+// The board's settings file with the form's `keys`, top-level settings with the lines below them, put in, and the
+// rest kept, in the order the form writes them.
+function withForm(keys) {
+  const blocks = settingsBlocks(settings.text);
+  const form = settingsBlocks(formSettings());
+  for (const key of keys) {
+    if (form.has(key)) blocks.set(key, form.get(key));
+    else blocks.delete(key);
+  }
+  return [...blocks.keys()]
+    .sort()
+    .map((key) => blocks.get(key))
+    .join("");
 }
 
 // The form as a settings file, which the board checks as any other; without prices, as the setup's first step saves
