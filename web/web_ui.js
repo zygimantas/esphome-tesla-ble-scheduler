@@ -117,7 +117,14 @@ const PAGE = `
     <div class="title">Key<span class="summary"></span></div>
     <div class="body">
       <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it can't unlock or drive the car, and you can remove it in the car under Controls → Locks.</p>
-      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. The setup moves on once the car answers.</p>
+      <ol class="note">
+        <li>Put the board by the car.</li>
+        <li>Sit in the car with your key card.</li>
+        <li>Press Pair BLE key below.</li>
+        <li>Tap the card on the console.</li>
+        <li>Confirm on the car's screen.</li>
+      </ol>
+      <p class="note">The setup moves on once the car answers.</p>
       <button id="pair-now" class="primary">Pair BLE key</button>
     </div>
   </section>
