@@ -223,7 +223,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   return "";
 }
 
-// A plan's name for people, from its first line, like "# ESO's Standartinis plan with four zones, prices with VAT:
+// A plan's name for people, from its first line, like "# ESO Standartinis, four zones, prices with VAT:
 // ..."; empty when the line isn't like that.
 inline std::string plan_title(std::string_view text) {
   const size_t end = text.find(", prices with VAT");

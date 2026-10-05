@@ -90,7 +90,7 @@ const PAGE = `
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Exchange price, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
+    <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Spot or exchange, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
     <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>

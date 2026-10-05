@@ -18,7 +18,7 @@ tariff:
 
 The national holidays are the ones with a date of their own that regions can't move: 1 and 6 January, 1 May, 15 August, 12 October, 1 November and 6, 8 and 25 December. The hours follow the clock, summer time included, in the Canary Islands too. Ceuta and Melilla have other hours: write your own tariff for them, as [Tariff](tariff.md) says.
 
-With PVPC, or another price that follows the market by the hour, choose the exchange price on the page. With your supplier's own price for each period, choose Fixed: the plan's periods then make the cheap hours.
+With PVPC, or another price that follows the market by the hour, choose **Spot or exchange, by the hour** on the page. With your supplier's own price for each period, choose Fixed: the plan's periods then make the cheap hours.
 
 The plan counts the tolls and charges per kWh. The power term, the electricity tax, which adds the same share to every hour, and the meter's rent are left out, as they don't change which hours are cheapest.
 

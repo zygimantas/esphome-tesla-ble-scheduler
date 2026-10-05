@@ -989,8 +989,8 @@ static void test_reads_the_settings_file() {
 
 static void test_settings_form_options() {
   CHECK_STR(
-      plan_title("# ESO's Standartinis plan with four zones, prices with VAT: https://www.eso.lt\ncurrency: EUR\n"),
-      "ESO's Standartinis plan with four zones");
+      plan_title("# ESO Standartinis, four zones, prices with VAT: https://www.eso.lt\ncurrency: EUR\n"),
+      "ESO Standartinis, four zones");
   CHECK_STR(plan_title("# A plan\n# prices with VAT\n"), "");
   CHECK_STR(plan_title("A plan, prices with VAT\n"), "");
   CHECK_STR(json_string("a \"b\" \\ c"), "\"a \\\"b\\\" \\\\ c\"");
