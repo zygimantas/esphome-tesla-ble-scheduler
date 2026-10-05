@@ -1,0 +1,16 @@
+# N1 Nettarif C, prices with VAT: https://n1.dk/gaeldende-priser
+# N1 publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code CD) in kroner without VAT: these add 25% VAT.
+# The prices are 2026's, until N1 publishes 2027's.
+# Maintained by @zygimantas
+currency: DKK
+calendar:
+  apr-sep:
+    mon-sun: low 06:00 summer-high 17:00 summer-peak 21:00 summer-high
+  oct-mar:
+    mon-sun: low 06:00 winter-high 17:00 winter-peak 21:00 winter-high
+rates:
+  low: 0.10982
+  summer-high: 0.16473
+  summer-peak: 0.42829
+  winter-high: 0.32945
+  winter-peak: 0.98836

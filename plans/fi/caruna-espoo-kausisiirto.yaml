@@ -1,0 +1,13 @@
+# Caruna Espoo Kausisiirto, prices with VAT: https://caruna.fi/tuotteet-ja-palvelut/kotiin-ja-kiinteistoon/verkkopalveluhinnastot/verkkopalveluhinnasto-caruna-0
+# Caruna prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+rates:
+  other: 0.01343
+  winter-day: 0.03765

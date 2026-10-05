@@ -1,0 +1,15 @@
+# TREFOR El-net Nettarif C, prices with VAT: https://www.trefor.dk/priser/
+# TREFOR El-net prints the prices in øre without VAT, in its price sheet from 1 July 2026: these are in kroner, with 25% VAT.
+# Maintained by @zygimantas
+currency: DKK
+calendar:
+  apr-sep:
+    mon-sun: low 06:00 summer-high 17:00 summer-peak 21:00 summer-high
+  oct-mar:
+    mon-sun: low 06:00 winter-high 17:00 winter-peak 21:00 winter-high
+rates:
+  low: 0.05363
+  summer-high: 0.0805
+  summer-peak: 0.20925
+  winter-high: 0.161
+  winter-peak: 0.48288

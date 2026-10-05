@@ -1,0 +1,12 @@
+# N-ERGIE Netz Modul 3, three rates, prices with VAT: https://www.n-ergie-netz.de/public/remotemedien/media/nng/produkte_und_dienstleistungen_2/netzentgelte_1/netzentgelte_strom/ne_strom_2026_end/N_Preisblatt_Gesamt_2026_end.pdf
+# N-ERGIE Netz prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# N-ERGIE Netz sets the hours and prices for each calendar year: 2027's apply from 1 January, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: low 06:00 standard 12:00 low 14:15 standard 18:00 high 21:00 standard 23:00 low
+rates:
+  low: 0.02832
+  standard: 0.07092
+  high: 0.14006

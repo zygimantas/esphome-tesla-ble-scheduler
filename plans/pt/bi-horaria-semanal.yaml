@@ -1,0 +1,22 @@
+# Bi-horária, ciclo semanal, prices with VAT: https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/
+# ERSE's access tariff for homes on the mainland up to 20.7 kVA, the same with every grid operator.
+# ERSE prints the prices without VAT: these add 23% VAT. Up to 6.9 kVA, a home's first 200 kWh in 30 days pay 6%, and a car's kWh come on top of them.
+# Summer hours follow summer time, from the last Sunday of March to the last Sunday of October: the exceptions hold the Saturdays in March and October after the change, and move every year.
+# ERSE's new hours apply from a day between 1 July and 31 December 2027, which the grid operator tells each home.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-fri: off-peak 07:00 peak
+    sat: off-peak 09:00 peak 14:00 off-peak 20:00 peak 22:00 off-peak
+    sun: off-peak
+  nov-mar:
+    mon-fri: off-peak 07:00 peak
+    sat: off-peak 09:30 peak 13:00 off-peak 18:30 peak 22:00 off-peak
+    sun: off-peak
+exceptions:
+  # Winter time, 2026
+  10-31: off-peak 09:30 peak 13:00 off-peak 18:30 peak 22:00 off-peak
+rates:
+  off-peak: 0.01943
+  peak: 0.10271

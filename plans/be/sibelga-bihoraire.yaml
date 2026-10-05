@@ -1,0 +1,25 @@
+# Sibelga Bihoraire, two rates, prices with VAT: https://brugel.brussels/publication/document/decisions/2025/fr/DECISION-370-ADAPTATIONS-TARIFAIRES-2026-SIBELGA.pdf
+# Brugel prints Sibelga's prices without VAT: these are the heures pleines and heures creuses, with 6% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-fri: off-peak 07:00 peak 22:00 off-peak
+    sat-sun: off-peak
+exceptions:
+  01-01: off-peak
+  # Easter Monday, 2027
+  03-29: off-peak
+  05-01: off-peak
+  # Ascension Day, 2027
+  05-06: off-peak
+  # Whit Monday, 2027
+  05-17: off-peak
+  07-21: off-peak
+  08-15: off-peak
+  11-01: off-peak
+  11-11: off-peak
+  12-25: off-peak
+rates:
+  off-peak: 0.0364
+  peak: 0.06067

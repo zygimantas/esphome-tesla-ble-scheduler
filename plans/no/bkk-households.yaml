@@ -1,0 +1,26 @@
+# BKK, households, prices with VAT: https://www.bkk.no/alt-om-nettleie/nettleiepriser/priser-privatkunder
+# BKK prints the prices in øre with the Enova fee, the electricity tax and 25% VAT: these are in kroner, with VAT, without the fee and the tax.
+# Maintained by @zygimantas
+currency: NOK
+calendar:
+  jan-dec:
+    mon-fri: night 06:00 day 22:00 night
+    sat-sun: night
+exceptions:
+  01-01: night
+  # Maundy Thursday, 2027
+  03-25: night
+  # Good Friday, 2027
+  03-26: night
+  # Easter Monday, 2027
+  03-29: night
+  05-01: night
+  # Ascension Day, 2027
+  05-06: night
+  # Constitution Day, and Whit Monday, 2027
+  05-17: night
+  12-25: night
+  12-26: night
+rates:
+  night: 0.13128
+  day: 0.35968

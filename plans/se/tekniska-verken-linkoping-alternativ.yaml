@@ -1,0 +1,10 @@
+# Tekniska verken Linköping Alternativ, prices with VAT: https://www.tekniskaverken.se/privat/elnat/priser-ersattningar
+# Tekniska verken prints the prices in öre with 25% VAT: these are in kronor.
+# Maintained by @zygimantas
+currency: SEK
+calendar:
+  jan-dec:
+    mon-sun: night 06:00 day 23:00 night
+rates:
+  night: 0.09000
+  day: 0.18000

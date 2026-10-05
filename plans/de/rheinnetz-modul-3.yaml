@@ -1,0 +1,12 @@
+# RheinNetz Modul 3, three rates, prices with VAT: https://www.rheinnetz.de/netzentgelte-strom-ab-dem-01.01.2026.pdfx
+# RheinNetz prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# RheinNetz sets the hours and prices for each calendar year: 2027's apply from 1 January, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: low 05:45 standard 17:00 high 19:30 standard 23:45 low
+rates:
+  low: 0.01345
+  standard: 0.04498
+  high: 0.07902

@@ -1,0 +1,9 @@
+# Savon Voima Yleissähkö, prices with VAT: https://savonvoima.fi/hinnastot-ja-sopimusehdot/verkkopalveluhinnasto/
+# Savon Voima Verkko prints the prices in cents with 25.5% VAT: these are in euros.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.05200

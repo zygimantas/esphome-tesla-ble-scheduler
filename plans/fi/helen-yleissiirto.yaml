@@ -1,0 +1,9 @@
+# Helen Sähköverkko Yleissiirto, prices with VAT: https://www.helensahkoverkko.fi/henkiloasiakkaat/tietoa-sahkonkulutuksesta/Verkkopalvelutuotteet-ja-hinnat
+# Helen Sähköverkko prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.04719

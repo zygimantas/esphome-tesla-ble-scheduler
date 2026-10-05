@@ -1,0 +1,14 @@
+# SWM Infrastruktur Modul 3, three rates, prices with VAT: https://www.swm-infrastruktur.de/dam/swm-infrastruktur/dokumente/strom/netzzugang-netznutzungsentgelte/preisblaetter-2026/strom-preisblatt-2026.pdf
+# SWM Infrastruktur prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# SWM Infrastruktur sets the hours and prices for each calendar year: 2027's apply from 1 January, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-sep:
+    mon-sun: standard
+  oct-mar:
+    mon-sun: standard 00:45 low 06:45 standard 08:30 high 20:45 standard
+rates:
+  low: 0.03082
+  standard: 0.07699
+  high: 0.08497

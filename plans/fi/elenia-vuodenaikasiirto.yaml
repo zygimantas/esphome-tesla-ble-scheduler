@@ -1,0 +1,13 @@
+# Elenia Vuodenaikasiirto, prices with VAT: https://www.elenia.fi/asiointi-ja-palvelut/hinnastot/verkkopalvelutuotteet-ja-maksut/
+# Elenia prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+rates:
+  other: 0.02761
+  winter-day: 0.05560

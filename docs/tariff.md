@@ -100,8 +100,24 @@ tariff:
 
 The plans are in [plans](../plans), a folder for each country:
 
+- Austria: [the network charges of each area](austria.md).
+- Belgium: [Fluvius, ORES, RESA and Sibelga's plans](belgium.md).
+- Bulgaria: [the three big operators' plans](bulgaria.md).
+- Croatia: [HEP ODS's plans](croatia.md).
+- Denmark: [the eight big grid companies' plans](denmark.md).
 - Estonia: [Elektrilevi plans](elektrilevi.md).
+- Finland: [the eight biggest network companies' plans](finland.md).
+- Germany: [the big grid operators' plans](germany.md).
+- Italy: [the TD tariff](italy.md).
+- Latvia: [Sadales tīkls' plans](latvia.md).
 - Lithuania: [ESO plans](eso.md).
+- Luxembourg: [the network tariff](luxembourg.md).
+- Norway: [the biggest network companies' plans](norway.md).
 - Poland: [the five big operators' plans](poland.md).
+- Portugal: [the access tariffs](portugal.md).
+- Romania: [the four distribution operators' plans](romania.md).
 - Slovenia: [the network charge](omreznina.md).
 - Spain: [the 2.0TD tolls and charges](spain.md).
+- Sweden: [the big network companies' plans](sweden.md).
+
+France and the Netherlands have none: [France](france.md) sets off-peak hours for each address, and [the Netherlands](netherlands.md) has no grid fee per kWh.

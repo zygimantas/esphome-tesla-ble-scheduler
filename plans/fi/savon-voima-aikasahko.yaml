@@ -1,0 +1,14 @@
+# Savon Voima Aikasähkö, prices with VAT: https://savonvoima.fi/hinnastot-ja-sopimusehdot/verkkopalveluhinnasto/
+# Savon Voima Verkko prints the prices in cents with 25.5% VAT: these are in euros.
+# Aikasähkö is dearer from November to March, Monday to Saturday, 07:00 - 22:00, not by day and night.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+rates:
+  other: 0.03100
+  winter-day: 0.09100

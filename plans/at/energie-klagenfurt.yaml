@@ -1,0 +1,14 @@
+# Energie Klagenfurt, prices with VAT: https://www.ris.bka.gv.at/eli/bgbl/II/2025/305
+# E-Control prints the network usage and network loss charges of the Klagenfurt area (Netzebene 7, nicht gemessene Leistung) in cents without VAT: these are their sum, in euros, with 20% VAT.
+# The summer price (SNAP), from April to September between 10:00 and 16:00, needs quarter-hour readings.
+# The prices change on 1 January 2027: E-Control's draft adds a winter price from 22:00 to 04:00, October to March (WiNAP).
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-sep:
+    mon-sun: standard 10:00 snap 16:00 standard
+  oct-mar:
+    mon-sun: standard
+rates:
+  standard: 0.08974
+  snap: 0.07318

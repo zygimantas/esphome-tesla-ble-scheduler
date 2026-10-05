@@ -1,0 +1,11 @@
+# HEP ODS Bijeli, two rates, prices with VAT: https://www.hep.hr/ods/korisnici/kucanstvo/tarifne-stavke-cijene/160
+# HEP ODS prints the prices without VAT: these are distribution and transmission together, with 13% VAT.
+# Maintained by @zygimantas
+currency: EUR
+clock: winter
+calendar:
+  jan-dec:
+    mon-sun: night 07:00 day 21:00 night
+rates:
+  night: 0.03242
+  day: 0.07424

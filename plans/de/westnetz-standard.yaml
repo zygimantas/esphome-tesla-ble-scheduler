@@ -1,0 +1,10 @@
+# Westnetz, standard, prices with VAT: https://www.westnetz.de/content/dam/revu-global/westnetz/documents/ueber-westnetz/unser-netz/netzentgelte-strom/preisblaetter-westnetz-strom-01-01-2026.pdf
+# Westnetz prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# New prices apply from 1 January 2027, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.11341

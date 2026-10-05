@@ -6,28 +6,29 @@ The board follows market prices where Nord Pool, SMARD (Germany's Federal Networ
 
 | Country | `market: area` | `currency` | Good to know |
 | --- | --- | --- | --- |
-| Austria | `AT` | `EUR` | |
-| Belgium | `BE` | `EUR` | Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| Bulgaria | `BG` | `EUR` | |
-| Croatia | `HR` | `EUR` | |
+| Austria | `AT` | `EUR` | [The network charges of each area](austria.md). |
+| Belgium | `BE` | `EUR` | [Fluvius, ORES, RESA and Sibelga's plans](belgium.md). Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| Bulgaria | `BG` | `EUR` | [The three big operators' plans](bulgaria.md). |
+| Croatia | `HR` | `EUR` | [HEP ODS's plans](croatia.md). |
 | Czechia | `CZ` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
-| Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | |
+| Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | [The eight big grid companies' plans](denmark.md). |
 | Estonia | `EE` | `EUR` | [Elektrilevi's plans](elektrilevi.md). |
-| Finland | `FI` | `EUR` | |
-| France | `FR` | `EUR` | |
-| Germany and Luxembourg | `DE` or `LU` | `EUR` | |
+| Finland | `FI` | `EUR` | [The eight biggest network companies' plans](finland.md), without Helen Sähköverkko Aikasiirto's charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| France | `FR` | `EUR` | Off-peak hours are set for each address: [write your own tariff](france.md) with them. |
+| Germany | `DE` | `EUR` | [The big grid operators' plans](germany.md), Modul 3 included. |
 | Hungary | `HU` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
-| Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. |
-| Latvia | `LV` | `EUR` | |
+| Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. [The TD tariff](italy.md). |
+| Latvia | `LV` | `EUR` | [Sadales tīkls' plans](latvia.md). |
 | Lithuania | `LT` | `EUR` | [ESO's plans](eso.md). |
-| Netherlands | `NL` | `EUR` | |
-| Norway | `NO1` to `NO5` | `NOK` or `EUR` | The capacity step isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| Luxembourg | `LU` | `EUR` | [Luxembourg's network tariff](luxembourg.md), without the supplement above the reference power ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| Netherlands | `NL` | `EUR` | No grid fee per kWh: [no plan needed](netherlands.md). |
+| Norway | `NO1` to `NO5` | `NOK` or `EUR` | [The biggest network companies' plans](norway.md), without the capacity step ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Poland | `PL` | `PLN` or `EUR` | [The five big operators' plans](poland.md). |
-| Portugal | `PT` | `EUR` | Prices from OMIE. |
-| Romania | `RO` | `RON` or `EUR` | |
+| Portugal | `PT` | `EUR` | Prices from OMIE. [The access tariffs](portugal.md), on the mainland. |
+| Romania | `RO` | `RON` or `EUR` | [The four distribution operators' plans](romania.md). |
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](omreznina.md), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Spain | `ES` | `EUR` | Prices from OMIE. [The 2.0TD tolls and charges](spain.md). |
-| Sweden | `SE1` to `SE4` | `SEK` or `EUR` | Power fees at some network companies aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
+| Sweden | `SE1` to `SE4` | `SEK` or `EUR` | [The big network companies' plans](sweden.md). Power fees at some aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Switzerland | `CH` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 
 Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD or OMIE, and your grid fees are in the same.

@@ -1078,8 +1078,11 @@ static void test_settings_file_errors() {
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
   const std::string no_plan = settings_error(settings_with("  plan", "  plan: lt/nope\n"));
-  CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are ee/", 0) == 0);
-  CHECK(no_plan.find(", lt/eso-standartinis-4-zones, ") != std::string::npos);
+  CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
+  const std::string last = ", lt/eso-standartinis-2-zones, lt/eso-standartinis-4-zones";
+  CHECK(no_plan.size() > last.size() && no_plan.compare(no_plan.size() - last.size(), last.size(), last) == 0);
+  CHECK(no_plan.find("pl/") == std::string::npos);
+  CHECK_STR(settings_error(settings_with("  plan", "  plan: xx/nope\n")), "tariff: there's no plan xx/nope");
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n")),
             "tariff: rate nope isn't used on any day");
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates: 1\n")),

@@ -1,0 +1,14 @@
+# MITNETZ STROM Modul 3, three rates, prices with VAT: https://www.mitnetz-strom.de/Media/docs/default-source/datei-ablage/2026_mns_pb_endg%C3%BCltig_12-12-2025_neuescd.pdf
+# MITNETZ STROM prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# MITNETZ STROM sets the hours and prices for each calendar year: 2027's apply from 1 January, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-sep:
+    mon-sun: standard
+  oct-mar:
+    mon-sun: low 03:00 standard 08:00 high 12:00 standard 17:00 high 19:00 low
+rates:
+  low: 0.00821
+  standard: 0.07509
+  high: 0.15018

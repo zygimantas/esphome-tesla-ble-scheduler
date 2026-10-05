@@ -1,0 +1,11 @@
+# E.ON Nord, 16-63 A, prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
+# E.ON prints the prices in öre with 25% VAT: these are in kronor.
+# E.ON's area Nord: Kramfors, Hammarstrand, Medelpad and Ådalen.
+# For 20-63 A, and for 16 A using over 8,000 kWh a year.
+# Maintained by @zygimantas
+currency: SEK
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.26300

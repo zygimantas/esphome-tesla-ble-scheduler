@@ -189,10 +189,13 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
     if (found == plans.end()) {
+      // the plans of the same country's folder, as all of them make too long a list
+      const std::string folder = read.plan.substr(0, read.plan.find('/') + 1);
       std::string names;
       for (const auto &known : plans)
-        names += concat({names.empty() ? "" : ", ", known.first});
-      return concat({"tariff: there's no plan ", read.plan, "; there are ", names});
+        if (known.first.compare(0, folder.size(), folder) == 0)
+          names += concat({names.empty() ? "; there are " : ", ", known.first});
+      return concat({"tariff: there's no plan ", read.plan, names});
     }
     read.plan_text = found->second;
   }

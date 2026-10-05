@@ -1,0 +1,12 @@
+# Fagne, households, prices with VAT: https://fagne.no/kunde-og-nettleie/nettleie-priser-og-vilkar/priser-privatkunder/
+# Fagne prints the prices in øre with the Enova fee, the electricity tax and 25% VAT: these are in kroner, with VAT, without the fee and the tax.
+# Its price list names no public holidays, only weekends.
+# Maintained by @zygimantas
+currency: NOK
+calendar:
+  jan-dec:
+    mon-fri: night 06:00 day 22:00 night
+    sat-sun: night
+rates:
+  night: 0.25000
+  day: 0.35000

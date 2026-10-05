@@ -1,0 +1,11 @@
+# ORES Impact, three rates, prices with VAT: https://media.ores.be/ores-cms/ptefg3n3/ed_pr%C3%A9l%C3%A8vement_2026.pdf
+# ORES prints the prices without VAT: these are its terme proportionnel, with 6% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: medium 01:00 eco 07:00 medium 11:00 eco 17:00 peak 22:00 medium
+rates:
+  eco: 0.02871
+  medium: 0.08614
+  peak: 0.14356
