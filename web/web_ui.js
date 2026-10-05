@@ -98,7 +98,7 @@ const PAGE = `
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
-    <p id="settings-error" class="note" hidden></p>
+    <p id="settings-error" class="note error" hidden></p>
     <button id="save-settings" class="primary">Save</button>
     <button id="cancel-settings">Cancel</button>
     <a id="download-settings" class="button" href="/settings" download="settings.yaml">Download settings</a>
@@ -110,14 +110,15 @@ const PAGE = `
     <div class="title">VIN<span class="summary"></span></div>
     <div class="body">
       <p class="note">The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+      <p id="vin-error" class="note error" hidden></p>
     </div>
   </section>
   <section class="card step" hidden>
     <div class="title">Key<span class="summary"></span></div>
     <div class="body">
       <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it can't unlock or drive the car, and you can remove it in the car under Controls → Locks.</p>
-      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Save works once the car answers.</p>
-      <button id="pair-now">Pair BLE key</button>
+      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. The setup moves on once the car answers.</p>
+      <button id="pair-now" class="primary">Pair BLE key</button>
     </div>
   </section>
   <section class="card step" hidden>
@@ -183,9 +184,10 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; and, after its
-// last step saved the settings, that the board hasn't got them yet.
-const setup = { step: 0, reached: 0, saving: false };
+// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; after its last
+// step saved the settings, that the board hasn't got them yet; and that a step was opened by hand, which keeps Key
+// from moving on by itself.
+const setup = { step: 0, reached: 0, saving: false, stay: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -514,6 +516,21 @@ function readSettings(file) {
 }
 
 // Settings without prices, a new board's or what the setup's first step saved, still need the setup's last steps.
+// What's wrong with a VIN, or "": a Tesla's starts with one of its makers' codes, and its 9th character is a check
+// digit, computed from the others as in North America, which Tesla does for its Shanghai and Berlin cars too.
+const TESLA_MAKERS = ["5YJ", "7SA", "7G2", "LRW", "XP7"];
+function vinProblem(vin) {
+  if (vin.length !== 17) return `A VIN has 17 letters and digits, and this one has ${vin.length}.`;
+  if (/[IOQ]/.test(vin)) return "A VIN has no I, O or Q: they're 1 or 0.";
+  if (!/^[A-Z0-9]+$/.test(vin)) return "A VIN has only letters and digits.";
+  if (!TESLA_MAKERS.includes(vin.slice(0, 3)))
+    return "A Tesla's VIN starts with 5YJ, 7SA, 7G2, LRW or XP7: check the first three.";
+  const value = (c) => (c <= "9" ? Number(c) : Number("12345678123457923456789"["ABCDEFGHJKLMNPRSTUVWXYZ".indexOf(c)]));
+  const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
+  const sum = [...vin].reduce((total, c, i) => total + value(c) * weights[i], 0);
+  return "0123456789X"[sum % 11] === vin[8] ? "" : "This VIN doesn't add up: a letter or digit is off. Check it again.";
+}
+
 const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
 // The setup's last step: Key once the settings have prices, else Market area, or Grid plan where the country has plans.
 const lastStep = () => (!unfinished() ? 2 : $("plan-row").hidden ? 3 : 4);
@@ -531,6 +548,9 @@ function renderSetup() {
     setup.reached = Math.min(setup.reached, 2);
     setup.step = Math.min(setup.step, setup.reached);
   }
+  // Key moves on by itself once the car answers, unless it was opened by hand
+  const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
+  if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
   document.body.classList.toggle("setup", setup.step > 0);
   $("advanced").hidden = !setup.step;
   const steps = document.querySelectorAll(".step");
@@ -538,14 +558,13 @@ function renderSetup() {
     card.hidden = !setup.step || i + 1 > lastStep();
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
-    card.querySelector(".back").hidden = i === 0;
   }
-  steps[1].querySelector(".save").disabled = unpaired || settings.text === "";
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Paired";
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
   if (setup.step) {
-    for (const [i, row] of rows.entries()) if (row.parentNode !== homes[i]) homes[i].querySelector(".save").before(row);
+    for (const [i, row] of rows.entries())
+      if (row.parentNode !== homes[i]) homes[i].querySelector(".error, .save").before(row);
   } else if (rows[0].parentNode !== $("settings-card")) {
     $("set-battery")
       .closest("label")
@@ -556,10 +575,16 @@ function renderSetup() {
   steps[3].querySelector(".summary").textContent = $("set-plan").selectedOptions[0]?.text ?? "";
 }
 
-// Save: on to the next step. The VIN's saves it, as the board needs it to find the car, with the guesses and no
-// prices yet on a new board; the last step saves the prices, which restarts the board. Both keep the settings the
-// setup doesn't show.
+// Save: on to the next step. VIN's, Validate, checks the VIN and saves it, as the board needs it to find the car,
+// with the guesses and no prices yet on a new board; the last step saves the prices, which restarts the board. Both
+// keep the settings the setup doesn't show.
 async function nextStep() {
+  if (setup.step === 1) {
+    const problem = vinProblem($("set-vin").value.trim().toUpperCase());
+    $("vin-error").textContent = problem;
+    $("vin-error").hidden = !problem;
+    if (problem) return;
+  }
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.checkValidity());
   if (wrong) return wrong.reportValidity();
@@ -570,6 +595,7 @@ async function nextStep() {
   if (setup.step < lastStep()) {
     setup.step += 1;
     setup.reached = Math.max(setup.reached, setup.step);
+    setup.stay = false;
     return requestRender();
   }
   const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
@@ -731,6 +757,7 @@ async function sendSettings(file) {
 
 // Save: the form's own checks first, as the browser shows them by the field.
 async function saveSettings() {
+  $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
   const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
   const wrong = [...fields].find((field) => !field.checkValidity());
   if (wrong) wrong.reportValidity();
@@ -928,18 +955,22 @@ function bind() {
     if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
   });
   for (const [i, card] of document.querySelectorAll(".step").entries()) {
-    // a card the setup got to before opens with a click
+    // a card the setup got to before opens with a click, and stays open
     card.addEventListener("click", () => {
       if (!card.classList.contains("done")) return;
       setup.step = i + 1;
+      setup.stay = true;
       requestRender();
     });
-    card
-      .querySelector(".body")
-      .insertAdjacentHTML("beforeend", '<button class="primary save">Save</button><button class="back">Back</button>');
-    press(card.querySelector(".save"), nextStep);
-    card.querySelector(".back").addEventListener("click", () => {
+    if (i === 1) continue; // Key has only Pair BLE key, as it moves on once the car answers
+    const body = card.querySelector(".body");
+    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Save" : "Validate"}</button>`);
+    press(body.querySelector(".save"), nextStep);
+    if (i === 0) continue; // nothing comes before VIN
+    body.insertAdjacentHTML("beforeend", '<button class="back">Back</button>');
+    body.querySelector(".back").addEventListener("click", () => {
       setup.step -= 1;
+      setup.stay = true;
       requestRender();
     });
   }
