@@ -192,8 +192,10 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
     if (found == plans.end()) {
-      // the plans of the same country's folder, as all of them make too long a list
-      const std::string folder = read.plan.substr(0, read.plan.find('/') + 1);
+      // the plans of the same country's folder, as all of them make too long a list; a name without one is taken as
+      // a country's, like lt
+      const size_t slash = read.plan.find('/');
+      const std::string folder = slash == std::string::npos ? read.plan + "/" : read.plan.substr(0, slash + 1);
       std::string names;
       for (const auto &known : plans)
         if (known.first.compare(0, folder.size(), folder) == 0)

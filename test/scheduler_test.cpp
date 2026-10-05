@@ -1111,6 +1111,9 @@ static void test_settings_file_errors() {
   CHECK(no_plan.size() > last.size() && no_plan.compare(no_plan.size() - last.size(), last.size(), last) == 0);
   CHECK(no_plan.find("pl/") == std::string::npos);
   CHECK_STR(settings_error(settings_with("  plan", "  plan: xx/nope\n")), "tariff: there's no plan xx/nope");
+  CHECK_STR(settings_error(settings_with("  plan", "  plan: nope\n")), "tariff: there's no plan nope");
+  CHECK(settings_error(settings_with("  plan", "  plan: lt\n"))
+            .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n")),
             "tariff: rate nope isn't used on any day");
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates: 1\n")),
