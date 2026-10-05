@@ -195,7 +195,7 @@ const PAGE = `
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="change-settings">Change settings</button>
     <button id="pair">Create key</button>
-    <button class="restart danger">Restart board</button>
+    <button id="restart" class="danger">Restart board</button>
   </details>
 
   <div id="toast" class="toast" role="status"></div>
@@ -206,15 +206,17 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; after its last
-// step saved the settings, that the board hasn't got them yet; and that a step was opened by hand, which keeps Key
-// from moving on by itself.
-const setup = { step: 0, reached: 0, saving: false, stay: false };
+// The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; and that a step
+// was opened by hand, which keeps Key from moving on by itself.
+const setup = { step: 0, reached: 0, stay: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
 // they aren't.
 let live = null;
+// When the page asked the board to restart, saving settings or with Restart board, or 0: until the board is back, the
+// page shows only its status, and then loads afresh.
+let restarting = 0;
 // Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
 // The mode a button should bring, and the limit and Ready by just sent, as { value, until }, shown until the board
@@ -256,8 +258,11 @@ function render() {
   // The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece).
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
-  $("status").textContent = live === false ? "No connection" : (text(E.status) || "Connecting …") + power;
-  $("link").textContent = live === null ? "Connecting …" : live ? "Connected" : "No connection";
+  const link = live === null ? "Connecting …" : live ? "Connected" : "No connection";
+  const status = live === false ? link : (text(E.status) || "Connecting …") + power;
+  $("status").textContent = restarting ? "Restarting …" : status;
+  $("link").textContent = restarting ? "Restarting …" : link;
+  document.body.classList.toggle("restarting", restarting > 0);
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
@@ -606,7 +611,7 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
-  else if (!setup.step && !setup.saving) setup.step = setup.reached = settings.text === "" ? 1 : unpaired ? 2 : 3;
+  else if (!setup.step) setup.step = setup.reached = settings.text === "" ? 1 : unpaired ? 2 : 3;
   if (unpaired) {
     // a key the car doesn't know closes the steps after Key
     setup.reached = Math.min(setup.reached, 2);
@@ -615,7 +620,7 @@ function renderSetup() {
   // Key moves on by itself once the car answers, unless it was opened by hand
   const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
   if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
-  document.body.classList.toggle("setup", setup.step > 0);
+  document.body.classList.toggle("setup", setup.step > 0 && !restarting);
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
     card.hidden = !setup.step || i + 1 > lastStep();
@@ -684,11 +689,7 @@ async function nextStep() {
     return requestRender();
   }
   const keys = ["currency", "fixed_price", "market", "tariff", "tesla_battery_kwh", "tesla_charging_kw", "timezone"];
-  const file = unfinished() ? withForm(keys) : settings.text;
-  if (file !== settings.text && !(await sendSettings(file))) return;
-  setup.saving = file !== settings.text;
-  setup.step = 0;
-  requestRender();
+  await sendSettings(withForm(keys));
 }
 
 // The grid plan chosen, or "" for one that isn't listed or none chosen yet.
@@ -782,7 +783,7 @@ async function loadSettings() {
     ]);
     if (file !== settings.text || !settings.options) {
       // the setup starts again from what the board has now, as after an upload
-      Object.assign(setup, { step: 0, saving: false, stay: false });
+      Object.assign(setup, { step: 0, stay: false });
       settings.text = file;
       settings.options = options;
       fillSettings();
@@ -864,10 +865,11 @@ async function sendSettings(file) {
     if (!response.ok && setup.step) toast(`Not saved: ${answer}`);
     if (response.ok) {
       settings.open = false;
-      // A board that had settings restarts: reconnect soon, rather than when the browser would. A new board takes
-      // its first at once, and the setup moves on.
+      // A board that had settings restarts: the page waits for it, reconnecting soon rather than when the browser
+      // would. A new board takes its first at once, and the setup moves on.
       if (settings.text !== "") {
         toast("Settings saved: the board restarts");
+        restarting = Date.now();
         setTimeout(reconnect, 3000);
       }
     }
@@ -903,7 +905,12 @@ function connect() {
   seen();
   events.onopen = () => setLive(true);
   events.onerror = () => setLive(false);
-  events.addEventListener("ping", seen);
+  events.addEventListener("ping", (e) => {
+    seen();
+    // Each ping has the board's uptime: shorter than the time since the page asked for a restart, the board is back
+    // from it, and the page loads afresh.
+    if (restarting && JSON.parse(e.data).uptime * 1000 < Date.now() - restarting) location.reload();
+  });
   events.addEventListener("state", (e) => {
     seen();
     const data = JSON.parse(e.data);
@@ -1119,15 +1126,14 @@ function bind() {
     body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
     press(body.querySelector(".save"), nextStep);
   }
-  // Restart board, under Board: the page reconnects soon after, rather than when the browser would.
-  for (const button of document.querySelectorAll(".restart"))
-    press(button, async () => {
-      if (!confirm("Restart the board?")) return;
-      if (await post(E.restart, "press")) {
-        toast("Restarting …");
-        setTimeout(reconnect, 3000);
-      }
-    });
+  // Restart board, under Board: the page waits for the board, reconnecting soon rather than when the browser would.
+  press($("restart"), async () => {
+    if (!confirm("Restart the board?")) return;
+    if (await post(E.restart, "press")) {
+      restarting = Date.now();
+      setTimeout(reconnect, 3000);
+    }
+  });
   $("change-settings").addEventListener("click", () => {
     settings.open = true;
     requestRender();
