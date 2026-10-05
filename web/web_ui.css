@@ -208,6 +208,18 @@ select:disabled {
 .step.done {
   cursor: pointer;
 }
+/* A step's title names its field, which takes the width without a label of its own. */
+.step .row {
+  border-top: 0;
+}
+.step .row > span:first-child {
+  display: none;
+}
+.step :is(.dropdown, input) {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
 input:not([type="file"]) {
@@ -220,7 +232,7 @@ input:not([type="file"]) {
   border-radius: 6px;
   padding: 6px 12px;
 }
-:is(#settings-card, .step) .dropdown,
+#settings-card .dropdown,
 input.wide {
   flex: 0 1 60%;
   min-width: 0;
