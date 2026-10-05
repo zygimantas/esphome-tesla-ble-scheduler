@@ -116,8 +116,8 @@ const PAGE = `
     <div class="title">Key<span class="summary"></span></div>
     <div class="body">
       <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it can't unlock or drive the car, and you can remove it in the car under Controls → Locks.</p>
-      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Save works once the car answers.</p>
-      <button id="pair-now">Pair BLE key</button>
+      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. The setup moves on once the car answers.</p>
+      <button id="pair-now" class="primary">Pair BLE key</button>
     </div>
   </section>
   <section class="card step" hidden>
@@ -183,9 +183,10 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; and, after its
-// last step saved the settings, that the board hasn't got them yet.
-const setup = { step: 0, reached: 0, saving: false };
+// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; after its last
+// step saved the settings, that the board hasn't got them yet; and that a step was opened by hand, which keeps Key
+// from moving on by itself.
+const setup = { step: 0, reached: 0, saving: false, stay: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -531,6 +532,9 @@ function renderSetup() {
     setup.reached = Math.min(setup.reached, 2);
     setup.step = Math.min(setup.step, setup.reached);
   }
+  // Key moves on by itself once the car answers, unless it was opened by hand
+  const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
+  if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
   document.body.classList.toggle("setup", setup.step > 0);
   $("advanced").hidden = !setup.step;
   const steps = document.querySelectorAll(".step");
@@ -538,9 +542,7 @@ function renderSetup() {
     card.hidden = !setup.step || i + 1 > lastStep();
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
-    card.querySelector(".back").hidden = i === 0;
   }
-  steps[1].querySelector(".save").disabled = unpaired || settings.text === "";
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Paired";
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
@@ -570,6 +572,7 @@ async function nextStep() {
   if (setup.step < lastStep()) {
     setup.step += 1;
     setup.reached = Math.max(setup.reached, setup.step);
+    setup.stay = false;
     return requestRender();
   }
   const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
@@ -928,18 +931,22 @@ function bind() {
     if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
   });
   for (const [i, card] of document.querySelectorAll(".step").entries()) {
-    // a card the setup got to before opens with a click
+    // a card the setup got to before opens with a click, and stays open
     card.addEventListener("click", () => {
       if (!card.classList.contains("done")) return;
       setup.step = i + 1;
+      setup.stay = true;
       requestRender();
     });
-    card
-      .querySelector(".body")
-      .insertAdjacentHTML("beforeend", '<button class="primary save">Save</button><button class="back">Back</button>');
-    press(card.querySelector(".save"), nextStep);
-    card.querySelector(".back").addEventListener("click", () => {
+    if (i === 1) continue; // Key has only Pair BLE key, as it moves on once the car answers
+    const body = card.querySelector(".body");
+    body.insertAdjacentHTML("beforeend", '<button class="primary save">Save</button>');
+    press(body.querySelector(".save"), nextStep);
+    if (i === 0) continue; // nothing comes before VIN
+    body.insertAdjacentHTML("beforeend", '<button class="back">Back</button>');
+    body.querySelector(".back").addEventListener("click", () => {
       setup.step -= 1;
+      setup.stay = true;
       requestRender();
     });
   }
