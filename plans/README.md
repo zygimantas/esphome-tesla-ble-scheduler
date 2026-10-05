@@ -26,7 +26,7 @@ The board starts with the plan from the release you installed, and downloads the
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | [The eight big grid companies' plans](dk). |
 | Estonia | `EE` | `EUR` | [Elektrilevi's plans](ee). |
 | Finland | `FI` | `EUR` | [The eight biggest network companies' plans](fi), without Helen Sähköverkko Aikasiirto's charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| France | `FR` | `EUR` | Off-peak hours are set for each address: [write your own tariff](fr) with them. |
+| France | `FR` | `EUR` | Off-peak hours are set for each address: [write your own plan](fr) with them. |
 | Germany | `DE` | `EUR` | [The big grid operators' plans](de), Modul 3 included. |
 | Hungary | `HU` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 | Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. [The TD tariff](it). |
@@ -70,9 +70,9 @@ tariff:
 
 A rate you set has to be one your days use. If a plan later drops or renames it, the board keeps the plan it has and says why in its log.
 
-## Your own tariff
+## Your own plan
 
-Without your grid operator's plan here, write the tariff yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it:
+Without your grid operator's plan here, write the plan yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it:
 
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.

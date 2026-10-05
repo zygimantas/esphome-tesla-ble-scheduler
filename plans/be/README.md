@@ -23,7 +23,7 @@ tariff:
 | West | `be/fluvius-west` |
 | Zenne-Dijle | `be/fluvius-zenne-dijle` |
 
-Fluvius charges the same fee per kWh every hour, with a day and night meter too. The plans are for a digital meter. With an analog meter, Fluvius charges more per kWh and a fixed yearly amount instead of a fee on your peaks: write your own tariff, as [Your own tariff](../README.md#your-own-tariff) says.
+Fluvius charges the same fee per kWh every hour, with a day and night meter too. The plans are for a digital meter. With an analog meter, Fluvius charges more per kWh and a fixed yearly amount instead of a fee on your peaks: write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
 ## Wallonia and Brussels
 
@@ -53,7 +53,7 @@ The hours follow the clock, summer time included.
 
 The plans count the fee for using the network per kWh. They leave out the yearly fees, Flanders' capacity tariff on your highest quarter-hour each month, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), and the charges that are the same every hour: the public service obligations, the surcharges (taxes the operator collects), Wallonia's regulatory balances, the transmission fee in Wallonia and Brussels (transport on the bill; in Flanders it's part of Fluvius's fee), and the federal excise and energy contribution.
 
-The small Walloon operators AIEG, AIESH and REW, and exclusive night meters, which heat on a circuit of their own, have no plans here. Write your own tariff, as [Your own tariff](../README.md#your-own-tariff) says.
+The small Walloon operators AIEG, AIESH and REW, and exclusive night meters, which heat on a circuit of their own, have no plans here. Write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
 The regulators approve the prices, which change on 1 January: the Vlaamse Nutsregulator for Fluvius, the CWaPE for ORES and RESA, and Brugel for Sibelga. In Brussels, Brugel brings a fee by your connection's power in 2028 and three periods a day in 2030.
 

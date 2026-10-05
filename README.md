@@ -51,7 +51,7 @@ Boards on 3.x don't update themselves. Install the latest release once with step
 
 ## Settings
 
-The setup asks only for what the board can't guess. To change any of the settings most people need later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
+The setup asks only for what the board can't guess. To change any of the settings most people need later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Grid plan](#grid-plan)), a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
@@ -62,7 +62,7 @@ The setup asks only for what the board can't guess. To change any of the setting
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
 | `ntfy_server` | The [ntfy](https://ntfy.sh) server for phone messages. Keep `https://ntfy.sh` unless you run your own. |
 | `ntfy_topic` | Your ntfy topic (see [Phone messages](#phone-messages)), or empty for no messages. |
-| `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Tariff](#tariff)). Leave it out if your grid fees don't change with the hour. |
+| `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Grid plan](#grid-plan)). Leave it out if your grid fees don't change with the hour. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
 | `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. |
@@ -89,7 +89,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 Phone messages are optional, through the ntfy app: install it, subscribe to a topic with a long random name, and enter that name as **ntfy topic** under **Change settings**. Anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
 
-## Tariff
+## Grid plan
 
 The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan, like `lt/eso-standartinis-4-zones` in the example. Your supplier usually bills the grid operator's fee unchanged, and its bill names your plan. Without one, the board picks the hours by the market price alone, and the page says so. The board downloads the current plan every day, so new prices reach it without a reinstall. [Countries and plans](plans/README.md) lists the plans for each country, and explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
