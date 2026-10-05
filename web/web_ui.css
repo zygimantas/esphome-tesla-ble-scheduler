@@ -373,10 +373,11 @@ ol.note {
   align-items: center;
   justify-content: space-between;
 }
-/* A hint's words, with a thin line at their left in the cards' border grey, as a quote has. */
+/* A hint's words, with a thin line at their left in the cards' border grey, as a quote has, 5px short of their top
+   and bottom: a border can't be shorter than its box. */
 .hint {
-  padding: 5px 0 5px 10px;
-  border-left: 1px solid var(--line);
+  padding-left: 10px;
+  background: linear-gradient(var(--line), var(--line)) left 5px / 1px calc(100% - 10px) no-repeat;
 }
 .error {
   color: var(--red);
