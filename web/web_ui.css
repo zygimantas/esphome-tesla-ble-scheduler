@@ -48,8 +48,53 @@ body {
 main {
   max-width: 560px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 16px) calc(env(safe-area-inset-right) + 16px)
-    calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px);
+  padding: 16px calc(env(safe-area-inset-right) + 16px) calc(env(safe-area-inset-bottom) + 28px)
+    calc(env(safe-area-inset-left) + 16px);
+}
+
+/* --- The header bar, as ESPHome Web's: the logo, the page's name and the link to the board --- */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: calc(env(safe-area-inset-top) + 56px);
+  padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 16px) 8px
+    calc(env(safe-area-inset-left) + 16px);
+  background: var(--accent);
+  color: #fff;
+}
+.bar svg {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  color: var(--accent);
+}
+.bar div {
+  min-width: 0;
+}
+.bar h1,
+.bar p {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar h1 {
+  font-size: 16px;
+  line-height: 1.3;
+}
+.bar p {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.pill {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* --- Cards, with a title; Board folds open --- */
