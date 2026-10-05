@@ -1,6 +1,6 @@
 # Polish plans
 
-The household tariffs G11, G12 and G12w of Poland's five big distribution operators, with prices with VAT, in złoty. Name yours under `tariff:` in your settings file, with Poland's market area and VAT, which make złoty the currency:
+The household plans G11, G12 and G12w of Poland's five big distribution operators, with prices with VAT, in złoty. Name yours under `tariff:` in your settings file, with Poland's market area and VAT, which make złoty the currency:
 
 ```yaml
 market:
@@ -23,7 +23,7 @@ tariff:
 - **G12w:** cheap all day at weekends and on public holidays, and on workdays at night: from 22:00 to 06:00 and 13:00 to 15:00 as G12 with PGE, Tauron and Energa, from 21:00 to 06:00 with Enea, and from 22:00 to 06:00 with Stoen.
 - **Enea's G12** isn't here: Enea sets its hours for each meter. Write your own plan with its prices, as [Your own plan](../README.md#your-own-plan) says.
 
-The hours are on winter time all year, as the tariffs set meter clocks, so in summer they come an hour later on the clock: the night from 23:00. If your meter follows summer time, add `clock: local` under `tariff:`.
+The hours are on winter time all year, as the operators set meter clocks, so in summer they come an hour later on the clock: the night from 23:00. If your meter follows summer time, add `clock: local` under `tariff:`.
 
 The plans leave out the monthly fees and the charges that are the same every hour: the quality fee, the renewable energy fee (OZE) and the cogeneration fee.
 
