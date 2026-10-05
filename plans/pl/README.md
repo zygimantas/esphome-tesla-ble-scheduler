@@ -21,7 +21,7 @@ tariff:
 - **G11:** the same fee every hour.
 - **G12:** cheap from 22:00 to 06:00 and from 13:00 to 15:00, every day. With PGE, the afternoon's cheap hours are from 15:00 to 17:00 from April to September.
 - **G12w:** cheap all day at weekends and on public holidays, and on workdays at night: from 22:00 to 06:00 and 13:00 to 15:00 as G12 with PGE, Tauron and Energa, from 21:00 to 06:00 with Enea, and from 22:00 to 06:00 with Stoen.
-- **Enea's G12** isn't here: Enea sets its hours for each meter. Write your own tariff with its prices, as [Your own tariff](../README.md#your-own-tariff) says.
+- **Enea's G12** isn't here: Enea sets its hours for each meter. Write your own plan with its prices, as [Your own plan](../README.md#your-own-plan) says.
 
 The hours are on winter time all year, as the tariffs set meter clocks, so in summer they come an hour later on the clock: the night from 23:00. If your meter follows summer time, add `clock: local` under `tariff:`.
 
