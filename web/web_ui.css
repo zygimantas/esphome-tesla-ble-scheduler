@@ -312,6 +312,9 @@ button:disabled {
   color: var(--muted);
   font-size: 13px;
 }
+ol.note {
+  padding-left: 20px;
+}
 /* As far below the text as a button below a row, like Pair BLE key. */
 .note + .button,
 .step .note + button {
