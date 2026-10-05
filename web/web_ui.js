@@ -1080,17 +1080,11 @@ function bind() {
       setup.stay = true;
       requestRender();
     });
-    if (i === 1) continue; // Key has only Create key, as it moves on once the car answers
+    // Key has only Create key, as it moves on once the car answers; the steps before open with a click instead of Back
+    if (i === 1) continue;
     const body = card.querySelector(".body");
-    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Save" : "Validate VIN"}</button>`);
+    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Set prices" : "Validate VIN"}</button>`);
     press(body.querySelector(".save"), nextStep);
-    if (i === 0) continue; // nothing comes before VIN
-    body.insertAdjacentHTML("beforeend", '<button class="back">Back</button>');
-    body.querySelector(".back").addEventListener("click", () => {
-      setup.step -= 1;
-      setup.stay = true;
-      requestRender();
-    });
   }
   // Restart board, under Board and the setup's Advanced: the page reconnects soon after, rather than when the
   // browser would.
