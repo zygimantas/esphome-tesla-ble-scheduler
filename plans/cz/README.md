@@ -10,7 +10,7 @@ The distribution fees of Czechia's three regional distribution operators for the
 
 - **D01d and D02d:** the same fee every hour.
 - **D61d:** the low tariff (NT) from Friday 12:00 to Sunday 22:00, all year, and the high tariff (VT) the rest of the week. The hours follow the clock, summer time included.
-- **D27d, the rate for electric cars,** isn't here, nor are the other rates with a low tariff (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write your own tariff with them, as [Tariff](tariff.md) says.
+- **D27d, the rate for electric cars,** isn't here, nor are the other rates with a low tariff (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write your own tariff with them, as [Tariff](../../docs/tariff.md) says.
 
 Name yours under `tariff:` in your settings file, with koruna as the currency. The board gets Czech market prices from SMARD in euros and converts them into koruna at the ECB's daily rate, as the page does when you choose Czechia:
 
@@ -27,4 +27,4 @@ With a fixed price, choose **Fixed (or a monthly average)** on the page and give
 
 The plans leave out the monthly fees, for your main breaker (jistič) and a small one for the market operator and ERÚ, and the charges per kWh that are the same every hour: system services and the electricity tax. The fee for renewable energy (POZE) is zero in 2026, as the state pays it.
 
-ERÚ, the Energy Regulatory Office, sets each operator's prices at the end of November, for the next year from 1 January. The prices are in the plans in [plans/cz](../plans/cz). [Tariff](tariff.md) says how to change them for yourself.
+ERÚ, the Energy Regulatory Office, sets each operator's prices at the end of November, for the next year from 1 January. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

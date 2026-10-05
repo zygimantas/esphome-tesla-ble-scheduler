@@ -13,7 +13,7 @@ tariff:
   plan: ch/ewz-nna
 ```
 
-With your utility's price for the year, choose **Fixed (or a monthly average)** on the page and give the energy price per kWh with VAT, without the network, which the settings file has as `fixed_price` instead of `market:`. Where the energy price has a high and a low tariff too, write your own tariff with your whole price per kWh for each, as [Tariff](tariff.md#a-fixed-price) says.
+With your utility's price for the year, choose **Fixed (or a monthly average)** on the page and give the energy price per kWh with VAT, without the network, which the settings file has as `fixed_price` instead of `market:`. Where the energy price has a high and a low tariff too, write your own tariff with your whole price per kWh for each, as [Tariff](../../docs/tariff.md#a-fixed-price) says.
 
 | Operator | Plans |
 | --- | --- |
@@ -41,8 +41,8 @@ The hours follow the clock, summer time included.
 
 ewz's NNE-H and NNA Leistungsbegrenzung, IWB's Elektromobilität and Primeo's E-Mobilität are for a charger with a meter of its own, and ewz grants Leistungsbegrenzung only where its grid needs it. With all of them but NNE-H, and with EKZ's 400F for the whole home, the operator may switch the charger off or slow it for a few hours a day, which the board doesn't know about.
 
-Primeo's region Olten has other prices, and so do Pully, Belmont-sur-Lausanne and the Forces Motrices de l'Avançon, although Romande Energie publishes their prices next to its own: write your own tariff for them, as [Tariff](tariff.md) says, as for any other operator. Network fees set a day ahead, which some operators offer, can't be a plan.
+Primeo's region Olten has other prices, and so do Pully, Belmont-sur-Lausanne and the Forces Motrices de l'Avançon, although Romande Energie publishes their prices next to its own: write your own tariff for them, as [Tariff](../../docs/tariff.md) says, as for any other operator. Network fees set a day ahead, which some operators offer, can't be a plan.
 
 The plans count the network fee per kWh. They leave out the monthly and metering fees, fees per kW, Swissgrid's charges on a line of their own (system services, the electricity reserve, the solidarity costs and, with Groupe E and Romande Energie's Simple, the national grid), the federal surcharge (Netzzuschlag) and the canton's and commune's levies, as they're the same every hour. Romande Energie's Double counts its national grid part, as it's dearer in the high hours. In Geneva and Basel some levies are a share of the network fee or dearer in the high hours, and they're left out too.
 
-Each operator sets its network fees every year, within ElCom's rules, publishes them by the end of August, and they start on 1 January. The prices are in the plans in [plans/ch](../plans/ch). [Tariff](tariff.md) says how to change them for yourself.
+Each operator sets its network fees every year, within ElCom's rules, publishes them by the end of August, and they start on 1 January. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

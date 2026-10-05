@@ -35,8 +35,8 @@ High and peak cost less from April to September than from October to March. The 
 
 The plans leave out the yearly subscription and the charges that are the same every hour: Energinet's grid and system tariffs and the electricity tax (elafgift). What homes with solar panels pay or get for their own power is left out too.
 
-Most other grid companies have the same hours. Name one of these plans and give your company's prices with VAT under `rates:`, for `low`, `summer-high`, `summer-peak`, `winter-high` and `winter-peak`, as [Tariff](tariff.md#your-own-changes) says. Where the hours differ, write your own tariff, as [Tariff](tariff.md) says.
+Most other grid companies have the same hours. Name one of these plans and give your company's prices with VAT under `rates:`, for `low`, `summer-high`, `summer-peak`, `winter-high` and `winter-peak`, as [Tariff](../../docs/tariff.md#your-own-changes) says. Where the hours differ, write your own tariff, as [Tariff](../../docs/tariff.md) says.
 
 Each grid company sets its own prices, within a revenue cap the Danish Utility Regulator (Forsyningstilsynet) sets. Most change them on 1 January, some also during the year.
 
-The prices are in the plans in [plans/dk](../plans/dk). [Tariff](tariff.md) says how to change them for yourself.
+[Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

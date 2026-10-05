@@ -22,8 +22,8 @@ Your bill and Sadales tīkls' portal e-st.lv name your plan, until the end of 20
 
 The fee is the same in every hour of every day, and includes the transmission grid's part. It doesn't change which hours are cheapest, but with it the costs the board shows are whole. The plans leave out the monthly fee, which depends on your main fuse: its amperes and phases.
 
-Pamata-2 and Speciālais-2, for the few connections at a transformer's own switchboard, aren't here, nor are the plans of Latvia's seven small grid operators, like the railway's and the port's. Write your own tariff for them, as [Tariff](tariff.md) says.
+Pamata-2 and Speciālais-2, for the few connections at a transformer's own switchboard, aren't here, nor are the plans of Latvia's seven small grid operators, like the railway's and the port's. Write your own tariff for them, as [Tariff](../../docs/tariff.md) says.
 
 Sadales tīkls sets its prices by the method of the regulator, SPRK, which can stop them. They have been the same since January 2024. On 1 January 2027, Pamata's fee drops a little and Speciālais' stays the same, Pamata-2 and Speciālais-2 become Pamata and Speciālais, and a third plan starts, Jaudīgais, with a lower fee per kWh and a higher monthly fee, for homes that use a lot for the size of their connection. The plans here change on that day.
 
-The prices are in the plans in [plans/lv](../plans/lv). [Tariff](tariff.md) says how to change them for yourself.
+[Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

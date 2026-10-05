@@ -100,27 +100,27 @@ tariff:
 
 The plans are in [plans](../plans), a folder for each country:
 
-- Austria: [the network charges of each area](austria.md).
-- Belgium: [Fluvius, ORES, RESA and Sibelga's plans](belgium.md).
-- Bulgaria: [the three big operators' plans](bulgaria.md).
-- Croatia: [HEP ODS's plans](croatia.md).
-- Czechia: [the three operators' plans](czechia.md).
-- Denmark: [the eight big grid companies' plans](denmark.md).
-- Estonia: [Elektrilevi plans](elektrilevi.md).
-- Finland: [the eight biggest network companies' plans](finland.md).
-- Germany: [the big grid operators' plans](germany.md).
-- Hungary: [the network fees](hungary.md).
-- Italy: [the TD tariff](italy.md).
-- Latvia: [Sadales tīkls' plans](latvia.md).
-- Lithuania: [ESO plans](eso.md).
-- Luxembourg: [the network tariff](luxembourg.md).
-- Norway: [the biggest network companies' plans](norway.md).
-- Poland: [the five big operators' plans](poland.md).
-- Portugal: [the access tariffs](portugal.md).
-- Romania: [the four distribution operators' plans](romania.md).
-- Slovenia: [the network charge](omreznina.md).
-- Spain: [the 2.0TD tolls and charges](spain.md).
-- Sweden: [the big network companies' plans](sweden.md).
-- Switzerland: [nine operators' plans](switzerland.md).
+- Austria: [the network charges of each area](../plans/at).
+- Belgium: [Fluvius, ORES, RESA and Sibelga's plans](../plans/be).
+- Bulgaria: [the three big operators' plans](../plans/bg).
+- Croatia: [HEP ODS's plans](../plans/hr).
+- Czechia: [the three operators' plans](../plans/cz).
+- Denmark: [the eight big grid companies' plans](../plans/dk).
+- Estonia: [Elektrilevi plans](../plans/ee).
+- Finland: [the eight biggest network companies' plans](../plans/fi).
+- Germany: [the big grid operators' plans](../plans/de).
+- Hungary: [the network fees](../plans/hu).
+- Italy: [the TD tariff](../plans/it).
+- Latvia: [Sadales tīkls' plans](../plans/lv).
+- Lithuania: [ESO plans](../plans/lt).
+- Luxembourg: [the network tariff](../plans/lu).
+- Norway: [the biggest network companies' plans](../plans/no).
+- Poland: [the five big operators' plans](../plans/pl).
+- Portugal: [the access tariffs](../plans/pt).
+- Romania: [the four distribution operators' plans](../plans/ro).
+- Slovenia: [the network charge](../plans/si).
+- Spain: [the 2.0TD tolls and charges](../plans/es).
+- Sweden: [the big network companies' plans](../plans/se).
+- Switzerland: [nine operators' plans](../plans/ch).
 
-France and the Netherlands have none: [France](france.md) sets off-peak hours for each address, and [the Netherlands](netherlands.md) has no grid fee per kWh.
+France and the Netherlands have none: [France](../plans/fr) sets off-peak hours for each address, and [the Netherlands](../plans/nl) has no grid fee per kWh.
