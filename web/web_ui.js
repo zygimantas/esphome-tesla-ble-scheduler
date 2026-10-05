@@ -90,8 +90,8 @@ const PAGE = `
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Spot or exchange, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
-    <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap" required></select></span></label>
+    <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+    <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
     <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
@@ -624,7 +624,7 @@ function renderSetup() {
       .before(...rows);
   }
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
-  const price = { market: "By the hour", fixed: "Fixed" }[$("set-price").value];
+  const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
   const plan = $("set-plan").value && $("set-plan").selectedOptions[0].text;
   const cheap = { none: "No cheaper hours", plan, own: "Own cheaper hours" }[$("set-cheap").value];
   steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, cheap]
@@ -662,16 +662,18 @@ async function nextStep() {
 }
 
 // Where the cheaper hours come from, the grid plan only where the country has plans, and the country's plans, with
-// the ones to select if they're among them.
+// the ones to select if they're among them. Else the grid plan where the country has plans, and its plan where it
+// has only one: Choose only where there are several to choose from.
 function fillPlans(cheap, plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  const kinds = { "": "Choose", none: "None", plan: "Based on grid plan", own: "My own" };
+  const kinds = { none: "None", plan: "Based on grid plan", own: "My own" };
   if (!plans.length) delete kinds.plan;
   $("set-cheap").replaceChildren(...Object.entries(kinds).map(([value, text]) => new Option(text, value)));
-  $("set-cheap").value = cheap in kinds ? cheap : "";
-  $("set-plan").replaceChildren(new Option("Choose", ""), ...plans.map(([name, title]) => new Option(title, name)));
-  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : "";
+  $("set-cheap").value = cheap in kinds ? cheap : plans.length ? "plan" : "none";
+  const choose = plans.length > 1 ? [new Option("Choose", "")] : [];
+  $("set-plan").replaceChildren(...choose, ...plans.map(([name, title]) => new Option(title, name)));
+  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : choose.length ? "" : (plans[0]?.[0] ?? "");
 }
 
 // A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
@@ -685,7 +687,7 @@ function guessFromArea() {
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
 // zone, the market area's VAT, a 75 kWh battery and 11 kW, cheaper hours from 22:00 to 07:00, and on a new board,
-// the phone's country, where it has only one market area. Without a market, the supplier's price is fixed, and the
+// a dynamic price and the phone's country, where it has only one market area. Without a market, the supplier's price is fixed, and the
 // country the grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
   const { values, more } = readSettings(settings.text);
@@ -699,7 +701,6 @@ function fillSettings() {
   };
   const areaOptions = areas.map((area) => new Option(areaName(area), area));
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
-  $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
   const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const plan = values["tariff: plan"] ?? "";
   const ofCurrency = Object.keys(CURRENCIES).find((code) => CURRENCIES[code] === values.currency?.toUpperCase());
@@ -708,16 +709,23 @@ function fillSettings() {
     : plan.slice(0, 2).toUpperCase() || ofCurrency || countryOf(values.timezone);
   const ofCountry = areas.filter((area) => area.slice(0, 2) === country);
   const guess = ofCountry.length === 1 || !unfinished() ? ofCountry[0] : "";
-  $("set-area").value = (values["market: area"] ?? guess ?? "").toUpperCase();
-  $("set-price").value = values["market: area"] ? "market" : unfinished() ? "" : "fixed";
+  // Choose only where there's no guess, like a country with several market areas
+  const area = (values["market: area"] ?? guess ?? "").toUpperCase();
+  $("set-area").replaceChildren(...(areas.includes(area) ? [] : [new Option("Choose", "")]), ...areaOptions);
+  $("set-area").value = areas.includes(area) ? area : "";
+  $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
   const times = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`);
   for (const id of ["set-from", "set-to"]) $(id).replaceChildren(...times.map((time) => new Option(time, time)));
   const own = values.own ?? { from: "22:00", to: "07:00", weekends: "same", high: "", low: "" };
   for (const key of ["from", "to", "weekends", "high", "low"]) $(`set-${key}`).value = own[key];
   fillPlans(values.own ? "own" : plan ? "plan" : unfinished() ? "" : "none", plan);
   const zone = values.timezone ?? phone;
-  $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
-  $("set-zone").value = zones.includes(zone) ? zone : "";
+  const known = zones.includes(zone);
+  $("set-zone").replaceChildren(
+    ...(known ? [] : [new Option("Choose", "")]),
+    ...zones.map((name) => new Option(name, name)),
+  );
+  $("set-zone").value = known ? zone : "";
   const vat = values["market: vat"];
   $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
   $("set-margin").value = values["market: margin"] ?? "";
