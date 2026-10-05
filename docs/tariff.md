@@ -41,7 +41,7 @@ Without your grid operator's plan here, write the tariff yourself, or [add the p
 - `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`. YAML reads `on`, `off`, `yes`, `no`, `true`, `false` and `null` as true, false or nothing, so those can't be names.
 - `clock: winter`: all times stay on winter time all year. `clock: local`, the default, follows the clock, summer time included; it undoes a plan's `clock: winter`.
 
-The plans are examples too, like [ESO's four zones](../plans/lt/eso-standartinis-4-zones.yaml).
+The plans are examples too, like [one with four zones](../plans/lt/eso-standartinis-4-zones.yaml).
 
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
@@ -64,7 +64,7 @@ If something is wrong, the board keeps the settings it has and says what when yo
 
 ## A fixed price
 
-Leave `market:` out: no market prices are downloaded. With your grid operator's plan, add your supplier's own part, without the grid fees, as `fixed_price`, which the board adds to the plan's fees in every hour. Where one price includes the grid fees, like Ignitis's, it's the supplier's own line on the bill:
+Leave `market:` out: no market prices are downloaded. With your grid operator's plan, add your supplier's own part, without the grid fees, as `fixed_price`, which the board adds to the plan's fees in every hour. Where your supplier quotes one price with the grid fees in, it's the supplier's own line on the bill:
 
 ```yaml
 fixed_price: 0.15

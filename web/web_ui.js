@@ -262,7 +262,7 @@ function render() {
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
   $("fixed-row").hidden = !fixed || !gridPlan();
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
-  // grid plan's fees, so it's without them, even where the supplier quotes one price with them in, like Ignitis
+  // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
   const unit = `${currency} with VAT per kWh`;

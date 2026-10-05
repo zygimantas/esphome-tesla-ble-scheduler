@@ -8,7 +8,7 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 
 ## Example savings
 
-An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on ESO's Standartinis plan with four zones, VAT included.
+An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on a grid plan with four zones, VAT included.
 
 | How it charges | Cost |
 |---|---|
@@ -53,7 +53,7 @@ The setup asks only for what the board can't guess. To change any of the setting
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
-| `fixed_price` | Your supplier's own part of a fixed price per kWh, with VAT and without the grid fees, like `0.12`, without `market:`. The board adds it to your grid plan's fees in every hour, so the costs it shows are complete. Where one price includes the grid fees, like Ignitis's, take the supplier's own line on the bill. Leave it out with a monthly average, or with rates of your own that are your whole price. |
+| `fixed_price` | Your supplier's own part of a fixed price per kWh, with VAT and without the grid fees, like `0.12`, without `market:`. The board adds it to your grid plan's fees in every hour, so the costs it shows are complete. Where your supplier quotes one price with the grid fees in, take the supplier's own line on the bill. Leave it out with a monthly average, or with rates of your own that are your whole price. |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
 | `market: margin` | Your supplier's own price per kWh on top of the market price, with VAT, like `0.012`. Leave it out if there's none. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
@@ -88,9 +88,9 @@ Phone messages are optional, through the ntfy app: install it, subscribe to a to
 
 ## Tariff
 
-The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). Your supplier, like Ignitis or Enefit, usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
+The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan, like `lt/eso-standartinis-4-zones` in the example. Your supplier usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [Tariff](docs/tariff.md) lists the plans for each country, and explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
-With a fixed price, or one that follows the monthly average, choose **Fixed** under **Contract type**: the board leaves `market:` out, downloads no market prices and charges by your grid plan's zones. Enter your supplier's own part, without the grid fees, under **Supplier's part**, so what the savings card says charging cost is complete. Where one price includes them, like Ignitis's, it's the supplier's own line on the bill: the whole price would count the grid fees twice. With a monthly average, leave it empty: the cost is then only the grid's part, while what it saved is right. Without a plan for your grid operator, or with day and night prices from your supplier, write your own rates in your settings file and upload it under **Advanced** in the setup, as [Tariff](docs/tariff.md) shows. With rates of your own instead of a plan, each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
+With a fixed price, or one that follows the monthly average, choose **Fixed** under **Contract type**: the board leaves `market:` out, downloads no market prices and charges by your grid plan's zones. Enter your supplier's own part, without the grid fees, under **Supplier's part**, so what the savings card says charging cost is complete. Where your supplier quotes one price with them in, it's the supplier's own line on the bill: the whole price would count the grid fees twice. With a monthly average, leave it empty: the cost is then only the grid's part, while what it saved is right. Without a plan for your grid operator, or with day and night prices from your supplier, write your own rates in your settings file and upload it under **Advanced** in the setup, as [Tariff](docs/tariff.md) shows. With rates of your own instead of a plan, each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 
