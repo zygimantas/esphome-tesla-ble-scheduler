@@ -48,11 +48,38 @@ document.head.insertAdjacentHTML(
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
     '<meta name="apple-mobile-web-app-capable" content="yes">' +
     '<meta name="apple-mobile-web-app-title" content="Tesla">' +
-    '<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">' +
-    '<meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">',
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' +
+    '<meta name="theme-color" content="#009ac7">',
 );
 
+// The logo: a calendar with a plug, white with its details in the header's blue, as ESPHome's logo is.
+const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
+  <rect x="1" y="5" width="32" height="30" rx="4" fill="#fff"/>
+  <rect x="8" y="1" width="5" height="9" rx="2.5" fill="#fff" stroke="currentColor" stroke-width="1.5"/>
+  <rect x="21" y="1" width="5" height="9" rx="2.5" fill="#fff" stroke="currentColor" stroke-width="1.5"/>
+  <g fill="currentColor">
+    <rect x="1" y="12" width="32" height="1.5"/>
+    <rect x="14.5" y="17" width="5" height="5" rx="1"/>
+    <rect x="5.5" y="25.5" width="5" height="5" rx="1"/>
+    <rect x="14.5" y="25.5" width="5" height="5" rx="1"/>
+    <circle cx="29" cy="29" r="11"/>
+  </g>
+  <path d="M5.5 20.2l2.3 2.3 4.2-4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="29" cy="29" r="9.25" fill="#fff"/>
+  <g fill="currentColor">
+    <rect x="25.9" y="22.6" width="1.7" height="3.6" rx="0.7"/>
+    <rect x="30.4" y="22.6" width="1.7" height="3.6" rx="0.7"/>
+    <path d="M24.6 26h8.8v2.2a4.4 4.4 0 0 1-8.8 0z"/>
+    <rect x="28.15" y="31.5" width="1.7" height="4.3" rx="0.7"/>
+  </g>
+</svg>`;
+
 const PAGE = `
+<header class="bar">
+  ${LOGO}
+  <div><h1>Tesla charging</h1><p>Charges when it's cheapest</p></div>
+  <span id="link" class="pill">Connecting …</span>
+</header>
 <main>
   <section class="card">
     <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
@@ -205,6 +232,7 @@ function render() {
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
   $("status").textContent = live === false ? "No connection" : (text(E.status) || "Connecting …") + power;
+  $("link").textContent = live === null ? "Connecting …" : live ? "Connected" : "No connection";
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
