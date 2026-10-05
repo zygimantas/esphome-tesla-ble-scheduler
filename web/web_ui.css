@@ -417,8 +417,15 @@ ol.note {
 }
 #phone-card .note {
   max-width: 28em;
-  margin: 0;
+  margin: 0 auto;
   font-size: 15px;
+}
+/* What to take to the car, a list in the middle with its lines starting together */
+#phone-card ul.note {
+  display: inline-block;
+  margin-top: 12px;
+  padding-left: 20px;
+  text-align: left;
 }
 
 /* --- Toast --- */

@@ -135,7 +135,15 @@ const PAGE = `
   <section id="phone-card" class="card" hidden>
     <div class="title">Continue on your phone</div>
     <div id="qr" class="qr"></div>
-    <p class="note">Scan the code with your phone's camera to open this page there, or open <span id="address"></span> on it. Then take the board to the car, plug it into a USB charger there, and finish the setup in the car, with your key card.</p>
+    <div>
+      <p class="note">Scan the code with your phone's camera to open this page there, or open <span id="address"></span> on it. Then finish the setup in the car, with these:</p>
+      <ul class="note">
+        <li>The board</li>
+        <li>A USB charger and cable for it</li>
+        <li>Your Tesla key card</li>
+        <li>Your electricity bill, for the grid plan and prices</li>
+      </ul>
+    </div>
   </section>
   <section class="card step" hidden>
     <div class="title">Car<span class="summary">Saved</span></div>
