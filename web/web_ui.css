@@ -12,7 +12,6 @@
   --control: #ececec;
   --accent: #009ac7;
   --red: #e74c3c;
-  --qr: none; /* behind the QR code: the page's own light background */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -23,7 +22,6 @@
     --line: rgba(225, 225, 225, 0.12);
     --field: rgba(225, 225, 225, 0.28);
     --control: #2c2c2c;
-    --qr: #fff; /* cameras read a QR code dark on light */
   }
 }
 
@@ -393,7 +391,7 @@ ol.note {
 }
 
 /* --- The setup on a computer: only the page's address as a QR code for the phone: centred in the page with room
-   around it, without a card's frame, the code black on the page or, in dark mode, on white, 8 px a module --- */
+   around it, without a card's frame, the code black on white in both themes, as cameras read it, 8 px a module --- */
 #phone-card {
   display: flex;
   flex-direction: column;
@@ -416,7 +414,6 @@ ol.note {
   width: 296px;
   height: 296px;
   border-radius: 8px;
-  background: var(--qr);
 }
 #phone-card .note {
   max-width: 28em;

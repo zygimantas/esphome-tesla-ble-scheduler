@@ -1068,7 +1068,7 @@ function duration(seconds) {
 
 // --- QR code ---------------------------------------------------------------
 
-// A short text, like the page's address, as a QR code in SVG, black, with its quiet zone clear: version 3, 29
+// A short text, like the page's address, as a QR code in SVG, black on white with its quiet zone: version 3, 29
 // modules a side, error correction M, the text's bytes, 42 at most, and the mask that scores best (ISO/IEC 18004).
 function qrCode(text) {
   const bytes = new TextEncoder().encode(text);
@@ -1176,7 +1176,7 @@ function qrCode(text) {
     if (score < bestScore) [best, bestScore] = [grid, score];
   }
   const path = best.flatMap((row, r) => row.map((dark, c) => (dark ? `M${c + 4} ${r + 4}h1v1h-1z` : ""))).join("");
-  return `<svg viewBox="0 0 ${size + 8} ${size + 8}" role="img" aria-label="QR code" shape-rendering="crispEdges"><path fill="#000" d="${path}"/></svg>`;
+  return `<svg viewBox="0 0 ${size + 8} ${size + 8}" role="img" aria-label="QR code" shape-rendering="crispEdges"><path fill="#fff" d="M0 0h${size + 8}v${size + 8}H0z"/><path fill="#000" d="${path}"/></svg>`;
 }
 
 // --- Start -----------------------------------------------------------------
