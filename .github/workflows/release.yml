@@ -44,9 +44,10 @@ jobs:
           git commit -a -m "chore(board): release v$new"
           # Forced over the branch of a run that failed after pushing it, so running again works.
           git push --force origin "release/v$new"
-          # Workflows don't start for what this token does, or not always (label.yml never has): label the pull request
-          # here, run CI on its branch for the checks main requires, and once it's merged, run CI on main, which
-          # publishes the release. A run that failed after opening the pull request leaves it open for the next.
+          # GitHub holds the workflows of a pull request this token opens until a maintainer approves them, and a merge it
+          # makes starts none: label the pull request here, run CI on its branch for the checks main requires, delete
+          # the runs that wait for approval, and once it's merged, run CI on main, which publishes the release. A run
+          # that failed after opening the pull request leaves it open for the next.
           [ "$(gh pr view "release/v$new" --json state --jq .state 2> /dev/null)" = OPEN ] ||
             gh pr create --title "chore(board): release v$new" --label maintenance --body-file - <<EOF
           ## What changed and why
@@ -59,5 +60,9 @@ jobs:
           EOF
           gh workflow run ci.yml --ref "release/v$new"
           gh pr merge "release/v$new" --auto --squash
-          until [ "$(gh pr view "release/v$new" --json state --jq .state)" = MERGED ]; do sleep 30; done
+          until [ "$(gh pr view "release/v$new" --json state --jq .state)" = MERGED ]; do
+            sleep 30
+            gh run list --branch "release/v$new" --status action_required --json databaseId --jq '.[].databaseId' |
+              xargs -r -n 1 gh run delete
+          done
           gh workflow run ci.yml --ref main
