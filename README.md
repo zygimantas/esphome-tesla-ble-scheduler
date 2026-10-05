@@ -33,9 +33,9 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
-4. **Enter your car's VIN**: press **Visit Device**, which opens the board's page at the setup's first step. Enter the VIN, from the car's screen under **Controls** → **Software**, and press **Next**.
+4. **Enter your car's VIN**: press **Visit Device**, which opens the board's page at the setup's first step. Enter the VIN, which is on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen, and press **Save**.
 5. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-6. **Finish the setup in the car**: sit in the car with your key card and open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak). At **2. Key**, press **Pair BLE key**, tap your key card on the console, confirm on the car's screen, and press **Next** once it lets you. Then check the market area and pick your grid plan if the page asks for one, with **Next** after each. The board restarts with the settings, or says what's wrong.
+6. **Finish the setup in the car**: sit in the car with your key card and open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak). At **Key**, press **Pair BLE key**, tap your key card on the console, confirm on the car's screen, and press **Save** once it lets you. Then check the market area and pick your grid plan if the page asks for one, with **Save** after each. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
 A new board starts with a 75 kWh battery, 11 kW of charging power, your country's VAT on electricity and the computer's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
@@ -61,7 +61,7 @@ The setup asks only for what the board can't guess. To change any of the setting
 | `tariff` | What comes on top of the market price: your grid operator's plan, or your own rates (see [Tariff](#tariff)). Leave it out if your grid fees don't change with the hour. |
 | `tesla_battery_kwh` | The car's usable battery in kWh: about `75` for a Long Range, `60` for a Standard Range. |
 | `tesla_charging_kw` | The power the Tesla app shows while charging at home: `11` on three-phase 16 A, `7.4` on single-phase 32 A. |
-| `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software**. |
+| `tesla_vin` | Your car's VIN, 17 capital letters and digits, on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. |
 | `timezone` | The time zone the car lives in, like `Europe/Vilnius`, `Europe/Helsinki` or `Europe/Oslo`. |
 
 Every price you write, here and in `tariff:`, is per kWh with VAT, as on your bill. The board adds `market: vat` only to the market prices it downloads.

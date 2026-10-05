@@ -80,22 +80,24 @@ const PAGE = `
   </section>
 
   <section class="card step" hidden>
-    <div class="title">1. VIN<span class="summary"></span></div>
-    <div class="body"></div>
+    <div class="title">VIN<span class="summary"></span></div>
+    <div class="body">
+      <p class="note">On the car's screen under Controls → Software, or at the bottom of the Tesla app's home screen.</p>
+    </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">2. Key<span class="summary">Paired</span></div>
+    <div class="title">Key<span class="summary">Paired</span></div>
     <div class="body">
-      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Next works once the car answers.</p>
+      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Save works once the car answers.</p>
       <button id="pair-now">Pair BLE key</button>
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">3. Market area<span class="summary"></span></div>
+    <div class="title">Market area<span class="summary"></span></div>
     <div class="body"></div>
   </section>
   <section class="card step" hidden>
-    <div class="title">4. Grid plan<span class="summary"></span></div>
+    <div class="title">Grid plan<span class="summary"></span></div>
     <div class="body"></div>
   </section>
 
@@ -496,7 +498,7 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 < setup.step);
     card.querySelector(".back").hidden = i === 0;
   }
-  steps[1].querySelector(".next").disabled = unpaired || settings.text === "";
+  steps[1].querySelector(".save").disabled = unpaired || settings.text === "";
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
   if (setup.step) {
@@ -511,8 +513,9 @@ function renderSetup() {
   steps[3].querySelector(".summary").textContent = $("set-plan").selectedOptions[0]?.text ?? "";
 }
 
-// Next: step 1 saves the VIN, as the board needs it to find the car, with the guesses and no prices yet on a new
-// board; the last step saves the prices, which restarts the board. Both keep the settings the setup doesn't show.
+// Save: on to the next step. The VIN's saves it, as the board needs it to find the car, with the guesses and no
+// prices yet on a new board; the last step saves the prices, which restarts the board. Both keep the settings the
+// setup doesn't show.
 async function nextStep() {
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.checkValidity());
@@ -884,16 +887,11 @@ function bind() {
       .querySelector(".body")
       .insertAdjacentHTML(
         "beforeend",
-        '<button class="primary next">Next</button><button class="back">Back</button><button class="cancel">Cancel</button><button class="restart danger">Restart board</button>',
+        '<button class="primary save">Save</button><button class="back">Back</button><button class="restart danger">Restart board</button>',
       );
-    press(card.querySelector(".next"), nextStep);
+    press(card.querySelector(".save"), nextStep);
     card.querySelector(".back").addEventListener("click", () => {
       setup.step -= 1;
-      requestRender();
-    });
-    card.querySelector(".cancel").addEventListener("click", () => {
-      fillSettings(); // the board's settings again
-      setup.step = 1;
       requestRender();
     });
   }
