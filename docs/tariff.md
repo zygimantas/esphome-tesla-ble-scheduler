@@ -33,7 +33,7 @@ A rate you set has to be one your days use. If a plan later drops or renames it,
 
 ## Your own tariff
 
-Without your grid operator's plan here, write the tariff yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it. With one stretch of cheaper hours a day, **My own hours** under **Time of day** on the page writes it for you, with weekends cheaper all day if you say so. For more, write it in your settings file:
+Without your grid operator's plan here, write the tariff yourself, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it. With one stretch of cheaper hours a day, **My own** under **Cheaper hours** on the page writes it for you, with weekends cheaper all day if you say so. For more, write it in your settings file:
 
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.

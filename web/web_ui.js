@@ -91,9 +91,9 @@ const PAGE = `
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Exchange price, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
-    <label id="time-row" class="row"><span>Time of day</span><span class="dropdown"><select id="set-time" required></select></span></label>
+    <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <div id="hours-row" class="row"><span>Cheaper hours</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
+    <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
     <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
     <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="low-row" class="row"><span></span><input id="set-low" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -263,8 +263,8 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
-  $("plan-row").hidden = $("set-time").value !== "plan";
-  for (const id of ["hours-row", "weekends-row", "high-row", "low-row"]) $(id).hidden = $("set-time").value !== "own";
+  $("plan-row").hidden = $("set-cheap").value !== "plan";
+  for (const id of ["hours-row", "weekends-row", "high-row", "low-row"]) $(id).hidden = $("set-cheap").value !== "own";
   $("high-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, other hours`;
   $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
   const country = $("set-area").value.slice(0, 2);
@@ -574,18 +574,18 @@ const unfinished = () => settings.text === "" || (settings.text !== null && !/^(
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
-// What's wrong with the prices, or "": own hours need two prices, the cheaper one lower, and a fixed price the same
-// every hour leaves nothing to choose.
+// What's wrong with the prices, or "": own hours need two prices, the cheaper one lower, and a fixed price without
+// cheaper hours leaves nothing to choose.
 function pricesProblem() {
-  if ($("set-time").value === "own") {
+  if ($("set-cheap").value === "own") {
     const [high, low] = [$("set-high").value, $("set-low").value];
     if ($("set-from").value === $("set-to").value)
       return "The cheaper hours have to end at another time than they start.";
     if (high === "" || low === "") return "Enter what a kWh costs in the cheaper hours and in the others.";
     return Number(low) < Number(high) ? "" : "The cheaper hours have to cost less than the others.";
   }
-  if ($("set-price").value !== "fixed" || $("set-time").value !== "same") return "";
-  return "With a fixed price the same every hour, the board has nothing to choose from: choose a grid plan or your own hours.";
+  if ($("set-price").value !== "fixed" || $("set-cheap").value !== "none") return "";
+  return "With a fixed price, the board needs cheaper hours: your grid plan's or your own.";
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
@@ -613,7 +613,7 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin", "area", "price", "time", "plan", "hours", "weekends", "high", "low"].map((n) => $(`${n}-row`));
+  const rows = ["vin", "area", "price", "cheap", "plan", "hours", "weekends", "high", "low"].map((n) => $(`${n}-row`));
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -625,12 +625,9 @@ function renderSetup() {
   }
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
   const price = { market: "By the hour", fixed: "Fixed" }[$("set-price").value];
-  const time = $($("set-time").value === "plan" ? "set-plan" : "set-time");
-  steps[2].querySelector(".summary").textContent = [
-    $("set-area").selectedOptions[0]?.text,
-    price,
-    time.value && time.selectedOptions[0].text,
-  ]
+  const plan = $("set-plan").value && $("set-plan").selectedOptions[0].text;
+  const cheap = { none: "No cheaper hours", plan, own: "Own cheaper hours" }[$("set-cheap").value];
+  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, cheap]
     .filter(Boolean)
     .join(" · ");
 }
@@ -664,15 +661,15 @@ async function nextStep() {
   requestRender();
 }
 
-// How the price changes with the time of day, Grid plan only where the country has plans, and the country's plans,
-// with the ones to select if they're among them.
-function fillPlans(time, plan) {
+// Where the cheaper hours come from, the grid plan only where the country has plans, and the country's plans, with
+// the ones to select if they're among them.
+function fillPlans(cheap, plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  const times = { "": "Choose", same: "Same every hour", plan: "Grid plan", own: "My own hours" };
-  if (!plans.length) delete times.plan;
-  $("set-time").replaceChildren(...Object.entries(times).map(([value, text]) => new Option(text, value)));
-  $("set-time").value = time in times ? time : "";
+  const kinds = { "": "Choose", none: "None", plan: "Based on grid plan", own: "My own" };
+  if (!plans.length) delete kinds.plan;
+  $("set-cheap").replaceChildren(...Object.entries(kinds).map(([value, text]) => new Option(text, value)));
+  $("set-cheap").value = cheap in kinds ? cheap : "";
   $("set-plan").replaceChildren(new Option("Choose", ""), ...plans.map(([name, title]) => new Option(title, name)));
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : "";
 }
@@ -717,7 +714,7 @@ function fillSettings() {
   for (const id of ["set-from", "set-to"]) $(id).replaceChildren(...times.map((time) => new Option(time, time)));
   const own = values.own ?? { from: "22:00", to: "07:00", weekends: "same", high: "", low: "" };
   for (const key of ["from", "to", "weekends", "high", "low"]) $(`set-${key}`).value = own[key];
-  fillPlans(values.own ? "own" : plan ? "plan" : unfinished() ? "" : "same", plan);
+  fillPlans(values.own ? "own" : plan ? "plan" : unfinished() ? "" : "none", plan);
   const zone = values.timezone ?? phone;
   $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
   $("set-zone").value = zones.includes(zone) ? zone : "";
@@ -795,8 +792,8 @@ function formSettings(prices = true) {
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (prices && v("set-time") === "own") lines.push(...ownHours());
-  if (prices && v("set-time") === "plan") lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  if (prices && v("set-cheap") === "own") lines.push(...ownHours());
+  if (prices && v("set-cheap") === "plan") lines.push("tariff:", `  plan: ${v("set-plan")}`);
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
@@ -1068,10 +1065,10 @@ function bind() {
     field.setSelectionRange(caret, caret);
   });
   $("set-area").addEventListener("change", () => {
-    fillPlans($("set-time").value, $("set-plan").value);
+    fillPlans($("set-cheap").value, $("set-plan").value);
     if (unfinished()) guessFromArea();
   });
-  for (const id of ["set-area", "set-price", "set-time", "set-plan"]) $(id).addEventListener("change", requestRender);
+  for (const id of ["set-area", "set-price", "set-cheap", "set-plan"]) $(id).addEventListener("change", requestRender);
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
