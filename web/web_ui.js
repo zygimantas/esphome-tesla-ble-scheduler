@@ -148,7 +148,7 @@ const PAGE = `
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">Car<span class="summary"></span></div>
+    <div class="title">Battery<span class="summary"></span></div>
     <div class="body">
       <p class="note">The board works out how long charging takes from your battery's size and your home charging power. The size is a guess from your car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X. The power is what the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one.</p>
       <p class="note error" hidden></p>
@@ -578,10 +578,10 @@ function vinProblem(vin) {
 }
 
 const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
-// The setup's last step: Key once the settings have prices, else Car.
+// The setup's last step: Key once the settings have prices, else Battery.
 const lastStep = () => (unfinished() ? 4 : 2);
 
-// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which Car asks to check,
+// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which Battery asks to check,
 // as the VIN tells the battery itself only in codes that differ by year and by source.
 const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
 const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
@@ -593,7 +593,7 @@ function pricesProblem() {
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN, Prices and Car
+// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN, Prices and Battery
 // borrow the form's VIN row, its rows from the country to the supplier's part, and the car's two, below their text
 // and above their buttons, which go back to the form after.
 function renderSetup() {
@@ -651,7 +651,7 @@ function renderSetup() {
 
 // Save: on to the next step. VIN's, Validate VIN, checks the VIN and saves it, as the board needs it to find the car,
 // with the guesses, the battery's from the car's model, and no prices yet on a new board; Prices checks the prices,
-// and Car's Finish setup saves them with the car's numbers, which restarts the board. Each says what's wrong on its
+// and Battery's Finish setup saves them with the car's numbers, which restarts the board. Each says what's wrong on its
 // card, and the saves keep the settings the setup doesn't show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
