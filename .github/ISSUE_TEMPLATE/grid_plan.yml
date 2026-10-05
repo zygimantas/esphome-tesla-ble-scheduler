@@ -1,0 +1,33 @@
+body:
+  - attributes:
+      description: The country, or the market area where it has several, like LT or SE3.
+      label: Country or area
+      placeholder: LT
+    id: country
+    type: input
+    validations:
+      required: true
+  - attributes:
+      description: The company your bill names for the grid, not your supplier.
+      label: Grid operator
+    id: operator
+    type: input
+    validations:
+      required: true
+  - attributes:
+      description: Its name as your bill gives it, like a plan, a package or a tariff group.
+      label: Plan
+    id: plan
+    type: input
+    validations:
+      required: true
+  - attributes:
+      description: A link to the operator's page or file with the plan's prices and hours.
+      label: Prices and hours
+    id: prices
+    type: input
+    validations:
+      required: true
+description: A grid operator's plan to add to the page's list
+labels: [enhancement]
+name: Grid plan

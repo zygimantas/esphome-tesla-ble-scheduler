@@ -8,7 +8,7 @@ ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. Wh
 
 ## Example savings
 
-An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on ESO's Standartinis plan with four zones, VAT included.
+An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on a grid plan with four zones, VAT included.
 
 | How it charges | Cost |
 |---|---|
@@ -33,26 +33,30 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
-4. **Enter your car's VIN**: press **Visit Device**, which opens the board's page at the setup's first step. Enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Press **Validate VIN**: the page checks it, and says what's wrong if anything is.
-5. **Put the board next to the car** on the USB charger, and give it a minute to join your Wi-Fi.
-6. **Finish the setup in the car**: sit in the car with your key card and open http://tesla.local on your phone (type the `http://`: browsers try https on their own, which the board doesn't speak). At **Key**, press **Create key**, tap your key card on the console and confirm on the car's screen: once the car answers, the page moves on by itself. Then check the market area and pick your grid plan if the page asks for one, with **Save** after each. The board restarts with the settings, or says what's wrong.
+4. **Open the setup on your phone**: press **Visit Device**. The board's page opens with a QR code: scan it with your phone's camera to open the page there. It also lists what to take to the car.
+5. **Put the board next to the car**: unplug it from the computer, plug it into the USB charger near the car, and give it a minute to join your Wi-Fi.
+6. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If it isn't, open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak).
+   - At **Car**, enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Check the battery's size, guessed from your car's model, and the charging power the Tesla app shows while the car charges at home. Press **Continue**: the page checks the VIN, and says what's wrong if anything is.
+   - At **Key**, press **Continue**, tap your key card on the console and confirm on the car's screen: once the car answers, the page moves on by itself.
+   - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed**, choose your **Contract type**, dynamic or fixed, as your contract says, with its margin or fixed price per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-A new board starts with a 75 kWh battery, 11 kW of charging power, your country's VAT on electricity and the computer's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
+A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
 
 The board installs each new release by itself within a day, while the car isn't charging. **Board** on the page shows the version it runs.
 
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own or a fixed price, upload a settings file with them instead, under **Advanced** in the setup, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
+Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own, tick **My plan isn't listed** in the setup, then upload a settings file with them under **Change settings**, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
-The setup asks only for what the board can't guess. To change any of the settings most people need later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show, and during the setup **Upload settings** is under **Advanced**: rates of your own (see [Tariff](#tariff)), a fixed price, a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
+The setup asks only for what the board can't guess. To change any of the settings most people need later, open **Board** and press **Change settings**. They're a file on the board: **Download settings** and **Upload settings**, under the form, give it to you and take it back, for what the form doesn't show: rates of your own (see [Tariff](#tariff)), a currency of your choice or your own ntfy server. The file is YAML, as in [settings.example.yaml](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/settings.example.yaml): two spaces before the settings under `market:` and `tariff:`, and `#` before a comment.
 
 | Setting | What it is |
 |---|---|
 | `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
+| `fixed_price` | Your supplier's own part of a fixed price per kWh, with VAT and without the grid fees, like `0.12`, without `market:`. The board adds it to your grid plan's fees in every hour, so the costs it shows are complete. Where your supplier quotes one price with the grid fees in, take the supplier's own line on the bill. Leave it out with a monthly average, or with rates of your own that are your whole price. |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
 | `market: margin` | Your supplier's own price per kWh on top of the market price, with VAT, like `0.012`. Leave it out if there's none. |
 | `market: vat` | The VAT added to the market prices: `0.21` is 21%. |
@@ -79,7 +83,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
 - **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT, grid fees and the supplier's price per kWh in `market: margin`, not monthly fees. **Reset savings** starts again from zero.
-- **Factory reset**, under **Board**, erases everything the board keeps: its settings, Wi-Fi, the car's key and savings. It then starts as a new board: set it up again as in [Setup](#setup), skipping **Install**, and remove its old key in the car under **Controls** → **Locks**.
+- **To start over**, install the firmware again with steps 1 to 3 of [Setup](#setup), and let ESPHome Web erase the board when it asks: it forgets its settings, Wi-Fi, the car's key and savings. Then set it up again, and remove its old key in the car under **Controls** → **Locks**.
 
 ### Phone messages
 
@@ -87,9 +91,9 @@ Phone messages are optional, through the ntfy app: install it, subscribe to a to
 
 ## Tariff
 
-The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan: in the example, `lt/eso-standartinis-4-zones`, ESO's Standartinis plan with four zones (Lithuania). Your supplier, like Ignitis or Enefit, usually bills the grid operator's fee unchanged, and its bill names your plan. The board downloads the current plan every day, so new prices reach it without a reinstall. [ESO plans](docs/eso.md) has ESO's other plans, and [Tariff](docs/tariff.md) explains how to change a plan's prices for yourself, or to write your own for another grid operator.
+The `tariff:` part of your settings is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. It names your grid operator's plan, like `lt/eso-standartinis-4-zones` in the example. Your supplier usually bills the grid operator's fee unchanged, and its bill names your plan. Without one, the board picks the hours by the market price alone, and the page says so. The board downloads the current plan every day, so new prices reach it without a reinstall. [Tariff](docs/tariff.md) lists the plans for each country, and explains how to change a plan's prices for yourself, or to write your own for another grid operator.
 
-With a fixed price, leave `market:` out: no market prices are downloaded, and each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
+With a fixed price, or one that follows the monthly average, choose **Fixed** under **Contract type**: the board leaves `market:` out, downloads no market prices and charges by your grid plan's zones. Enter your supplier's own part, without the grid fees, under **Supplier's part**, so what the savings card says charging cost is complete. Where your supplier quotes one price with them in, it's the supplier's own line on the bill: the whole price would count the grid fees twice. With a monthly average, leave it at 0.00: the cost is then only the grid's part, while what it saved is right. Without a plan, every hour costs the same, so the board charges at once, and the page says so. With day and night prices, from your grid operator or your supplier, write your own rates in your settings file and upload it under **Change settings**, as [Tariff](docs/tariff.md) shows. With rates of your own instead of a plan, each rate's price in `tariff:` becomes your whole price per kWh with VAT, the supplier's price included. With one rate for every hour, all hours cost the same, so the board charges at once.
 
 ## Troubleshooting
 

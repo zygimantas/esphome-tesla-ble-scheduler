@@ -134,6 +134,10 @@ details[open] > summary,
 details[open] > summary::after {
   transform: rotate(90deg);
 }
+/* While the board restarts, only the first card, with its status, until the page loads afresh. */
+.restarting main > .card:not(:first-child) {
+  display: none;
+}
 
 /* --- Rows: a label on the left, a value or control on the right --- */
 .row {
@@ -188,7 +192,7 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The setup's steps, a new board's page: the open one shows its fields, a done one what it holds, in a pill --- */
+/* --- The setup's steps, a new board's page: the open one shows its fields, a done one Saved, in a pill --- */
 .summary {
   padding: 3px 8px;
   border-radius: 999px;
@@ -196,7 +200,7 @@ select:disabled {
   color: var(--muted);
   font-size: 12px;
 }
-.setup .card:not(.step, #advanced),
+.setup .card:not(.step, #phone-card),
 .step:not(.open) .body,
 .step:not(.done) .summary {
   display: none;
@@ -207,21 +211,41 @@ select:disabled {
 .step.done {
   cursor: pointer;
 }
-/* A step's title names its field, which takes the width without a label of its own. */
+/* The setup's fields take the width, each under its name, so their choices fit on a phone. */
 .step .row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 0;
+  margin-top: 16px;
   border-top: 0;
 }
 .step .row > span:first-child {
-  display: none;
+  color: var(--muted);
+  font-size: 13px;
 }
-.step :is(.dropdown, input) {
-  flex: 1;
-  min-width: 0;
+.step .row input {
+  width: auto;
   text-align: left;
+}
+/* A box before its words, as in a list of options, in the setup too. */
+.row.check {
+  justify-content: flex-start;
+  gap: 10px;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.step .row.check {
+  flex-direction: row;
+  align-items: center;
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
-input:not([type="file"]) {
+input:not([type="file"], [type="checkbox"]) {
   width: 7em;
   font: inherit;
   text-align: right;
@@ -239,6 +263,11 @@ input.wide {
 :is(#settings-card, .step) select {
   width: 100%;
   text-overflow: ellipsis;
+}
+/* Off in the settings, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
+:is(#settings-card, .step) select:disabled {
+  background: var(--control);
+  -webkit-text-fill-color: var(--muted);
 }
 
 /* --- Buttons, and links that look like one --- */
@@ -314,16 +343,91 @@ button:disabled {
 ol.note {
   padding-left: 20px;
 }
-/* As far below the text as a button below a row, like Create key, and so is VIN's field, without the row's height. */
+/* As far below the text as a button below a row, like Create key. */
 .note + .button,
-.step .note + :is(button, .row) {
+.step .note + button {
   margin-top: 22px;
 }
-.step .note + .row {
+/* A field's hint: a small "?" by its name, which opens the words under the field, with room around it for a finger. */
+.info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   min-height: 0;
+  margin: 0 0 0 6px;
+  padding: 0;
+  color: var(--field);
+  border-color: currentColor; /* the "?" and its box in the fields' border colour, and their rounding at its size */
+  border-radius: 4px;
+  font-size: 12px;
+  vertical-align: middle;
+}
+.info::after {
+  content: "";
+  position: absolute;
+  inset: -13px;
+}
+/* A name with a hint: the "?" at the right end, level with the name. */
+.row > span:has(.info) {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+}
+/* A hint's words, with a thin line at their left in the fields' border grey, as a quote has, 3px short of their top
+   and bottom: a border can't be shorter than its box. */
+.hint {
+  padding-left: 10px;
+  background: linear-gradient(var(--field), var(--field)) left 3px / 1px calc(100% - 6px) no-repeat;
 }
 .error {
   color: var(--red);
+}
+.note a {
+  color: var(--accent);
+}
+
+/* --- The setup on a computer: only the page's address as a QR code for the phone: centred in the page with room
+   around it, without a card's frame, the code black on white in both themes, as cameras read it, 8 px a module --- */
+#phone-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  min-height: calc(100vh - 100px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: center;
+}
+#phone-card .title {
+  margin: 0;
+  font-size: 24px;
+}
+.qr svg {
+  display: block;
+  width: 296px;
+  height: 296px;
+  border-radius: 8px;
+}
+#phone-card .note {
+  max-width: 28em;
+  margin: 0 auto;
+  font-size: 15px;
+}
+/* What to take to the car, a list in the middle with its lines starting together */
+#phone-card ul.note {
+  display: inline-block;
+  padding-left: 20px;
+  text-align: left;
+}
+#phone-card .note + .note {
+  margin-top: 12px;
 }
 
 /* --- Toast --- */

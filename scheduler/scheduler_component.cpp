@@ -236,7 +236,7 @@ void SchedulerComponent::update() {
   }
 
   // The car reports only to a key it knows: its first report shows the key is paired with the car the settings
-  // name, which a factory reset or another VIN undoes.
+  // name, which erasing the board or another VIN undoes.
   const uint32_t vin = fnv1_hash(this->file_.vin);
   if ((this->port_reported_ || car.plugged.has_value()) && this->paired_vin_ != vin) {
     this->paired_vin_ = vin;

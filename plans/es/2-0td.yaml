@@ -1,0 +1,22 @@
+# 2.0TD tolls and charges, prices with VAT: https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-26348
+# The CNMC prints the tolls and the ministry the charges (https://www.boe.es/eli/es/o/2025/12/23/ted1524), without VAT: these are their sum, with 21% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-fri: p3 08:00 p2 10:00 p1 14:00 p2 18:00 p1 22:00 p2
+    sat-sun: p3
+exceptions:
+  01-01: p3
+  01-06: p3
+  05-01: p3
+  08-15: p3
+  10-12: p3
+  11-01: p3
+  12-06: p3
+  12-08: p3
+  12-25: p3
+rates:
+  p1: 0.11804
+  p2: 0.03541
+  p3: 0.00398

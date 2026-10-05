@@ -2,10 +2,6 @@ api:
   encryption:
   reboot_timeout: 0s
 
-button:
-  - name: Factory reset
-    platform: factory_reset
-
 debug:
   update_interval: never
 
