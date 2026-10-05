@@ -373,6 +373,11 @@ ol.note {
   align-items: center;
   justify-content: space-between;
 }
+/* A hint's words, with a line at their left in the "?"'s grey, as a quote has. */
+.hint {
+  padding-left: 10px;
+  border-left: 2px solid var(--field);
+}
 .error {
   color: var(--red);
 }
