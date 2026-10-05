@@ -78,8 +78,8 @@ const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
 const PLAN_LINKS =
   `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for yours</a>, or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
-  "boards get it with the next release. Until then, fees that change with the hour go in a settings file, which " +
-  "Upload settings takes.";
+  "choose it in Change settings, under Board, once a release brings it. Until then, fees that change with the hour " +
+  "can go in a settings file, uploaded there.";
 
 const PAGE = `
 <header class="bar">
@@ -91,6 +91,11 @@ const PAGE = `
   <section class="card">
     <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
     <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
+  </section>
+
+  <section id="plan-card" class="card" hidden>
+    <div class="title">No grid plan</div>
+    <p class="note"><span id="plan-why"></span> ${PLAN_LINKS.replace("ask for yours", "Ask for your plan")}</p>
   </section>
 
   <section id="settings-card" class="card" hidden>
@@ -122,7 +127,7 @@ const PAGE = `
     <button id="save-settings" class="primary">Save</button>
     <button id="cancel-settings">Cancel</button>
     <a id="download-settings" class="button" href="/settings" download="settings.yaml">Download settings</a>
-    <button class="upload">Upload settings</button>
+    <button id="upload-settings">Upload settings</button>
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
@@ -152,10 +157,6 @@ const PAGE = `
       <p class="note error" hidden></p>
     </div>
   </section>
-  <details id="advanced" class="card" hidden>
-    <summary>Advanced</summary>
-    <button class="upload">Upload settings</button>
-  </details>
 
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
@@ -267,6 +268,11 @@ function render() {
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
+  // Without a grid plan or hours of the owner's own: what the board leaves out, and how a plan gets in.
+  $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
+  $("plan-why").textContent = /^market:/m.test(settings.text)
+    ? "Without it, the board picks the hours by the market price alone, without your grid fees."
+    : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
   // Settings the board can't use come first; others open from Board.
   const needed = text(E.status).startsWith("Settings: ");
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
@@ -579,7 +585,10 @@ function vinProblem(vin) {
 // Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
 let batteryTyped = false;
 
-const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
+// Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
+// grid plan.
+const unfinished = () =>
+  settings.text === "" || (settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text));
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
@@ -588,12 +597,6 @@ const lastStep = () => (unfinished() ? 3 : 2);
 // differ by year and by source.
 const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
 const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
-
-// What's wrong with the prices, or "": a fixed price without a grid plan leaves nothing to choose.
-function pricesProblem() {
-  if ($("set-price").value !== "fixed" || gridPlan()) return "";
-  return "With a fixed price, the board needs your grid plan, or your own hours in a settings file, which Upload settings takes.";
-}
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
@@ -613,7 +616,6 @@ function renderSetup() {
   const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
   if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
   document.body.classList.toggle("setup", setup.step > 0);
-  $("advanced").hidden = !setup.step;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
     card.hidden = !setup.step || i + 1 > lastStep();
@@ -661,7 +663,7 @@ function renderSetup() {
 // doesn't show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
-  const problem = { 1: vinProblem(vin), 3: pricesProblem() }[setup.step] ?? "";
+  const problem = setup.step === 1 ? vinProblem(vin) : "";
   const error = document.querySelector(".step.open .error");
   error.textContent = problem;
   error.hidden = !problem;
@@ -826,8 +828,8 @@ function formSettings(prices = true) {
   const currency = CURRENCIES[v("set-area").slice(0, 2)];
   const fixed = prices && v("set-price") === "fixed";
   if (fixed && currency) lines.push(`currency: ${currency}`);
-  // the supplier's fixed price goes on top of a grid plan's fees
-  if (fixed && gridPlan() && Number(v("set-fixed"))) lines.push(`fixed_price: ${v("set-fixed")}`);
+  // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
+  if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
@@ -882,7 +884,6 @@ async function sendSettings(file) {
 // Save: the form's own checks first, as the browser shows them by the field.
 async function saveSettings() {
   $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
-  $("set-price").setCustomValidity(pricesProblem());
   // the shown fields only, as a hidden one can't say what's wrong, and isn't saved
   const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
@@ -1137,9 +1138,8 @@ function bind() {
     fillSettings(); // back to the board's
     requestRender();
   });
-  // Upload settings, under the settings form and the setup's Advanced: a settings file of the user's own.
-  for (const button of document.querySelectorAll(".upload"))
-    button.addEventListener("click", () => $("settings-file").click());
+  // Upload settings, under the settings form: a settings file of the user's own.
+  $("upload-settings").addEventListener("click", () => $("settings-file").click());
   $("settings-file").addEventListener("change", async (e) => {
     const [file] = e.target.files;
     e.target.value = ""; // so the same file can go again
