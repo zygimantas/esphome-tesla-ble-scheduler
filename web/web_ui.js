@@ -77,7 +77,7 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <div><h1>Tesla charging</h1><p>Charges when it's cheapest</p></div>
+  <div><h1>Tesla BLE Scheduler</h1><p>Charges when it's cheapest</p></div>
   <span id="link" class="pill">Connecting …</span>
 </header>
 <main>

@@ -69,21 +69,23 @@ main {
   height: 40px;
   color: var(--accent);
 }
-.bar h1 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.3;
-}
 .bar div {
   min-width: 0;
 }
+.bar h1,
 .bar p {
   margin: 0;
-  font-size: 12px;
-  opacity: 0.75;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.bar h1 {
+  font-size: 16px;
+  line-height: 1.3;
+}
+.bar p {
+  font-size: 12px;
+  opacity: 0.75;
 }
 .pill {
   margin-left: auto;
