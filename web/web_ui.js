@@ -91,8 +91,8 @@ const PAGE = `
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="price-row" class="row"><span>Electricity contract</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
-    <label id="margin-row" class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="fixed-row" class="row"><span>Fixed price per kWh</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
@@ -269,11 +269,17 @@ function render() {
   $("fixed-row").hidden = !fixed || $("set-cheap").value !== "plan";
   for (const id of ["hours-row", "hours2-row", "weekends-row", "high-row", "low-row"])
     $(id).hidden = $("set-cheap").value !== "own";
-  $("high-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, other hours`;
-  $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
+  // the prices' names, with their unit, in the currency they're in
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
-  for (const id of ["set-margin", "set-fixed", "set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
+  const names = {
+    margin: "Supplier's margin",
+    fixed: "Fixed price",
+    high: `${fixed ? "Price" : "Grid fee"}, other hours`,
+    low: `${fixed ? "Price" : "Grid fee"}, cheaper hours`,
+  };
+  for (const [row, name] of Object.entries(names))
+    $(`${row}-row`).firstElementChild.textContent = `${name} (${currency} with VAT per kWh)`;
   $("cancel-settings").hidden = needed;
 }
 
@@ -783,7 +789,7 @@ function fillSettings() {
   $("set-zone").value = known ? zone : "";
   const vat = values["market: vat"];
   $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
-  $("set-margin").value = values["market: margin"] ?? "";
+  $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "";
   $("set-vin").value = values.tesla_vin ?? "";
   $("set-battery").value = values.tesla_battery_kwh ?? 75;
@@ -855,7 +861,7 @@ function formSettings(prices = true) {
   if (fixed && v("set-cheap") === "plan" && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
-    if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
+    if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
