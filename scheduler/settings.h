@@ -72,7 +72,7 @@ inline float number(const std::string &text) {
 }
 
 // Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
-// or not, with the tariff: block as docs/tariff.md has it and the plans built in. Returns what's wrong, or "".
+// or not, with the tariff: block as plans/README.md has it and the plans built in. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
@@ -151,7 +151,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       if (upper(area) == known.name)
         read.area = &known;
     if (read.area == nullptr)
-      return "market: area must be one the board knows, like LT or SE3: see Countries";
+      return "market: area must be one the board knows, like LT or SE3: see Countries and plans";
     read.vat = number(vat);
     if (!(read.vat >= 0.0f && read.vat < 1.0f))
       return "market: vat must be the VAT as a fraction, like 0.21 for 21%";

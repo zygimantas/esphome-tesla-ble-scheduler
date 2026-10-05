@@ -43,10 +43,10 @@ An apartment here is a home in a building where at least three share one connect
 
 The hours follow the clock, summer time included.
 
-The plans leave out the monthly fees and what's the same every hour: the energy tax (45 öre per kWh with VAT in 2026, 12 öre less in some northern municipalities) and the authority fees. Göteborg Energi's House and Tidsindelad and Tekniska verken's Standard and Alternativ also charge for your highest power in kW, Tidsindelad only on weekdays from 07:00 to 20:00 from November to March. The board doesn't count that yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)): [Countries](../../docs/countries.md#grid-fees) says what to do until it does. Öresundskraft adds 5.57% of the month's average market price in SE4 to its fee per kWh, and Kraftringen 5% of each hour's: the plans leave them out, as neither changes which hours are cheapest.
+The plans leave out the monthly fees and what's the same every hour: the energy tax (45 öre per kWh with VAT in 2026, 12 öre less in some northern municipalities) and the authority fees. Göteborg Energi's House and Tidsindelad and Tekniska verken's Standard and Alternativ also charge for your highest power in kW, Tidsindelad only on weekdays from 07:00 to 20:00 from November to March. The board doesn't count that yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)): [Grid fees](../README.md#grid-fees) says what to do until it does. Öresundskraft adds 5.57% of the month's average market price in SE4 to its fee per kWh, and Kraftringen 5% of each hour's: the plans leave them out, as neither changes which hours are cheapest.
 
-If your company or subscription isn't here, like a subscription over 63 A, write your own tariff, as [Tariff](../../docs/tariff.md) says.
+If your company or subscription isn't here, like a subscription over 63 A, write your own tariff, as [Your own tariff](../README.md#your-own-tariff) says.
 
 Each network company sets its own prices, within a limit set by the Energy Markets Inspectorate (Ei). Most change them on 1 January, some also during the year. E.ON's three areas move to one price list by 1 January 2028.
 
-[Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.

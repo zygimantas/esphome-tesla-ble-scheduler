@@ -35,6 +35,6 @@ The plans count the energy fee (energiledd) per kWh. They leave out the capacity
 
 With Norgespris, your power costs 50 øre/kWh with VAT whatever the market does, or 40 øre where there's no VAT, until the end of 2026. Choose **Fixed** on the page, with that price and your supplier's margin together as the supplier's part: the plan's night hours then make the cheap hours.
 
-For another network company, write your own tariff with its day and night fees, as [Tariff](../../docs/tariff.md) says.
+For another network company, write your own tariff with its day and night fees, as [Your own tariff](../README.md#your-own-tariff) says.
 
-Each network company sets its own fees, within the income the regulator, RME, allows it. They change every January and often in the middle of the year too, at 14 days' notice. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+Each network company sets its own fees, within the income the regulator, RME, allows it. They change every January and often in the middle of the year too, at 14 days' notice. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.

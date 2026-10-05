@@ -23,4 +23,4 @@ tariff:
 
 The hours follow the clock, summer time included. The plans leave out the monthly fee and the charges that are the same every hour: the renewable energy fee, the electricity excise and the security of supply fee.
 
-[Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
