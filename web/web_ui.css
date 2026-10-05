@@ -207,16 +207,8 @@ select:disabled {
 .step.done {
   cursor: pointer;
 }
-/* VIN's title names its field, which takes the width without a label of its own. */
-.step #vin-row > span:first-child {
-  display: none;
-}
-.step #vin-row input {
-  flex: 1;
-  text-align: left;
-}
-/* Prices' fields take the width too, each under its name, so their choices fit on a phone. */
-.step .row:not(#vin-row) {
+/* The setup's fields take the width, each under its name, so their choices fit on a phone. */
+.step .row {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
@@ -224,11 +216,11 @@ select:disabled {
   margin-top: 16px;
   border-top: 0;
 }
-.step .row:not(#vin-row) > span:first-child {
+.step .row > span:first-child {
   color: var(--muted);
   font-size: 13px;
 }
-.step .row:not(#vin-row) input {
+.step .row input {
   width: auto;
   text-align: left;
 }
@@ -243,7 +235,7 @@ input[type="checkbox"] {
   margin: 0;
   accent-color: var(--accent);
 }
-.step .row.check:not(#vin-row) {
+.step .row.check {
   flex-direction: row;
   align-items: center;
 }
@@ -347,17 +339,31 @@ button:disabled {
 ol.note {
   padding-left: 20px;
 }
-/* As far below the text as a button below a row, like Create key, and so is VIN's field, without the row's height. */
+/* As far below the text as a button below a row, like Create key. */
 .note + .button,
-.step .note + :is(button, #vin-row) {
+.step .note + button {
   margin-top: 22px;
 }
-.step .note + #vin-row {
+/* A field's hint: a small "i" by its name, which opens the words under the field, with room around it for a finger. */
+.info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
   min-height: 0;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border-color: var(--accent);
+  border-radius: 50%;
+  font-size: 12px;
+  vertical-align: middle;
 }
-/* Below the VIN's field, the battery's note keeps the same distance. */
-.step #vin-row + .note {
-  margin-top: 22px;
+.info::after {
+  content: "";
+  position: absolute;
+  inset: -13px;
 }
 .error {
   color: var(--red);

@@ -96,7 +96,8 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <label id="vin-row" class="row"><span>VIN<button type="button" class="info" data-hint="vin-hint" aria-label="About the VIN" aria-expanded="false">i</button></span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <p id="vin-hint" class="note" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
     <label id="area-row" class="row"><span>Country / Area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
@@ -105,8 +106,10 @@ const PAGE = `
     <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="battery-row" class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
-    <label id="power-row" class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label id="battery-row" class="row"><span>Battery (kWh)<button type="button" class="info" data-hint="battery-hint" aria-label="About the battery" aria-expanded="false">i</button></span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <p id="battery-hint" class="note" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
+    <label id="power-row" class="row"><span>Charging power (kW)<button type="button" class="info" data-hint="power-hint" aria-label="About the charging power" aria-expanded="false">i</button></span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <p id="power-hint" class="note" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
@@ -122,8 +125,6 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Tesla<span class="summary"></span></div>
     <div class="body">
-      <p class="note">The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-      <p id="battery-note" class="note">The battery's size and your home charging power tell the board how long charging takes. The size is a guess from your car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X. The power is what the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -617,6 +618,7 @@ function renderSetup() {
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
   const names = [
     "vin-row",
+    "vin-hint",
     "area-row",
     "plan-row",
     "unlisted-row",
@@ -626,13 +628,13 @@ function renderSetup() {
     "margin-row",
     "fixed-row",
     "battery-row",
+    "battery-hint",
     "power-row",
+    "power-hint",
   ];
   const rows = names.map($);
-  // each before its place: the VIN above the battery's note, the battery and the power below it, the prices in Prices
-  const places = rows.map((row) =>
-    row.id === "vin-row" ? $("battery-note") : steps[row.id.match(/^(battery|power)-/) ? 0 : 2].querySelector(".error"),
-  );
+  // each before its step's error: the car's fields, with their hints, in Tesla, the prices in Prices
+  const places = rows.map((row) => steps[/^(vin|battery|power)-/.test(row.id) ? 0 : 2].querySelector(".error"));
   if (setup.step) {
     for (const [i, row] of rows.entries()) if (row.parentNode !== places[i].parentNode) places[i].before(row);
   } else if (rows[0].parentNode !== $("settings-card")) {
@@ -1081,6 +1083,13 @@ function bind() {
     if (setup.step && !batteryTyped && field.value.length === 17) $("set-battery").value = batteryOf(field.value);
   });
   $("set-battery").addEventListener("input", () => (batteryTyped = true));
+  for (const button of document.querySelectorAll(".info"))
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      const hint = $(button.dataset.hint);
+      hint.hidden = !hint.hidden;
+      button.setAttribute("aria-expanded", String(!hint.hidden));
+    });
   // another country's plans, with its only one chosen
   $("set-area").addEventListener("change", () => {
     fillPlans();
