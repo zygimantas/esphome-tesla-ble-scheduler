@@ -86,7 +86,7 @@ const PAGE = `
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">Key<span class="summary">Paired</span></div>
+    <div class="title">Key<span class="summary"></span></div>
     <div class="body">
       <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Save works once the car answers.</p>
       <button id="pair-now">Pair BLE key</button>
@@ -100,6 +100,11 @@ const PAGE = `
     <div class="title">Grid plan<span class="summary"></span></div>
     <div class="body"></div>
   </section>
+  <details id="advanced" class="card" hidden>
+    <summary>Advanced</summary>
+    <button class="restart danger">Restart board</button>
+    <button class="factory-reset danger">Factory reset</button>
+  </details>
 
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
@@ -139,7 +144,7 @@ const PAGE = `
     <button id="change-settings">Change settings</button>
     <button id="pair">Pair BLE key</button>
     <button class="restart danger">Restart board</button>
-    <button id="factory-reset" class="danger">Factory reset</button>
+    <button class="factory-reset danger">Factory reset</button>
   </details>
 
   <div id="toast" class="toast" role="status"></div>
@@ -150,8 +155,9 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 4, or 0; and, after its last step saved the settings, that the board hasn't got them yet.
-const setup = { step: 0, saving: false };
+// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; and, after its
+// last step saved the settings, that the board hasn't got them yet.
+const setup = { step: 0, reached: 0, saving: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -488,17 +494,24 @@ const lastStep = () => (!unfinished() ? 2 : $("plan-row").hidden ? 3 : 4);
 // borrow the form's VIN, market area and grid plan rows, which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
-  if (settings.text === null || !(unfinished() || unpaired)) setup.step = 0;
-  else if (!setup.step && !setup.saving) setup.step = settings.text === "" ? 1 : unpaired ? 2 : 3;
+  if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
+  else if (!setup.step && !setup.saving) setup.step = setup.reached = settings.text === "" ? 1 : unpaired ? 2 : 3;
+  if (unpaired) {
+    // a key the car doesn't know closes the steps after Key
+    setup.reached = Math.min(setup.reached, 2);
+    setup.step = Math.min(setup.step, setup.reached);
+  }
   document.body.classList.toggle("setup", setup.step > 0);
+  $("advanced").hidden = !setup.step;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
     card.hidden = !setup.step || i + 1 > lastStep();
     card.classList.toggle("open", i + 1 === setup.step);
-    card.classList.toggle("done", i + 1 < setup.step);
+    card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
     card.querySelector(".back").hidden = i === 0;
   }
   steps[1].querySelector(".save").disabled = unpaired || settings.text === "";
+  steps[1].querySelector(".summary").textContent = unpaired ? "" : "Paired";
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
   if (setup.step) {
@@ -526,6 +539,7 @@ async function nextStep() {
   }
   if (setup.step < lastStep()) {
     setup.step += 1;
+    setup.reached = Math.max(setup.reached, setup.step);
     return requestRender();
   }
   const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
@@ -842,11 +856,12 @@ function duration(seconds) {
 // --- Start -----------------------------------------------------------------
 
 // A button that asks first, then presses the board's button.
-function confirmPress(elementId, entity, message, question) {
-  press($(elementId), async () => {
-    if (!confirm(question)) return;
-    if (await post(entity, "press")) toast(message);
-  });
+function confirmPress(selector, entity, message, question) {
+  for (const button of document.querySelectorAll(selector))
+    press(button, async () => {
+      if (!confirm(question)) return;
+      if (await post(entity, "press")) toast(message);
+    });
 }
 
 function bind() {
@@ -857,19 +872,19 @@ function bind() {
   press($("delete-schedule"), () => stopCharging("Schedule deleted"));
   press($("stop-charging"), () => stopCharging("Charging stopped"));
   confirmPress(
-    "pair",
+    "#pair",
     E.pair,
     "Pairing started: tap your key card",
     "Pair a new key? Sit in the car and tap your key card on the console when asked.",
   );
   confirmPress(
-    "reset-savings",
+    "#reset-savings",
     E.resetSavings,
     "Savings reset",
     "Reset the savings? They start again from zero today.",
   );
   confirmPress(
-    "factory-reset",
+    ".factory-reset",
     E.factoryReset,
     "Erasing: the board restarts as new",
     "Erase the board's settings, Wi-Fi, car key and savings? It restarts as a new board, without Wi-Fi.",
@@ -882,20 +897,23 @@ function bind() {
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
   });
-  for (const card of document.querySelectorAll(".step")) {
+  for (const [i, card] of document.querySelectorAll(".step").entries()) {
+    // a card the setup got to before opens with a click
+    card.addEventListener("click", () => {
+      if (!card.classList.contains("done")) return;
+      setup.step = i + 1;
+      requestRender();
+    });
     card
       .querySelector(".body")
-      .insertAdjacentHTML(
-        "beforeend",
-        '<button class="primary save">Save</button><button class="back">Back</button><button class="restart danger">Restart board</button>',
-      );
+      .insertAdjacentHTML("beforeend", '<button class="primary save">Save</button><button class="back">Back</button>');
     press(card.querySelector(".save"), nextStep);
     card.querySelector(".back").addEventListener("click", () => {
       setup.step -= 1;
       requestRender();
     });
   }
-  // Restart board, under Board and on each step of the setup: the page reconnects soon after, rather than when the
+  // Restart board, under Board and the setup's Advanced: the page reconnects soon after, rather than when the
   // browser would.
   for (const button of document.querySelectorAll(".restart"))
     press(button, async () => {
