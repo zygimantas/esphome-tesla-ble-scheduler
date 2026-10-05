@@ -88,7 +88,7 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
@@ -109,12 +109,13 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">VIN<span class="summary"></span></div>
     <div class="body">
-      <p class="note">On the car's screen under Controls → Software, or at the bottom of the Tesla app's home screen.</p>
+      <p class="note">The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
     </div>
   </section>
   <section class="card step" hidden>
     <div class="title">Key<span class="summary"></span></div>
     <div class="body">
+      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it can't unlock or drive the car, and you can remove it in the car under Controls → Locks.</p>
       <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Save works once the car answers.</p>
       <button id="pair-now">Pair BLE key</button>
     </div>
@@ -519,7 +520,8 @@ const lastStep = () => (!unfinished() ? 2 : $("plan-row").hidden ? 3 : 4);
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and what they hold, later ones show only their titles. Steps 1, 3 and 4
-// borrow the form's VIN, market area and grid plan rows, which go back to the form after.
+// borrow the form's VIN, market area and grid plan rows, below their text and above their buttons, which go back to
+// the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -543,7 +545,7 @@ function renderSetup() {
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
   if (setup.step) {
-    for (const [i, row] of rows.entries()) if (row.parentNode !== homes[i]) homes[i].prepend(row);
+    for (const [i, row] of rows.entries()) if (row.parentNode !== homes[i]) homes[i].querySelector(".save").before(row);
   } else if (rows[0].parentNode !== $("settings-card")) {
     $("set-battery")
       .closest("label")
