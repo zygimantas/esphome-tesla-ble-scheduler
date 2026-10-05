@@ -154,13 +154,16 @@ select:disabled {
   letter-spacing: 0;
   text-transform: none;
 }
-.setup .card:not(.step),
+.setup .card:not(.step, #advanced),
 .step:not(.open) .body,
 .step:not(.done) .summary {
   display: none;
 }
 .step:not(.open, .done) .title {
   opacity: 0.5;
+}
+.step.done {
+  cursor: pointer;
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
