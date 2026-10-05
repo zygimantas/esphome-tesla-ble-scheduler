@@ -24,7 +24,6 @@ const E = {
   chargeNow: "button/Start charging now",
   charging: "text_sensor/Charging",
   createSchedule: "button/Create schedule",
-  factoryReset: "button/Factory reset",
   limit: "number/Charging Limit",
   mode: "text_sensor/Charging mode",
   pair: "button/Pair BLE Key",
@@ -156,8 +155,6 @@ const PAGE = `
   <details id="advanced" class="card" hidden>
     <summary>Advanced</summary>
     <button class="upload">Upload settings</button>
-    <button class="restart danger">Restart board</button>
-    <button class="factory-reset danger">Factory reset</button>
   </details>
 
   <section id="target-card" class="card">
@@ -198,7 +195,6 @@ const PAGE = `
     <button id="change-settings">Change settings</button>
     <button id="pair">Create key</button>
     <button class="restart danger">Restart board</button>
-    <button class="factory-reset danger">Factory reset</button>
   </details>
 
   <div id="toast" class="toast" role="status"></div>
@@ -1070,12 +1066,6 @@ function bind() {
     "Savings reset",
     "Reset the savings? They start again from zero today.",
   );
-  confirmPress(
-    ".factory-reset",
-    E.factoryReset,
-    "Erasing: the board restarts as new",
-    "Erase the board's settings, Wi-Fi, car key and savings? It restarts as a new board, without Wi-Fi.",
-  );
   // The VIN field takes only what a VIN can hold, as it's typed or pasted: capitals and digits, I, O and Q as the 1
   // and 0 they're taken for, as no VIN has them, and no more than 17. The caret stays where it was.
   $("set-vin").addEventListener("input", (e) => {
@@ -1128,8 +1118,7 @@ function bind() {
     body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
     press(body.querySelector(".save"), nextStep);
   }
-  // Restart board, under Board and the setup's Advanced: the page reconnects soon after, rather than when the
-  // browser would.
+  // Restart board, under Board: the page reconnects soon after, rather than when the browser would.
   for (const button of document.querySelectorAll(".restart"))
     press(button, async () => {
       if (!confirm("Restart the board?")) return;
