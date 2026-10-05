@@ -128,7 +128,7 @@ const PAGE = `
   </section>
 
   <section class="card step" hidden>
-    <div class="title">Tesla<span class="summary"></span></div>
+    <div class="title">Tesla<span class="summary">Saved</span></div>
     <div class="body">
       <p class="note error" hidden></p>
     </div>
@@ -623,6 +623,7 @@ function renderSetup() {
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
+  steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
   const names = [
     "vin-row",
     "vin-hint",
@@ -654,20 +655,11 @@ function renderSetup() {
       .closest("label")
       .before(...rows);
   }
-  // what a done step holds, each in a pill
-  const summary = (step, values) =>
-    step
-      .querySelector(".summary")
-      .replaceChildren(
-        ...values.filter(Boolean).map((value) => Object.assign(document.createElement("span"), { textContent: value })),
-      );
-  const battery = $("set-battery").value;
-  const power = $("set-power").value;
-  summary(steps[0], [$("set-vin").value.toUpperCase(), battery && `${battery} kWh`, power && `${power} kW`]);
-  summary(steps[1], [unpaired ? "" : "Created"]);
   const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
   const plan = gridPlan() && $("set-plan").selectedOptions[0].text;
-  summary(steps[2], [[$("set-area").selectedOptions[0]?.text, plan, price].filter(Boolean).join(" · ")]);
+  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, plan, price]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 // Save: on to the next step. Tesla's Continue checks the VIN and saves it with the battery and the power, as the board

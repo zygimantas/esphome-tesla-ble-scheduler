@@ -188,20 +188,8 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The setup's steps, a new board's page: the open one shows its fields, a done one what it holds, in pills --- */
-/* The pills go under the title together, still at the right, where they don't fit beside it on a phone. */
-.step .title {
-  flex-wrap: wrap;
-  row-gap: 6px;
-}
+/* --- The setup's steps, a new board's page: the open one shows its fields, a done one what it holds, in a pill --- */
 .summary {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-left: auto;
-}
-.summary > span {
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--control);
