@@ -423,9 +423,11 @@ ol.note {
 /* What to take to the car, a list in the middle with its lines starting together */
 #phone-card ul.note {
   display: inline-block;
-  margin-top: 12px;
   padding-left: 20px;
   text-align: left;
+}
+#phone-card .note + .note {
+  margin-top: 12px;
 }
 
 /* --- Toast --- */

@@ -141,8 +141,8 @@ const PAGE = `
         <li>The board</li>
         <li>A USB charger and cable for it</li>
         <li>Your Tesla key card</li>
-        <li>Your electricity bill, for the grid plan and prices</li>
       </ul>
+      <p class="note">Make sure you know your grid plan, and whether your electricity contract is dynamic or fixed, with its margin or price per kWh.</p>
     </div>
   </section>
   <section class="card step" hidden>
