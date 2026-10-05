@@ -1072,8 +1072,12 @@ function bind() {
     field.value = vin(field.value).slice(0, 17);
     field.setSelectionRange(caret, caret);
   });
+  // Another country keeps the cheaper hours chosen, but a default follows the country: the grid plan where it has
+  // plans, else none.
   $("set-area").addEventListener("change", () => {
-    fillPlans($("set-cheap").value, $("set-plan").value);
+    const cheap = $("set-cheap").value;
+    const fallback = [...$("set-cheap").options].some((option) => option.value === "plan") ? "plan" : "none";
+    fillPlans(cheap === fallback ? "" : cheap, $("set-plan").value);
     if (unfinished()) guessFromArea();
   });
   for (const id of ["set-area", "set-price", "set-cheap", "set-plan"]) $(id).addEventListener("change", requestRender);
