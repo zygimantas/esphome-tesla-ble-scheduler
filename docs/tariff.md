@@ -64,7 +64,7 @@ If something is wrong, the board keeps the settings it has and says what when yo
 
 ## A fixed price
 
-Leave `market:` out: no market prices are downloaded. With your grid operator's plan, add your supplier's price as `fixed_price`, which the board adds to every hour:
+Leave `market:` out: no market prices are downloaded. With your grid operator's plan, add your supplier's own part, without the grid fees, as `fixed_price`, which the board adds to the plan's fees in every hour. Where one price includes the grid fees, like Ignitis's, it's the supplier's own line on the bill:
 
 ```yaml
 fixed_price: 0.15

@@ -261,11 +261,13 @@ function render() {
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
   $("fixed-row").hidden = !fixed || !gridPlan();
-  // the prices' names, with their unit, in the currency they're in
+  // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
+  // grid plan's fees, so it's without them, even where the supplier quotes one price with them in, like Ignitis
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
-  for (const [row, name] of Object.entries({ margin: "Supplier's margin", fixed: "Fixed price" }))
-    $(`${row}-row`).firstElementChild.textContent = `${name} (${currency} with VAT per kWh)`;
+  const unit = `${currency} with VAT per kWh`;
+  $("margin-row").firstElementChild.textContent = `Supplier's margin (${unit})`;
+  $("fixed-row").firstElementChild.textContent = `Supplier's part (${unit}, without grid fees)`;
   $("cancel-settings").hidden = needed;
 }
 

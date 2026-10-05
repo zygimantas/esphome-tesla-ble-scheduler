@@ -45,7 +45,7 @@ struct SettingsFile {
   std::string currency;        // of the market prices and the tariff
   const Area *area = nullptr;  // null without market prices
   float vat = 0.0f;            // on the market prices
-  float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed price
+  float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed part
   std::string ntfy_server = "https://ntfy.sh";
   std::string ntfy_topic;      // empty: no phone messages
   std::string plan;            // the plan's name, empty without one
@@ -159,7 +159,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     if (!(read.margin >= 0.0f && read.margin < MAX_PRICE))
       return "market: margin must be a price per kWh, like 0.012";
   }
-  // A fixed price is the supplier's whole price, which the board adds to every quarter-hour as it does a margin.
+  // A fixed price's supplier part, without the grid fees, which the board adds to every quarter-hour like a margin.
   if (!fixed.empty()) {
     if (read.area != nullptr)
       return "fixed_price goes without market:; on top of a market price, use market: margin";
