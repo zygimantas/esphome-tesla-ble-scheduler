@@ -89,8 +89,8 @@ const PAGE = `
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
-    <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <label id="price-row" class="row"><span>Electricity contract</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+    <label id="area-row" class="row"><span>Country / Area</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
