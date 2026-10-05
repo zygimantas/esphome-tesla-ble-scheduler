@@ -88,7 +88,7 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
@@ -954,6 +954,19 @@ function bind() {
     "Erasing: the board restarts as new",
     "Erase the board's settings, Wi-Fi, car key and savings? It restarts as a new board, without Wi-Fi.",
   );
+  // The VIN field takes only what a VIN can hold, as it's typed or pasted: capitals and digits, I, O and Q as the 1
+  // and 0 they're taken for, as no VIN has them, and no more than 17. The caret stays where it was.
+  $("set-vin").addEventListener("input", (e) => {
+    const field = e.target;
+    const vin = (text) =>
+      text
+        .toUpperCase()
+        .replace(/[IOQ]/g, (c) => (c === "I" ? "1" : "0"))
+        .replace(/[^A-Z0-9]/g, "");
+    const caret = vin(field.value.slice(0, field.selectionStart)).length;
+    field.value = vin(field.value).slice(0, 17);
+    field.setSelectionRange(caret, caret);
+  });
   $("set-area").addEventListener("change", () => {
     fillPlans($("set-plan").value);
     if (unfinished()) guessFromArea();
