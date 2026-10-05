@@ -260,7 +260,7 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
-  $("fixed-row").hidden = !fixed || !gridPlan();
+  $("fixed-row").hidden = !fixed;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
   const country = $("set-area").value.slice(0, 2);
