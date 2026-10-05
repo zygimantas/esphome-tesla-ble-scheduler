@@ -315,10 +315,13 @@ button:disabled {
 ol.note {
   padding-left: 20px;
 }
-/* As far below the text as a button below a row, like Pair BLE key. */
+/* As far below the text as a button below a row, like Create key, and so is VIN's field, without the row's height. */
 .note + .button,
-.step .note + button {
+.step .note + :is(button, .row) {
   margin-top: 22px;
+}
+.step .note + .row {
+  min-height: 0;
 }
 .error {
   color: var(--red);
