@@ -132,7 +132,7 @@ const PAGE = `
   </section>
 
   <section class="card step" hidden>
-    <div class="title">Vehicle<span class="summary">Saved</span></div>
+    <div class="title">Car<span class="summary">Saved</span></div>
     <div class="body">
       <p class="note error" hidden></p>
     </div>
@@ -605,7 +605,7 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
-// the setup), later ones show only their titles. Vehicle and Prices borrow the form's rows, the VIN, battery and power
+// the setup), later ones show only their titles. Car and Prices borrow the form's rows, the VIN, battery and power
 // and those from the country to the supplier's part, around their notes and above their buttons, and give them back
 // to the form after.
 function renderSetup() {
@@ -651,7 +651,7 @@ function renderSetup() {
     "power-hint",
   ];
   const rows = names.map($);
-  // each before its step's error: the car's fields, with their hints, in Vehicle, the prices in Prices
+  // each before its step's error: the car's fields, with their hints, in Car, the prices in Prices
   const places = rows.map((row) => steps[/^(vin|battery|power)-/.test(row.id) ? 0 : 2].querySelector(".error"));
   if (setup.step) {
     for (const [i, row] of rows.entries()) if (row.parentNode !== places[i].parentNode) places[i].before(row);
@@ -662,10 +662,10 @@ function renderSetup() {
   }
 }
 
-// Save: on to the next step. Vehicle's Continue checks the VIN and saves it with the battery and the power, as the
-// board needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Finish saves the
-// prices, which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup
-// doesn't show.
+// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power, as the board
+// needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Finish saves the prices,
+// which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup doesn't
+// show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
   const problem = setup.step === 1 ? vinProblem(vin) : "";
