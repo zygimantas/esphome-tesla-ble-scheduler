@@ -140,11 +140,11 @@ const PAGE = `
       <ol class="note">
         <li>Make sure the board is plugged into a USB charger next to the car.</li>
         <li>Sit in the car with your Tesla key card.</li>
-        <li>Press Create key button below.</li>
+        <li>Press Continue below.</li>
         <li>Tap the Tesla key card on the console.</li>
         <li>Confirm on the car's screen.</li>
       </ol>
-      <button id="pair-now" class="primary">Create key</button>
+      <button id="pair-now" class="primary">Continue</button>
     </div>
   </section>
   <section class="card step" hidden>
