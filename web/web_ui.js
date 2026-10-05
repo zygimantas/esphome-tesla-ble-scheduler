@@ -105,8 +105,8 @@ const PAGE = `
     <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
-    <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label id="battery-row" class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <label id="power-row" class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
@@ -144,6 +144,13 @@ const PAGE = `
     <div class="title">Prices<span class="summary"></span></div>
     <div class="body">
       <p class="note">Your bill has two parts: the grid operator's fee for bringing the electricity and the supplier's price for it. Your bill names your grid plan, and your contract says whether the supplier's price is dynamic or fixed. The board charges when the two together cost the least.</p>
+      <p class="note error" hidden></p>
+    </div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">Car<span class="summary"></span></div>
+    <div class="body">
+      <p class="note">The board works out how long charging takes from your battery's size and your home charging power. The size is a guess from your car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X. The power is what the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -203,7 +210,7 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; after its last
+// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; after its last
 // step saved the settings, that the board hasn't got them yet; and that a step was opened by hand, which keeps Key
 // from moving on by itself.
 const setup = { step: 0, reached: 0, saving: false, stay: false };
@@ -571,8 +578,13 @@ function vinProblem(vin) {
 }
 
 const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
-// The setup's last step: Key once the settings have prices, else Prices.
-const lastStep = () => (unfinished() ? 3 : 2);
+// The setup's last step: Key once the settings have prices, else Car.
+const lastStep = () => (unfinished() ? 4 : 2);
+
+// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which Car asks to check,
+// as the VIN tells the battery itself only in codes that differ by year and by source.
+const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
+const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 
 // What's wrong with the prices, or "": a fixed price without a grid plan leaves nothing to choose.
 function pricesProblem() {
@@ -581,9 +593,9 @@ function pricesProblem() {
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN and Prices
-// borrow the form's VIN row and its rows from the country to the grid plan's note, below their text and above
-// their buttons, which go back to the form after.
+// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN, Prices and Car
+// borrow the form's VIN row, its rows from the country to the supplier's part, and the car's two, below their text
+// and above their buttons, which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -615,14 +627,16 @@ function renderSetup() {
     "price-row",
     "margin-row",
     "fixed-row",
+    "battery-row",
+    "power-row",
   ];
   const rows = names.map($);
-  const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
+  const homes = rows.map((_, i) => steps[i === 0 ? 0 : i < rows.length - 2 ? 2 : 3].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
       if (row.parentNode !== homes[i]) homes[i].querySelector(".error, .save").before(row);
   } else if (rows[0].parentNode !== $("settings-card")) {
-    $("set-battery")
+    $("set-vat")
       .closest("label")
       .before(...rows);
   }
@@ -632,13 +646,16 @@ function renderSetup() {
   steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, plan, price]
     .filter(Boolean)
     .join(" · ");
+  steps[3].querySelector(".summary").textContent = `${$("set-battery").value} kWh · ${$("set-power").value} kW`;
 }
 
 // Save: on to the next step. VIN's, Validate VIN, checks the VIN and saves it, as the board needs it to find the car,
-// with the guesses and no prices yet on a new board; Prices saves the prices, which restarts the board. Both say
-// what's wrong on their card, and keep the settings the setup doesn't show.
+// with the guesses, the battery's from the car's model, and no prices yet on a new board; Prices checks the prices,
+// and Car's Finish setup saves them with the car's numbers, which restarts the board. Each says what's wrong on its
+// card, and the saves keep the settings the setup doesn't show.
 async function nextStep() {
-  const problem = setup.step === 1 ? vinProblem($("set-vin").value.trim().toUpperCase()) : pricesProblem();
+  const vin = $("set-vin").value.trim().toUpperCase();
+  const problem = { 1: vinProblem(vin), 3: pricesProblem() }[setup.step] ?? "";
   const error = document.querySelector(".step.open .error");
   error.textContent = problem;
   error.hidden = !problem;
@@ -646,8 +663,10 @@ async function nextStep() {
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
-  if (setup.step === 1 && $("set-vin").value.trim().toUpperCase() !== readSettings(settings.text).values.tesla_vin) {
+  const { values } = readSettings(settings.text);
+  if (setup.step === 1 && vin !== values.tesla_vin) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
+    if (!values.tesla_battery_kwh) $("set-battery").value = batteryOf(vin);
     if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(["tesla_vin"])))) return;
   }
   if (setup.step < lastStep()) {
@@ -656,7 +675,8 @@ async function nextStep() {
     setup.stay = false;
     return requestRender();
   }
-  const file = unfinished() ? withForm(["currency", "fixed_price", "market", "tariff", "timezone"]) : settings.text;
+  const keys = ["currency", "fixed_price", "market", "tariff", "tesla_battery_kwh", "tesla_charging_kw", "timezone"];
+  const file = unfinished() ? withForm(keys) : settings.text;
   if (file !== settings.text && !(await sendSettings(file))) return;
   setup.saving = file !== settings.text;
   setup.step = 0;
@@ -1083,7 +1103,8 @@ function bind() {
     // Key has only Create key, as it moves on once the car answers; the steps before open with a click instead of Back
     if (i === 1) continue;
     const body = card.querySelector(".body");
-    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Set prices" : "Validate VIN"}</button>`);
+    const label = ["Validate VIN", "", "Set prices", "Finish setup"][i];
+    body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
     press(body.querySelector(".save"), nextStep);
   }
   // Restart board, under Board and the setup's Advanced: the page reconnects soon after, rather than when the
