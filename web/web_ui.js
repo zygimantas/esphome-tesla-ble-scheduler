@@ -90,11 +90,11 @@ const PAGE = `
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country / Area</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <p id="plans-note" class="note">No grid plans here yet: fees that change with the hour go in a settings file, which Upload settings takes.</p>
     <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <p id="plans-note" class="note">No grid plans here yet: fees that change with the hour go in a settings file, which Upload settings takes.</p>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
@@ -133,7 +133,7 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Prices<span class="summary"></span></div>
     <div class="body">
-      <p class="note">Your bill has two parts: the supplier's price for the electricity and the grid operator's fee for bringing it. Your contract says whether that price is dynamic or fixed, and your bill names your grid plan. The board charges when the two together cost the least.</p>
+      <p class="note">Your bill has two parts: the grid operator's fee for bringing the electricity and the supplier's price for it. Your bill names your grid plan, and your contract says whether the supplier's price is dynamic or fixed. The board charges when the two together cost the least.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -591,7 +591,7 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin-row", "area-row", "price-row", "margin-row", "fixed-row", "plan-row", "plans-note"].map($);
+  const rows = ["vin-row", "area-row", "plan-row", "plans-note", "price-row", "margin-row", "fixed-row"].map($);
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -604,7 +604,7 @@ function renderSetup() {
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
   const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
   const plan = gridPlan() && $("set-plan").selectedOptions[0].text;
-  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, plan]
+  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, plan, price]
     .filter(Boolean)
     .join(" · ");
 }
