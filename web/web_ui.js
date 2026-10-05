@@ -1032,7 +1032,7 @@ if (new URLSearchParams(location.search).has("full")) {
   script.src = "https://oi.esphome.io/v2/www.js";
   document.body.append(script);
 } else {
-  document.title = "Tesla charging";
+  document.title = "Tesla BLE Scheduler";
   document.body.insertAdjacentHTML("afterbegin", PAGE);
   bind();
   connect();
