@@ -4,7 +4,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 ## Before it knows the car
 
-- **Not paired**: the car hasn't answered the board's key since your settings named it. The page shows Setup 2 of 2: pair the key as in step 6 of the README's [Setup](../README.md#setup).
+- **Not paired**: the car hasn't answered the board's key since your settings named it. The page shows the setup's step 2, Key: pair the key as in step 6 of the README's [Setup](../README.md#setup).
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal under Board, or pair the key again there if it was removed in the car.
@@ -32,7 +32,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 ## The board and the page
 
 - **Unplugged**: the car isn't plugged in.
-- **No settings yet**: the board has no settings yet. Fill in Setup on the page and press Save, as the README's [Setup](../README.md#setup) says.
+- **No settings yet**: the board has no settings yet. Go through the setup on the page, as the README's [Setup](../README.md#setup) says.
 - **Settings: …**: the settings the board had no longer pass its checks, after an update made one stricter. The page shows them in its form: fix what it says and press Save.
 - **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Setup](../README.md#setup) says.
 - **Connecting …**: the page has just opened and waits for the board.

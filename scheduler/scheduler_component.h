@@ -103,7 +103,7 @@ class SchedulerComponent : public PollingComponent {
   void load_settings();
   // Takes a settings file, as the simulation does: returns what's wrong with it, or "".
   std::string use_settings(const std::string &text);
-  // Saves a settings file that read_settings() took, and restarts with it.
+  // Saves a settings file that read_settings() took: a board's first applies at once, later ones restart it.
   void save_settings(const std::string &text);
   // The settings file saved, empty without one, and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
@@ -126,6 +126,7 @@ class SchedulerComponent : public PollingComponent {
  protected:
   void tick_soon_();
   void install_update_(const CarState &car, const Decision &d);
+  void apply_settings_();
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
