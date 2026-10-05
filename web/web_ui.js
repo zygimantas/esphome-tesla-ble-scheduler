@@ -638,20 +638,21 @@ async function nextStep() {
   requestRender();
 }
 
-// The grid plan chosen, or "" for none or none yet.
+// The grid plan chosen, or "" for one the board doesn't know or none chosen yet.
 const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").value);
 
-// The country's plans after a blank for none, with `plan` selected, or none for "". A new board's, with `plan`
-// undefined, starts at the country's only plan, as everyone in Spain and Slovenia pays it, or at Choose where there
-// are several, as nearly every home is on one and skipping it would leave out its hours. Where the country has no
-// plans, a note says where such hours go instead.
+// The country's plans, then Not listed yet, last, where people look after not finding theirs, for a plan the board
+// doesn't know; with `plan` selected, or Not listed yet for "". A new board's, with `plan` undefined, starts at the
+// country's only plan, as everyone in Spain and Slovenia pays it, or at Choose where there are several, as nearly
+// every home is on one and skipping it would leave out its hours. Where the country has no plans, a note says where
+// such hours go instead.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
   const choose = new Option("Choose", "");
   choose.disabled = choose.hidden = true; // in the closed list only
   const options = plans.map(([name, title]) => new Option(title, name));
-  $("set-plan").replaceChildren(choose, new Option("", "none"), ...options);
+  $("set-plan").replaceChildren(choose, ...options, new Option("Not listed yet", "none"));
   const fallback = plan !== undefined ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
   $("plan-row").hidden = !plans.length;
