@@ -136,7 +136,7 @@ const PAGE = `
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="change-settings">Change settings</button>
     <button id="pair">Pair BLE key</button>
-    <button id="restart" class="danger">Restart board</button>
+    <button class="restart danger">Restart board</button>
     <button id="factory-reset" class="danger">Factory reset</button>
   </details>
 
@@ -865,7 +865,6 @@ function bind() {
     "Savings reset",
     "Reset the savings? They start again from zero today.",
   );
-  confirmPress("restart", E.restart, "Restarting …", "Restart the board?");
   confirmPress(
     "factory-reset",
     E.factoryReset,
@@ -885,7 +884,7 @@ function bind() {
       .querySelector(".body")
       .insertAdjacentHTML(
         "beforeend",
-        '<button class="primary next">Next</button><button class="back">Back</button><button class="cancel">Cancel</button>',
+        '<button class="primary next">Next</button><button class="back">Back</button><button class="cancel">Cancel</button><button class="restart danger">Restart board</button>',
       );
     press(card.querySelector(".next"), nextStep);
     card.querySelector(".back").addEventListener("click", () => {
@@ -898,6 +897,16 @@ function bind() {
       requestRender();
     });
   }
+  // Restart board, under Board and on each step of the setup: the page reconnects soon after, rather than when the
+  // browser would.
+  for (const button of document.querySelectorAll(".restart"))
+    press(button, async () => {
+      if (!confirm("Restart the board?")) return;
+      if (await post(E.restart, "press")) {
+        toast("Restarting …");
+        setTimeout(reconnect, 3000);
+      }
+    });
   $("change-settings").addEventListener("click", () => {
     settings.open = true;
     requestRender();
