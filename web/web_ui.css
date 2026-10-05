@@ -200,10 +200,19 @@ select:disabled {
   color: var(--muted);
   font-size: 12px;
 }
-.setup .card:not(.step),
+.setup .card:not(.step, #phone-card),
 .step:not(.open) .body,
 .step:not(.done) .summary {
   display: none;
+}
+/* On a computer, the page's address as a QR code for the phone: black on white in both themes, as cameras read it,
+   6 px a module. */
+.qr svg {
+  display: block;
+  width: 222px;
+  height: 222px;
+  margin: 12px auto 4px;
+  border-radius: 6px;
 }
 .step:not(.open, .done) .title {
   opacity: 0.5;

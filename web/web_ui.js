@@ -12,6 +12,7 @@
 //   Settings       the setup's steps and the settings form, and the settings file they make, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
+//   QR code        the page's address as a QR code, for the setup on a computer
 //   Start          wiring, then this page or ESPHome's (?full)
 
 // --- Page ------------------------------------------------------------------
@@ -131,6 +132,11 @@ const PAGE = `
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
+  <section id="phone-card" class="card" hidden>
+    <div class="title">Continue on your phone</div>
+    <div id="qr" class="qr"></div>
+    <p class="note">Scan the code with your phone's camera to open this page there, or open <span id="address"></span> on it. Then take the board to the car, plug it into a USB charger there, and finish the setup in the car, with your key card.</p>
+  </section>
   <section class="card step" hidden>
     <div class="title">Car<span class="summary">Saved</span></div>
     <div class="body">
@@ -625,9 +631,13 @@ function renderSetup() {
   const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
   if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
+  // On a computer, as after ESPHome Web's Visit Device, the setup goes on on the phone, in the car: the page's address
+  // as a QR code in place of the steps.
+  const computer = matchMedia("(pointer: fine)").matches;
+  $("phone-card").hidden = !setup.step || !computer;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
-    card.hidden = !setup.step || i + 1 > lastStep();
+    card.hidden = !setup.step || computer || i + 1 > lastStep();
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
@@ -1048,6 +1058,119 @@ function duration(seconds) {
   return `${minutes} min`;
 }
 
+// --- QR code ---------------------------------------------------------------
+
+// A short text, like the page's address, as a QR code in SVG, black on white with its quiet zone: version 3, 29
+// modules a side, error correction M, the text's bytes, 42 at most, and the mask that scores best (ISO/IEC 18004).
+function qrCode(text) {
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length > 42) return "";
+  const size = 29;
+  // 44 data codewords: byte mode, the length, the bytes and a terminator, then padding
+  const bits = [];
+  const put = (value, length) => {
+    for (let i = length - 1; i >= 0; i--) bits.push((value >> i) & 1);
+  };
+  put(4, 4);
+  put(bytes.length, 8);
+  for (const byte of bytes) put(byte, 8);
+  put(0, Math.min(4, 352 - bits.length));
+  while (bits.length % 8) bits.push(0);
+  const codewords = [];
+  for (let i = 0; i < bits.length; i += 8) codewords.push(Number.parseInt(bits.slice(i, i + 8).join(""), 2));
+  for (let pad = 0xec; codewords.length < 44; pad ^= 0xec ^ 0x11) codewords.push(pad);
+  // and 26 Reed-Solomon ones over GF(256)
+  const exp = [];
+  const log = [];
+  for (let i = 0, x = 1; i < 255; i++, x = x & 0x80 ? (x << 1) ^ 0x11d : x << 1) [exp[i], log[x]] = [x, i];
+  const mul = (a, b) => (a && b ? exp[(log[a] + log[b]) % 255] : 0);
+  let divisor = [1];
+  for (let i = 0; i < 26; i++) divisor = [...divisor, 0].map((c, j) => c ^ mul(divisor[j - 1] ?? 0, exp[i]));
+  const ecc = new Array(26).fill(0);
+  for (const byte of codewords) {
+    const factor = byte ^ ecc.shift();
+    ecc.push(0);
+    for (let i = 0; i < 26; i++) ecc[i] ^= mul(divisor[i + 1], factor);
+  }
+  codewords.push(...ecc);
+  // the fixed patterns: the finders with their light borders, the alignment pattern, the timing lines, the dark
+  // module, and the places of the format's two copies
+  const modules = [...Array(size)].map(() => new Array(size).fill(false));
+  const fixed = [...Array(size)].map(() => new Array(size).fill(false));
+  const set = (r, c, dark) => {
+    modules[r][c] = dark;
+    fixed[r][c] = true;
+  };
+  for (const [top, left] of [
+    [0, 0],
+    [0, size - 7],
+    [size - 7, 0],
+  ])
+    for (let r = -1; r <= 7; r++)
+      for (let c = -1; c <= 7; c++) {
+        const ring = Math.max(Math.abs(r - 3), Math.abs(c - 3));
+        if (top + r >= 0 && top + r < size && left + c >= 0 && left + c < size)
+          set(top + r, left + c, ring !== 2 && ring !== 4);
+      }
+  for (let r = -2; r <= 2; r++)
+    for (let c = -2; c <= 2; c++) set(22 + r, 22 + c, Math.max(Math.abs(r), Math.abs(c)) !== 1);
+  for (let i = 8; i < size - 8; i++) {
+    set(6, i, i % 2 === 0);
+    set(i, 6, i % 2 === 0);
+  }
+  set(size - 8, 8, true);
+  const format = [
+    [...[0, 1, 2, 3, 4, 5, 7, 8].map((r) => [r, 8]), ...[7, 5, 4, 3, 2, 1, 0].map((c) => [8, c])],
+    [...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => [8, size - 1 - i]), ...[6, 5, 4, 3, 2, 1, 0].map((i) => [size - 1 - i, 8])],
+  ];
+  for (const [r, c] of format.flat()) fixed[r][c] = true;
+  // the codewords' bits, two columns at a time from the right, up and down in turn, round the fixed patterns
+  let i = 0;
+  for (let right = size - 1; right >= 1; right -= 2)
+    for (let vert = 0; vert < size; vert++)
+      for (const c of right <= 6 ? [right - 1, right - 2] : [right, right - 1]) {
+        const r = (right <= 6 ? right : right + 1) & 2 ? vert : size - 1 - vert;
+        if (fixed[r][c] || i >= codewords.length * 8) continue;
+        modules[r][c] = ((codewords[i >> 3] >> (7 - (i & 7))) & 1) === 1;
+        i++;
+      }
+  // each mask with its format bits, scored by runs, blocks, finder-like patterns and the share of dark modules
+  const masks = [
+    (r, c) => (r + c) % 2 === 0,
+    (r) => r % 2 === 0,
+    (_, c) => c % 3 === 0,
+    (r, c) => (r + c) % 3 === 0,
+    (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+    (r, c) => ((r * c) % 2) + ((r * c) % 3) === 0,
+    (r, c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0,
+    (r, c) => (((r + c) % 2) + ((r * c) % 3)) % 2 === 0,
+  ];
+  let best = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const [mask, flips] of masks.entries()) {
+    const grid = modules.map((row, r) => row.map((dark, c) => (fixed[r][c] ? dark : dark !== flips(r, c))));
+    let rem = mask; // error correction M is 00
+    for (let j = 0; j < 10; j++) rem = (rem << 1) ^ ((rem >> 9) * 0x537);
+    const word = ((mask << 10) | rem) ^ 0x5412;
+    for (const copy of format) for (const [j, [r, c]] of copy.entries()) grid[r][c] = ((word >> j) & 1) === 1;
+    const lines = [...grid, ...grid.map((_, c) => grid.map((row) => row[c]))].map((line) => line.map(Number).join(""));
+    let score = 0;
+    for (const line of lines) {
+      for (const run of line.match(/0{5,}|1{5,}/g) ?? []) score += run.length - 2;
+      score += 40 * (line.match(/(?=10111010000|00001011101)/g) ?? []).length;
+    }
+    for (let r = 0; r < size - 1; r++)
+      for (let c = 0; c < size - 1; c++) {
+        const dark = grid[r][c] + grid[r][c + 1] + grid[r + 1][c] + grid[r + 1][c + 1];
+        if (dark === 0 || dark === 4) score += 3;
+      }
+    score += 10 * Math.floor(Math.abs((grid.flat().filter(Boolean).length * 20) / (size * size) - 10));
+    if (score < bestScore) [best, bestScore] = [grid, score];
+  }
+  const path = best.flatMap((row, r) => row.map((dark, c) => (dark ? `M${c + 4} ${r + 4}h1v1h-1z` : ""))).join("");
+  return `<svg viewBox="0 0 ${size + 8} ${size + 8}" role="img" aria-label="QR code" shape-rendering="crispEdges"><path fill="#fff" d="M0 0h${size + 8}v${size + 8}H0z"/><path fill="#000" d="${path}"/></svg>`;
+}
+
 // --- Start -----------------------------------------------------------------
 
 // A button that asks first, then presses the board's button.
@@ -1060,6 +1183,8 @@ function confirmPress(selector, entity, message, question) {
 }
 
 function bind() {
+  $("qr").innerHTML = qrCode(location.origin);
+  $("address").textContent = location.origin;
   $("limit-select").addEventListener("change", (e) => (draft.limit = Number(e.target.value)));
   $("ready-select").addEventListener("change", (e) => (draft.deadline = Number(e.target.value)));
   press($("create-schedule"), createSchedule);
