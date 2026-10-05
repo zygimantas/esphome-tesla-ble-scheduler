@@ -188,7 +188,7 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The setup's steps, a new board's page: the open one shows its fields, a done one what it holds, in a pill --- */
+/* --- The setup's steps, a new board's page: the open one shows its fields, a done one Saved, in a pill --- */
 .summary {
   padding: 3px 8px;
   border-radius: 999px;

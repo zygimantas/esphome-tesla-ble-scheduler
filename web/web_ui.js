@@ -134,7 +134,7 @@ const PAGE = `
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">Key<span class="summary"></span></div>
+    <div class="title">Key<span class="summary">Saved</span></div>
     <div class="body">
       <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
       <ol class="note">
@@ -148,7 +148,7 @@ const PAGE = `
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">Prices<span class="summary"></span></div>
+    <div class="title">Prices</div>
     <div class="body">
       <p class="note error" hidden></p>
     </div>
@@ -600,9 +600,10 @@ function pricesProblem() {
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and what they hold, later ones show only their titles. Tesla and Prices
-// borrow the form's rows, the VIN, battery and power and those from the country to the supplier's part, around their
-// notes and above their buttons, and give them back to the form after.
+// fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
+// the setup), later ones show only their titles. Tesla and Prices borrow the form's rows, the VIN, battery and power
+// and those from the country to the supplier's part, around their notes and above their buttons, and give them back
+// to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -623,7 +624,8 @@ function renderSetup() {
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
-  steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
+  // Key's is saved once the car knows the key
+  steps[1].querySelector(".summary").hidden = unpaired;
   const names = [
     "vin-row",
     "vin-hint",
@@ -655,11 +657,6 @@ function renderSetup() {
       .closest("label")
       .before(...rows);
   }
-  const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
-  const plan = gridPlan() && $("set-plan").selectedOptions[0].text;
-  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, plan, price]
-    .filter(Boolean)
-    .join(" · ");
 }
 
 // Save: on to the next step. Tesla's Continue checks the VIN and saves it with the battery and the power, as the board
