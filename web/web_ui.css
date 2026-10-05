@@ -344,7 +344,7 @@ ol.note {
 .step .note + button {
   margin-top: 22px;
 }
-/* A field's hint: a small "i" by its name, which opens the words under the field, with room around it for a finger. */
+/* A field's hint: a small "?" by its name, which opens the words under the field, with room around it for a finger. */
 .info {
   position: relative;
   display: inline-flex;
@@ -356,7 +356,7 @@ ol.note {
   margin: 0 0 0 6px;
   padding: 0;
   color: var(--field);
-  border-color: currentColor; /* the "i" and its box in the fields' border colour, and their rounding at its size */
+  border-color: currentColor; /* the "?" and its box in the fields' border colour, and their rounding at its size */
   border-radius: 4px;
   font-size: 12px;
   vertical-align: middle;
@@ -366,7 +366,7 @@ ol.note {
   position: absolute;
   inset: -13px;
 }
-/* A name with a hint: the "i" at the right end, level with the name. */
+/* A name with a hint: the "?" at the right end, level with the name. */
 .row > span:has(.info) {
   display: flex;
   flex: 1;
