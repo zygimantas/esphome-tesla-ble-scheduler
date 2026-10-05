@@ -92,6 +92,10 @@ const PAGE = `
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Exchange price, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
+    <div id="hours-row" class="row"><span>Cheaper hours</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
+    <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
+    <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="low-row" class="row"><span></span><input id="set-low" type="number" min="0" step="any" inputmode="decimal"></label>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
@@ -256,7 +260,14 @@ function render() {
   // Settings the board can't use come first; others open from Board.
   const needed = text(E.status).startsWith("Settings: ");
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
-  for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = $("set-price").value === "fixed";
+  const fixed = $("set-price").value === "fixed";
+  for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
+  for (const id of ["hours-row", "weekends-row", "high-row", "low-row"]) $(id).hidden = $("set-plan").value !== "own";
+  $("high-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, other hours`;
+  $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
+  const country = $("set-area").value.slice(0, 2);
+  const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
+  for (const id of ["set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
   $("cancel-settings").hidden = needed;
 }
 
@@ -488,9 +499,14 @@ const COUNTRIES = {
   SI: [22, "Europe/Ljubljana"],
 };
 const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? ""));
+const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));
+// The countries without the euro, by their currency, which a market from Nord Pool comes in too; SMARD's only in euros.
+const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
+const SMARD_ONLY = ["CH", "CZ", "HU"];
 
 // The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
 const FORM_PLACES = [
+  "currency",
   "market",
   "market: area",
   "market: margin",
@@ -504,11 +520,24 @@ const FORM_PLACES = [
   "timezone",
 ];
 
-// The settings file's values by place, as the board reads them, and whether it has more than the form shows.
+// A tariff of own hours as the form writes it: cheaper from one time to another every day, or on weekdays and all
+// weekend, as "low 07:00 high 22:00 low", "low 06:00 high", "high 13:00 low 16:00 high" or "high 22:00 low".
+const OWN_HOURS =
+  /^tariff:\n {2}calendar:\n {4}jan-dec:\n {6}mon-(fri|sun): (?:low (\d\d:\d\d) high(?: (\d\d:\d\d) low)?|high (\d\d:\d\d) low(?: (\d\d:\d\d) high)?)\n(?: {6}sat-sun: low\n)? {2}rates:\n {4}high: (\S+)\n {4}low: (\S+)\n$/;
+
+// The settings file's values by place, as the board reads them, own hours as `own`, and whether it has more than
+// the form shows.
 function readSettings(file) {
   const values = {};
   let section = "";
   let more = false;
+  const own = OWN_HOURS.exec(settingsBlocks(file).get("tariff") ?? "");
+  if (own) {
+    const [tariff, days, lowUntil, lowFrom, highFrom, highUntil, high, low] = own;
+    const [from, to] = [lowFrom ?? highFrom ?? "00:00", lowUntil ?? highUntil ?? "00:00"];
+    values.own = { from, to, weekends: days === "fri" ? "cheaper" : "same", high, low };
+    file = file.replace(tariff, "");
+  }
   for (const line of file.split("\n")) {
     const m = /^( *)([^\s#:][^:]*):(?: +(.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
     if (!m) continue;
@@ -543,18 +572,24 @@ const unfinished = () => settings.text === "" || (settings.text !== null && !/^(
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
-// What's wrong with the prices, or "": with a fixed price, only a grid plan's zones make some hours cheaper.
+// What's wrong with the prices, or "": own hours need two prices, the cheaper one lower, and with a fixed price,
+// only a grid plan or own hours make some hours cheaper.
 function pricesProblem() {
+  if ($("set-plan").value === "own") {
+    const [high, low] = [$("set-high").value, $("set-low").value];
+    if ($("set-from").value === $("set-to").value)
+      return "The cheaper hours have to end at another time than they start.";
+    if (high === "" || low === "") return "Enter what a kWh costs in the cheaper hours and in the others.";
+    return Number(low) < Number(high) ? "" : "The cheaper hours have to cost less than the others.";
+  }
   if ($("set-price").value !== "fixed" || $("set-plan").value) return "";
-  return $("plan-row").hidden
-    ? "With a fixed price, every hour costs the same here: the board has nothing to choose from."
-    : "With a fixed price, only the grid plan makes some hours cheaper: choose yours.";
+  return "With a fixed price, only a grid plan or hours of your own make some hours cheaper: choose one.";
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN and Prices
-// borrow the form's VIN, country, supplier's price and grid plan rows, below their text and above their buttons,
-// which go back to the form after.
+// borrow the form's VIN row and its rows from the country to own hours' prices, below their text and above their
+// buttons, which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -576,8 +611,8 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin-row", "area-row", "price-row", "plan-row"].map($);
-  const homes = [steps[0], steps[2], steps[2], steps[2]].map((card) => card.querySelector(".body"));
+  const rows = ["vin", "area", "price", "plan", "hours", "weekends", "high", "low"].map((name) => $(`${name}-row`));
+  const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
       if (row.parentNode !== homes[i]) homes[i].querySelector(".error, .save").before(row);
@@ -604,7 +639,7 @@ async function nextStep() {
   error.hidden = !problem;
   if (problem) return;
   const fields = document.querySelectorAll(".step.open input, .step.open select");
-  const wrong = [...fields].find((field) => !field.checkValidity());
+  const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
   if (setup.step === 1 && $("set-vin").value.trim().toUpperCase() !== readSettings(settings.text).values.tesla_vin) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
@@ -616,20 +651,20 @@ async function nextStep() {
     setup.stay = false;
     return requestRender();
   }
-  const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
+  const file = unfinished() ? withForm(["currency", "market", "tariff", "timezone"]) : settings.text;
   if (file !== settings.text && !(await sendSettings(file))) return;
   setup.saving = file !== settings.text;
   setup.step = 0;
   requestRender();
 }
 
-// The plans of the country, with the one to select if it's among them; no row where there are none.
+// The plans of the country, and own hours, with the one to select if it's among them.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  $("set-plan").replaceChildren(new Option("None", ""), ...plans.map(([name, title]) => new Option(title, name)));
-  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : "";
-  $("plan-row").hidden = !plans.length;
+  const options = plans.map(([name, title]) => new Option(title, name));
+  $("set-plan").replaceChildren(new Option("None", ""), ...options, new Option("My own hours", "own"));
+  $("set-plan").value = plan === "own" || plans.some(([name]) => name === plan) ? plan : "";
 }
 
 // A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
@@ -642,8 +677,9 @@ function guessFromArea() {
 }
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
-// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, the phone's country, where it has
-// only one market area. Without a market, the country is its grid plan's, and the supplier's price fixed.
+// zone, the market area's VAT, a 75 kWh battery and 11 kW, cheaper hours from 22:00 to 07:00, and on a new board,
+// the phone's country, where it has only one market area. Without a market, the supplier's price is fixed, and the
+// country the grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
   const { values, more } = readSettings(settings.text);
   const { areas, time_zones: zones } = settings.options;
@@ -658,13 +694,20 @@ function fillSettings() {
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
   $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
   const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const home = Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(phone));
   const plan = values["tariff: plan"] ?? "";
-  const country = unfinished() ? home : plan.slice(0, 2).toUpperCase();
+  const ofCurrency = Object.keys(CURRENCIES).find((code) => CURRENCIES[code] === values.currency?.toUpperCase());
+  const country = unfinished()
+    ? countryOf(phone)
+    : plan.slice(0, 2).toUpperCase() || ofCurrency || countryOf(values.timezone);
   const ofCountry = areas.filter((area) => area.slice(0, 2) === country);
-  $("set-area").value = (values["market: area"] ?? (ofCountry.length === 1 ? ofCountry[0] : "")).toUpperCase();
+  const guess = ofCountry.length === 1 || !unfinished() ? ofCountry[0] : "";
+  $("set-area").value = (values["market: area"] ?? guess ?? "").toUpperCase();
   $("set-price").value = values["market: area"] ? "market" : unfinished() ? "" : "fixed";
-  fillPlans(plan);
+  const times = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`);
+  for (const id of ["set-from", "set-to"]) $(id).replaceChildren(...times.map((time) => new Option(time, time)));
+  const own = values.own ?? { from: "22:00", to: "07:00", weekends: "same", high: "", low: "" };
+  for (const key of ["from", "to", "weekends", "high", "low"]) $(`set-${key}`).value = own[key];
+  fillPlans(values.own ? "own" : plan);
   const zone = values.timezone ?? phone;
   $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
   $("set-zone").value = zones.includes(zone) ? zone : "";
@@ -675,7 +718,9 @@ function fillSettings() {
   $("set-battery").value = values.tesla_battery_kwh ?? 75;
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
-  $("settings-more").hidden = !more;
+  // a currency of the file's own, other than the one the form writes, is more than the form shows
+  const written = $("set-price").value === "fixed" ? CURRENCIES[$("set-area").value.slice(0, 2)] : undefined;
+  $("settings-more").hidden = !more && values.currency?.toUpperCase() === written;
   $("settings-error").hidden = true;
 }
 
@@ -732,13 +777,16 @@ function withForm(keys) {
 function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
+  const currency = CURRENCIES[v("set-area").slice(0, 2)];
+  if (prices && v("set-price") === "fixed" && currency) lines.push(`currency: ${currency}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (prices && v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  if (prices && v("set-plan") === "own") lines.push(...ownHours());
+  else if (prices && v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
@@ -746,6 +794,26 @@ function formSettings(prices = true) {
     `timezone: ${v("set-zone")}`,
   );
   return `${lines.join("\n")}\n`;
+}
+
+// Own hours as a tariff: the cheaper rate from one time to another, which may run past midnight, every day, or on
+// weekdays and all weekend.
+function ownHours() {
+  const v = (id) => $(id).value.trim();
+  const [from, to] = [v("set-from"), v("set-to")];
+  let day = from > to ? `low ${to} high ${from} low` : `high ${from} low ${to} high`;
+  if (from === "00:00") day = `low ${to} high`;
+  if (to === "00:00") day = `high ${from} low`;
+  const days = v("set-weekends") === "cheaper" ? [`mon-fri: ${day}`, "sat-sun: low"] : [`mon-sun: ${day}`];
+  return [
+    "tariff:",
+    "  calendar:",
+    "    jan-dec:",
+    ...days.map((line) => `      ${line}`),
+    "  rates:",
+    `    high: ${v("set-high")}`,
+    `    low: ${v("set-low")}`,
+  ];
 }
 
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
@@ -787,8 +855,9 @@ async function sendSettings(file) {
 async function saveSettings() {
   $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
   $("set-price").setCustomValidity(pricesProblem());
+  // the shown fields only, as a hidden one can't say what's wrong, and isn't saved
   const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
-  const wrong = [...fields].find((field) => !field.checkValidity());
+  const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) wrong.reportValidity();
   else await sendSettings(formSettings());
 }
@@ -992,7 +1061,7 @@ function bind() {
     fillPlans($("set-plan").value);
     if (unfinished()) guessFromArea();
   });
-  $("set-price").addEventListener("change", requestRender);
+  for (const id of ["set-price", "set-plan"]) $(id).addEventListener("change", requestRender);
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");

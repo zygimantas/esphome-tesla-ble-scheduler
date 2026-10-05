@@ -26,7 +26,7 @@ The board follows market prices where Nord Pool, SMARD (Germany's Federal Networ
 | Portugal | `PT` | `EUR` | Prices from OMIE. |
 | Romania | `RO` | `RON` or `EUR` | |
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](omreznina.md), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| Spain | `ES` | `EUR` | Prices from OMIE. |
+| Spain | `ES` | `EUR` | Prices from OMIE. [The 2.0TD tolls and charges](spain.md). |
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | Power fees at some network companies aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Switzerland | `CH` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
 
