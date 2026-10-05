@@ -93,7 +93,8 @@ const PAGE = `
     <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
+    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <p id="plans-note" class="note">No grid plans here yet: fees that change with the hour go in a settings file, which Upload settings takes.</p>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
@@ -259,7 +260,7 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
-  $("fixed-row").hidden = !fixed || !$("set-plan").value;
+  $("fixed-row").hidden = !fixed || !gridPlan();
   // the prices' names, with their unit, in the currency they're in
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
@@ -559,14 +560,14 @@ const lastStep = () => (unfinished() ? 3 : 2);
 
 // What's wrong with the prices, or "": a fixed price without a grid plan leaves nothing to choose.
 function pricesProblem() {
-  if ($("set-price").value !== "fixed" || $("set-plan").value) return "";
-  return "With a fixed price, the board needs cheaper hours: your grid plan's, or your own in a settings file under Advanced.";
+  if ($("set-price").value !== "fixed" || gridPlan()) return "";
+  return "With a fixed price, the board needs your grid plan, or your own hours in a settings file, which Upload settings takes.";
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN and Prices
-// borrow the form's VIN row and its rows from the country to the grid plan, below their text and above their
-// buttons, which go back to the form after.
+// borrow the form's VIN row and its rows from the country to the grid plan's note, below their text and above
+// their buttons, which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -588,7 +589,7 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin", "area", "price", "margin", "fixed", "plan"].map((name) => $(`${name}-row`));
+  const rows = ["vin-row", "area-row", "price-row", "margin-row", "fixed-row", "plan-row", "plans-note"].map($);
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -600,7 +601,7 @@ function renderSetup() {
   }
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
   const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
-  const plan = $("set-plan").value && $("set-plan").selectedOptions[0].text;
+  const plan = gridPlan() && $("set-plan").selectedOptions[0].text;
   steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, plan]
     .filter(Boolean)
     .join(" · ");
@@ -635,18 +636,24 @@ async function nextStep() {
   requestRender();
 }
 
-// The country's plans after a blank for none, with `plan` selected if it's among them; without one, its only plan,
-// as where every home pays the same, like Spain and Slovenia. No row where the country has no plans.
+// The grid plan chosen, or "" for none or none yet.
+const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").value);
+
+// The country's plans after a blank for none, with `plan` selected, or none for "". A new board's, with `plan`
+// undefined, starts at the country's only plan, as everyone in Spain and Slovenia pays it, or at Choose where there
+// are several, as nearly every home is on one and skipping it would leave out its hours. Where the country has no
+// plans, a note says where such hours go instead.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  $("set-plan").replaceChildren(new Option("", ""), ...plans.map(([name, title]) => new Option(title, name)));
-  $("set-plan").value = plans.some(([name]) => name === plan)
-    ? plan
-    : plan === undefined && plans.length === 1
-      ? plans[0][0]
-      : "";
+  const choose = new Option("Choose", "");
+  choose.disabled = choose.hidden = true; // in the closed list only
+  const options = plans.map(([name, title]) => new Option(title, name));
+  $("set-plan").replaceChildren(choose, new Option("", "none"), ...options);
+  const fallback = plan !== undefined ? "none" : plans.length === 1 ? plans[0][0] : "";
+  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
   $("plan-row").hidden = !plans.length;
+  $("plans-note").hidden = Boolean(plans.length) || !country;
 }
 
 // A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
@@ -766,14 +773,14 @@ function formSettings(prices = true) {
   const fixed = prices && v("set-price") === "fixed";
   if (fixed && currency) lines.push(`currency: ${currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees
-  if (fixed && v("set-plan") && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
+  if (fixed && gridPlan() && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (prices && v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  if (prices && gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,

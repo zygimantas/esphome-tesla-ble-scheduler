@@ -98,7 +98,7 @@ A plan is a grid operator's prices and hours, in `plans/`, in a folder for its c
 
 - **The format** is that of `tariff:` in [Tariff](docs/tariff.md), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
 - **The prices** are the operator's fees per kWh, with VAT, in its currency. Monthly fees, fees per kW and the charges that are the same every hour, like taxes, stay out, and the operator's page in `docs/` says which.
-- **A comment at the top** says what the plan is, with a link to the operator's prices, and who maintains it: `# Maintained by @your-github-name`. Where the operator prints its prices otherwise, like in cents or without VAT, it also says how they were converted.
+- **A comment at the top** names the plan for the page's list, short enough for a phone, with a link to the operator's prices, like `# ESO Standartinis, four zones, prices with VAT: https://www.eso.lt`, and says who maintains it: `# Maintained by @your-github-name`. Where the operator prints its prices otherwise, like in cents or without VAT, it also says how they were converted.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their plan from `main` every day, so merging publishes it, without a release.
 - **A new plan reaches users with the next release,** as the install checks a plan against the release's own copy.
 - **CI checks every plan** in the unit tests: as the board reads it, and by the install's own rules.
