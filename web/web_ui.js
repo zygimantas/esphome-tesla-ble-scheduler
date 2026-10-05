@@ -120,12 +120,12 @@ const PAGE = `
       <ol class="note">
         <li>Put the board by the car.</li>
         <li>Sit in the car with your key card.</li>
-        <li>Press Pair BLE key below.</li>
+        <li>Press Create key below.</li>
         <li>Tap the card on the console.</li>
         <li>Confirm on the car's screen.</li>
       </ol>
       <p class="note">The setup moves on once the car answers.</p>
-      <button id="pair-now" class="primary">Pair BLE key</button>
+      <button id="pair-now" class="primary">Create key</button>
     </div>
   </section>
   <section class="card step" hidden>
@@ -178,7 +178,7 @@ const PAGE = `
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="change-settings">Change settings</button>
-    <button id="pair">Pair BLE key</button>
+    <button id="pair">Create key</button>
     <button class="restart danger">Restart board</button>
     <button class="factory-reset danger">Factory reset</button>
   </details>
@@ -566,7 +566,7 @@ function renderSetup() {
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
-  steps[1].querySelector(".summary").textContent = unpaired ? "" : "Paired";
+  steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
   const rows = ["vin-row", "area-row", "plan-row"].map($);
   const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
   if (setup.step) {
@@ -582,7 +582,7 @@ function renderSetup() {
   steps[3].querySelector(".summary").textContent = $("set-plan").selectedOptions[0]?.text ?? "";
 }
 
-// Save: on to the next step. VIN's, Validate, checks the VIN and saves it, as the board needs it to find the car,
+// Save: on to the next step. VIN's, Validate VIN, checks the VIN and saves it, as the board needs it to find the car,
 // with the guesses and no prices yet on a new board; the last step saves the prices, which restarts the board. Both
 // keep the settings the setup doesn't show.
 async function nextStep() {
@@ -938,8 +938,8 @@ function bind() {
   confirmPress(
     "#pair",
     E.pair,
-    "Pairing started: tap your key card",
-    "Pair a new key? Sit in the car and tap your key card on the console when asked.",
+    "Creating the key: tap your key card",
+    "Create a new key? Sit in the car and tap your key card on the console when asked.",
   );
   confirmPress(
     "#reset-savings",
@@ -959,7 +959,7 @@ function bind() {
   });
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
-    if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
+    if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
   });
   for (const [i, card] of document.querySelectorAll(".step").entries()) {
     // a card the setup got to before opens with a click, and stays open
@@ -969,9 +969,9 @@ function bind() {
       setup.stay = true;
       requestRender();
     });
-    if (i === 1) continue; // Key has only Pair BLE key, as it moves on once the car answers
+    if (i === 1) continue; // Key has only Create key, as it moves on once the car answers
     const body = card.querySelector(".body");
-    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Save" : "Validate"}</button>`);
+    body.insertAdjacentHTML("beforeend", `<button class="primary save">${i ? "Save" : "Validate VIN"}</button>`);
     press(body.querySelector(".save"), nextStep);
     if (i === 0) continue; // nothing comes before VIN
     body.insertAdjacentHTML("beforeend", '<button class="back">Back</button>');
