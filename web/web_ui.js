@@ -102,7 +102,7 @@ const PAGE = `
     <button id="save-settings" class="primary">Save</button>
     <button id="cancel-settings">Cancel</button>
     <a id="download-settings" class="button" href="/settings" download="settings.yaml">Download settings</a>
-    <button id="upload-settings">Upload settings</button>
+    <button class="upload">Upload settings</button>
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
@@ -138,6 +138,7 @@ const PAGE = `
   </section>
   <details id="advanced" class="card" hidden>
     <summary>Advanced</summary>
+    <button class="upload">Upload settings</button>
     <button class="restart danger">Restart board</button>
     <button class="factory-reset danger">Factory reset</button>
   </details>
@@ -668,7 +669,8 @@ async function loadSettings() {
       fetch("/settings/options").then((r) => r.json()),
     ]);
     if (file !== settings.text || !settings.options) {
-      setup.saving = false;
+      // the setup starts again from what the board has now, as after an upload
+      Object.assign(setup, { step: 0, saving: false, stay: false });
       settings.text = file;
       settings.options = options;
       fillSettings();
@@ -1001,7 +1003,9 @@ function bind() {
     fillSettings(); // back to the board's
     requestRender();
   });
-  $("upload-settings").addEventListener("click", () => $("settings-file").click());
+  // Upload settings, under the settings form and the setup's Advanced: a settings file of the user's own.
+  for (const button of document.querySelectorAll(".upload"))
+    button.addEventListener("click", () => $("settings-file").click());
   $("settings-file").addEventListener("change", async (e) => {
     const [file] = e.target.files;
     e.target.value = ""; // so the same file can go again
