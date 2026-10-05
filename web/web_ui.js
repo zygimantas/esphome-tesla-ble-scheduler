@@ -47,7 +47,7 @@ document.head.insertAdjacentHTML(
   "beforeend",
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
     '<meta name="apple-mobile-web-app-capable" content="yes">' +
-    '<meta name="apple-mobile-web-app-title" content="Tesla">' +
+    '<meta name="apple-mobile-web-app-title" content="ETBS">' +
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' +
     '<meta name="theme-color" content="#009ac7">',
 );
@@ -77,7 +77,7 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <div><h1>Tesla BLE Scheduler</h1><p>Charges when it's cheapest</p></div>
+  <div><h1>ESPHome Tesla BLE Scheduler</h1><p>Charges when it's cheapest</p></div>
   <span id="link" class="pill">Connecting …</span>
 </header>
 <main>
@@ -1032,7 +1032,7 @@ if (new URLSearchParams(location.search).has("full")) {
   script.src = "https://oi.esphome.io/v2/www.js";
   document.body.append(script);
 } else {
-  document.title = "Tesla BLE Scheduler";
+  document.title = "ESPHome Tesla BLE Scheduler";
   document.body.insertAdjacentHTML("afterbegin", PAGE);
   bind();
   connect();

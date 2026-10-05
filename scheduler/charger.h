@@ -426,7 +426,7 @@ class Controller {
       notify_car_start_ = false;
       notify_pending_ = false;  // a plug-in message still pending would only repeat this
       Notification &n = d.notification.emplace();
-      n.title = "Tesla charging";
+      n.title = "ESPHome Tesla BLE Scheduler";
       n.message = "Started from the car or the Tesla app: charging";
       if (!std::isnan(limit_))
         n.message += " to " + std::to_string(std::lround(limit_)) + "%";
@@ -435,7 +435,7 @@ class Controller {
     }
     if (deadline_passed && plugged_ && hold_ == Hold::SCHEDULE && battery_known_() && !full_() && !notify_pending_) {
       Notification &n = d.notification.emplace();
-      n.title = "Tesla charging";
+      n.title = "ESPHome Tesla BLE Scheduler";
       n.message = "Ready by passed at " + std::to_string(std::lround(soc_)) + "% of " +
                   std::to_string(std::lround(limit_)) + "%";
       return;
@@ -452,7 +452,7 @@ class Controller {
       return;
     notify_pending_ = false;
     Notification &n = d.notification.emplace();
-    n.title = "Tesla charging";
+    n.title = "ESPHome Tesla BLE Scheduler";
     if (hold_ == Hold::NOW || !schedule_.valid) {  // no schedule without the battery level either
       n.message = d.status;
       return;
