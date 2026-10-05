@@ -96,6 +96,7 @@ const PAGE = `
     <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
+    <div id="hours2-row" class="row"><span>And from - until</span><span class="range"><span class="dropdown"><select id="set-from2" aria-label="Also cheaper from"></select></span> - <span class="dropdown"><select id="set-to2" aria-label="Also cheaper until"></select></span></span></div>
     <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
     <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="low-row" class="row"><span></span><input id="set-low" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -266,7 +267,8 @@ function render() {
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
   $("plan-row").hidden = $("set-cheap").value !== "plan";
   $("fixed-row").hidden = !fixed || $("set-cheap").value !== "plan";
-  for (const id of ["hours-row", "weekends-row", "high-row", "low-row"]) $(id).hidden = $("set-cheap").value !== "own";
+  for (const id of ["hours-row", "hours2-row", "weekends-row", "high-row", "low-row"])
+    $(id).hidden = $("set-cheap").value !== "own";
   $("high-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, other hours`;
   $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
   const country = $("set-area").value.slice(0, 2);
@@ -525,10 +527,38 @@ const FORM_PLACES = [
   "timezone",
 ];
 
-// A tariff of own hours as the form writes it: cheaper from one time to another every day, or on weekdays and all
-// weekend, as "low 07:00 high 22:00 low", "low 06:00 high", "high 13:00 low 16:00 high" or "high 22:00 low".
+// A tariff of own hours as the form writes it: a day's line of low and high hours, every day or on weekdays with
+// weekends low, like "low 07:00 high 22:00 low".
 const OWN_HOURS =
-  /^tariff:\n {2}calendar:\n {4}jan-dec:\n {6}mon-(fri|sun): (?:low (\d\d:\d\d) high(?: (\d\d:\d\d) low)?|high (\d\d:\d\d) low(?: (\d\d:\d\d) high)?)\n(?: {6}sat-sun: low\n)? {2}rates:\n {4}high: (\S+)\n {4}low: (\S+)\n$/;
+  /^tariff:\n {2}calendar:\n {4}jan-dec:\n {6}mon-(fri|sun): ((?:low|high)(?: \d\d:\d\d (?:low|high))*)\n(?: {6}sat-sun: low\n)? {2}rates:\n {4}high: (\S+)\n {4}low: (\S+)\n$/;
+const minutesOf = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+const timeOf = (minutes) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+
+// A day's line from its cheaper stretches, as [from, until], which may run past midnight or meet: low in them, high
+// in the rest, like "low 07:00 high 22:00 low", and "low" alone when they take the whole day.
+function dayLine(stretches) {
+  const low = new Array(96).fill(false);
+  for (const [from, to] of stretches)
+    for (let q = minutesOf(from) / 15; q !== minutesOf(to) / 15; q = (q + 1) % 96) low[q] = true;
+  let line = low[0] ? "low" : "high";
+  for (let q = 1; q < 96; q++) if (low[q] !== low[q - 1]) line += ` ${timeOf(q * 15)} ${low[q] ? "low" : "high"}`;
+  return line;
+}
+
+// A day's line's cheaper stretches, as dayLine() takes them, or null for none, the whole day or more than two.
+function stretchesOf(line) {
+  const parts = line.split(" ");
+  const runs = []; // each rate from when it starts
+  for (let i = 0; i < parts.length; i += 2) runs.push([i ? parts[i - 1] : "00:00", parts[i]]);
+  const stretches = runs.flatMap(([start, rate], i) => (rate === "low" ? [[start, runs[i + 1]?.[0] ?? "00:00"]] : []));
+  if (stretches.length > 1 && runs[0][1] === "low" && runs.at(-1)[1] === "low") {
+    // the night's, which runs past midnight, is the day's last stretch and its first
+    const [first, last] = [stretches.shift(), stretches.pop()];
+    stretches.unshift([last[0], first[1]]);
+  }
+  const fits = stretches.length && stretches.length <= 2 && stretches.every(([from, to]) => from !== to);
+  return fits ? stretches : null;
+}
 
 // The settings file's values by place, as the board reads them, own hours as `own`, and whether it has more than
 // the form shows.
@@ -537,10 +567,10 @@ function readSettings(file) {
   let section = "";
   let more = false;
   const own = OWN_HOURS.exec(settingsBlocks(file).get("tariff") ?? "");
-  if (own) {
-    const [tariff, days, lowUntil, lowFrom, highFrom, highUntil, high, low] = own;
-    const [from, to] = [lowFrom ?? highFrom ?? "00:00", lowUntil ?? highUntil ?? "00:00"];
-    values.own = { from, to, weekends: days === "fri" ? "cheaper" : "same", high, low };
+  const stretches = own && stretchesOf(own[2]);
+  if (stretches) {
+    const [tariff, days, , high, low] = own;
+    values.own = { stretches, weekends: days === "fri" ? "cheaper" : "same", high, low };
     file = file.replace(tariff, "");
   }
   for (const line of file.split("\n")) {
@@ -582,8 +612,11 @@ const lastStep = () => (unfinished() ? 3 : 2);
 function pricesProblem() {
   if ($("set-cheap").value === "own") {
     const [high, low] = [$("set-high").value, $("set-low").value];
-    if ($("set-from").value === $("set-to").value)
+    if (!$("set-from2").value !== !$("set-to2").value)
+      return "The second cheaper hours need a start and an end, or None for both.";
+    if (ownStretches().some(([from, to]) => from === to))
       return "The cheaper hours have to end at another time than they start.";
+    if (dayLine(ownStretches()) === "low") return "The cheaper hours can't take the whole day.";
     if (high === "" || low === "") return "Enter what a kWh costs in the cheaper hours and in the others.";
     return Number(low) < Number(high) ? "" : "The cheaper hours have to cost less than the others.";
   }
@@ -616,9 +649,21 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin", "area", "price", "margin", "fixed", "cheap", "plan", "hours", "weekends", "high", "low"].map(
-    (n) => $(`${n}-row`),
-  );
+  const names = [
+    "vin",
+    "area",
+    "price",
+    "margin",
+    "fixed",
+    "cheap",
+    "plan",
+    "hours",
+    "hours2",
+    "weekends",
+    "high",
+    "low",
+  ];
+  const rows = names.map((name) => $(`${name}-row`));
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -719,10 +764,15 @@ function fillSettings() {
   $("set-area").replaceChildren(...(areas.includes(area) ? [] : [new Option("Choose", "")]), ...areaOptions);
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
-  const times = Array.from({ length: 96 }, (_, i) => `${pad(Math.floor(i / 4))}:${pad((i % 4) * 15)}`);
-  for (const id of ["set-from", "set-to"]) $(id).replaceChildren(...times.map((time) => new Option(time, time)));
-  const own = values.own ?? { from: "22:00", to: "07:00", weekends: "same", high: "", low: "" };
-  for (const key of ["from", "to", "weekends", "high", "low"]) $(`set-${key}`).value = own[key];
+  const times = Array.from({ length: 96 }, (_, i) => timeOf(i * 15));
+  for (const id of ["set-from", "set-to", "set-from2", "set-to2"]) {
+    const none = id.endsWith("2") ? [new Option("None", "")] : []; // the second stretch is optional
+    $(id).replaceChildren(...none, ...times.map((time) => new Option(time, time)));
+  }
+  const own = values.own ?? { stretches: [["22:00", "07:00"]], weekends: "same", high: "", low: "" };
+  const [[from, to], [from2, to2] = ["", ""]] = own.stretches;
+  const fields = { from, to, from2, to2, weekends: own.weekends, high: own.high, low: own.low };
+  for (const [key, value] of Object.entries(fields)) $(`set-${key}`).value = value;
   fillPlans(values.own ? "own" : plan ? "plan" : unfinished() ? "" : "none", plan);
   const zone = values.timezone ?? phone;
   const known = zones.includes(zone);
@@ -820,14 +870,18 @@ function formSettings(prices = true) {
   return `${lines.join("\n")}\n`;
 }
 
-// Own hours as a tariff: the cheaper rate from one time to another, which may run past midnight, every day, or on
+// The form's cheaper stretches: the first, and the second where it has its start and end.
+const ownStretches = () =>
+  [
+    [$("set-from").value, $("set-to").value],
+    [$("set-from2").value, $("set-to2").value],
+  ].filter(([from, to]) => from && to);
+
+// Own hours as a tariff: the cheaper rate in one or two stretches, which may run past midnight, every day, or on
 // weekdays and all weekend.
 function ownHours() {
   const v = (id) => $(id).value.trim();
-  const [from, to] = [v("set-from"), v("set-to")];
-  let day = from > to ? `low ${to} high ${from} low` : `high ${from} low ${to} high`;
-  if (from === "00:00") day = `low ${to} high`;
-  if (to === "00:00") day = `high ${from} low`;
+  const day = dayLine(ownStretches());
   const days = v("set-weekends") === "cheaper" ? [`mon-fri: ${day}`, "sat-sun: low"] : [`mon-sun: ${day}`];
   return [
     "tariff:",
