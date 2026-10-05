@@ -232,9 +232,24 @@ select:disabled {
   width: auto;
   text-align: left;
 }
+/* A box before its words, as in a list of options, in the setup too. */
+.row.check {
+  justify-content: flex-start;
+  gap: 10px;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.step .row.check:not(#vin-row) {
+  flex-direction: row;
+  align-items: center;
+}
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
-input:not([type="file"]) {
+input:not([type="file"], [type="checkbox"]) {
   width: 7em;
   font: inherit;
   text-align: right;
@@ -337,6 +352,9 @@ ol.note {
 }
 .error {
   color: var(--red);
+}
+.note a {
+  color: var(--accent);
 }
 
 /* --- Toast --- */

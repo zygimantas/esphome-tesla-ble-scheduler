@@ -94,7 +94,7 @@ chore(plans): update ESO's plans for 2027
 
 ## Plans
 
-A plan is a grid operator's prices and hours, in `plans/`, in a folder for its country: `plans/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
+A plan is a grid operator's prices and hours, in `plans/`, in a folder for its country, asked for with the Grid plan issue form or added by anyone: `plans/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
 
 - **The format** is that of `tariff:` in [Tariff](docs/tariff.md), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
 - **The prices** are the operator's fees per kWh, with VAT, in its currency. Monthly fees, fees per kW and the charges that are the same every hour, like taxes, stay out, and the operator's page in `docs/` says which.

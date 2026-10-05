@@ -74,6 +74,14 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
   </g>
 </svg>`;
 
+// How a plan the list doesn't have gets into it, and what to do until then.
+const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
+const PLAN_LINKS =
+  `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for yours</a>, or ` +
+  `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
+  "boards get it with the next release. Until then, fees that change with the hour go in a settings file, which " +
+  "Upload settings takes.";
+
 const PAGE = `
 <header class="bar">
   ${LOGO}
@@ -91,7 +99,9 @@ const PAGE = `
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country / Area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <p id="plans-note" class="note">No grid plans here yet: fees that change with the hour go in a settings file, which Upload settings takes.</p>
+    <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
+    <p id="plans-note" class="note">No grid plans here yet: ${PLAN_LINKS}</p>
+    <p id="unlisted-note" class="note">${PLAN_LINKS.replace("ask for yours", "Ask for your plan")}</p>
     <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -260,6 +270,10 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
+  const unlisted = $("set-unlisted").checked;
+  $("set-plan").disabled = unlisted;
+  $("plans-note").hidden = !$("plan-row").hidden || !$("set-area").value;
+  $("unlisted-note").hidden = !unlisted;
   $("fixed-row").hidden = !fixed;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
@@ -591,7 +605,18 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin-row", "area-row", "plan-row", "plans-note", "price-row", "margin-row", "fixed-row"].map($);
+  const names = [
+    "vin-row",
+    "area-row",
+    "plan-row",
+    "unlisted-row",
+    "plans-note",
+    "unlisted-note",
+    "price-row",
+    "margin-row",
+    "fixed-row",
+  ];
+  const rows = names.map($);
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -638,25 +663,24 @@ async function nextStep() {
   requestRender();
 }
 
-// The grid plan chosen, or "" for one the board doesn't know or none chosen yet.
+// The grid plan chosen, or "" for one that isn't listed or none chosen yet.
 const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").value);
 
-// The country's plans, then Not listed yet, last, where people look after not finding theirs, for a plan the board
-// doesn't know; with `plan` selected, or Not listed yet for "". A new board's, with `plan` undefined, starts at the
-// country's only plan, as everyone in Spain and Slovenia pays it, or at Choose where there are several, as nearly
-// every home is on one and skipping it would leave out its hours. Where the country has no plans, a note says where
-// such hours go instead.
+// The country's plans, with `plan` selected, and My plan isn't listed ticked for "", a home's real plan that
+// isn't in plans/: a box under the list rather than an option in it, as no one should have to search a long list for
+// a way out. A new board's, with `plan` undefined, starts at the country's only plan, as everyone in Spain and
+// Slovenia pays it, or at Choose where there are several, as nearly every home is on one and skipping it would leave
+// out its hours. Choose and Not listed show only in the closed list. No rows where the country has no plans.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  const choose = new Option("Choose", "");
-  choose.disabled = choose.hidden = true; // in the closed list only
-  const options = plans.map(([name, title]) => new Option(title, name));
-  $("set-plan").replaceChildren(choose, ...options, new Option("Not listed yet", "none"));
-  const fallback = plan !== undefined ? "none" : plans.length === 1 ? plans[0][0] : "";
+  const closed = [new Option("Choose", ""), new Option("Not listed", "none")];
+  for (const option of closed) option.disabled = option.hidden = true;
+  $("set-plan").replaceChildren(...closed, ...plans.map(([name, title]) => new Option(title, name)));
+  $("set-unlisted").checked = plan === "";
+  const fallback = plan === "" ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
-  $("plan-row").hidden = !plans.length;
-  $("plans-note").hidden = Boolean(plans.length) || !country;
+  $("plan-row").hidden = $("unlisted-row").hidden = !plans.length;
 }
 
 // A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
@@ -1040,6 +1064,10 @@ function bind() {
     if (unfinished()) guessFromArea();
   });
   for (const id of ["set-area", "set-price", "set-plan"]) $(id).addEventListener("change", requestRender);
+  $("set-unlisted").addEventListener("change", (e) => {
+    $("set-plan").value = e.target.checked ? "none" : "";
+    requestRender();
+  });
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
