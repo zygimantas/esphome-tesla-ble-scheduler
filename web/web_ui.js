@@ -766,7 +766,7 @@ function fillSettings() {
   const vat = values["market: vat"];
   $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
   $("set-margin").value = values["market: margin"] ?? "0.00";
-  $("set-fixed").value = values.fixed_price ?? "";
+  $("set-fixed").value = values.fixed_price ?? "0.00";
   $("set-vin").value = values.tesla_vin ?? "";
   $("set-battery").value = values.tesla_battery_kwh ?? 75;
   batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
@@ -835,7 +835,7 @@ function formSettings(prices = true) {
   const fixed = prices && v("set-price") === "fixed";
   if (fixed && currency) lines.push(`currency: ${currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees
-  if (fixed && gridPlan() && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
+  if (fixed && gridPlan() && Number(v("set-fixed"))) lines.push(`fixed_price: ${v("set-fixed")}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
