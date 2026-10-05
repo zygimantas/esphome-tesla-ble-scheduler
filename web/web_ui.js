@@ -133,7 +133,7 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Prices<span class="summary"></span></div>
     <div class="body">
-      <p class="note">Your bill has two parts: the supplier's price for the electricity, like Ignitis or Enefit, and the grid operator's fee, like ESO's. Your contract with the supplier says whether its price follows the exchange by the hour, and your bill whether either changes with the time of day. The board charges when the two together cost the least.</p>
+      <p class="note">Your bill has two parts: the supplier's price for the electricity and the grid operator's fee for bringing it. Your contract says whether that price is dynamic or fixed, and your bill names your grid plan. The board charges when the two together cost the least.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
