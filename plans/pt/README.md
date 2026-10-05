@@ -37,6 +37,6 @@ The prices add 23% VAT. Up to 6.9 kVA, a home's first 200 kWh in 30 days pay 6%,
 
 With a price that follows the market (OMIE) by the hour or quarter-hour, choose **Dynamic (spot, exchange)** on the page. With a fixed price, choose Fixed: the plan's periods then make the cheap hours.
 
-The Azores and Madeira have hours of their own and no market prices, and tri-horária above 20.7 kVA has other prices: write your own tariff, as [Tariff](tariff.md) says.
+The Azores and Madeira have hours of their own and no market prices, and tri-horária above 20.7 kVA has other prices: write your own tariff, as [Tariff](../../docs/tariff.md) says.
 
-ERSE sets the prices every January. The prices are in the plans in [plans/pt](../plans/pt). [Tariff](tariff.md) says how to change them for yourself.
+ERSE sets the prices every January. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

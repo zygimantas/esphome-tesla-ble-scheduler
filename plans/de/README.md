@@ -54,6 +54,6 @@ The other hours, and the other months all day, have the standard fee, the same a
 
 The plans count the network charge per kWh. They leave out the yearly base price (Grundpreis), Modul 1's yearly reduction and the meter's fee, and the charges that aren't the grid operator's own: the concession fee (Konzessionsabgabe), the levies (KWKG, § 19 StromNEV and the offshore network levy) and the electricity tax (Stromsteuer). These are the same every hour, except that a supplier's time-variable price may have a lower concession fee in its cheap hours.
 
-Schleswig-Holstein Netz, LEW Verteilnetz, Syna, Netze ODR and the hundreds of smaller operators aren't here yet, nor the reduced fees of wallboxes and heat pumps that had them before 2024, with the operator's own hours. For those, write your own tariff, as [Tariff](tariff.md) says.
+Schleswig-Holstein Netz, LEW Verteilnetz, Syna, Netze ODR and the hundreds of smaller operators aren't here yet, nor the reduced fees of wallboxes and heat pumps that had them before 2024, with the operator's own hours. For those, write your own tariff, as [Tariff](../../docs/tariff.md) says.
 
-Each operator sets its prices, and Modul 3's hours, for a calendar year, under the Federal Network Agency's rules. It publishes next year's by 15 October, as preliminary, and they change on 1 January. The prices are in the plans in [plans/de](../plans/de). [Tariff](tariff.md) says how to change them for yourself.
+Each operator sets its prices, and Modul 3's hours, for a calendar year, under the Federal Network Agency's rules. It publishes next year's by 15 October, as preliminary, and they change on 1 January. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.

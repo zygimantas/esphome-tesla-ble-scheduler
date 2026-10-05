@@ -15,7 +15,7 @@ These are left out of every price the board shows, as they're the same in every 
 - the grid operator's fees for the connection, the transport and the meter;
 - the energy tax (energiebelasting) per kWh, and its yearly tax reduction.
 
-With one fixed price, all hours cost the same, so the board charges at once. With a normal and a cheaper off-peak (dal) price, leave `market:` out and write your own tariff with both, each your whole price per kWh with VAT, as [Tariff](tariff.md#a-fixed-price) says. Off-peak is usually from 23:00 to 07:00 on workdays, in Noord-Brabant and Limburg from 21:00, and all day at weekends and on public holidays. Your contract says if yours differ. With your own prices:
+With one fixed price, all hours cost the same, so the board charges at once. With a normal and a cheaper off-peak (dal) price, leave `market:` out and write your own tariff with both, each your whole price per kWh with VAT, as [Tariff](../../docs/tariff.md#a-fixed-price) says. Off-peak is usually from 23:00 to 07:00 on workdays, in Noord-Brabant and Limburg from 21:00, and all day at weekends and on public holidays. Your contract says if yours differ. With your own prices:
 
 ```yaml
 tariff:
@@ -35,4 +35,4 @@ In Noord-Brabant and Limburg, write 21:00 for 23:00. Add the other public holida
 
 The ACM, the Dutch regulator, sets each grid operator's fees every year, from 1 January. The operators have proposed fees per kWh that change with the hour, cheaper at night and in the middle of the day and dearest in the evening, from 2029 at the earliest. The ACM expects to decide at the end of 2026. Plans for them come here once their prices are set.
 
-[Tariff](tariff.md) says how to write your own tariff.
+[Tariff](../../docs/tariff.md) says how to write your own tariff.
