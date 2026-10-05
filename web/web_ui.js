@@ -120,9 +120,10 @@ const PAGE = `
   </section>
 
   <section class="card step" hidden>
-    <div class="title">VIN<span class="summary"></span></div>
+    <div class="title">Tesla<span class="summary"></span></div>
     <div class="body">
       <p class="note">The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+      <p id="battery-note" class="note">The battery's size and your home charging power tell the board how long charging takes. The size is a guess from your car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X. The power is what the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -144,13 +145,6 @@ const PAGE = `
     <div class="title">Prices<span class="summary"></span></div>
     <div class="body">
       <p class="note">Your bill has two parts: the grid operator's fee for bringing the electricity and the supplier's price for it. Your bill names your grid plan, and your contract says whether the supplier's price is dynamic or fixed. The board charges when the two together cost the least.</p>
-      <p class="note error" hidden></p>
-    </div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Battery<span class="summary"></span></div>
-    <div class="body">
-      <p class="note">The board works out how long charging takes from your battery's size and your home charging power. The size is a guess from your car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X. The power is what the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -577,12 +571,16 @@ function vinProblem(vin) {
   return "0123456789X"[sum % 11] === vin[8] ? "" : "This VIN doesn't add up: a letter or digit is off. Check it again.";
 }
 
-const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
-// The setup's last step: Key once the settings have prices, else Battery.
-const lastStep = () => (unfinished() ? 4 : 2);
+// Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
+let batteryTyped = false;
 
-// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which Battery asks to check,
-// as the VIN tells the battery itself only in codes that differ by year and by source.
+const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
+// The setup's last step: Key once the settings have prices, else Prices.
+const lastStep = () => (unfinished() ? 3 : 2);
+
+// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which the setup's first
+// step fills in as the VIN is typed, for the owner to check, as the VIN tells the battery itself only in codes that
+// differ by year and by source.
 const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
 const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 
@@ -593,9 +591,9 @@ function pricesProblem() {
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN, Prices and Battery
-// borrow the form's VIN row, its rows from the country to the supplier's part, and the car's two, below their text
-// and above their buttons, which go back to the form after.
+// fields, done ones fold to their titles and what they hold, later ones show only their titles. Tesla and Prices
+// borrow the form's rows, the VIN, battery and power and those from the country to the supplier's part, around their
+// notes and above their buttons, and give them back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -631,10 +629,12 @@ function renderSetup() {
     "power-row",
   ];
   const rows = names.map($);
-  const homes = rows.map((_, i) => steps[i === 0 ? 0 : i < rows.length - 2 ? 2 : 3].querySelector(".body"));
+  // each before its place: the VIN above the battery's note, the battery and the power below it, the prices in Prices
+  const places = rows.map((row) =>
+    row.id === "vin-row" ? $("battery-note") : steps[row.id.match(/^(battery|power)-/) ? 0 : 2].querySelector(".error"),
+  );
   if (setup.step) {
-    for (const [i, row] of rows.entries())
-      if (row.parentNode !== homes[i]) homes[i].querySelector(".error, .save").before(row);
+    for (const [i, row] of rows.entries()) if (row.parentNode !== places[i].parentNode) places[i].before(row);
   } else if (rows[0].parentNode !== $("settings-card")) {
     $("set-vat")
       .closest("label")
@@ -646,13 +646,12 @@ function renderSetup() {
   steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, plan, price]
     .filter(Boolean)
     .join(" · ");
-  steps[3].querySelector(".summary").textContent = `${$("set-battery").value} kWh · ${$("set-power").value} kW`;
 }
 
-// Save: on to the next step. VIN's, Validate VIN, checks the VIN and saves it, as the board needs it to find the car,
-// with the guesses, the battery's from the car's model, and no prices yet on a new board; Prices checks the prices,
-// and Battery's Finish setup saves them with the car's numbers, which restarts the board. Each says what's wrong on its
-// card, and the saves keep the settings the setup doesn't show.
+// Save: on to the next step. Tesla's Continue checks the VIN and saves it with the battery and the power, as the board
+// needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Set prices saves the
+// prices, which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup
+// doesn't show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
   const problem = { 1: vinProblem(vin), 3: pricesProblem() }[setup.step] ?? "";
@@ -666,8 +665,8 @@ async function nextStep() {
   const { values } = readSettings(settings.text);
   if (setup.step === 1 && vin !== values.tesla_vin) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
-    if (!values.tesla_battery_kwh) $("set-battery").value = batteryOf(vin);
-    if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(["tesla_vin"])))) return;
+    const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
+    if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(car)))) return;
   }
   if (setup.step < lastStep()) {
     setup.step += 1;
@@ -755,6 +754,7 @@ function fillSettings() {
   $("set-fixed").value = values.fixed_price ?? "";
   $("set-vin").value = values.tesla_vin ?? "";
   $("set-battery").value = values.tesla_battery_kwh ?? 75;
+  batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
   // a currency of the file's own, other than the one the form writes, is more than the form shows
@@ -1077,7 +1077,10 @@ function bind() {
     const caret = vin(field.value.slice(0, field.selectionStart)).length;
     field.value = vin(field.value).slice(0, 17);
     field.setSelectionRange(caret, caret);
+    // the setup's guess of the battery, from the car's model, while the size is no one's own
+    if (setup.step && !batteryTyped && field.value.length === 17) $("set-battery").value = batteryOf(field.value);
   });
+  $("set-battery").addEventListener("input", () => (batteryTyped = true));
   // another country's plans, with its only one chosen
   $("set-area").addEventListener("change", () => {
     fillPlans();
@@ -1103,7 +1106,7 @@ function bind() {
     // Key has only Create key, as it moves on once the car answers; the steps before open with a click instead of Back
     if (i === 1) continue;
     const body = card.querySelector(".body");
-    const label = ["Validate VIN", "", "Set prices", "Finish setup"][i];
+    const label = ["Continue", "", "Set prices"][i];
     body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
     press(body.querySelector(".save"), nextStep);
   }

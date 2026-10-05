@@ -355,6 +355,10 @@ ol.note {
 .step .note + #vin-row {
   min-height: 0;
 }
+/* Below the VIN's field, the battery's note keeps the same distance. */
+.step #vin-row + .note {
+  margin-top: 22px;
+}
 .error {
   color: var(--red);
 }
