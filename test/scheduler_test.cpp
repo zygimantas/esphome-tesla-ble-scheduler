@@ -965,6 +965,14 @@ static void test_reads_the_settings_file() {
   CHECK(own.calendar.size() == 1 && own.calendar[0].second[0].second == "day 00:30 night 05:30 day");
   CHECK(own.rates.size() == 2 && s.battery_kwh == 82.0f && near(s.charging_kw, 7.4f));
 
+  // A fixed price with a plan, which the board adds to every quarter-hour as it does a margin.
+  const std::string fixed_with_plan =
+      "fixed_price: 0.15\ntariff:\n  plan: lt/eso-standartinis-2-zones\n"
+      "tesla_battery_kwh: 75\ntesla_charging_kw: 11\n"
+      "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Vilnius\n";
+  CHECK_STR(read_settings(fixed_with_plan, repository_plans(), s), "");
+  CHECK(s.area == nullptr && near(s.margin, 0.15f) && s.plan == "lt/eso-standartinis-2-zones");
+
   // A market area in small letters, its own currency, and a margin left out.
   CHECK_STR(read_settings(settings_with("  area:", "  area: no1\n"), repository_plans(), s),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
@@ -1050,6 +1058,13 @@ static void test_settings_file_errors() {
             "market: margin must be a price per kWh, like 0.012");
   CHECK_STR(settings_error(settings_with("  margin", "  margin: 1e7\n")),
             "market: margin must be a price per kWh, like 0.012");
+  // Fixed price: without a market, and a price
+  CHECK_STR(settings_error("fixed_price: 0.15\n" + std::string(SETTINGS)),
+            "fixed_price goes without market:; on top of a market price, use market: margin");
+  for (const char *price : {"15 ct", "-0.1", "1e7"})
+    CHECK_STR(settings_error(std::string("fixed_price: ") + price + "\n" + no_prices +
+                             "tariff:\n  plan: lt/eso-standartinis-2-zones\n"),
+              "fixed_price must be a price per kWh, like 0.15");
   // Currency
   for (const char *currency : {"EURO", "E1R", "E[R"})
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + SETTINGS),

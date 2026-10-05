@@ -93,6 +93,7 @@ const PAGE = `
     <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <label id="fixed-row" class="row"><span>Fixed price per kWh</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
     <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
     <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -264,12 +265,13 @@ function render() {
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
   $("plan-row").hidden = $("set-cheap").value !== "plan";
+  $("fixed-row").hidden = !fixed || $("set-cheap").value !== "plan";
   for (const id of ["hours-row", "weekends-row", "high-row", "low-row"]) $(id).hidden = $("set-cheap").value !== "own";
   $("high-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, other hours`;
   $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
-  for (const id of ["set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
+  for (const id of ["set-fixed", "set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
   $("cancel-settings").hidden = needed;
 }
 
@@ -509,6 +511,7 @@ const SMARD_ONLY = ["CH", "CZ", "HU"];
 // The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
 const FORM_PLACES = [
   "currency",
+  "fixed_price",
   "market",
   "market: area",
   "market: margin",
@@ -613,7 +616,9 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin", "area", "price", "cheap", "plan", "hours", "weekends", "high", "low"].map((n) => $(`${n}-row`));
+  const rows = ["vin", "area", "price", "cheap", "plan", "fixed", "hours", "weekends", "high", "low"].map((n) =>
+    $(`${n}-row`),
+  );
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -654,7 +659,7 @@ async function nextStep() {
     setup.stay = false;
     return requestRender();
   }
-  const file = unfinished() ? withForm(["currency", "market", "tariff", "timezone"]) : settings.text;
+  const file = unfinished() ? withForm(["currency", "fixed_price", "market", "tariff", "timezone"]) : settings.text;
   if (file !== settings.text && !(await sendSettings(file))) return;
   setup.saving = file !== settings.text;
   setup.step = 0;
@@ -729,6 +734,7 @@ function fillSettings() {
   const vat = values["market: vat"];
   $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
   $("set-margin").value = values["market: margin"] ?? "";
+  $("set-fixed").value = values.fixed_price ?? "";
   $("set-vin").value = values.tesla_vin ?? "";
   $("set-battery").value = values.tesla_battery_kwh ?? 75;
   $("set-power").value = values.tesla_charging_kw ?? 11;
@@ -793,7 +799,10 @@ function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
   const currency = CURRENCIES[v("set-area").slice(0, 2)];
-  if (prices && v("set-price") === "fixed" && currency) lines.push(`currency: ${currency}`);
+  const fixed = prices && v("set-price") === "fixed";
+  if (fixed && currency) lines.push(`currency: ${currency}`);
+  // the supplier's fixed price goes on top of a grid plan's fees; own hours' prices are whole ones already
+  if (fixed && v("set-cheap") === "plan" && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);

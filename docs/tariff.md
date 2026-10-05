@@ -64,7 +64,15 @@ If something is wrong, the board keeps the settings it has and says what when yo
 
 ## A fixed price
 
-Leave `market:` out: no market prices are downloaded, and each rate's price is your whole price per kWh, the supplier's price and the grid fee together, with VAT. One price for every hour:
+Leave `market:` out: no market prices are downloaded. With your grid operator's plan, add your supplier's price as `fixed_price`, which the board adds to every hour:
+
+```yaml
+fixed_price: 0.15
+tariff:
+  plan: lt/eso-standartinis-2-zones
+```
+
+With rates of your own, each rate's price is your whole price per kWh, the supplier's price and the grid fee together, with VAT. One price for every hour:
 
 ```yaml
 tariff:
