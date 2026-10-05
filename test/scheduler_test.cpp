@@ -2259,7 +2259,7 @@ static void test_plug_in_message_without_prices() {
   const Run run =
       simulate(controller, FakeTesla(), SEP24_1700Z - 60, SEP24_1700Z + HOUR, {{SEP24_1700Z, &FakeTesla::plug_in}});
   REQUIRE(run.messages.size() == 1);
-  CHECK_STR(run.messages[0].second.title, "Tesla charging");
+  CHECK_STR(run.messages[0].second.title, "ESPHome Tesla BLE Scheduler");
   CHECK_STR(run.messages[0].second.message, "Charging (no prices)");
 }
 
