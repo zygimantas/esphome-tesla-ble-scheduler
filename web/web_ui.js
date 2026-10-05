@@ -98,14 +98,19 @@ const PAGE = `
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN<button type="button" class="info" data-hint="vin-hint" aria-label="About the VIN" aria-expanded="false">i</button></span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <p id="vin-hint" class="note" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-    <label id="area-row" class="row"><span>Country / Area</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <label id="area-row" class="row"><span>Country / Area<button type="button" class="info" data-hint="area-hint" aria-label="About the country or area" aria-expanded="false">i</button></span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <p id="area-hint" class="note" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT and the grid plans to choose from.</p>
+    <label id="plan-row" class="row"><span>Grid plan<button type="button" class="info" data-hint="plan-hint" aria-label="About the grid plan" aria-expanded="false">i</button></span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <p id="plan-hint" class="note" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
     <p id="plans-note" class="note">No grid plans here yet: ${PLAN_LINKS}</p>
     <p id="unlisted-note" class="note">${PLAN_LINKS.replace("ask for yours", "Ask for your plan")}</p>
-    <label id="price-row" class="row"><span>Contract type</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
-    <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="price-row" class="row"><span>Contract type<button type="button" class="info" data-hint="price-hint" aria-label="About the contract type" aria-expanded="false">i</button></span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+    <p id="price-hint" class="note" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
+    <label id="margin-row" class="row"><span>Supplier's margin<button type="button" class="info" data-hint="margin-hint" aria-label="About the supplier's margin" aria-expanded="false">i</button></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+    <p id="margin-hint" class="note" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
+    <label id="fixed-row" class="row"><span>Supplier's part<button type="button" class="info" data-hint="fixed-hint" aria-label="About the supplier's part" aria-expanded="false">i</button></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+    <p id="fixed-hint" class="note" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
     <label id="battery-row" class="row"><span>Battery (kWh)<button type="button" class="info" data-hint="battery-hint" aria-label="About the battery" aria-expanded="false">i</button></span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <p id="battery-hint" class="note" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
     <label id="power-row" class="row"><span>Charging power (kW)<button type="button" class="info" data-hint="power-hint" aria-label="About the charging power" aria-expanded="false">i</button></span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
@@ -145,7 +150,6 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Prices<span class="summary"></span></div>
     <div class="body">
-      <p class="note">Your bill has two parts: the grid operator's fee for bringing the electricity and the supplier's price for it. Your bill names your grid plan, and your contract says whether the supplier's price is dynamic or fixed. The board charges when the two together cost the least.</p>
       <p class="note error" hidden></p>
     </div>
   </section>
@@ -282,8 +286,12 @@ function render() {
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
   const unit = `${currency} with VAT per kWh`;
-  $("margin-row").firstElementChild.textContent = `Supplier's margin (${unit})`;
-  $("fixed-row").firstElementChild.textContent = `Supplier's part (${unit}, without grid fees)`;
+  $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
+  $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
+  // a hint shows while its "i" is open and its field is shown
+  for (const button of document.querySelectorAll(".info"))
+    $(button.dataset.hint).hidden =
+      button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
   $("cancel-settings").hidden = needed;
 }
 
@@ -620,13 +628,18 @@ function renderSetup() {
     "vin-row",
     "vin-hint",
     "area-row",
+    "area-hint",
     "plan-row",
+    "plan-hint",
     "unlisted-row",
     "plans-note",
     "unlisted-note",
     "price-row",
+    "price-hint",
     "margin-row",
+    "margin-hint",
     "fixed-row",
+    "fixed-hint",
     "battery-row",
     "battery-hint",
     "power-row",
@@ -1086,9 +1099,8 @@ function bind() {
   for (const button of document.querySelectorAll(".info"))
     button.addEventListener("click", (e) => {
       e.preventDefault();
-      const hint = $(button.dataset.hint);
-      hint.hidden = !hint.hidden;
-      button.setAttribute("aria-expanded", String(!hint.hidden));
+      button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
+      requestRender();
     });
   // another country's plans, with its only one chosen
   $("set-area").addEventListener("change", () => {
