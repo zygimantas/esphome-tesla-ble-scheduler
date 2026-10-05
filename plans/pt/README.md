@@ -1,4 +1,4 @@
-# Portugal's access tariffs
+# Portuguese plans
 
 The network access tariffs (tarifas de acesso às redes) that every home on the mainland up to 20.7 kVA pays per kWh, whoever its supplier, with prices with VAT. ERSE sets them, the same with E-REDES and with the small local grid operators. Your bill names your tariff option (opção tarifária) and, for bi-horária and tri-horária, your cycle (ciclo). Name yours under `tariff:` in your settings file:
 
@@ -10,7 +10,7 @@ tariff:
   plan: pt/bi-horaria-diario
 ```
 
-| Your tariff | Plan |
+| Tariff option and cycle | Plan |
 | --- | --- |
 | Simples | `pt/simples` |
 | Bi-horária, ciclo diário | `pt/bi-horaria-diario` |

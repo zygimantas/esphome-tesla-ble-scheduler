@@ -1,4 +1,4 @@
-# Italy's TD tariff
+# Italy's TD plan
 
 The charge per kWh of the TD tariff, which every household in Italy pays for the grid, with prices with VAT. ARERA, the regulator, sets it for the whole country, so every grid operator bills the same. Name it under `tariff:` in your settings file:
 

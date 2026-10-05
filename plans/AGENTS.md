@@ -9,7 +9,7 @@
 ## Where the prices are, and the traps
 
 - Austria: every area's prices are in E-Control's SNE-V (BGBl. II Nr. 305/2025, in RIS). From 1 January 2027 the SNE-G-V brings new prices, a winter price from 22:00 to 04:00 from October to March (WiNAP), and a monthly fee per kW.
-- Belgium: Fluvius's tariff list for each area; ORES's and RESA's grids on the CWaPE site (RESA's own page renders its prices with scripts); Sibelga's in Brugel's decisions (Sibelga's site refuses automated requests). Brussels' tariff changes structure from 2028.
+- Belgium: Fluvius's tariff list for each area; ORES's and RESA's grids on the CWaPE site (RESA's own page renders its prices with scripts); Sibelga's in Brugel's decisions (Sibelga's site refuses automated requests). Brussels' fees change structure from 2028.
 - Bulgaria: EWRC's decision, which changes every 1 July.
 - Croatia: HERA's decisions in Narodne novine; no change before April 2027.
 - Czechia: ERÚ's price decision at the end of November, for 1 January.
@@ -33,7 +33,7 @@ Left out in October 2026, each for a reason the country's README.md or the resea
 
 ## Settled with the owner; don't propose again
 
-- No plans for France, whose off-peak hours are set for each address, or the Netherlands, which has no grid fee per kWh (time-of-use network tariffs are planned from 2029: plans then, one per operator).
+- No plans for France, whose off-peak hours are set for each address, or the Netherlands, which has no grid fee per kWh (time-of-use network fees are planned from 2029: plans then, one per operator).
 - All the plans stay, without trimming the long lists of Germany, Sweden, Finland and Switzerland.
 - Czechia's, Hungary's and Switzerland's plans are in their own currency, and the board converts SMARD's euros into it at the ECB's daily rate.
 - The plans went in with 2026's prices, to update at the turn of the year (#161).

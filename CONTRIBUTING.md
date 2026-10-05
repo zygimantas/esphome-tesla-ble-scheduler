@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the tariff, and `settings.h` reads and checks the settings file, which the page's form writes (plain C++, unit-tested on a computer). `scheduler_component.h` and `.cpp` connect them to ESPHome (the settings file, the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the plan, and `settings.h` reads and checks the settings file, which the page's form writes (plain C++, unit-tested on a computer). `scheduler_component.h` and `.cpp` connect them to ESPHome (the settings file, the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 Releases ship one firmware for every board, which CI builds from `release.yaml`: `device.yaml` with the component of this folder, and nothing of a user's, who sets Wi-Fi with ESPHome Web and enters the settings on the page. For a build of your own, start from `config.example.yaml`, which loads both from a release, or point a `config.yaml` at this folder like `release.yaml` does, and add what you need, like your Wi-Fi, an API key and OTA from your computer.
 
@@ -12,7 +12,7 @@ In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the 
 
 ## Branching
 
-1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/tariff`, using the commit types below.
+1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/plans`, using the commit types below.
 2. Keep branches short-lived and scoped to one change.
 3. Open a pull request early.
 

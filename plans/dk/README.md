@@ -1,6 +1,6 @@
 # Danish plans
 
-The household grid tariff, Nettarif C, of Denmark's eight biggest grid companies, with prices with VAT, in kroner. Name yours under `tariff:` in your settings file, with your market area and Denmark's VAT, which make kroner the currency:
+The household grid plans (Nettarif C) of Denmark's eight biggest grid companies, with prices with VAT, in kroner. Name yours under `tariff:` in your settings file, with your market area and Denmark's VAT, which make kroner the currency:
 
 ```yaml
 market:
@@ -31,7 +31,7 @@ Every plan has the same hours, every day, weekends and public holidays included:
 | 06:00 - 17:00 and 21:00 - 24:00 | High |
 | 17:00 - 21:00 | Peak |
 
-High and peak cost less from April to September than from October to March. The hours follow the clock, summer time included. Konstant's prices are after the discount (rabat) it gives on the tariff.
+High and peak cost less from April to September than from October to March. The hours follow the clock, summer time included. Konstant's prices are after the discount (rabat) it gives on Nettarif C.
 
 The plans leave out the yearly subscription and the charges that are the same every hour: Energinet's grid and system tariffs and the electricity tax (elafgift). What homes with solar panels pay or get for their own power is left out too.
 
