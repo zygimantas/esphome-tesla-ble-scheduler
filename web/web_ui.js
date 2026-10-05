@@ -91,9 +91,10 @@ const PAGE = `
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+    <label id="margin-row" class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="fixed-row" class="row"><span>Fixed price per kWh</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <label id="fixed-row" class="row"><span>Fixed price per kWh</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
     <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
     <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -101,7 +102,6 @@ const PAGE = `
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
-    <label class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
@@ -271,7 +271,7 @@ function render() {
   $("low-row").firstElementChild.textContent = `${fixed ? "Price" : "Grid fee"}, cheaper hours`;
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
-  for (const id of ["set-fixed", "set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
+  for (const id of ["set-margin", "set-fixed", "set-high", "set-low"]) $(id).placeholder = `${currency} with VAT`;
   $("cancel-settings").hidden = needed;
 }
 
@@ -616,8 +616,8 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin", "area", "price", "cheap", "plan", "fixed", "hours", "weekends", "high", "low"].map((n) =>
-    $(`${n}-row`),
+  const rows = ["vin", "area", "price", "margin", "fixed", "cheap", "plan", "hours", "weekends", "high", "low"].map(
+    (n) => $(`${n}-row`),
   );
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
