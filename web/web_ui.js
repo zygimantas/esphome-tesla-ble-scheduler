@@ -118,7 +118,7 @@ const PAGE = `
     <div class="body">
       <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
       <ol class="note">
-        <li>Plug the board into a USB charger next to the car.</li>
+        <li>Make sure the board is plugged into a USB charger next to the car.</li>
         <li>Sit in the car with your Tesla key card.</li>
         <li>Press Create key button below.</li>
         <li>Tap the Tesla key card on the console.</li>
