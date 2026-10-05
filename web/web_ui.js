@@ -89,7 +89,8 @@ const PAGE = `
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
     <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
-    <label id="area-row" class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label id="area-row" class="row"><span>Country</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label id="price-row" class="row"><span>Supplier's price</span><span class="dropdown"><select id="set-price" required><option value="">Choose</option><option value="market">Exchange price, by the hour</option><option value="fixed">Fixed, or a monthly average</option></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
@@ -110,7 +111,7 @@ const PAGE = `
     <div class="title">VIN<span class="summary"></span></div>
     <div class="body">
       <p class="note">The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-      <p id="vin-error" class="note error" hidden></p>
+      <p class="note error" hidden></p>
     </div>
   </section>
   <section class="card step" hidden>
@@ -128,12 +129,11 @@ const PAGE = `
     </div>
   </section>
   <section class="card step" hidden>
-    <div class="title">Market area<span class="summary"></span></div>
-    <div class="body"></div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Grid plan<span class="summary"></span></div>
-    <div class="body"></div>
+    <div class="title">Prices<span class="summary"></span></div>
+    <div class="body">
+      <p class="note">Your bill has two parts: the supplier's price for the electricity, like Ignitis or Enefit, and the grid operator's fee, like ESO's, by your grid plan. Your contract with the supplier says whether its price follows the exchange by the hour. The board charges when the two together cost the least.</p>
+      <p class="note error" hidden></p>
+    </div>
   </section>
   <details id="advanced" class="card" hidden>
     <summary>Advanced</summary>
@@ -191,7 +191,7 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
-// The setup's open step, 1 to 4, or 0; the furthest it got, as the steps up to it open with a click; after its last
+// The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; after its last
 // step saved the settings, that the board hasn't got them yet; and that a step was opened by hand, which keeps Key
 // from moving on by itself.
 const setup = { step: 0, reached: 0, saving: false, stay: false };
@@ -256,6 +256,7 @@ function render() {
   // Settings the board can't use come first; others open from Board.
   const needed = text(E.status).startsWith("Settings: ");
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
+  for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = $("set-price").value === "fixed";
   $("cancel-settings").hidden = needed;
 }
 
@@ -539,13 +540,21 @@ function vinProblem(vin) {
 }
 
 const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
-// The setup's last step: Key once the settings have prices, else Market area, or Grid plan where the country has plans.
-const lastStep = () => (!unfinished() ? 2 : $("plan-row").hidden ? 3 : 4);
+// The setup's last step: Key once the settings have prices, else Prices.
+const lastStep = () => (unfinished() ? 3 : 2);
+
+// What's wrong with the prices, or "": with a fixed price, only a grid plan's zones make some hours cheaper.
+function pricesProblem() {
+  if ($("set-price").value !== "fixed" || $("set-plan").value) return "";
+  return $("plan-row").hidden
+    ? "With a fixed price, every hour costs the same here: the board has nothing to choose from."
+    : "With a fixed price, only the grid plan makes some hours cheaper: choose yours.";
+}
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and what they hold, later ones show only their titles. Steps 1, 3 and 4
-// borrow the form's VIN, market area and grid plan rows, below their text and above their buttons, which go back to
-// the form after.
+// fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN and Prices
+// borrow the form's VIN, country, supplier's price and grid plan rows, below their text and above their buttons,
+// which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -567,8 +576,8 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const rows = ["vin-row", "area-row", "plan-row"].map($);
-  const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
+  const rows = ["vin-row", "area-row", "price-row", "plan-row"].map($);
+  const homes = [steps[0], steps[2], steps[2], steps[2]].map((card) => card.querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
       if (row.parentNode !== homes[i]) homes[i].querySelector(".error, .save").before(row);
@@ -578,20 +587,22 @@ function renderSetup() {
       .before(...rows);
   }
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
-  steps[2].querySelector(".summary").textContent = $("set-area").selectedOptions[0]?.text ?? "";
-  steps[3].querySelector(".summary").textContent = $("set-plan").selectedOptions[0]?.text ?? "";
+  const price = { market: "By the hour", fixed: "Fixed" }[$("set-price").value];
+  const plan = $("set-plan").value && $("set-plan").selectedOptions[0].text;
+  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, plan]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 // Save: on to the next step. VIN's, Validate VIN, checks the VIN and saves it, as the board needs it to find the car,
-// with the guesses and no prices yet on a new board; the last step saves the prices, which restarts the board. Both
-// keep the settings the setup doesn't show.
+// with the guesses and no prices yet on a new board; Prices saves the prices, which restarts the board. Both say
+// what's wrong on their card, and keep the settings the setup doesn't show.
 async function nextStep() {
-  if (setup.step === 1) {
-    const problem = vinProblem($("set-vin").value.trim().toUpperCase());
-    $("vin-error").textContent = problem;
-    $("vin-error").hidden = !problem;
-    if (problem) return;
-  }
+  const problem = setup.step === 1 ? vinProblem($("set-vin").value.trim().toUpperCase()) : pricesProblem();
+  const error = document.querySelector(".step.open .error");
+  error.textContent = problem;
+  error.hidden = !problem;
+  if (problem) return;
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.checkValidity());
   if (wrong) return wrong.reportValidity();
@@ -612,7 +623,7 @@ async function nextStep() {
   requestRender();
 }
 
-// The plans of the market area's country, with the one to select if it's among them; no row where there are none.
+// The plans of the country, with the one to select if it's among them; no row where there are none.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
@@ -631,20 +642,29 @@ function guessFromArea() {
 }
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
-// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, the market area of the phone's
-// country, where it has only one.
+// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, the phone's country, where it has
+// only one market area. Without a market, the country is its grid plan's, and the supplier's price fixed.
 function fillSettings() {
   const { values, more } = readSettings(settings.text);
   const { areas, time_zones: zones } = settings.options;
-  const country = new Intl.DisplayNames(["en"], { type: "region" });
-  const areaOptions = areas.map((area) => new Option(`${country.of(area.slice(0, 2))} (${area})`, area));
+  // a country by its name, with its market area where it has several, like "Sweden, SE3", or a part, "Italy (north)"
+  const regions = new Intl.DisplayNames(["en"], { type: "region" });
+  const areaName = (area) => {
+    const [code, part] = [area.slice(0, 2), area.split("-")[1]];
+    if (part) return `${regions.of(code)} (${part.toLowerCase()})`;
+    return areas.filter((a) => a.startsWith(code)).length > 1 ? `${regions.of(code)}, ${area}` : regions.of(code);
+  };
+  const areaOptions = areas.map((area) => new Option(areaName(area), area));
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
   $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
   const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const home = Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(phone));
-  const ofHome = unfinished() ? areas.filter((area) => area.slice(0, 2) === home) : [];
-  $("set-area").value = (values["market: area"] ?? (ofHome.length === 1 ? ofHome[0] : "")).toUpperCase();
-  fillPlans(values["tariff: plan"]);
+  const plan = values["tariff: plan"] ?? "";
+  const country = unfinished() ? home : plan.slice(0, 2).toUpperCase();
+  const ofCountry = areas.filter((area) => area.slice(0, 2) === country);
+  $("set-area").value = (values["market: area"] ?? (ofCountry.length === 1 ? ofCountry[0] : "")).toUpperCase();
+  $("set-price").value = values["market: area"] ? "market" : unfinished() ? "" : "fixed";
+  fillPlans(plan);
   const zone = values.timezone ?? phone;
   $("set-zone").replaceChildren(new Option("Choose", ""), ...zones.map((name) => new Option(name, name)));
   $("set-zone").value = zones.includes(zone) ? zone : "";
@@ -712,7 +732,7 @@ function withForm(keys) {
 function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
-  if (prices) {
+  if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
@@ -766,6 +786,7 @@ async function sendSettings(file) {
 // Save: the form's own checks first, as the browser shows them by the field.
 async function saveSettings() {
   $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
+  $("set-price").setCustomValidity(pricesProblem());
   const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
   const wrong = [...fields].find((field) => !field.checkValidity());
   if (wrong) wrong.reportValidity();
@@ -971,6 +992,7 @@ function bind() {
     fillPlans($("set-plan").value);
     if (unfinished()) guessFromArea();
   });
+  $("set-price").addEventListener("change", requestRender);
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");

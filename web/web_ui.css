@@ -207,17 +207,26 @@ select:disabled {
 .step.done {
   cursor: pointer;
 }
-/* A step's title names its field, which takes the width without a label of its own. */
-.step .row {
-  border-top: 0;
-}
-.step .row > span:first-child {
+/* VIN's title names its field, which takes the width without a label of its own. */
+.step #vin-row > span:first-child {
   display: none;
 }
-.step :is(.dropdown, input) {
+.step #vin-row input {
   flex: 1;
-  min-width: 0;
   text-align: left;
+}
+/* Prices' fields take the width too, each under its name, so their choices fit on a phone. */
+.step .row:not(#vin-row) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 0;
+  margin-top: 16px;
+  border-top: 0;
+}
+.step .row:not(#vin-row) > span:first-child {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
@@ -316,10 +325,10 @@ ol.note {
 }
 /* As far below the text as a button below a row, like Create key, and so is VIN's field, without the row's height. */
 .note + .button,
-.step .note + :is(button, .row) {
+.step .note + :is(button, #vin-row) {
   margin-top: 22px;
 }
-.step .note + .row {
+.step .note + #vin-row {
   min-height: 0;
 }
 .error {
