@@ -195,7 +195,9 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
   if (const std::string error = read_tariff(read.tariff, own); !error.empty())
     return concat({"tariff: ", error});
-  if (plan_text.empty() && own.calendar.empty() && read.area == nullptr)
+  // Without either, the board has no prices yet, as after the setup's first step, and the car charges as usual.
+  if (plan_text.empty() && own.calendar.empty() && read.area == nullptr &&
+      std::find(seen.begin(), seen.end(), "tariff") != seen.end())
     return "without market:, tariff needs a plan or a calendar of its own";
   Tariff tariff;
   if (const std::string error = make_tariff(plan_text, read.tariff, read.currency, tariff); !error.empty())

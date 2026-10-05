@@ -112,14 +112,21 @@ std::string SchedulerComponent::use_settings(const std::string &text) {
   return error;
 }
 
-// On the next loop, as the web server calls from its own task.
+// On the next loop, as the web server calls from its own task. A board's first settings apply at once, as nothing
+// runs yet; later ones restart it, which starts the schedule, the prices and the car's connection afresh.
 void SchedulerComponent::save_settings(const std::string &text) {
   this->defer([this, text]() {
     auto saved = std::make_unique<SavedSettings>();
     std::snprintf(saved->text, sizeof(saved->text), "%s", text.c_str());
     this->settings_pref_.save(saved.get());
     global_preferences->sync();
-    App.safe_reboot();
+    if (!this->settings_text_.empty()) {
+      App.safe_reboot();
+      return;
+    }
+    this->use_settings(text);
+    this->apply_settings_();
+    this->tick_soon_();
   });
 }
 
@@ -163,8 +170,12 @@ void SchedulerComponent::setup() {
   this->firmware_ = find(App.get_updates(), "Firmware");
 #endif
 
-  if (!this->settings_error_.empty())
-    return;
+  if (this->settings_error_.empty())
+    this->apply_settings_();
+}
+
+// What the settings set outside the file: the controller's settings, the clock's time zone and the tariff.
+void SchedulerComponent::apply_settings_() {
   Settings &settings = this->settings_;
   settings.currency = this->file_.currency.c_str();
   settings.battery_kwh = this->file_.battery_kwh;
@@ -544,7 +555,7 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
   SettingsFile file;
   const std::string error = read_settings(this->body_, this->parent_->plans(), file);
   if (error.empty()) {
-    request->send(200, TEXT, "Saved: the board restarts");
+    request->send(200, TEXT, this->parent_->settings_text().empty() ? "Saved" : "Saved: the board restarts");
     this->parent_->save_settings(this->body_);
   } else {
     request->send(400, TEXT, error.c_str());

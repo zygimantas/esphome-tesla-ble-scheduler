@@ -13,7 +13,14 @@ esp32_ble_tracker:
   on_ble_advertise:
     - then:
         - lambda: |-
-            static const std::string car = TeslaBLE::get_vin_advertisement_name(id(scheduler_id).vin().c_str());
+            // The car's Bluetooth name comes from its VIN, which a new board gets with its first settings, without a
+            // restart: the Tesla part takes it then.
+            static std::string vin = id(scheduler_id).vin(), car = TeslaBLE::get_vin_advertisement_name(vin.c_str());
+            if (vin != id(scheduler_id).vin()) {
+              vin = id(scheduler_id).vin();
+              car = TeslaBLE::get_vin_advertisement_name(vin.c_str());
+              id(tesla_ble_vehicle_id).set_vin(vin.c_str());
+            }
             if (x.get_name() == car && id(ble_tesla_id).get_address() != x.address_uint64())
               id(ble_tesla_id).set_address(x.address_uint64());
   scan_parameters:

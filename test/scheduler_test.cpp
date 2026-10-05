@@ -1024,12 +1024,15 @@ static void test_settings_file_errors() {
             "line 6 has market: colour, which isn't a setting");
   CHECK_STR(settings_error(settings_with("tariff", "tariff: none\n")), "line 8 doesn't belong there: plan");
   CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 13 has colour, which isn't a setting");
-  // Missing: with a market, the tariff can go; without one, it's the whole price.
+  // Missing: with a market, the tariff can go; without one, it's the whole price; without either, there are no
+  // prices yet.
   CHECK_STR(settings_error(settings_with("  plan", "")), "");
   std::string no_tariff = SETTINGS;
   no_tariff.erase(no_tariff.find("tariff:"), std::strlen("tariff:\n  plan: lt/eso-standartinis-4-zones\n"));
   CHECK_STR(settings_error(no_tariff), "");
-  CHECK_STR(settings_error(no_tariff.substr(no_tariff.find("ntfy_topic"))),
+  const std::string no_prices = no_tariff.substr(no_tariff.find("ntfy_topic"));
+  CHECK_STR(settings_error(no_prices), "");
+  CHECK_STR(settings_error(no_prices + "tariff:\n  rates:\n    flat: 0.24\n"),
             "without market:, tariff needs a plan or a calendar of its own");
   CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");

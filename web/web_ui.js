@@ -9,7 +9,7 @@
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
-//   Settings       the settings form, and the settings file it makes, sent to the board and back
+//   Settings       the setup's steps and the settings form, and the settings file they make, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
 //   Start          wiring, then this page or ESPHome's (?full)
@@ -60,16 +60,16 @@ const PAGE = `
   </section>
 
   <section id="settings-card" class="card" hidden>
-    <div id="settings-title" class="title">Settings</div>
-    <label class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
-    <label class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <div class="title">Settings</div>
+    <label id="vin-row" class="row"><span>VIN</span><input id="set-vin" class="wide" required pattern="[A-HJ-NPR-Za-hj-npr-z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+    <label id="area-row" class="row"><span>Market area</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
-    <label class="row more"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
-    <label class="row more"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
-    <label class="row more"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
-    <label class="row more"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
-    <label class="row more"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
-    <label class="row more"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+    <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
+    <label class="row"><span>Margin per kWh</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
+    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
+    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
     <p id="settings-error" class="note" hidden></p>
     <button id="save-settings" class="primary">Save</button>
@@ -79,11 +79,24 @@ const PAGE = `
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
-  <section id="pair-card" class="card" hidden>
-    <div class="title">Setup 2 of 2</div>
-    <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen.</p>
-    <button id="pair-now" class="primary">Pair BLE key</button>
-    <button id="pair-back">Back</button>
+  <section class="card step" hidden>
+    <div class="title">1. VIN<span class="summary"></span></div>
+    <div class="body"></div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">2. Key<span class="summary">Paired</span></div>
+    <div class="body">
+      <p class="note">With the board by the car, sit in the car with your key card. Press Pair BLE key, tap the card on the console and confirm on the car's screen. Next works once the car answers.</p>
+      <button id="pair-now">Pair BLE key</button>
+    </div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">3. Market area<span class="summary"></span></div>
+    <div class="body"></div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">4. Grid plan<span class="summary"></span></div>
+    <div class="body"></div>
   </section>
 
   <section id="target-card" class="card">
@@ -135,6 +148,8 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
 // whether Change settings opened the form.
 const settings = { text: null, options: null, open: false };
+// The setup's open step, 1 to 4, or 0; and, after its last step saved the settings, that the board hasn't got them yet.
+const setup = { step: 0, saving: false };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -191,19 +206,11 @@ function render() {
   $("wifi").textContent = dbm(value(E.wifi));
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
-  // A new board's page is its setup: a short form, then pairing until the car reports to the board's key, with Back
-  // to the form. Without settings the board can use, the form comes first; with them, it opens from Board.
-  const unpaired = text(E.status) === "Not paired";
-  const form = settings.text === "" || (unpaired && settings.open);
-  const needed = settings.text === "" || text(E.status).startsWith("Settings: ");
-  document.body.classList.toggle("setup", settings.text === "" || unpaired);
-  $("settings-title").textContent = form ? "Setup 1 of 2" : "Settings";
-  $("settings-card").hidden = !needed && !settings.open;
-  $("pair-card").hidden = !unpaired || settings.open;
-  for (const row of document.querySelectorAll(".more")) row.hidden = form;
-  $("cancel-settings").hidden = needed || form;
-  $("download-settings").hidden = form;
-  $("upload-settings").hidden = form;
+  renderSetup();
+  // Settings the board can't use come first; others open from Board.
+  const needed = text(E.status).startsWith("Settings: ");
+  $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
+  $("cancel-settings").hidden = needed;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
@@ -469,6 +476,62 @@ function readSettings(file) {
   return { values, more };
 }
 
+// Settings without prices, a new board's or what the setup's first step saved, still need the setup's last steps.
+const unfinished = () => settings.text === "" || (settings.text !== null && !/^(market|tariff):/m.test(settings.text));
+// The setup's last step: Key once the settings have prices, else Market area, or Grid plan where the country has plans.
+const lastStep = () => (!unfinished() ? 2 : $("plan-row").hidden ? 3 : 4);
+
+// The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
+// fields, done ones fold to their titles and what they hold, later ones show only their titles. Steps 1, 3 and 4
+// borrow the form's VIN, market area and grid plan rows, which go back to the form after.
+function renderSetup() {
+  const unpaired = text(E.status) === "Not paired";
+  if (settings.text === null || !(unfinished() || unpaired)) setup.step = 0;
+  else if (!setup.step && !setup.saving) setup.step = settings.text === "" ? 1 : unpaired ? 2 : 3;
+  document.body.classList.toggle("setup", setup.step > 0);
+  const steps = document.querySelectorAll(".step");
+  for (const [i, card] of steps.entries()) {
+    card.hidden = !setup.step || i + 1 > lastStep();
+    card.classList.toggle("open", i + 1 === setup.step);
+    card.classList.toggle("done", i + 1 < setup.step);
+    card.querySelector(".back").hidden = i === 0;
+  }
+  steps[1].querySelector(".next").disabled = unpaired || settings.text === "";
+  const rows = ["vin-row", "area-row", "plan-row"].map($);
+  const homes = [steps[0], steps[2], steps[3]].map((card) => card.querySelector(".body"));
+  if (setup.step) {
+    for (const [i, row] of rows.entries()) if (row.parentNode !== homes[i]) homes[i].prepend(row);
+  } else if (rows[0].parentNode !== $("settings-card")) {
+    $("set-battery")
+      .closest("label")
+      .before(...rows);
+  }
+  steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
+  steps[2].querySelector(".summary").textContent = $("set-area").selectedOptions[0]?.text ?? "";
+  steps[3].querySelector(".summary").textContent = $("set-plan").selectedOptions[0]?.text ?? "";
+}
+
+// Next: step 1 saves the VIN, as the board needs it to find the car, with the guesses and no prices yet on a new
+// board; the last step saves the prices, which restarts the board. Both keep the settings the setup doesn't show.
+async function nextStep() {
+  const fields = document.querySelectorAll(".step.open input, .step.open select");
+  const wrong = [...fields].find((field) => !field.checkValidity());
+  if (wrong) return wrong.reportValidity();
+  if (setup.step === 1 && $("set-vin").value.trim().toUpperCase() !== readSettings(settings.text).values.tesla_vin) {
+    if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
+    if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(["tesla_vin"])))) return;
+  }
+  if (setup.step < lastStep()) {
+    setup.step += 1;
+    return requestRender();
+  }
+  const file = unfinished() ? withForm(["market", "tariff", "timezone"]) : settings.text;
+  if (file !== settings.text && !(await sendSettings(file))) return;
+  setup.saving = file !== settings.text;
+  setup.step = 0;
+  requestRender();
+}
+
 // The plans of the market area's country, with the one to select if it's among them; no row where there are none.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
@@ -499,7 +562,7 @@ function fillSettings() {
   $("set-area").replaceChildren(new Option("Choose", ""), ...areaOptions);
   const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const home = Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(phone));
-  const ofHome = settings.text === "" ? areas.filter((area) => area.slice(0, 2) === home) : [];
+  const ofHome = unfinished() ? areas.filter((area) => area.slice(0, 2) === home) : [];
   $("set-area").value = (values["market: area"] ?? (ofHome.length === 1 ? ofHome[0] : "")).toUpperCase();
   fillPlans(values["tariff: plan"]);
   const zone = values.timezone ?? phone;
@@ -525,6 +588,7 @@ async function loadSettings() {
       fetch("/settings/options").then((r) => r.json()),
     ]);
     if (file !== settings.text || !settings.options) {
+      setup.saving = false;
       settings.text = file;
       settings.options = options;
       fillSettings();
@@ -535,14 +599,45 @@ async function loadSettings() {
   requestRender();
 }
 
-// The form as a settings file, which the board checks as any other.
-function formSettings() {
+// A settings file's top-level settings, each with the lines below it, comments included; "" holds those above the
+// first.
+function settingsBlocks(text) {
+  const blocks = new Map([["", ""]]);
+  let key = "";
+  for (const line of text ? text.replace(/\n$/, "").split("\n") : []) {
+    if (/^[a-z_]+:/.test(line)) key = line.slice(0, line.indexOf(":"));
+    blocks.set(key, `${blocks.get(key) ?? ""}${line}\n`);
+  }
+  return blocks;
+}
+
+// The board's settings file with the form's `keys`, top-level settings with the lines below them, put in, and the
+// rest kept, in the order the form writes them.
+function withForm(keys) {
+  const blocks = settingsBlocks(settings.text);
+  const form = settingsBlocks(formSettings());
+  for (const key of keys) {
+    if (form.has(key)) blocks.set(key, form.get(key));
+    else blocks.delete(key);
+  }
+  return [...blocks.keys()]
+    .sort()
+    .map((key) => blocks.get(key))
+    .join("");
+}
+
+// The form as a settings file, which the board checks as any other; without prices, as the setup's first step saves
+// them for a new board.
+function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
-  const lines = ["market:", `  area: ${v("set-area")}`];
-  if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
-  lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
+  const lines = [];
+  if (prices) {
+    lines.push("market:", `  area: ${v("set-area")}`);
+    if (v("set-margin")) lines.push(`  margin: ${v("set-margin")}`);
+    lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
+  }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  if (prices && v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
@@ -566,13 +661,21 @@ async function sendSettings(file) {
     });
     const answer = await response.text();
     $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
-    $("settings-error").hidden = response.ok;
+    $("settings-error").hidden = response.ok || setup.step > 0;
+    if (!response.ok && setup.step) toast(`Not saved: ${answer}`);
     if (response.ok) {
       settings.open = false;
-      toast("Settings saved: the board restarts");
+      // A board that had settings restarts: reconnect soon, rather than when the browser would. A new board takes
+      // its first at once, and the setup moves on.
+      if (settings.text !== "") {
+        toast("Settings saved: the board restarts");
+        setTimeout(reconnect, 3000);
+      }
     }
+    return response.ok;
   } catch (e) {
     toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
+    return false;
   } finally {
     clearTimeout(timer);
     requestRender();
@@ -604,6 +707,8 @@ function connect() {
     seen();
     const data = JSON.parse(e.data);
     states[data.id] = data;
+    // A new board takes its first settings without a restart: read them once its status moves on.
+    if (data.id === E.status && settings.text === "" && data.state !== "No settings yet") void loadSettings();
     requestRender();
   });
 }
@@ -614,6 +719,9 @@ function connect() {
 function reconnectIfDead() {
   if (document.hidden || !events) return;
   if (events.readyState === EventSource.OPEN && Date.now() - lastEvent < 30000) return;
+  reconnect();
+}
+function reconnect() {
   setLive(false);
   events.close();
   connect();
@@ -766,16 +874,30 @@ function bind() {
   );
   $("set-area").addEventListener("change", () => {
     fillPlans($("set-plan").value);
-    if (settings.text === "") guessFromArea();
+    if (unfinished()) guessFromArea();
   });
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Pairing started: tap your key card");
   });
-  $("pair-back").addEventListener("click", () => {
-    settings.open = true;
-    requestRender();
-  });
+  for (const card of document.querySelectorAll(".step")) {
+    card
+      .querySelector(".body")
+      .insertAdjacentHTML(
+        "beforeend",
+        '<button class="primary next">Next</button><button class="back">Back</button><button class="cancel">Cancel</button>',
+      );
+    press(card.querySelector(".next"), nextStep);
+    card.querySelector(".back").addEventListener("click", () => {
+      setup.step -= 1;
+      requestRender();
+    });
+    card.querySelector(".cancel").addEventListener("click", () => {
+      fillSettings(); // the board's settings again
+      setup.step = 1;
+      requestRender();
+    });
+  }
   $("change-settings").addEventListener("click", () => {
     settings.open = true;
     requestRender();

@@ -147,10 +147,23 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The settings form: fields like the dropdowns, and room for names; a new board's page is the form alone --- */
-.setup .card:not(#settings-card, #pair-card) {
+/* --- The setup's steps, a new board's page: the open one shows its fields, a done one what it holds --- */
+.summary {
+  color: var(--text);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.setup .card:not(.step),
+.step:not(.open) .body,
+.step:not(.done) .summary {
   display: none;
 }
+.step:not(.open, .done) .title {
+  opacity: 0.5;
+}
+
+/* --- The settings form: fields like the dropdowns, and room for names --- */
 input:not([type="file"]) {
   width: 7em;
   font: inherit;
@@ -241,7 +254,7 @@ button:disabled {
 }
 /* As far below the text as a button below a row, like Pair BLE key. */
 .note + .button,
-#pair-card .note + button {
+.step .note + button {
   margin-top: 22px;
 }
 #settings-error {
