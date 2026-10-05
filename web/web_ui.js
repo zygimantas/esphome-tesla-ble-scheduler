@@ -115,13 +115,13 @@ const PAGE = `
     <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
     <label id="fixed-row" class="row"><span>Supplier's part<button type="button" class="info" data-hint="fixed-hint" aria-label="About the supplier's part" aria-expanded="false">?</button></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
-    <label id="battery-row" class="row"><span>Battery (kWh)<button type="button" class="info" data-hint="battery-hint" aria-label="About the battery" aria-expanded="false">?</button></span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
+    <label id="battery-row" class="row"><span>Battery (kWh)<button type="button" class="info" data-hint="battery-hint" aria-label="About the battery" aria-expanded="false">?</button></span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
     <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-    <label id="power-row" class="row"><span>Charging power (kW)<button type="button" class="info" data-hint="power-hint" aria-label="About the charging power" aria-expanded="false">?</button></span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
+    <label id="power-row" class="row"><span>Charging power (kW)<button type="button" class="info" data-hint="power-hint" aria-label="About the charging power" aria-expanded="false">?</button></span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
     <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
-    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
+    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
-    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
     <p id="settings-error" class="note error" hidden></p>
     <button id="save-settings" class="primary">Save</button>
@@ -295,6 +295,7 @@ function render() {
   const unit = `${currency} with VAT per kWh`;
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
+  $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
   // a hint shows while its "?" is open and its field is shown
   for (const button of document.querySelectorAll(".info"))
     $(button.dataset.hint).hidden =
@@ -534,6 +535,9 @@ const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code
 // The countries without the euro, by their currency, which a market from Nord Pool comes in too; SMARD's only in euros.
 const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
 const SMARD_ONLY = ["CH", "CZ", "HU"];
+// About a euro in each of those currencies: the most a supplier's margin or part per kWh can be, which turns away cents
+// typed for euros.
+const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
 
 // The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
 const FORM_PLACES = [
