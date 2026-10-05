@@ -244,31 +244,14 @@ input:not([type="file"]) {
   border-radius: 6px;
   padding: 6px 12px;
 }
-/* Cheaper hours: from and until, side by side. */
-.range {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 #settings-card .dropdown,
-#settings-card .range,
 input.wide {
   flex: 0 1 60%;
   min-width: 0;
 }
-:is(#settings-card, .step) .range .dropdown {
-  flex: 1;
-}
 :is(#settings-card, .step) select {
   width: 100%;
   text-overflow: ellipsis;
-}
-/* Narrower padding, so a time fits on a phone. */
-:is(#settings-card, .step) .range select {
-  padding: 6px 22px 6px 8px;
-}
-.range .dropdown::after {
-  right: 8px;
 }
 
 /* --- Buttons, and links that look like one --- */

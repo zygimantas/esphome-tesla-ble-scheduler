@@ -93,13 +93,7 @@ const PAGE = `
     <label id="price-row" class="row"><span>Electricity contract</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <label id="margin-row" class="row"><span></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <label id="fixed-row" class="row"><span></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="cheap-row" class="row"><span>Cheaper hours</span><span class="dropdown"><select id="set-cheap"></select></span></label>
-    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <div id="hours-row" class="row"><span>From - until</span><span class="range"><span class="dropdown"><select id="set-from" aria-label="Cheaper from"></select></span> - <span class="dropdown"><select id="set-to" aria-label="Cheaper until"></select></span></span></div>
-    <div id="hours2-row" class="row"><span>And from - until</span><span class="range"><span class="dropdown"><select id="set-from2" aria-label="Also cheaper from"></select></span> - <span class="dropdown"><select id="set-to2" aria-label="Also cheaper until"></select></span></span></div>
-    <label id="weekends-row" class="row"><span>Weekends</span><span class="dropdown"><select id="set-weekends"><option value="same">Like weekdays</option><option value="cheaper">Cheaper all day</option></select></span></label>
-    <label id="high-row" class="row"><span></span><input id="set-high" type="number" min="0" step="any" inputmode="decimal"></label>
-    <label id="low-row" class="row"><span></span><input id="set-low" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="plan-row" class="row"><span>Grid plan</span><span class="dropdown"><select id="set-plan"></select></span></label>
     <label class="row"><span>Battery (kWh)</span><input id="set-battery" type="number" required min="1" step="any" inputmode="decimal" placeholder="75"></label>
     <label class="row"><span>Charging power (kW)</span><input id="set-power" type="number" required min="1" step="any" inputmode="decimal" placeholder="11"></label>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="99" step="any" inputmode="decimal" placeholder="21"></label>
@@ -265,20 +259,11 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
-  $("plan-row").hidden = $("set-cheap").value !== "plan";
-  $("fixed-row").hidden = !fixed || $("set-cheap").value !== "plan";
-  for (const id of ["hours-row", "hours2-row", "weekends-row", "high-row", "low-row"])
-    $(id).hidden = $("set-cheap").value !== "own";
+  $("fixed-row").hidden = !fixed || !$("set-plan").value;
   // the prices' names, with their unit, in the currency they're in
   const country = $("set-area").value.slice(0, 2);
   const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
-  const names = {
-    margin: "Supplier's margin",
-    fixed: "Fixed price",
-    high: `${fixed ? "Price" : "Grid fee"}, other hours`,
-    low: `${fixed ? "Price" : "Grid fee"}, cheaper hours`,
-  };
-  for (const [row, name] of Object.entries(names))
+  for (const [row, name] of Object.entries({ margin: "Supplier's margin", fixed: "Fixed price" }))
     $(`${row}-row`).firstElementChild.textContent = `${name} (${currency} with VAT per kWh)`;
   $("cancel-settings").hidden = needed;
 }
@@ -533,52 +518,11 @@ const FORM_PLACES = [
   "timezone",
 ];
 
-// A tariff of own hours as the form writes it: a day's line of low and high hours, every day or on weekdays with
-// weekends low, like "low 07:00 high 22:00 low".
-const OWN_HOURS =
-  /^tariff:\n {2}calendar:\n {4}jan-dec:\n {6}mon-(fri|sun): ((?:low|high)(?: \d\d:\d\d (?:low|high))*)\n(?: {6}sat-sun: low\n)? {2}rates:\n {4}high: (\S+)\n {4}low: (\S+)\n$/;
-const minutesOf = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
-const timeOf = (minutes) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
-
-// A day's line from its cheaper stretches, as [from, until], which may run past midnight or meet: low in them, high
-// in the rest, like "low 07:00 high 22:00 low", and "low" alone when they take the whole day.
-function dayLine(stretches) {
-  const low = new Array(96).fill(false);
-  for (const [from, to] of stretches)
-    for (let q = minutesOf(from) / 15; q !== minutesOf(to) / 15; q = (q + 1) % 96) low[q] = true;
-  let line = low[0] ? "low" : "high";
-  for (let q = 1; q < 96; q++) if (low[q] !== low[q - 1]) line += ` ${timeOf(q * 15)} ${low[q] ? "low" : "high"}`;
-  return line;
-}
-
-// A day's line's cheaper stretches, as dayLine() takes them, or null for none, the whole day or more than two.
-function stretchesOf(line) {
-  const parts = line.split(" ");
-  const runs = []; // each rate from when it starts
-  for (let i = 0; i < parts.length; i += 2) runs.push([i ? parts[i - 1] : "00:00", parts[i]]);
-  const stretches = runs.flatMap(([start, rate], i) => (rate === "low" ? [[start, runs[i + 1]?.[0] ?? "00:00"]] : []));
-  if (stretches.length > 1 && runs[0][1] === "low" && runs.at(-1)[1] === "low") {
-    // the night's, which runs past midnight, is the day's last stretch and its first
-    const [first, last] = [stretches.shift(), stretches.pop()];
-    stretches.unshift([last[0], first[1]]);
-  }
-  const fits = stretches.length && stretches.length <= 2 && stretches.every(([from, to]) => from !== to);
-  return fits ? stretches : null;
-}
-
-// The settings file's values by place, as the board reads them, own hours as `own`, and whether it has more than
-// the form shows.
+// The settings file's values by place, as the board reads them, and whether it has more than the form shows.
 function readSettings(file) {
   const values = {};
   let section = "";
   let more = false;
-  const own = OWN_HOURS.exec(settingsBlocks(file).get("tariff") ?? "");
-  const stretches = own && stretchesOf(own[2]);
-  if (stretches) {
-    const [tariff, days, , high, low] = own;
-    values.own = { stretches, weekends: days === "fri" ? "cheaper" : "same", high, low };
-    file = file.replace(tariff, "");
-  }
   for (const line of file.split("\n")) {
     const m = /^( *)([^\s#:][^:]*):(?: +(.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
     if (!m) continue;
@@ -613,26 +557,15 @@ const unfinished = () => settings.text === "" || (settings.text !== null && !/^(
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
-// What's wrong with the prices, or "": own hours need two prices, the cheaper one lower, and a fixed price without
-// cheaper hours leaves nothing to choose.
+// What's wrong with the prices, or "": a fixed price without a grid plan leaves nothing to choose.
 function pricesProblem() {
-  if ($("set-cheap").value === "own") {
-    const [high, low] = [$("set-high").value, $("set-low").value];
-    if (!$("set-from2").value !== !$("set-to2").value)
-      return "The second cheaper hours need a start and an end, or None for both.";
-    if (ownStretches().some(([from, to]) => from === to))
-      return "The cheaper hours have to end at another time than they start.";
-    if (dayLine(ownStretches()) === "low") return "The cheaper hours can't take the whole day.";
-    if (high === "" || low === "") return "Enter what a kWh costs in the cheaper hours and in the others.";
-    return Number(low) < Number(high) ? "" : "The cheaper hours have to cost less than the others.";
-  }
-  if ($("set-price").value !== "fixed" || $("set-cheap").value !== "none") return "";
-  return "With a fixed price, the board needs cheaper hours: your grid plan's or your own.";
+  if ($("set-price").value !== "fixed" || $("set-plan").value) return "";
+  return "With a fixed price, the board needs cheaper hours: your grid plan's, or your own in a settings file under Advanced.";
 }
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and what they hold, later ones show only their titles. VIN and Prices
-// borrow the form's VIN row and its rows from the country to own hours' prices, below their text and above their
+// borrow the form's VIN row and its rows from the country to the grid plan, below their text and above their
 // buttons, which go back to the form after.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
@@ -655,21 +588,7 @@ function renderSetup() {
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
   steps[1].querySelector(".summary").textContent = unpaired ? "" : "Created";
-  const names = [
-    "vin",
-    "area",
-    "price",
-    "margin",
-    "fixed",
-    "cheap",
-    "plan",
-    "hours",
-    "hours2",
-    "weekends",
-    "high",
-    "low",
-  ];
-  const rows = names.map((name) => $(`${name}-row`));
+  const rows = ["vin", "area", "price", "margin", "fixed", "plan"].map((name) => $(`${name}-row`));
   const homes = rows.map((_, i) => steps[i ? 2 : 0].querySelector(".body"));
   if (setup.step) {
     for (const [i, row] of rows.entries())
@@ -682,8 +601,7 @@ function renderSetup() {
   steps[0].querySelector(".summary").textContent = $("set-vin").value.toUpperCase();
   const price = { market: "Dynamic", fixed: "Fixed" }[$("set-price").value];
   const plan = $("set-plan").value && $("set-plan").selectedOptions[0].text;
-  const cheap = { none: "No cheaper hours", plan, own: "Own cheaper hours" }[$("set-cheap").value];
-  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, cheap]
+  steps[2].querySelector(".summary").textContent = [$("set-area").selectedOptions[0]?.text, price, plan]
     .filter(Boolean)
     .join(" · ");
 }
@@ -717,19 +635,18 @@ async function nextStep() {
   requestRender();
 }
 
-// Where the cheaper hours come from, the grid plan only where the country has plans, and the country's plans, with
-// the ones to select if they're among them. Else the grid plan where the country has plans, and its plan where it
-// has only one: Choose only where there are several to choose from.
-function fillPlans(cheap, plan) {
+// The country's plans after a blank for none, with `plan` selected if it's among them; without one, its only plan,
+// as where every home pays the same, like Spain and Slovenia. No row where the country has no plans.
+function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
-  const kinds = { none: "None", plan: "Based on grid plan", own: "My own" };
-  if (!plans.length) delete kinds.plan;
-  $("set-cheap").replaceChildren(...Object.entries(kinds).map(([value, text]) => new Option(text, value)));
-  $("set-cheap").value = cheap in kinds ? cheap : plans.length ? "plan" : "none";
-  const choose = plans.length > 1 ? [new Option("Choose", "")] : [];
-  $("set-plan").replaceChildren(...choose, ...plans.map(([name, title]) => new Option(title, name)));
-  $("set-plan").value = plans.some(([name]) => name === plan) ? plan : choose.length ? "" : (plans[0]?.[0] ?? "");
+  $("set-plan").replaceChildren(new Option("", ""), ...plans.map(([name, title]) => new Option(title, name)));
+  $("set-plan").value = plans.some(([name]) => name === plan)
+    ? plan
+    : plan === undefined && plans.length === 1
+      ? plans[0][0]
+      : "";
+  $("plan-row").hidden = !plans.length;
 }
 
 // A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
@@ -742,9 +659,9 @@ function guessFromArea() {
 }
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
-// zone, the market area's VAT, a 75 kWh battery and 11 kW, cheaper hours from 22:00 to 07:00, and on a new board,
-// a dynamic price and the phone's country, where it has only one market area. Without a market, the supplier's price is fixed, and the
-// country the grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
+// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, a dynamic price and the phone's
+// country, where it has only one market area. Without a market, the supplier's price is fixed, and the country the
+// grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
   const { values, more } = readSettings(settings.text);
   const { areas, time_zones: zones } = settings.options;
@@ -770,16 +687,7 @@ function fillSettings() {
   $("set-area").replaceChildren(...(areas.includes(area) ? [] : [new Option("Choose", "")]), ...areaOptions);
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
-  const times = Array.from({ length: 96 }, (_, i) => timeOf(i * 15));
-  for (const id of ["set-from", "set-to", "set-from2", "set-to2"]) {
-    const none = id.endsWith("2") ? [new Option("None", "")] : []; // the second stretch is optional
-    $(id).replaceChildren(...none, ...times.map((time) => new Option(time, time)));
-  }
-  const own = values.own ?? { stretches: [["22:00", "07:00"]], weekends: "same", high: "", low: "" };
-  const [[from, to], [from2, to2] = ["", ""]] = own.stretches;
-  const fields = { from, to, from2, to2, weekends: own.weekends, high: own.high, low: own.low };
-  for (const [key, value] of Object.entries(fields)) $(`set-${key}`).value = value;
-  fillPlans(values.own ? "own" : plan ? "plan" : unfinished() ? "" : "none", plan);
+  fillPlans(unfinished() ? undefined : plan);
   const zone = values.timezone ?? phone;
   const known = zones.includes(zone);
   $("set-zone").replaceChildren(
@@ -857,16 +765,15 @@ function formSettings(prices = true) {
   const currency = CURRENCIES[v("set-area").slice(0, 2)];
   const fixed = prices && v("set-price") === "fixed";
   if (fixed && currency) lines.push(`currency: ${currency}`);
-  // the supplier's fixed price goes on top of a grid plan's fees; own hours' prices are whole ones already
-  if (fixed && v("set-cheap") === "plan" && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
+  // the supplier's fixed price goes on top of a grid plan's fees
+  if (fixed && v("set-plan") && v("set-fixed")) lines.push(`fixed_price: ${v("set-fixed")}`);
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (prices && v("set-cheap") === "own") lines.push(...ownHours());
-  if (prices && v("set-cheap") === "plan") lines.push("tariff:", `  plan: ${v("set-plan")}`);
+  if (prices && v("set-plan")) lines.push("tariff:", `  plan: ${v("set-plan")}`);
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
@@ -874,30 +781,6 @@ function formSettings(prices = true) {
     `timezone: ${v("set-zone")}`,
   );
   return `${lines.join("\n")}\n`;
-}
-
-// The form's cheaper stretches: the first, and the second where it has its start and end.
-const ownStretches = () =>
-  [
-    [$("set-from").value, $("set-to").value],
-    [$("set-from2").value, $("set-to2").value],
-  ].filter(([from, to]) => from && to);
-
-// Own hours as a tariff: the cheaper rate in one or two stretches, which may run past midnight, every day, or on
-// weekdays and all weekend.
-function ownHours() {
-  const v = (id) => $(id).value.trim();
-  const day = dayLine(ownStretches());
-  const days = v("set-weekends") === "cheaper" ? [`mon-fri: ${day}`, "sat-sun: low"] : [`mon-sun: ${day}`];
-  return [
-    "tariff:",
-    "  calendar:",
-    "    jan-dec:",
-    ...days.map((line) => `      ${line}`),
-    "  rates:",
-    `    high: ${v("set-high")}`,
-    `    low: ${v("set-low")}`,
-  ];
 }
 
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
@@ -1141,15 +1024,12 @@ function bind() {
     field.value = vin(field.value).slice(0, 17);
     field.setSelectionRange(caret, caret);
   });
-  // Another country keeps the cheaper hours chosen, but a default follows the country: the grid plan where it has
-  // plans, else none.
+  // another country's plans, with its only one chosen
   $("set-area").addEventListener("change", () => {
-    const cheap = $("set-cheap").value;
-    const fallback = [...$("set-cheap").options].some((option) => option.value === "plan") ? "plan" : "none";
-    fillPlans(cheap === fallback ? "" : cheap, $("set-plan").value);
+    fillPlans();
     if (unfinished()) guessFromArea();
   });
-  for (const id of ["set-area", "set-price", "set-cheap", "set-plan"]) $(id).addEventListener("change", requestRender);
+  for (const id of ["set-area", "set-price", "set-plan"]) $(id).addEventListener("change", requestRender);
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
