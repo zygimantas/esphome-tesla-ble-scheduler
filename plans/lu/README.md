@@ -25,4 +25,4 @@ The plan also leaves out the monthly fees and the charges that are the same ever
 
 A home with an old meter, or a smart meter that doesn't send its readings, pays the old tariff, 6.07 cents per kWh with VAT in every hour: write your own tariff, as [Tariff](../../docs/tariff.md) says.
 
-The operators publish the next year's prices by 15 October, and the ILR, the regulator, approves them for 1 January. In 2026 the state pays part of the networks' costs, which lowers the prices. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+The operators publish the next year's prices by 15 October, and the ILR, the regulator, approves them for 1 January. In 2026 the state pays part of the networks' costs, which lowers the prices. [Tariff](../../docs/tariff.md) says how to change the plan's prices for yourself.
