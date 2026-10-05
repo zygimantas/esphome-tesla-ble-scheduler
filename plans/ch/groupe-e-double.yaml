@@ -1,0 +1,11 @@
+# Groupe E tarif double, prices with VAT: https://www.groupe-e.ch/fr/electricite/plus
+# Groupe E prints the prices in centimes without VAT: these are the network prices (réseau), in francs, with 8.1% VAT.
+# On 1 January 2027 the prices become 0.10075 (high) and 0.03967 (low), with the same hours.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sun: low 07:00 high 12:00 low 17:00 high 23:00 low
+rates:
+  high: 0.09189
+  low: 0.03405

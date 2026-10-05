@@ -1,0 +1,10 @@
+# CKW Netz E, prices with VAT: https://www.ckw.ch/energie/strom/stromprodukte/privat
+# CKW prints the prices in Rappen, with and without VAT: this is the price without VAT, in francs, with 8.1% VAT.
+# CKW Netz ES, for a device on its own meter that CKW may switch off, has the same price per kWh. The price stays the same on 1 January 2027.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.06486

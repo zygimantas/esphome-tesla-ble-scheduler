@@ -55,7 +55,7 @@ The setup asks only for what the board can't guess. To change any of the setting
 
 | Setting | What it is |
 |---|---|
-| `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. Without a market, any currency. |
+| `currency` | The currency of all prices: your market area's own unless you set it, like `EUR` or `NOK`, otherwise euro. In Czechia, Hungary and Switzerland, `CZK`, `HUF` or `CHF` converts the market prices from euros at the ECB's daily rate. Without a market, any currency. |
 | `fixed_price` | Your supplier's own part of a fixed price per kWh, with VAT and without the grid fees, like `0.12`, without `market:`. The board adds it to your grid plan's fees in every hour, so the costs it shows are complete. Where your supplier quotes one price with the grid fees in, take the supplier's own line on the bill. Leave it out with a monthly average, or with rates of your own that are your whole price. |
 | `market: area` | Where you buy electricity: your country's code, or your price area where the country has several, like `LT` or `SE3`: [Countries](docs/countries.md) lists them. Leave `market:` out with a fixed price. |
 | `market: margin` | Your supplier's own price per kWh on top of the market price, with VAT, like `0.012`. Leave it out if there's none. |

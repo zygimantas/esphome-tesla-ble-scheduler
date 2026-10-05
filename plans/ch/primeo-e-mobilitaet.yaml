@@ -1,0 +1,24 @@
+# Primeo E-Mobilität, region Basel, prices with VAT: https://www.primeo-energie.ch/privatkunden/strom-beziehen.html
+# Primeo Energie prints the prices in Rappen without VAT: these are the network prices (Netznutzung), in francs, with 8.1% VAT.
+# The charger needs a meter of its own. Public holidays are low tariff where the grid and the meter allow it. On 1 January 2027 the prices become 0.10864 (high) and 0.07135 (low).
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-fri: low 06:00 high 21:00 low
+    sat-sun: low
+exceptions:
+  01-01: low
+  # Good Friday, 2027
+  03-26: low
+  # Easter Monday, 2027
+  03-29: low
+  # Ascension, 2027
+  05-06: low
+  # Whit Monday, 2027
+  05-17: low
+  08-01: low
+  12-25: low
+rates:
+  high: 0.11567
+  low: 0.05783

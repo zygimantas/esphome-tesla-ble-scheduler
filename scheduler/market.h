@@ -93,10 +93,24 @@ inline const char *own_currency(const Area &area) {
   return "EUR";
 }
 
+// The country's own currency for an area whose prices come only from SMARD, in euros, which the board converts them
+// into at the ECB's daily rate when the settings ask for it; nullptr for the others.
+inline const char *converted_currency(const Area &area) {
+  static constexpr const char *CONVERTED[][2] = {{"CH", "CHF"}, {"CZ", "CZK"}, {"HU", "HUF"}};
+  if (area.market != Market::SMARD)
+    return nullptr;
+  for (const auto &[country, currency] : CONVERTED)
+    if (std::strncmp(area.name, country, 2) == 0)
+      return currency;
+  return nullptr;
+}
+
 // Whether an area's market prices can come in `currency`.
 inline bool comes_in(const Area &area, const std::string &currency) {
-  if (area.market != Market::NORD_POOL)
-    return currency == "EUR";
+  if (area.market != Market::NORD_POOL) {
+    const char *converted = converted_currency(area);
+    return currency == "EUR" || (converted != nullptr && currency == converted);
+  }
   return std::any_of(std::begin(NORD_POOL_CURRENCIES), std::end(NORD_POOL_CURRENCIES),
                      [&](const char *own) { return currency == own; });
 }
@@ -145,6 +159,19 @@ inline std::string omie_url(int64_t now, int day_offset) {
   return buf;
 }
 
+// The ECB's euro reference rates of the last working day, out around 16:00 CET.
+constexpr const char *ECB_RATES_URL = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+
+// What a euro is worth in `currency`, from the ECB's file, as <Cube currency='CZK' rate='24.335'/>, or nothing.
+inline std::optional<float> ecb_rate(const char *xml, size_t length, const char *currency) {
+  const std::string file(xml, length), key = std::string("currency='") + currency + "' rate='";
+  const size_t at = file.find(key);
+  float rate;
+  if (at == std::string::npos || std::sscanf(file.c_str() + at + key.size(), "%f", &rate) != 1 || !(rate > 0.0f))
+    return std::nullopt;
+  return rate;
+}
+
 // Start (UTC) of the CET delivery day containing `now`, its end, and the end of the one after it.
 inline int64_t start_of_delivery_day(int64_t now) {
   return local_to_utc(local_day_of(now, CET_STANDARD_OFFSET), 0, CET_STANDARD_OFFSET);
@@ -186,8 +213,9 @@ class PriceTable {
   }
 
   // Stores the quarter-hour prices (per kWh) from SMARD's file of a week: [start in ms, price per MWh] each, with null
-  // for the prices not out yet. Returns how many were stored, or -1 if the JSON could not be parsed.
-  int add_smard(const char *json, size_t length) {
+  // for the prices not out yet, in euros times `rate`. Returns how many were stored, or -1 if the JSON could not be
+  // parsed.
+  int add_smard(const char *json, size_t length, float rate = 1.0f) {
     JsonDocument filter;
     filter["series"] = true;
     JsonDocument doc;
@@ -197,7 +225,7 @@ class PriceTable {
     for (JsonArray point : doc["series"].as<JsonArray>()) {
       if (!point[0].is<int64_t>() || !point[1].is<float>())
         continue;
-      set(point[0].as<int64_t>() / 1000, point[1].as<float>() / 1000.0f);
+      set(point[0].as<int64_t>() / 1000, point[1].as<float>() * rate / 1000.0f);
       ++stored;
     }
     return stored;
