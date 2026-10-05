@@ -365,6 +365,13 @@ ol.note {
   position: absolute;
   inset: -13px;
 }
+/* A name with a hint: the "i" at the right end, level with the name. */
+.row > span:has(.info) {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+}
 .error {
   color: var(--red);
 }
