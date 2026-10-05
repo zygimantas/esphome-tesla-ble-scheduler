@@ -116,7 +116,7 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Key<span class="summary"></span></div>
     <div class="body">
-      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it can't unlock or drive the car, and you can remove it in the car under Controls → Locks.</p>
+      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
       <ol class="note">
         <li>Put the board by the car.</li>
         <li>Sit in the car with your Tesla key card.</li>
