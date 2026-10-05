@@ -356,7 +356,7 @@ ol.note {
   margin: 0 0 0 6px;
   padding: 0;
   border-color: var(--accent);
-  border-radius: 50%;
+  border-radius: 4px; /* the fields' and buttons' rounding, at its size */
   font-size: 12px;
   vertical-align: middle;
 }
