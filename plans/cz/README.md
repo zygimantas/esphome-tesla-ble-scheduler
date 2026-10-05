@@ -10,7 +10,7 @@ The distribution fees of Czechia's three regional distribution operators for the
 
 - **D01d and D02d:** the same fee every hour.
 - **D61d:** the low tariff (NT) from Friday 12:00 to Sunday 22:00, all year, and the high tariff (VT) the rest of the week. The hours follow the clock, summer time included.
-- **D27d, the rate for electric cars,** isn't here, nor are the other rates with a low tariff (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write your own tariff with them, as [Your own tariff](../README.md#your-own-tariff) says.
+- **D27d, the rate for electric cars,** isn't here, nor are the other rates with a low tariff (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write your own plan with them, as [Your own plan](../README.md#your-own-plan) says.
 
 Name yours under `tariff:` in your settings file, with koruna as the currency. The board gets Czech market prices from SMARD in euros and converts them into koruna at the ECB's daily rate, as the page does when you choose Czechia:
 
