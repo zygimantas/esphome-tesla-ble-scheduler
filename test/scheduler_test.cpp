@@ -1075,7 +1075,7 @@ static void test_settings_file_errors() {
   // Market
   for (const char *area : {"  area: GB\n", ""})
     CHECK_STR(settings_error(settings_with("  area", area)),
-              "market: area must be one the board knows, like LT or SE3: see Countries");
+              "market: area must be one the board knows, like LT or SE3: see Countries and plans");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: -0.1\n")),
             "market: vat must be the VAT as a fraction, like 0.21 for 21%");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 1\n")),

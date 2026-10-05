@@ -22,7 +22,7 @@ The plans leave out what is the same every hour and isn't the operator's own: th
 
 ## Day and night meters
 
-With the regulated price and a day and night meter, the night is cheaper for the electricity, not for the network fees. The hours are the same in the whole country: the night is from 22:00 to 06:00 from November to March, and from 23:00 to 07:00 from April to October. Leave `market:` out and write your own tariff with the whole price of each rate, network fees and VAT included, from your supplier's price list, as [Tariff](../../docs/tariff.md) says. These are the prices in the west from July 2026:
+With the regulated price and a day and night meter, the night is cheaper for the electricity, not for the network fees. The hours are the same in the whole country: the night is from 22:00 to 06:00 from November to March, and from 23:00 to 07:00 from April to October. Leave `market:` out and write your own tariff with the whole price of each rate, network fees and VAT included, from your supplier's price list, as [A fixed price](../README.md#a-fixed-price) says. These are the prices in the west from July 2026:
 
 ```yaml
 tariff:
@@ -38,4 +38,4 @@ tariff:
 
 In Golden Sands, whose own small operator has no plan here, write your own tariff too.
 
-The Energy and Water Regulatory Commission (EWRC) sets the network fees every year from 1 July, the same whoever your supplier is. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+The Energy and Water Regulatory Commission (EWRC) sets the network fees every year from 1 July, the same whoever your supplier is. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.

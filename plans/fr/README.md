@@ -2,7 +2,7 @@
 
 The grid fees (TURPE) that every home in France pays per kWh. The CRE, the energy regulator, sets them, the same with Enedis and with every local grid operator, and your supplier bills them in its price. Your home has one of the fees' options, and your supplier can tell you which.
 
-There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Finish the setup without one, then write your own tariff with the prices below and upload it under **Change settings**, as [Tariff](../../docs/tariff.md) says.
+There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Finish the setup without one, then write your own tariff with the prices below and upload it under **Change settings**, as [Your own tariff](../README.md#your-own-tariff) says.
 
 ## Off-peak hours
 
@@ -53,10 +53,10 @@ tariff:
 
 ## Your supplier's price
 
-With a contract that follows the market by the hour, choose **Dynamic (spot, exchange)** on the page, with your own tariff. Most fixed prices in France already have the grid fees in: write your whole price per kWh as your own tariff, with your off-peak hours if your contract has them, as [Tariff](../../docs/tariff.md#a-fixed-price) says.
+With a contract that follows the market by the hour, choose **Dynamic (spot, exchange)** on the page, with your own tariff. Most fixed prices in France already have the grid fees in: write your whole price per kWh as your own tariff, with your off-peak hours if your contract has them, as [A fixed price](../README.md#a-fixed-price) says.
 
 ## Left out
 
 The prices above count the fee per kWh. The fees' fixed parts, for management, metering and your subscribed power in kVA, the contribution on top of them (CTA), and the excise on electricity, the same in every hour, are left out, as they don't change which hours are cheapest.
 
-The CRE sets the prices and changes them every 1 August. [Tariff](../../docs/tariff.md) says how to write your own tariff.
+The CRE sets the prices and changes them every 1 August. [Your own tariff](../README.md#your-own-tariff) says how to write one.

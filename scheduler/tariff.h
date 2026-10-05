@@ -1,6 +1,6 @@
 #pragma once
 // What the tariff adds to a kWh in each quarter-hour: a plan from plans/, and the settings' own tariff: lines over it
-// (format in docs/tariff.md). Plain C++17, with nothing from ESPHome, like charger.h.
+// (format in plans/README.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -16,8 +16,8 @@
 
 namespace esphome::scheduler {
 
-// The tariff as written (format in docs/tariff.md): a plan from plans/, or the tariff: block of the settings file. Keys
-// and lines stay text, in the order written.
+// The tariff as written (format in plans/README.md): a plan from plans/, or the tariff: block of the settings file.
+// Keys and lines stay text, in the order written.
 struct TariffText {
   std::string clock;
   std::string currency;
