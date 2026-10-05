@@ -664,9 +664,9 @@ function renderSetup() {
 }
 
 // Save: on to the next step. Tesla's Continue checks the VIN and saves it with the battery and the power, as the board
-// needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Set prices saves the
-// prices, which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup
-// doesn't show.
+// needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Finish saves the prices,
+// which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup doesn't
+// show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
   const problem = { 1: vinProblem(vin), 3: pricesProblem() }[setup.step] ?? "";
@@ -1124,10 +1124,11 @@ function bind() {
       setup.stay = true;
       requestRender();
     });
-    // Key has only Create key, as it moves on once the car answers; the steps before open with a click instead of Back
+    // Key has its own Continue, which creates the key, and moves on once the car answers; the steps before open with a
+    // click instead of Back
     if (i === 1) continue;
     const body = card.querySelector(".body");
-    const label = ["Continue", "", "Set prices"][i];
+    const label = ["Continue", "", "Finish"][i];
     body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
     press(body.querySelector(".save"), nextStep);
   }
