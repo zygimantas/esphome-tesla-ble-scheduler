@@ -20,4 +20,4 @@ The F1, F2 and F3 hours on your bill are your supplier's, not the grid's. With a
 
 The plan leaves out the fixed fee, the fee per kW of your contracted power and the charges that are the same every hour: the system charges (oneri di sistema, ASOS and ARIM) and the excise duty. The board doesn't count your contracted power, often 3 kW: set the car's charging current low enough for it, in the car or the Tesla app, and `tesla_charging_kw` to match.
 
-ARERA changes the TD tariff every 1 January, and may change UC3 and UC6 every quarter. [Tariff](../../docs/tariff.md) says how to change the plans' prices for yourself.
+ARERA changes the TD tariff every 1 January, and may change UC3 and UC6 every quarter. [Tariff](../../docs/tariff.md) says how to change the plan's prices for yourself.
