@@ -48,8 +48,8 @@ document.head.insertAdjacentHTML(
   '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
     '<meta name="apple-mobile-web-app-capable" content="yes">' +
     '<meta name="apple-mobile-web-app-title" content="Tesla">' +
-    '<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">' +
-    '<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">',
+    '<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">' +
+    '<meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">',
 );
 
 const PAGE = `
