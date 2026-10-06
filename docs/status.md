@@ -4,10 +4,10 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 ## Before it knows the car
 
-- **Not paired**: the car hasn't answered the board's key since your settings named it. The page shows the setup's Key step: create the key as in step 6 of the README's [Setup](../README.md#setup).
+- **Not paired**: the car hasn't answered the board's key since your settings named it, or it turned the key away, as when the key was removed in the car. The page shows the setup's Key step: create the key as in step 6 of the README's [Setup](../README.md#setup).
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
-- **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal under Board. If the board's key was removed in the car, start over, as the README's [Using it](../README.md#using-it) says.
+- **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal under Board. If the board's key was removed in the car, the status turns to **Not paired** once the car turns away one of the board's commands, like a scheduled start.
 - **Reading battery**: the car is plugged in but hasn't reported its battery level. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Getting prices**: the board downloads the prices, for up to 10 minutes after a start. Wait.
 

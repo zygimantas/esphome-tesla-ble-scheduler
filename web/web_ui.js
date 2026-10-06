@@ -193,7 +193,7 @@ const PAGE = `
       <p id="plans-note" class="note">No grid plans here yet. ${PLAN_LINKS}</p>
       <p id="unlisted-note" class="note">${PLAN_LINKS}</p>
       <button id="upload-plan">Upload custom plan</button>
-      <button id="reset-plan">Reset custom plan</button>
+      <button id="reset-plan" class="danger">Reset custom plan</button>
       <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
       <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
       <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>

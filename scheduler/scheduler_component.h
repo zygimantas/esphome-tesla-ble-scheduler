@@ -171,6 +171,7 @@ class SchedulerComponent : public PollingComponent {
   button::Button *wake_{nullptr};
   cover::Cover *port_{nullptr};
   bool port_reported_{false};  // the cover reads open until the car reports it
+  bool turned_away_{false};    // the car turned the key away, and hasn't reported since
   float last_limit_{NAN};
 
   // What the buttons chose, kept across a restart (Controller::held_mode()).
