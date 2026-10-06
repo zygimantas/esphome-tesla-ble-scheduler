@@ -21,7 +21,7 @@ The network fees for households (nettleie) of Norway's biggest network companies
 
 The public holidays are 1 January, Maundy Thursday, Good Friday, Easter Monday, 1 May, Ascension Day, 17 May, Whit Monday and 25 and 26 December. The hours follow the clock, summer time included.
 
-Homes in Nordland, Troms and Finnmark pay no VAT on electricity: set **VAT (%)** to 0 under **Change settings**. Arva's plan has no VAT in it, as all its homes are there.
+Homes in Nordland, Troms and Finnmark pay no VAT on electricity, so the board leaves it out in NO4, the price area they're in. Arva's plan has no VAT in it, as all its homes are there.
 
 The plans count the energy fee (energiledd) per kWh. They leave out the capacity step (kapasitetsledd), a monthly fee set by your three highest hours, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), and the charges that are the same every hour: the electricity tax (elavgift) and the Enova fee, which some companies print inside their energy fee. The electricity subsidy (strømstøtte), which pays back 90% of the hourly market price above 77 øre/kWh without VAT, isn't counted either.
 
