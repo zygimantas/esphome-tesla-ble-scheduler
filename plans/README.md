@@ -41,7 +41,7 @@ Your electricity contract or your supplier's price list names your area. Prices 
 
 The board adds VAT to the market price, and a grid fee that can change every quarter-hour: rates for each day of the week, other rates in some months, and their own on public holidays and other dates. A plan holds its grid operator's fee per kWh, with VAT. Taxes and charges that are the same in every hour don't change which hours are cheapest, so plans leave them out, and each country's page says which. Left out, they're missing from every price the board shows, the schedule's windows, the phone message and what Savings says you paid; added to every rate's price, those show your full price.
 
-Some fees depend on your highest power instead, like Norway's capacity step. Until the board counts them ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), set the car's charging current low enough for your step, in the car or the Tesla app, and **Charging power** in the board's setup to match.
+Some fees depend on your highest power instead, like Norway's capacity step. Until the board counts them ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), set the car's charging current low enough for your step, in the car or the Tesla app, and **Charging power** under **Settings** to match.
 
 ## Custom plan
 
