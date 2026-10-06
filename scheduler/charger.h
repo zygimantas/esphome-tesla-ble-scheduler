@@ -130,16 +130,10 @@ class Controller {
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
-    if (!car.paired) {  // the car tells a key it doesn't know nothing
-      d.status = "Not paired";
-      d.mode = "wait";
-      return d;
-    }
-    if (car.now == 0) {
-      d.status = "Starting up";
-      d.mode = "wait";
-      return d;
-    }
+    if (!car.paired)  // the car tells a key it doesn't know nothing
+      return wait_(d, "Not paired");
+    if (car.now == 0)
+      return wait_(d, "Starting up");
     const int64_t now = car.now;
     if (first_tick_at_ == 0)
       first_tick_at_ = now;
@@ -159,14 +153,11 @@ class Controller {
       if (car.port_open && plug_unknown_since_ == 0)
         plug_unknown_since_ = now;
       if (car.port_open && now - plug_unknown_since_ < WAKE_FOR) {
-        d.status = "Checking the car";
         if (wake_due_(now))
           d.command = Command::WAKE;
-      } else {
-        d.status = "Waiting for car";
+        return wait_(d, "Checking the car");
       }
-      d.mode = "wait";
-      return d;
+      return wait_(d, "Waiting for car");
     }
     if (!plugged_) {
       d.status = "Unplugged";
@@ -187,20 +178,15 @@ class Controller {
       if (battery_unknown_since_ == 0)
         battery_unknown_since_ = now;
       if (now - battery_unknown_since_ < WAKE_FOR) {
-        d.status = "Reading battery";
-        d.mode = "wait";
         if (!charging && wake_due_(now))
           d.command = Command::WAKE;
-        return d;
+        return wait_(d, "Reading battery");
       }
       d.status = "Charging (battery unknown)";
       fallback = true;
     } else if (!schedule_.valid) {
-      if (getting_prices_(now)) {
-        d.status = "Getting prices";
-        d.mode = "wait";
-        return d;
-      }
+      if (getting_prices_(now))
+        return wait_(d, "Getting prices");
       d.status = "Charging (no prices)";
       fallback = true;
     } else {
@@ -241,6 +227,13 @@ class Controller {
     d.command = command_(want_charge, charging || no_power_asked_, now);  // a stop ends the request the charger holds
     if (d.command == Command::STOP_CHARGING)
       no_power_asked_ = false;
+    return d;
+  }
+
+  // No schedule possible yet: `d` with `status`, and the mode "wait".
+  static Decision wait_(Decision d, const char *status) {
+    d.status = status;
+    d.mode = "wait";
     return d;
   }
 
