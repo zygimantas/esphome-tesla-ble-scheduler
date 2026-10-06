@@ -28,10 +28,11 @@ update:
     source: https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/manifest.json
     update_interval: never # with an interval, ESPHome also checks at every start
 
-# A check for a release once a day, from a day after the start: the page's Update card shows it, and it installs only
-# from there.
-interval:
-  - interval: 24h
-    startup_delay: 24h
-    then:
+# A check for a release, which the page presses as it opens, rather than one at the start or on a timer: the page's
+# Update card shows a release, and it installs only from there.
+button:
+  - platform: template
+    name: Check for update
+    entity_category: diagnostic
+    on_press:
       - component.update: firmware

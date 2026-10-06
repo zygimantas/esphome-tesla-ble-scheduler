@@ -24,6 +24,7 @@ const E = {
   ble: "sensor/BLE Signal",
   chargeNow: "button/Start charging now",
   charging: "text_sensor/Charging",
+  checkUpdate: "button/Check for update",
   createSchedule: "button/Create schedule",
   firmware: "update/Firmware",
   limit: "number/Charging Limit",
@@ -921,10 +922,18 @@ function reconnect() {
 document.addEventListener("visibilitychange", reconnectIfDead);
 setInterval(reconnectIfDead, 10000);
 
+// Whether the page has had the board check for a release, once, as the app opens: the board has no check of its own.
+let checked = false;
 function setLive(on) {
   if (live === on) return;
   live = on;
   if (on) void loadSettings(); // it catches its own errors
+  if (on && !checked) {
+    checked = true;
+    const [domain, name] = E.checkUpdate.split("/");
+    // quietly, as a custom build without release.yaml has no such button
+    fetch(`/${domain}/${encodeURIComponent(name)}/press`, { method: "POST", body: "" }).catch(() => {});
+  }
   requestRender();
 }
 
