@@ -141,9 +141,12 @@ void SchedulerComponent::setup() {
   // The charge port flap, which the car reports even while it sleeps.
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
-    this->port_->add_on_state_callback([this]() { this->port_reported_ = this->reported_ = true; });
+    this->port_->add_on_state_callback([this]() {
+      this->port_reported_ = true;
+      this->turned_away_ = false;
+    });
   if (this->plug_ != nullptr)
-    this->plug_->add_on_state_callback([this](bool) { this->reported_ = true; });
+    this->plug_->add_on_state_callback([this](bool) { this->turned_away_ = false; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
   // forgets the pairing, and the setup's Key step comes back, until the car reports again. esphome-tesla-ble says so
   // only for its commands, in Last Command; its polls just go unanswered.
@@ -153,7 +156,8 @@ void SchedulerComponent::setup() {
       if (result.find("key not on whitelist") == std::string::npos || this->paired_vin_ == 0)
         return;
       ESP_LOGW(TAG, "The car doesn't know the board's key: %s", result.c_str());
-      this->reported_ = this->port_reported_ = false;
+      this->turned_away_ = true;
+      this->port_reported_ = false;
       this->paired_vin_ = 0;
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
@@ -213,7 +217,7 @@ void SchedulerComponent::update() {
   // The car reports only to a key it knows: its first report shows the key is paired with the car the settings
   // name, which erasing the board, another VIN or the car turning the key away undoes.
   const uint32_t vin = fnv1_hash(this->file_.vin);
-  if (this->reported_ && this->paired_vin_ != vin) {
+  if (!this->turned_away_ && (this->port_reported_ || car.plugged.has_value()) && this->paired_vin_ != vin) {
     this->paired_vin_ = vin;
     this->paired_pref_.save(&this->paired_vin_);
     global_preferences->sync();
