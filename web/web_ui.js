@@ -193,6 +193,7 @@ const PAGE = `
       <p id="plans-note" class="note">No grid plans here yet. ${PLAN_LINKS}</p>
       <p id="unlisted-note" class="note">${PLAN_LINKS}</p>
       <button id="upload-plan">Upload custom plan</button>
+      <button id="reset-plan">Reset custom plan</button>
       <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
       <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
       <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
@@ -318,18 +319,21 @@ function render() {
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
-  // the country's plans, and a custom plan by its name in place of Not listed, where there are none too
+  // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
+  // in place of the box, the notes and Upload custom plan
   const listed = $("set-plan").options.length > 2;
-  const unlisted = $("set-unlisted").checked;
+  const custom = ownPlan !== "";
+  const unlisted = $("set-unlisted").checked && !custom;
   const notListed = $("set-plan").options[1]; // none until the settings load
-  if (notListed) notListed.text = ownPlan ? ownPlanLabel() : "Not listed";
-  $("plan-row").hidden = !listed && !ownPlan;
-  $("unlisted-row").hidden = !listed;
-  $("set-plan").disabled = unlisted || !listed;
-  $("plans-note").hidden = listed || !$("set-area").value;
+  if (notListed) notListed.text = custom ? ownPlanLabel() : "Not listed";
+  $("plan-row").hidden = !listed && !custom;
+  $("unlisted-row").hidden = !listed || custom;
+  $("set-plan").disabled = unlisted || !listed || custom;
+  $("plans-note").hidden = listed || custom || !$("set-area").value;
   $("unlisted-note").hidden = !unlisted;
   // Upload custom plan under either note
   $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
+  $("reset-plan").hidden = !custom;
   $("fixed-row").hidden = !fixed;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
@@ -624,7 +628,7 @@ let ownPlan = "";
 // The custom plan as the page names it, from its name: line.
 const ownPlanLabel = () => {
   const name = /^name: *(.*?) *$/m.exec(ownPlan)?.[1];
-  return name ? `Custom plan: ${name}` : "Custom plan";
+  return name ? `Custom: ${name}` : "Custom plan";
 };
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
@@ -722,8 +726,9 @@ const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").valu
 // isn't in plans/: a box under the list rather than an option in it, as no one should have to search a long list for
 // a way out. A new board's, with `plan` undefined, starts at the country's only plan, as everyone in Spain and
 // Slovenia pays it, or at Choose where there are several, as nearly every home is on one and skipping it would leave
-// out its hours. Choose and Not listed, which render() names after a custom plan, show only in the closed list. Not
-// listed, without the box, where the country has no plans, as its own note says the same.
+// out its hours. Choose and Not listed, which render() names after a custom plan, show only in the closed list: Not
+// listed while a custom plan is loaded, in any country, and where the country has no plans, without the box, as its
+// own note says the same.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
@@ -731,7 +736,7 @@ function fillPlans(plan) {
   for (const option of closed) option.disabled = option.hidden = true;
   $("set-plan").replaceChildren(...closed, ...plans.map(([name, title]) => new Option(title, name)));
   $("set-unlisted").checked = plan === "" && plans.length > 0;
-  const fallback = plan === "" || !plans.length ? "none" : plans.length === 1 ? plans[0][0] : "";
+  const fallback = plan === "" || !plans.length || ownPlan ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
 }
 
@@ -764,10 +769,10 @@ function fillSettings() {
   $("set-area").replaceChildren(...(areas.includes(area) ? [] : [new Option("Choose", "")]), ...areaOptions);
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
-  fillPlans(unfinished() ? undefined : plan);
   // a custom plan: the lines under tariff:, without their indent, unless they name a plan from the list
   const [, own = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
   ownPlan = plan ? "" : own.replace(/^ {2}/gm, "").trimEnd();
+  fillPlans(unfinished() ? undefined : plan);
   $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "0.00";
   $("set-vin").value = values.tesla_vin ?? "";
@@ -1182,9 +1187,10 @@ function bind() {
     $("set-plan").value = e.target.checked ? "none" : "";
     requestRender();
   });
-  // a plan from the list in place of your own
-  $("set-plan").addEventListener("change", () => {
+  // Reset custom plan: back to the country's plans, to choose one or upload another
+  $("reset-plan").addEventListener("click", () => {
     ownPlan = "";
+    fillPlans();
     requestRender();
   });
   // Upload custom plan: a custom plan, in the plans' format. The board takes 4 kB of settings, the plan included, and
@@ -1201,7 +1207,6 @@ function bind() {
     const problem =
       "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
     say(long ? problem : "");
-    if (!long) toast(ownPlanLabel());
     requestRender();
   });
   press($("save-settings"), saveSettings);
