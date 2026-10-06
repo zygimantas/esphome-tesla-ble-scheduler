@@ -43,7 +43,7 @@ The board starts with the plan from the release you installed, and downloads the
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | [The big network companies' plans](se). Power fees at some aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Switzerland | `CH` | `CHF` or `EUR` | Prices from SMARD, in euros, converted into francs at the ECB's daily rate with `currency: CHF`. [Nine operators' plans](ch). |
 
-Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD or OMIE, and your grid fees are in the same. In Czechia, Hungary and Switzerland, `currency` set to the country's own converts SMARD's prices at the European Central Bank's daily rate, as the page does.
+Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD or OMIE, and your grid fees are in the same.
 
 ## Grid fees
 
@@ -77,7 +77,7 @@ Without your grid operator's plan here, write the plan yourself, or [add the pla
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
 - `exceptions`: public holidays and other dates that differ, like `12-25`, each with a line for the whole day. On those dates they replace the calendar.
-- `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`. YAML reads `on`, `off`, `yes`, `no`, `true`, `false` and `null` as true, false or nothing, so those can't be names.
+- `rates`: each rate's price per kWh, with VAT, in your `currency`. A rate's name is a word like `night` or `p1`.
 - `clock: winter`: all times stay on winter time all year. `clock: local`, the default, follows the clock, summer time included; it undoes a plan's `clock: winter`.
 
 The plans are examples too, like [one with four zones](lt/eso-standartinis-4-zones.yaml).

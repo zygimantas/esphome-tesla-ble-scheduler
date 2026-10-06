@@ -39,7 +39,7 @@ esphome compile config.yaml
 
 New behavior comes with a unit test in `test/scheduler_test.cpp`. Try changes on the simulation before flashing a real board.
 
-The unit tests cover every line and branch of those six headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
+The unit tests cover every line and branch of those seven headers, and CI fails when they don't. Mutation testing shows what they'd still miss:
 
 ```sh
 # Coverage, with clang (on macOS, run llvm-profdata and llvm-cov through xcrun)
@@ -53,7 +53,7 @@ python3 test/mutation_test.py ArduinoJson/src
 
 A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
 
-The C++ follows ESPHome's own style. Comments say why, not what. YAML config files have no comments; plans have theirs.
+The C++ follows ESPHome's own style. Comments say why, not what. `device.yaml`, `release.yaml` and `config.example.yaml` have no `#` comments; plans have theirs.
 
 ## Pull requests
 
@@ -101,8 +101,8 @@ A plan is a grid operator's prices and hours, in `plans/`, in a folder for its c
 - **The folder's `README.md`** is the country's page for people, which GitHub shows under the folder's files: which plans there are and for whom, their hours, what's left out, how to name one in a settings file, and who sets the prices and when. A new plan adds its row there, and a new country's folder its row in the table of [Countries and plans](plans/README.md#countries). Boards download only the `.yaml` files.
 - **A comment at the top** names the plan for the page's list, short enough for a phone, with a link to the operator's prices, like `# ESO Standartinis, four zones, prices with VAT: https://www.eso.lt`, and says who maintains it: `# Maintained by @your-github-name`. Where the operator prints its prices otherwise, like in cents or without VAT, it also says how they were converted.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their plan from `main` every day, so merging publishes it, without a release.
-- **A new plan reaches users with the next release,** as the install checks a plan against the release's own copy.
-- **CI checks every plan** in the unit tests: as the board reads it, and by the install's own rules.
+- **A new plan reaches users with the next release,** as a settings file can name only the plans built into the board's release.
+- **CI checks every plan** in the unit tests: as the board reads it, and as a settings file names it.
 
 ## Releases
 

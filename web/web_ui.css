@@ -245,7 +245,7 @@ input[type="checkbox"] {
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
-input:not([type="file"], [type="checkbox"]) {
+input:not([type="checkbox"]) {
   width: 7em;
   font: inherit;
   text-align: right;
@@ -334,7 +334,7 @@ button:disabled {
   opacity: 0.5;
 }
 
-/* --- Savings card --- */
+/* --- Notes, hints and errors --- */
 .note {
   margin: 8px 0 0;
   color: var(--muted);
@@ -343,7 +343,7 @@ button:disabled {
 ol.note {
   padding-left: 20px;
 }
-/* As far below the text as a button below a row, like Create key. */
+/* As far below the text as a button below a row, like Key's Continue. */
 .note + .button,
 .step .note + button {
   margin-top: 22px;

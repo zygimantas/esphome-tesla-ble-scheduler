@@ -12,7 +12,8 @@ namespace esphome::scheduler {
 
 static const char *const TAG = "scheduler";
 
-// The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan 1 kB.
+// The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan up to
+// about 2 kB.
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
@@ -20,25 +21,16 @@ static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/e
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>();
   datetime::TimeEntityRestoreState saved{};
-  if (this->pref_.load(&saved)) {
-    saved.apply(this);
-    return;
-  }
-  this->hour_ = 7;
-  this->minute_ = 0;
-  this->second_ = 0;
-  this->publish_state();
+  if (!this->pref_.load(&saved))
+    saved = {7, 0, 0};
+  saved.apply(this);
 }
 
 void ReadyBy::control(const datetime::TimeCall &call) {
-  if (call.get_hour().has_value())
-    this->hour_ = *call.get_hour();
-  if (call.get_minute().has_value())
-    this->minute_ = *call.get_minute();
-  if (call.get_second().has_value())
-    this->second_ = *call.get_second();
-  this->publish_state();
-  datetime::TimeEntityRestoreState saved{this->hour_, this->minute_, this->second_};
+  datetime::TimeEntityRestoreState saved{call.get_hour().value_or(this->hour_),
+                                         call.get_minute().value_or(this->minute_),
+                                         call.get_second().value_or(this->second_)};
+  saved.apply(this);
   this->pref_.save(&saved);
   this->parent_->reschedule();
 }
@@ -46,35 +38,17 @@ void ReadyBy::control(const datetime::TimeCall &call) {
 void ReadyByOnce::restore() {
   this->pref_ = this->make_entity_preference<datetime::DateTimeEntityRestoreState>();
   datetime::DateTimeEntityRestoreState saved{};
-  if (this->pref_.load(&saved)) {
-    saved.apply(this);
-    return;
-  }
-  this->year_ = 2000;
-  this->month_ = 1;
-  this->day_ = 1;
-  this->hour_ = 0;
-  this->minute_ = 0;
-  this->second_ = 0;
-  this->publish_state();
+  if (!this->pref_.load(&saved))
+    saved = {2000, 1, 1, 0, 0, 0};
+  saved.apply(this);
 }
 
 void ReadyByOnce::control(const datetime::DateTimeCall &call) {
-  if (call.get_year().has_value())
-    this->year_ = *call.get_year();
-  if (call.get_month().has_value())
-    this->month_ = *call.get_month();
-  if (call.get_day().has_value())
-    this->day_ = *call.get_day();
-  if (call.get_hour().has_value())
-    this->hour_ = *call.get_hour();
-  if (call.get_minute().has_value())
-    this->minute_ = *call.get_minute();
-  if (call.get_second().has_value())
-    this->second_ = *call.get_second();
-  this->publish_state();
-  datetime::DateTimeEntityRestoreState saved{this->year_, this->month_,  this->day_,
-                                             this->hour_, this->minute_, this->second_};
+  datetime::DateTimeEntityRestoreState saved{
+      call.get_year().value_or(this->year_),     call.get_month().value_or(this->month_),
+      call.get_day().value_or(this->day_),       call.get_hour().value_or(this->hour_),
+      call.get_minute().value_or(this->minute_), call.get_second().value_or(this->second_)};
+  saved.apply(this);
   this->pref_.save(&saved);
   this->parent_->reschedule();
 }
@@ -102,14 +76,13 @@ void SchedulerComponent::load_settings() {
 }
 
 // A file the checks turn away stays the one the page shows, to fix.
-std::string SchedulerComponent::use_settings(const std::string &text) {
+void SchedulerComponent::use_settings(const std::string &text) {
   this->settings_text_ = text;
   SettingsFile file;
   const std::string error = read_settings(text, this->plans_, file);
   this->settings_error_ = error.empty() ? "" : "Settings: " + error;
   if (error.empty())
     this->file_ = file;
-  return error;
 }
 
 // On the next loop, as the web server calls from its own task. A board's first settings apply at once, as nothing
@@ -139,7 +112,7 @@ void SchedulerComponent::setup() {
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("scheduler_held_mode"));
   this->held_pref_.load(&this->held_);
   this->controller_.restore_mode(this->held_);
-  // Straight into the controller, as 6 kB is a lot for the stack. A build with another layout starts afresh.
+  // Straight into the controller, as 6 kB is a lot for the stack. A build with another size starts afresh (savings.h).
   this->savings_pref_ = global_preferences->make_preference<Savings>(fnv1_hash("scheduler_savings"));
   this->savings_pref_.load(&this->controller_.savings);
   this->paired_pref_ = global_preferences->make_preference<uint32_t>(fnv1_hash("scheduler_paired_vin"));
@@ -190,9 +163,7 @@ void SchedulerComponent::apply_settings_() {
 #endif
   if (this->file_.area == nullptr)
     this->controller_.without_market_prices();
-  const std::string error = this->apply_tariff_(std::string(this->file_.plan_text));
-  if (!error.empty())
-    ESP_LOGE(TAG, "Tariff: %s", error.c_str());
+  this->apply_tariff_(std::string(this->file_.plan_text));  // read_settings() made the same tariff
 }
 
 // A text sensor's new state, if it's new.

@@ -77,8 +77,8 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
 
 // How a plan the list doesn't have gets into it, and what to do until then.
 const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
-const PLAN_LINKS =
-  `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for yours</a>, or ` +
+const planLinks = (ask) =>
+  `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">${ask}</a>, or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
   "choose it in Change settings, under Board, once a release brings it. Until then, fees that change with the hour " +
   "can go in a settings file, uploaded there.";
@@ -103,7 +103,7 @@ const PAGE = `
 
   <section id="plan-card" class="card" hidden>
     <div class="title">No grid plan</div>
-    <p class="note"><span id="plan-why"></span> ${PLAN_LINKS.replace("ask for yours", "Ask for your plan")}</p>
+    <p class="note"><span id="plan-why"></span> ${planLinks("Ask for your plan")}</p>
   </section>
 
   <section id="settings-card" class="card" hidden>
@@ -115,8 +115,8 @@ const PAGE = `
     <label id="plan-row" class="row"><span>Grid plan<button type="button" class="info" data-hint="plan-hint" aria-label="About the grid plan" aria-expanded="false">?</button></span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-    <p id="plans-note" class="note">No grid plans here yet: ${PLAN_LINKS}</p>
-    <p id="unlisted-note" class="note">${PLAN_LINKS.replace("ask for yours", "Ask for your plan")}</p>
+    <p id="plans-note" class="note">No grid plans here yet: ${planLinks("ask for yours")}</p>
+    <p id="unlisted-note" class="note">${planLinks("Ask for your plan")}</p>
     <label id="price-row" class="row"><span>Contract type<button type="button" class="info" data-hint="price-hint" aria-label="About the contract type" aria-expanded="false">?</button></span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
     <label id="margin-row" class="row"><span>Supplier's margin<button type="button" class="info" data-hint="margin-hint" aria-label="About the supplier's margin" aria-expanded="false">?</button></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -134,7 +134,7 @@ const PAGE = `
     <p id="settings-error" class="note error" hidden></p>
     <button id="save-settings" class="primary">Save</button>
     <button id="cancel-settings">Cancel</button>
-    <a id="download-settings" class="button" href="/settings" download="settings.yaml">Download settings</a>
+    <a class="button" href="/settings" download="settings.yaml">Download settings</a>
     <button id="upload-settings">Upload settings</button>
     <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
@@ -155,6 +155,7 @@ const PAGE = `
     <div class="title">Car<span class="summary">Saved</span></div>
     <div class="body">
       <p class="note error" hidden></p>
+      <button class="primary save">Continue</button>
     </div>
   </section>
   <section class="card step" hidden>
@@ -175,6 +176,7 @@ const PAGE = `
     <div class="title">Prices</div>
     <div class="body">
       <p class="note error" hidden></p>
+      <button class="primary save">Finish</button>
     </div>
   </section>
 
@@ -282,9 +284,9 @@ function render() {
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
   const link = live === null ? "Connecting …" : live ? "Connected" : "No connection";
   const status = live === false ? link : (text(E.status) || "Connecting …") + power;
-  const busy = updating ? "Updating …" : "Restarting …";
-  $("status").textContent = restarting ? busy : status;
-  $("link").textContent = restarting ? busy : link;
+  const waiting = updating ? "Updating …" : "Restarting …";
+  $("status").textContent = restarting ? waiting : status;
+  $("link").textContent = restarting ? waiting : link;
   document.body.classList.toggle("restarting", restarting > 0);
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
@@ -498,7 +500,6 @@ async function chargeNow() {
     expectMode("now");
     toast("Charging now until you unplug");
   }
-  requestRender();
 }
 
 // Stop charging and Delete schedule: the board stops charging and keeps the car waiting until a
@@ -607,7 +608,6 @@ function readSettings(file) {
   return { values, more };
 }
 
-// Settings without prices, a new board's or what the setup's first step saved, still need the setup's last steps.
 // What's wrong with a VIN, or "": a Tesla's starts with one of its makers' codes, and its 9th character is a check
 // digit, computed from the others as in North America, which Tesla does for its Shanghai and Berlin cars too.
 const TESLA_MAKERS = ["5YJ", "7SA", "7G2", "LRW", "XP7"];
@@ -616,7 +616,7 @@ function vinProblem(vin) {
   if (/[IOQ]/.test(vin)) return "A VIN has no I, O or Q: they're 1 or 0.";
   if (!/^[A-Z0-9]+$/.test(vin)) return "A VIN has only letters and digits.";
   if (!TESLA_MAKERS.includes(vin.slice(0, 3)))
-    return "A Tesla's VIN starts with 5YJ, 7SA, 7G2, LRW or XP7: check the first three.";
+    return `A Tesla's VIN starts with ${TESLA_MAKERS.slice(0, -1).join(", ")} or ${TESLA_MAKERS[TESLA_MAKERS.length - 1]}: check the first three.`;
   const value = (c) => (c <= "9" ? Number(c) : Number("12345678123457923456789"["ABCDEFGHJKLMNPRSTUVWXYZ".indexOf(c)]));
   const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
   const sum = [...vin].reduce((total, c, i) => total + value(c) * weights[i], 0);
@@ -890,15 +890,7 @@ function formSettings(prices = true) {
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
 // until the next try.
 async function sendSettings(file) {
-  const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), 8000);
-  try {
-    const response = await fetch("/settings", {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: file,
-      signal: abort.signal,
-    });
+  const saved = await send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
     const answer = await response.text();
     $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
     $("settings-error").hidden = response.ok || setup.step > 0;
@@ -914,20 +906,16 @@ async function sendSettings(file) {
       }
     }
     return response.ok;
-  } catch (e) {
-    toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
-    return false;
-  } finally {
-    clearTimeout(timer);
-    requestRender();
-  }
+  });
+  requestRender();
+  return saved;
 }
 
 // Save: the form's own checks first, as the browser shows them by the field.
 async function saveSettings() {
   $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
   // the shown fields only, as a hidden one can't say what's wrong, and isn't saved
-  const fields = document.querySelectorAll("#settings-card input:not([type=file]), #settings-card select");
+  const fields = document.querySelectorAll("#settings-card input, #settings-card select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) wrong.reportValidity();
   else await sendSettings(formSettings());
@@ -994,27 +982,29 @@ function setLive(on) {
   requestRender();
 }
 
-async function post(entity, action, param) {
-  const [domain, name] = entity.split("/");
-  const query = param == null ? "" : `?value=${encodeURIComponent(param)}`;
-  // The board answers at once; a restarting or absent one never does. An AbortController rather than
-  // AbortSignal.timeout(), which Safari got only in 16.4.
+// POSTs to the board and hands its answer to read(); false, with a toast, if it fails. The board answers at once; a
+// restarting or absent one never does. An AbortController rather than AbortSignal.timeout(), which Safari got only in
+// 16.4.
+async function send(url, init, read) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 8000);
   try {
-    const response = await fetch(`/${domain}/${encodeURIComponent(name)}/${action}${query}`, {
-      method: "POST",
-      body: "",
-      signal: abort.signal,
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return true;
+    return await read(await fetch(url, { ...init, method: "POST", signal: abort.signal }));
   } catch (e) {
     toast(`Didn't work (${e.name === "AbortError" ? "no answer" : e.message}). Try again.`);
     return false;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function post(entity, action, param) {
+  const [domain, name] = entity.split("/");
+  const query = param == null ? "" : `?value=${encodeURIComponent(param)}`;
+  return send(`/${domain}/${encodeURIComponent(name)}/${action}${query}`, { body: "" }, (response) => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return true;
+  });
 }
 
 // One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
@@ -1210,12 +1200,11 @@ function qrCode(text) {
 // --- Start -----------------------------------------------------------------
 
 // A button that asks first, then presses the board's button.
-function confirmPress(selector, entity, message, question) {
-  for (const button of document.querySelectorAll(selector))
-    press(button, async () => {
-      if (!confirm(question)) return;
-      if (await post(entity, "press")) toast(message);
-    });
+function confirmPress(id, entity, message, question) {
+  press($(id), async () => {
+    if (!confirm(question)) return;
+    if (await post(entity, "press")) toast(message);
+  });
 }
 
 function bind() {
@@ -1228,13 +1217,13 @@ function bind() {
   press($("delete-schedule"), () => stopCharging("Schedule deleted"));
   press($("stop-charging"), () => stopCharging("Charging stopped"));
   confirmPress(
-    "#pair",
+    "pair",
     E.pair,
     "Creating the key: tap your key card",
     "Create a new key? Sit in the car and tap your key card on the console when asked.",
   );
   confirmPress(
-    "#reset-savings",
+    "reset-savings",
     E.resetSavings,
     "Savings reset",
     "Reset the savings? They start again from zero today.",
@@ -1265,8 +1254,9 @@ function bind() {
   $("set-area").addEventListener("change", () => {
     fillPlans();
     if (unfinished()) guessFromArea();
+    requestRender();
   });
-  for (const id of ["set-area", "set-price", "set-plan"]) $(id).addEventListener("change", requestRender);
+  $("set-price").addEventListener("change", requestRender);
   $("set-unlisted").addEventListener("change", (e) => {
     $("set-plan").value = e.target.checked ? "none" : "";
     requestRender();
@@ -1283,14 +1273,8 @@ function bind() {
       setup.stay = true;
       requestRender();
     });
-    // Key has its own Continue, which creates the key, and moves on once the car answers; the steps before open with a
-    // click instead of Back
-    if (i === 1) continue;
-    const body = card.querySelector(".body");
-    const label = ["Continue", "", "Finish"][i];
-    body.insertAdjacentHTML("beforeend", `<button class="primary save">${label}</button>`);
-    press(body.querySelector(".save"), nextStep);
   }
+  for (const button of document.querySelectorAll(".step .save")) press(button, nextStep);
   // Update: the board downloads the release, then restarts with it.
   press($("update"), async () => {
     if (await post(E.firmware, "install")) {

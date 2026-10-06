@@ -17,7 +17,7 @@
 
 namespace esphome::scheduler {
 
-// Nord Pool delivery days run midnight to midnight CET.
+// The markets' delivery days run midnight to midnight CET.
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
 
 // Where the board downloads the market prices.
@@ -97,8 +97,6 @@ inline const char *own_currency(const Area &area) {
 // into at the ECB's daily rate when the settings ask for it; nullptr for the others.
 inline const char *converted_currency(const Area &area) {
   static constexpr const char *CONVERTED[][2] = {{"CH", "CHF"}, {"CZ", "CZK"}, {"HU", "HUF"}};
-  if (area.market != Market::SMARD)
-    return nullptr;
   for (const auto &[country, currency] : CONVERTED)
     if (std::strncmp(area.name, country, 2) == 0)
       return currency;

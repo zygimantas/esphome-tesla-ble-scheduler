@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <initializer_list>
@@ -32,6 +33,13 @@ inline std::string concat(std::initializer_list<std::string_view> pieces) {
   for (const std::string_view piece : pieces)
     joined += piece;
   return joined;
+}
+
+// `text` as a number, or NaN.
+inline float number(const std::string &text) {
+  char *end = nullptr;
+  const float value = std::strtof(text.c_str(), &end);
+  return !text.empty() && end == text.c_str() + text.size() ? value : NAN;
 }
 
 // Reads a tariff in the YAML of plans: two-space indents, `key: value` or `key:` lines, and comments on
@@ -128,9 +136,9 @@ inline std::string day_rates(const std::string &line, const std::vector<std::str
   return "";
 }
 
-// What the tariff adds to a kWh: the VAT on market prices, the supplier's margin, and the tariff's rates for each
-// quarter-hour, from make_tariff(). The times are local time, or winter time all year with clock: winter. Without a
-// calendar, no rates: market prices only.
+// What the tariff adds to a kWh: the VAT on market prices and the supplier's margin, from the settings, and the
+// tariff's rates for each quarter-hour, from make_tariff(). The times are local time, or winter time all year with
+// clock: winter. Without a calendar, no rates.
 struct Tariff {
   float vat = 0.0f;
   float margin = 0.0f;  // per kWh with VAT, like the rates
@@ -182,9 +190,8 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
   made.winter_clock = all.clock == "winter";
   std::vector<std::string> names;
   for (const auto &[name, price] : all.rates) {
-    char *end = nullptr;
-    const float fee = std::strtof(price.c_str(), &end);
-    if (end != price.c_str() + price.size() || !(fee >= 0.0f && fee < MAX_PRICE))
+    const float fee = number(price);
+    if (!(fee >= 0.0f && fee < MAX_PRICE))
       return concat({"rate ", name, ": ", price, " isn't a price per kWh"});
     if (std::find(names.begin(), names.end(), name) != names.end() || names.size() == MAX_RATES)
       return concat({"rate ", name, ": a rate is there twice, or there are more than 26"});

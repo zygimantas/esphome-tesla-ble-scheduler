@@ -11,7 +11,7 @@
 
 ## The simulation
 
-- Its program needs a terminal and a time limit: `ESPHOME_PREFDIR=$(mktemp -d) python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' perl -e 'alarm 45; exec @ARGV' test/.esphome/build/simulation/.pioenvs/simulation/program > log`, then `grep -F '][scheduler' log`. ESPHOME_PREFDIR starts it without saved settings.
+- Its program needs a terminal and a time limit: `ESPHOME_PREFDIR=$(mktemp -d) python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' perl -e 'alarm 45; exec @ARGV' test/.esphome/build/simulation/.pioenvs/simulation/program > log`, then `grep -F '][scheduler' log`. ESPHOME_PREFDIR starts it without what an earlier run saved, like the buttons' mode, Ready by and savings.
 - Without CHEAP_NOW=1, the outcome depends on the time of day, as the made-up prices are cheap from 01:00 to 05:00. A first "Wake the car (Reading battery)" is a startup race with the made-up sensors, not a bug, and the start may then wait for the next tick, 30 s later: give the program well over 30 s.
 
 ## Mutation testing

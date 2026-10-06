@@ -11,7 +11,7 @@ namespace esphome::scheduler {
 // A slot is one quarter-hour, the market's price period.
 constexpr int64_t SLOT_SECONDS = 15 * 60;
 constexpr int64_t DAY_SECONDS = 24 * 3600;
-// The default winter offset from UTC; the YAML sets the board's own from its clock's time zone.
+// The default winter offset from UTC; the board's own comes from the settings' timezone.
 constexpr int32_t VILNIUS_STANDARD_OFFSET = 2 * 3600;
 
 // a / b rounded down, for b > 0.

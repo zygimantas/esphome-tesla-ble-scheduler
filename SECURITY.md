@@ -17,7 +17,7 @@ The firmware (`device.yaml`, `release.yaml`, `scheduler/`, `web/`), the example 
 - The board sending the car a command it shouldn't, or accepting one from someone who isn't on your Wi-Fi.
 - A board installing firmware that isn't signed with the project's key.
 - Your Wi-Fi password, API key, VIN or ntfy topic ending up somewhere they shouldn't, such as a log or a release file.
-- A Nord Pool, SMARD, OMIE or ntfy response, or a crafted web request, crashing the board or running code on it.
+- A Nord Pool, SMARD, OMIE, ECB or ntfy response, a downloaded plan, or a crafted web request, crashing the board or running code on it.
 - A workflow that could publish a release or change the repository from a pull request.
 
 ## What doesn't

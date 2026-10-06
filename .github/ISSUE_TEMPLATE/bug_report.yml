@@ -26,7 +26,7 @@ body:
     id: page
     type: textarea
   - attributes:
-      description: Lines from `esphome logs config.yaml` around the problem, with the `[scheduler]` ones in particular. Check them for your Wi-Fi name before pasting.
+      description: Lines from the board's log around the problem (ESPHome Web's logs over USB, or `esphome logs` for a build of your own), with the `[scheduler]` ones in particular. Check them for your Wi-Fi name before pasting.
       label: Log
       render: text
     id: log

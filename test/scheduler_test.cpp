@@ -1,4 +1,4 @@
-// Unit tests for charger.h and the headers it includes; CONTRIBUTING.md says how to build and run them.
+// Unit tests for charger.h, settings.h and the headers they include; CONTRIBUTING.md says how to build and run them.
 #include "scheduler/charger.h"
 #include "scheduler/settings.h"
 #include "scheduler_test_tesla.h"
@@ -54,6 +54,7 @@ constexpr int64_t HOUR = 3600;
 constexpr int64_t CET_SEP24 = SEP24_1700Z - 19 * HOUR;
 constexpr int64_t CET_SEP25 = CET_SEP24 + DAY_SECONDS;
 constexpr int64_t TROUGH = SEP24_1700Z + 5 * HOUR + 30 * 60;  // Friday 01:30 local, where the cheapest window starts
+constexpr int64_t NOON = SEP24_1700Z - 8 * HOUR;              // Thursday 12:00 local, before tomorrow's prices are out
 
 static std::string iso(int64_t t) {
   const int64_t day = floor_div(t, DAY_SECONDS), s = t - day * DAY_SECONDS;
@@ -130,7 +131,7 @@ static PriceTable prices_from(int64_t from, int64_t to, PriceAt price_at) {
 static bool near(float a, float b, float tolerance = 1e-6f) { return std::fabs(a - b) < tolerance; }
 
 // ---------------------------------------------------------------------------
-// Calendar and Nord Pool prices
+// Calendar and market prices
 // ---------------------------------------------------------------------------
 
 static void test_calendar() {
@@ -461,7 +462,7 @@ static void test_schedule_windows_and_prices() {
 
 // ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
 // of 2026.
-static const char *const FOUR_ZONES = R"(# ESO's Standartinis schedule with four zones
+static const char *const FOUR_ZONES = R"(# ESO's Standartinis plan with four zones
 currency: EUR
 calendar:
   jan-dec:
@@ -674,22 +675,6 @@ static void test_makes_tariffs() {
                 "calendar: jan-dec: mon-sun: \"flat 07:00\" isn't rates and times by turns, like night 07:00 day"},
            Case{calendar_of("    mon-sun: dark"), "calendar: jan-dec: mon-sun: rate dark has no price"},
            Case{calendar_of("    mon-sun: flat 07:00 dark"), "calendar: jan-dec: mon-sun: rate dark has no price"},
-           Case{calendar_of("    mon-sun: flat 7:00 flat"),
-                "calendar: jan-dec: mon-sun: 7:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07:10 flat"),
-                "calendar: jan-dec: mon-sun: 07:10 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07:60 flat"),
-                "calendar: jan-dec: mon-sun: 07:60 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07-00 flat"),
-                "calendar: jan-dec: mon-sun: 07-00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 0x:00 flat"),
-                "calendar: jan-dec: mon-sun: 0x:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07:x0 flat"),
-                "calendar: jan-dec: mon-sun: 07:x0 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 00:00 flat"),
-                "calendar: jan-dec: mon-sun: 00:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 24:00 flat"),
-                "calendar: jan-dec: mon-sun: 24:00 isn't a later quarter-hour, like 07:00 or 22:15"},
            Case{calendar_of("    mon-sun: flat 07:00 flat 07:00 flat"),
                 "calendar: jan-dec: mon-sun: 07:00 isn't a later quarter-hour, like 07:00 or 22:15"},
            Case{calendar_of("    mon-sun: flat 07:00 flat 06:45 flat"),
@@ -697,38 +682,19 @@ static void test_makes_tariffs() {
            Case{calendar_of("    mon-sun: flat 07:00 flat 08:00"),
                 "calendar: jan-dec: mon-sun: \"flat 07:00 flat 08:00\" isn't rates and times by turns, like night "
                 "07:00 day"},
-           Case{calendar_of("    mon-sun: flat 0::00 flat"),
-                "calendar: jan-dec: mon-sun: 0::00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 1/:00 flat"),
-                "calendar: jan-dec: mon-sun: 1/:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07:0? flat"),
-                "calendar: jan-dec: mon-sun: 07:0? isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07:000 flat"),
-                "calendar: jan-dec: mon-sun: 07:000 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 07x00 flat"),
-                "calendar: jan-dec: mon-sun: 07x00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat 25:00 flat"),
-                "calendar: jan-dec: mon-sun: 25:00 isn't a later quarter-hour, like 07:00 or 22:15"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01+01: flat\n",
-                "exceptions: 01+01 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  13-01: flat\n",
-                "exceptions: 13-01 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  00-10: flat\n",
-                "exceptions: 00-10 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01-00: flat\n",
-                "exceptions: 01-00 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  1-01: flat\n",
-                "exceptions: 1-01 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01/01: flat\n",
-                "exceptions: 01/01 isn't a date like 12-25, or it's there twice"},
-           Case{calendar_of("    mon-sun: flat") + "exceptions:\n  01-011: flat\n",
-                "exceptions: 01-011 isn't a date like 12-25, or it's there twice"},
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: dark\n",
                 "exceptions: 12-25: rate dark has no price"},
            Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
        }) {
     CHECK_STR(tariff_error("", c.own), c.error);
   }
+  for (const char *time : {"7:00", "07:10", "07:60", "07-00", "0x:00", "07:x0", "00:00", "24:00", "0::00", "1/:00",
+                           "07:0?", "07:000", "07x00", "25:00"})
+    CHECK_STR(tariff_error("", calendar_of(("    mon-sun: flat " + std::string(time) + " flat").c_str())),
+              std::string("calendar: jan-dec: mon-sun: ") + time + " isn't a later quarter-hour, like 07:00 or 22:15");
+  for (const char *date : {"01+01", "13-01", "00-10", "01-00", "1-01", "01/01", "01-011"})
+    CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + date + ": flat\n"),
+              std::string("exceptions: ") + date + " isn't a date like 12-25, or it's there twice");
   CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat 23:45 flat")), "");
   // Prices of nothing and above 1, like Norway's in NOK, and exceptions in any order.
   CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat 12:00 free", "flat: 12.5\n  free: 0")), "");
@@ -743,7 +709,7 @@ static void test_makes_tariffs() {
     CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + after + ": flat\n"),
               std::string("exceptions: ") + after + " isn't a date like 12-25, or it's there twice");
   }
-  // A key twice in a plan: the settings file turns it away before, line by line.
+  // A key twice in a plan.
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
             "rate flat: a rate is there twice, or there are more than 26");
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat") +
@@ -937,7 +903,7 @@ static std::string settings_error(const std::string &text) {
 static void test_reads_the_settings_file() {
   SettingsFile s;
   CHECK_STR(read_settings(SETTINGS, repository_plans(), s), "");
-  CHECK(s.area == &AREAS[15] && std::string(s.area->name) == "LT" && s.currency == "EUR");
+  CHECK(s.area != nullptr && std::string(s.area->name) == "LT" && s.currency == "EUR");
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
   CHECK(s.ntfy_server == "https://ntfy.sh" && s.ntfy_topic == "my-topic_1");
   CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.plan_text.rfind("# ESO", 0) == 0);
@@ -1076,16 +1042,12 @@ static void test_settings_file_errors() {
   for (const char *area : {"  area: GB\n", ""})
     CHECK_STR(settings_error(settings_with("  area", area)),
               "market: area must be one the board knows, like LT or SE3: see Countries and plans");
-  CHECK_STR(settings_error(settings_with("  vat", "  vat: -0.1\n")),
-            "market: vat must be the VAT as a fraction, like 0.21 for 21%");
-  CHECK_STR(settings_error(settings_with("  vat", "  vat: 1\n")),
-            "market: vat must be the VAT as a fraction, like 0.21 for 21%");
-  CHECK_STR(settings_error(settings_with("  vat", "  vat: \"\"\n")),
-            "market: vat must be the VAT as a fraction, like 0.21 for 21%");
-  CHECK_STR(settings_error(settings_with("  margin", "  margin: 1.6 ct\n")),
-            "market: margin must be a price per kWh, like 0.012");
-  CHECK_STR(settings_error(settings_with("  margin", "  margin: 1e7\n")),
-            "market: margin must be a price per kWh, like 0.012");
+  for (const char *vat : {"-0.1", "1", "\"\""})
+    CHECK_STR(settings_error(settings_with("  vat", std::string("  vat: ") + vat + "\n")),
+              "market: vat must be the VAT as a fraction, like 0.21 for 21%");
+  for (const char *margin : {"1.6 ct", "1e7"})
+    CHECK_STR(settings_error(settings_with("  margin", std::string("  margin: ") + margin + "\n")),
+              "market: margin must be a price per kWh, like 0.012");
   // Fixed price: without a market, and a price
   CHECK_STR(settings_error("fixed_price: 0.15\n" + std::string(SETTINGS)),
             "fixed_price goes without market:; on top of a market price, use market: margin");
@@ -1515,14 +1477,14 @@ static void test_charges_as_usual_without_prices() {
 static void test_waits_for_tomorrows_prices() {
   Controller controller;
   add_day(controller.prices, CET_SEP24);
-  const int64_t noon = SEP24_1700Z - 8 * HOUR, published = SEP24_1700Z - 6 * HOUR + 5 * 60;  // 12:00 and 14:05 local
-  const Run run = simulate(controller, FakeTesla(), noon - 60, SEP24_1700Z,
-                           {{noon, &FakeTesla::plug_in}, {published, [&controller](FakeTesla &) {
+  const int64_t published = SEP24_1700Z - 6 * HOUR + 5 * 60;  // 14:05 local
+  const Run run = simulate(controller, FakeTesla(), NOON - 60, SEP24_1700Z,
+                           {{NOON, &FakeTesla::plug_in}, {published, [&controller](FakeTesla &) {
                                                             add_day(controller.prices, CET_SEP25);
                                                             controller.reschedule();
                                                           }}});
   for (int64_t t : run.charging_at)
-    CHECK(t < noon + 60);  // only the plug-in auto start
+    CHECK(t < NOON + 60);  // only the plug-in auto start
   CHECK(contains(run.statuses, "Waiting for prices") && contains(run.statuses, "Charges at 01:30"));
   REQUIRE(run.messages.size() == 1);
   CHECK(run.messages[0].first == published);  // the message waits for the schedule
@@ -1530,20 +1492,19 @@ static void test_waits_for_tomorrows_prices() {
 
 static void test_fetch_prices_due() {
   Controller controller;
-  const int64_t noon = SEP24_1700Z - 8 * HOUR;             // 12:00 local
   CHECK(!controller.fetch_prices_due(0));                  // no clock yet
-  CHECK(controller.fetch_prices_due(noon));                // no prices: at once,
-  CHECK(!controller.fetch_prices_due(noon + 5 * 60 - 1));  // then every 5 minutes
-  CHECK(controller.fetch_prices_due(noon + 5 * 60));
-  CHECK(controller.fetch_prices_due(noon + 15 * 60));
+  CHECK(controller.fetch_prices_due(NOON));                // no prices: at once,
+  CHECK(!controller.fetch_prices_due(NOON + 5 * 60 - 1));  // then every 5 minutes
+  CHECK(controller.fetch_prices_due(NOON + 5 * 60));
+  CHECK(controller.fetch_prices_due(NOON + 15 * 60));
   add_day(controller.prices, CET_SEP24);                         // today's, to 01:00
-  CHECK(!controller.fetch_prices_due(noon + 15 * 60 + HOUR));    // tomorrow's: not before 12:45 CET
+  CHECK(!controller.fetch_prices_due(NOON + 15 * 60 + HOUR));    // tomorrow's: not before 12:45 CET
   const int64_t publication = SEP24_1700Z - 6 * HOUR - 15 * 60;  // 12:45 CET: every 5 minutes
   CHECK(controller.fetch_prices_due(publication));
   CHECK(!controller.fetch_prices_due(publication + 4 * 60));
   CHECK(controller.fetch_prices_due(publication + 5 * 60));
   add_day(controller.prices, CET_SEP25);
-  CHECK(!controller.fetch_prices_due(noon + 3 * HOUR));  // all in
+  CHECK(!controller.fetch_prices_due(NOON + 3 * HOUR));  // all in
   CHECK(!controller.fetch_prices_due(CET_SEP25 + 60));   // 01:00: the next delivery day,
   CHECK(!controller.fetch_prices_due(publication + 24 * HOUR - 60));
   CHECK(controller.fetch_prices_due(publication + 24 * HOUR));  // from 12:45 CET
@@ -1772,8 +1733,6 @@ static void test_charger_without_power() {
   CHECK(charging.command == Command::NONE);
   CHECK_STR(charging.status, "Charging");
 
-  FakeTesla powerless = plugged_in(false);
-  powerless.no_power = true;
   // A regular start, then the car reports No Power: it holds that request, so no second start for 10 minutes.
   FakeTesla late = plugged_in(false);
   Controller dark_after = with_prices();
@@ -1788,6 +1747,8 @@ static void test_charger_without_power() {
   CHECK(dark_after.tick(late.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
 
   // A button asks again at once: Stop charging, then Start charging now within the 10 minutes.
+  FakeTesla powerless = plugged_in(false);
+  powerless.no_power = true;
   Controller pressed = with_prices();
   pressed.tick(powerless.state(TROUGH), Settings());
   pressed.stop_charging();
@@ -1808,12 +1769,10 @@ static void test_charger_without_power() {
 
   // Still without power once Ready by has passed and the schedule moved to the next night: a stop, so the car
   // doesn't start at a dear time when power comes.
-  FakeTesla dark = plugged_in(false);
-  dark.no_power = true;
   Controller ended = with_prices();
-  ended.tick(dark.state(TROUGH), Settings());
-  CHECK(ended.tick(dark.state(TROUGH + 6 * HOUR), Settings()).command == Command::STOP_CHARGING);
-  CHECK(ended.tick(dark.state(TROUGH + 6 * HOUR + 30), Settings()).command == Command::NONE);
+  ended.tick(powerless.state(TROUGH), Settings());
+  CHECK(ended.tick(powerless.state(TROUGH + 6 * HOUR), Settings()).command == Command::STOP_CHARGING);
+  CHECK(ended.tick(powerless.state(TROUGH + 6 * HOUR + 30), Settings()).command == Command::NONE);
 }
 
 static void test_new_limit_reschedules_at_once() {
@@ -2108,10 +2067,9 @@ static void test_plug_in_message_at_the_limit() {
   // It doesn't wait for tomorrow's prices.
   Controller controller;
   add_day(controller.prices, CET_SEP24);
-  const int64_t noon = SEP24_1700Z - 8 * HOUR;
-  const Run waiting = simulate(controller, full, noon - 60, noon + 180, {{noon, &FakeTesla::plug_in}});
+  const Run waiting = simulate(controller, full, NOON - 60, NOON + 180, {{NOON, &FakeTesla::plug_in}});
   REQUIRE(waiting.messages.size() == 1);
-  CHECK(waiting.messages[0].first == noon + 2 * 60);
+  CHECK(waiting.messages[0].first == NOON + 2 * 60);
 }
 
 static void test_plug_in_message_waits_for_the_last_prices() {
@@ -2120,8 +2078,7 @@ static void test_plug_in_message_waits_for_the_last_prices() {
   add_day(controller.prices, CET_SEP24);
   Settings settings;
   settings.ready_by_once = CET_SEP25 + SLOT_SECONDS;
-  const int64_t noon = SEP24_1700Z - 8 * HOUR;
-  CHECK(simulate(controller, FakeTesla(), noon - 60, noon + HOUR, {{noon, &FakeTesla::plug_in}}, settings)
+  CHECK(simulate(controller, FakeTesla(), NOON - 60, NOON + HOUR, {{NOON, &FakeTesla::plug_in}}, settings)
             .messages.empty());
 }
 
@@ -2129,12 +2086,11 @@ static void test_plug_in_message_when_charging_now() {
   // Start charging now doesn't wait for tomorrow's prices: the message comes as usual.
   Controller controller;
   add_day(controller.prices, CET_SEP24);
-  const int64_t noon = SEP24_1700Z - 8 * HOUR;
   const Run run =
-      simulate(controller, FakeTesla(), noon - 60, noon + HOUR,
-               {{noon, &FakeTesla::plug_in}, {noon + 60, [&controller](FakeTesla &) { controller.charge_now(); }}});
+      simulate(controller, FakeTesla(), NOON - 60, NOON + HOUR,
+               {{NOON, &FakeTesla::plug_in}, {NOON + 60, [&controller](FakeTesla &) { controller.charge_now(); }}});
   REQUIRE(run.messages.size() == 1);
-  CHECK(run.messages[0].first == noon + 2 * 60);
+  CHECK(run.messages[0].first == NOON + 2 * 60);
   CHECK_STR(run.messages[0].second.message, "Charging now");
 }
 
@@ -2676,8 +2632,8 @@ int main() {
   test_calendar_and_exceptions();
   test_plans_in_the_repository();
   test_reads_the_settings_file();
-  test_settings_file_errors();
   test_settings_form_options();
+  test_settings_file_errors();
   test_schedule_counts_the_tariff_fee();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();
