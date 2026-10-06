@@ -1,14 +1,6 @@
 # Portuguese plans
 
-The network access tariffs (tarifas de acesso às redes) that every home on the mainland up to 20.7 kVA pays per kWh, whoever its supplier, with prices with VAT. ERSE sets them, the same with E-REDES and with the small local grid operators. Your bill names your tariff option (opção tarifária) and, for bi-horária and tri-horária, your cycle (ciclo). Name yours under `tariff:` in your settings file:
-
-```yaml
-market:
-  area: PT
-  vat: 0.23
-tariff:
-  plan: pt/bi-horaria-diario
-```
+The network access tariffs (tarifas de acesso às redes) that every home on the mainland up to 20.7 kVA pays per kWh, whoever its supplier, with prices with VAT. ERSE sets them, the same with E-REDES and with the small local grid operators. Your bill names your tariff option (opção tarifária) and, for bi-horária and tri-horária, your cycle (ciclo). Choose yours under **Grid plan** on the board's page.
 
 | Tariff option and cycle | Plan |
 | --- | --- |
@@ -39,4 +31,4 @@ With a price that follows the market (OMIE) by the hour or quarter-hour, choose 
 
 The Azores and Madeira have hours of their own and no market prices, and tri-horária above 20.7 kVA has other prices: write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
-ERSE sets the prices every January. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+ERSE sets the prices every January. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

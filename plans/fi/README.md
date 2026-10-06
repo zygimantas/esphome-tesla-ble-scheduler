@@ -1,14 +1,6 @@
 # Finnish plans
 
-The household products of Finland's eight biggest network companies, with prices with VAT. Together they serve over half of Finland's homes. Your network company's bill names your product. Name it under `tariff:` in your settings file, with Finland's market area and VAT:
-
-```yaml
-market:
-  area: FI
-  vat: 0.255
-tariff:
-  plan: fi/caruna-yosiirto
-```
+The household products of Finland's eight biggest network companies, with prices with VAT. Together they serve over half of Finland's homes. Your network company's bill names your product. Choose it under **Grid plan** on the board's page.
 
 | Network company | One rate | Day and night | Winter weekdays |
 | --- | --- | --- | --- |
@@ -35,4 +27,4 @@ Not here: the products for temporary connections and for big connections with a 
 
 Each network company sets its own prices, which the Energy Authority (Energiavirasto) oversees, and may change them in any month, telling homes at least a month before.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

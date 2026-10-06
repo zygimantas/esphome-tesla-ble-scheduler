@@ -1,14 +1,6 @@
 # HEP ODS plans
 
-The network fees of HEP ODS, Croatia's only distribution operator, for homes, with prices with VAT. Your bill names your tariff model (tarifni model). Name yours under `tariff:` in your settings file, with Croatia's market area and VAT:
-
-```yaml
-market:
-  area: HR
-  vat: 0.13
-tariff:
-  plan: hr/hep-ods-bijeli
-```
+The network fees of HEP ODS, Croatia's only distribution operator, for homes, with prices with VAT. Your bill names your tariff model (tarifni model). Choose yours under **Grid plan** on the board's page.
 
 | Tariff model | Plan |
 | --- | --- |
@@ -26,14 +18,12 @@ Each fee is HEP ODS's distribution fee and HOPS's transmission fee together. The
 
 Crni isn't here: it's for storage heaters and water heaters on a meter of their own, which are switched on by remote control at times set for them. Where no plan fits, write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
-Most homes pay their supplier a fixed price, without the grid fees. With one price for every hour, choose Fixed on the page and give it as the supplier's part. With a day (VT) and a night (NT) price, leave `market:` out and write your whole prices instead, the supplier's and the grid fee together, with VAT, as the plan's rates:
+Most homes pay their supplier a fixed price, without the grid fees. With one price for every hour, choose Fixed on the page and give it as the supplier's part. With a day (VT) and a night (NT) price, choose Fixed with 0 as the supplier's part. Then download Bijeli's plan from this folder, change its rates to your whole prices, the supplier's and the grid fee together, with VAT, and upload it as your own plan, as [Your own plan](../README.md#your-own-plan) says:
 
 ```yaml
-tariff:
-  plan: hr/hep-ods-bijeli
-  rates:
-    day: 0.18
-    night: 0.09
+rates:
+  night: 0.09
+  day: 0.18
 ```
 
-HERA, the energy regulator, sets the fees, usually from 1 January. Under a government decree, the operators won't ask for new ones before April 2027. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+HERA, the energy regulator, sets the fees, usually from 1 January. Under a government decree, the operators won't ask for new ones before April 2027. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

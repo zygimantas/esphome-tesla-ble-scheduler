@@ -2,18 +2,9 @@
 
 The network fees for homes of nine of Switzerland's largest grid operators, with prices with VAT, in francs. About 550 operators set their own; these nine serve over 40% of the people. Your bill or [ElCom's price comparison](https://www.strompreis.elcom.admin.ch) names yours.
 
-Name yours under `tariff:` in your settings file, with francs as the currency. The board gets Swiss market prices from SMARD in euros and converts them into francs at the ECB's daily rate, as the page does when you choose Switzerland:
+Choose yours under **Grid plan** on the board's page. The board gets Swiss market prices from SMARD in euros and converts them into francs at the ECB's daily rate.
 
-```yaml
-currency: CHF
-market:
-  area: CH
-  vat: 0.081
-tariff:
-  plan: ch/ewz-nna
-```
-
-With your utility's price for the year, choose **Fixed (or a monthly average)** on the page and give the energy price per kWh with VAT, without the network, which the settings file has as `fixed_price` instead of `market:`. Where the energy price has a high and a low tariff too, write your own plan with your whole price per kWh for each, as [A fixed price](../README.md#a-fixed-price) says.
+With your utility's price for the year, choose **Fixed (or a monthly average)** on the page and give the energy price per kWh with VAT, without the network, as **Supplier's part**. Where the energy price has a high and a low tariff too, write your own plan with your whole price per kWh for each, as [A fixed price](../README.md#a-fixed-price) says.
 
 | Operator | Plans |
 | --- | --- |
@@ -45,4 +36,4 @@ Primeo's region Olten has other prices, and so do Pully, Belmont-sur-Lausanne an
 
 The plans count the network fee per kWh. They leave out the monthly and metering fees, fees per kW, Swissgrid's charges on a line of their own (system services, the electricity reserve, the solidarity costs and, with Groupe E and Romande Energie's Simple, the national grid), the federal surcharge (Netzzuschlag) and the canton's and commune's levies, as they're the same every hour. Romande Energie's Double counts its national grid part, as it's dearer in the high hours. In Geneva and Basel some levies are a share of the network fee or dearer in the high hours, and they're left out too.
 
-Each operator sets its network fees every year, within ElCom's rules, publishes them by the end of August, and they start on 1 January. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+Each operator sets its network fees every year, within ElCom's rules, publishes them by the end of August, and they start on 1 January. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

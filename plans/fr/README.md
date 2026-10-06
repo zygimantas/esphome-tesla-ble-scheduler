@@ -2,7 +2,7 @@
 
 The grid fees (TURPE) that every home in France pays per kWh. The CRE, the energy regulator, sets them, the same with Enedis and with every local grid operator, and your supplier bills them in its price. Your home has one of the fees' options, and your supplier can tell you which.
 
-There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Finish the setup without one, then write your own plan with the prices below and upload it under **Change settings**, as [Your own plan](../README.md#your-own-plan) says.
+There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Write your own plan with the prices below and upload it with **Upload plan**, in the setup or later under **Change settings**, as [Your own plan](../README.md#your-own-plan) says.
 
 ## Off-peak hours
 
@@ -20,20 +20,18 @@ Write your own plan with your off-peak hours, which your bill gives, with these 
 With CU4 and off-peak hours from 22:00 to 06:00:
 
 ```yaml
-market:
-  area: FR
-  vat: 0.20
-tariff:
-  calendar:
-    nov-mar:
-      mon-sun: hch 06:00 hph 22:00 hch
-    apr-oct:
-      mon-sun: hcb 06:00 hpb 22:00 hcb
-  rates:
-    hph: 0.09264
-    hch: 0.04908
-    hpb: 0.02052
-    hcb: 0.01440
+# TURPE CU4, prices with VAT: https://www.cre.fr
+currency: EUR
+calendar:
+  nov-mar:
+    mon-sun: hch 06:00 hph 22:00 hch
+  apr-oct:
+    mon-sun: hcb 06:00 hpb 22:00 hcb
+rates:
+  hph: 0.09264
+  hch: 0.04908
+  hpb: 0.02052
+  hcb: 0.01440
 ```
 
 If your off-peak hours change with the season, give each season its own. A meter that isn't a Linky meter and has off-peak hours has the option MUDT: 0.06108 at peak and 0.04332 off-peak, all year.
@@ -43,12 +41,13 @@ If your off-peak hours change with the season, give each season its own. A meter
 The options LU (long use, rare in homes) and CU (short use, for meters that aren't Linky meters) have one price for every hour: 0.01548 and 0.05988 euros with VAT per kWh. They don't change which hours are cheapest, only the costs the board shows:
 
 ```yaml
-tariff:
-  calendar:
-    jan-dec:
-      mon-sun: flat
-  rates:
-    flat: 0.01548
+# TURPE LU, prices with VAT: https://www.cre.fr
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.01548
 ```
 
 ## Your supplier's price

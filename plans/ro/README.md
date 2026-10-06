@@ -1,14 +1,6 @@
 # Romanian plans
 
-The plans of Romania's four distribution operators for homes on low voltage, with prices with VAT, in lei. Name yours under `tariff:` in your settings file, with Romania's market area and VAT, which make lei the currency:
-
-```yaml
-market:
-  area: RO
-  vat: 0.21
-tariff:
-  plan: ro/delgaz-grid-jt
-```
+The plans of Romania's four distribution operators for homes on low voltage, with prices with VAT, in lei. Choose yours under **Grid plan** on the board's page.
 
 Find your operator by your county:
 
@@ -25,4 +17,4 @@ With a contract that follows the market by the hour, choose **Dynamic (spot, exc
 
 The plans leave out the charges that are the same in every hour and aren't the distribution operator's: Transelectrica's transmission and system services tariffs, the green certificates, the cogeneration contribution, the contribution for contracts for difference and the excise.
 
-ANRE, the energy regulator, sets each operator's prices, usually from 1 January. These are 2026's. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+ANRE, the energy regulator, sets each operator's prices, usually from 1 January. These are 2026's. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
