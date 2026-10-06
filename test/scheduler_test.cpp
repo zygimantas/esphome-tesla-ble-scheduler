@@ -916,6 +916,11 @@ static std::string settings_with(const std::string &line, const std::string &wit
   return text.replace(at, text.find('\n', at) + 1 - at, with);
 }
 
+// SETTINGS with `key` set to `value`.
+static std::string settings_set(const std::string &key, const std::string &value) {
+  return settings_with(key, key + ": " + value + "\n");
+}
+
 // What read_settings() says is wrong with `text`, or "".
 static std::string settings_error(const std::string &text) {
   SettingsFile settings;
@@ -979,7 +984,7 @@ static void test_reads_the_settings_file() {
   CHECK(s.area == nullptr && near(s.margin, 0.15f) && s.plan == "lt/eso-standartinis-2-zones");
 
   // A market area in small letters, its own currency, and a margin left out.
-  CHECK_STR(read_settings(settings_with("  area:", "  area: no1\n"), repository_plans(), s),
+  CHECK_STR(read_settings(settings_set("  area", "no1"), repository_plans(), s),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
   CHECK(s.area == nullptr);  // unchanged after an error
   const std::string norway =
@@ -999,16 +1004,14 @@ static void test_reads_the_settings_file() {
       "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Prague\n";
   CHECK_STR(read_settings(czech, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: CH\n") + "currency: CHF\n"),
+  CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: HU\n") + "currency: CZK\n"),
+  CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: CZK\n"),
             "currency: SMARD's prices come in EUR, or HUF at the ECB's daily rate");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: SI\n") + "currency: HUF\n"),
-            "currency: SMARD's prices come in EUR");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: ES\n") + "currency: NOK\n"),
-            "currency: OMIE's prices come in EUR");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: HU\n")), "");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: PT\n")), "");
+  CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"), "currency: SMARD's prices come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"), "currency: OMIE's prices come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "HU")), "");
+  CHECK_STR(settings_error(settings_set("  area", "PT")), "");
 }
 
 static void test_settings_form_options() {
@@ -1045,7 +1048,7 @@ static void test_settings_file_errors() {
             "line 13 has timezone again");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 0.21\n  colour: red\n")),
             "line 6 has market: colour, which isn't a setting");
-  CHECK_STR(settings_error(settings_with("tariff", "tariff: none\n")), "line 8 doesn't belong there: plan");
+  CHECK_STR(settings_error(settings_set("tariff", "none")), "line 8 doesn't belong there: plan");
   CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 13 has colour, which isn't a setting");
   // Missing: with a market, the tariff can go; without one, it's the whole price; without either, there are no
   // prices yet. A tariff: has a plan or a calendar of its own, also with a market.
@@ -1066,11 +1069,10 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(settings_with("  area", area)),
               "market: area must be one the board knows, like LT or SE3: see Countries and plans");
   for (const char *vat : {"-0.1", "1", "\"\""})
-    CHECK_STR(settings_error(settings_with("  vat", std::string("  vat: ") + vat + "\n")),
+    CHECK_STR(settings_error(settings_set("  vat", vat)),
               "market: vat must be the VAT as a fraction, like 0.21 for 21%");
   for (const char *margin : {"1.6 ct", "1e7"})
-    CHECK_STR(settings_error(settings_with("  margin", std::string("  margin: ") + margin + "\n")),
-              "market: margin must be a price per kWh, like 0.012");
+    CHECK_STR(settings_error(settings_set("  margin", margin)), "market: margin must be a price per kWh, like 0.012");
   // Fixed price: without a market, and a price
   CHECK_STR(settings_error("fixed_price: 0.15\n" + std::string(SETTINGS)),
             "fixed_price goes without market:; on top of a market price, use market: margin");
@@ -1087,17 +1089,17 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(settings_with("ntfy_topic", std::string("ntfy_server: ") + server + "\n")),
               "ntfy_server must be the server's address, like https://ntfy.sh");
   for (const std::string &topic : {std::string("https://ntfy.sh/mine"), std::string(65, 'a')})
-    CHECK_STR(settings_error(settings_with("ntfy_topic", "ntfy_topic: " + topic + "\n")),
+    CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
-  const std::string no_plan = settings_error(settings_with("  plan", "  plan: lt/nope\n"));
+  const std::string no_plan = settings_error(settings_set("  plan", "lt/nope"));
   CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
   const std::string last = ", lt/eso-standartinis-2-zones, lt/eso-standartinis-4-zones";
   CHECK(no_plan.size() > last.size() && no_plan.compare(no_plan.size() - last.size(), last.size(), last) == 0);
   CHECK(no_plan.find("pl/") == std::string::npos);
-  CHECK_STR(settings_error(settings_with("  plan", "  plan: xx/nope\n")), "tariff: there's no plan xx/nope");
-  CHECK_STR(settings_error(settings_with("  plan", "  plan: nope\n")), "tariff: there's no plan nope");
-  CHECK(settings_error(settings_with("  plan", "  plan: lt\n"))
+  CHECK_STR(settings_error(settings_set("  plan", "xx/nope")), "tariff: there's no plan xx/nope");
+  CHECK_STR(settings_error(settings_set("  plan", "nope")), "tariff: there's no plan nope");
+  CHECK(settings_error(settings_set("  plan", "lt"))
             .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n")),
             "tariff: rate nope isn't used on any day");
@@ -1119,27 +1121,27 @@ static void test_settings_file_errors() {
             "line 8 doesn't belong there: currency");
   // The car, with sizes and powers wider than the page's, and closed, and the time zone
   for (const char *kwh : {"10", "1000"})
-    CHECK_STR(settings_error(settings_with("tesla_battery_kwh", std::string("tesla_battery_kwh: ") + kwh + "\n")), "");
+    CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)), "");
   for (const char *kwh : {"0", "-75", "9.9", "1001", "1e30", "inf", "75 kWh"})
-    CHECK_STR(settings_error(settings_with("tesla_battery_kwh", std::string("tesla_battery_kwh: ") + kwh + "\n")),
+    CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)),
               "tesla_battery_kwh must be the battery's size in kWh, like 75");
   for (const char *kw : {"0.5", "100"})
-    CHECK_STR(settings_error(settings_with("tesla_charging_kw", std::string("tesla_charging_kw: ") + kw + "\n")), "");
+    CHECK_STR(settings_error(settings_set("tesla_charging_kw", kw)), "");
   for (const char *kw : {"0", "1e-30", "0.49", "101", "inf"})
-    CHECK_STR(settings_error(settings_with("tesla_charging_kw", std::string("tesla_charging_kw: ") + kw + "\n")),
+    CHECK_STR(settings_error(settings_set("tesla_charging_kw", kw)),
               "tesla_charging_kw must be the charging power in kW, like 11");
   for (const char *vin : {"5YJ3E1EA0KF00000", "5YJ3E1EA0KF00000-", "5YJ3E1EA0KF00000:", "5yj3e1ea0kf000000",
                           "5YJ3E1EA0KF00000I", "5YJ3E1EA0KF00000O", "5YJ3E1EA0KF00000Q"})
-    CHECK_STR(settings_error(settings_with("tesla_vin", std::string("tesla_vin: ") + vin + "\n")),
+    CHECK_STR(settings_error(settings_set("tesla_vin", vin)),
               "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
               "screen under Controls, Software");
-  CHECK_STR(settings_error(settings_with("timezone", "timezone: America/New_York\n")),
+  CHECK_STR(settings_error(settings_set("timezone", "America/New_York")),
             "timezone must be one the board knows, like Europe/Vilnius");
   // Quotes only around a whole value
-  CHECK_STR(settings_error(settings_with("tesla_vin", "tesla_vin: \"5YJ3E1EA0KF000000'\n")),
+  CHECK_STR(settings_error(settings_set("tesla_vin", "\"5YJ3E1EA0KF000000'")),
             "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
             "screen under Controls, Software");
-  CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "tesla_battery_kwh: \"\n")),
+  CHECK_STR(settings_error(settings_set("tesla_battery_kwh", "\"")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
 }
 
