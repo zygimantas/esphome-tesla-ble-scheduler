@@ -41,7 +41,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**. **Change prices** there changes the country, the grid plan and the contract. The car's VIN, battery and charging power stay as you set them up, until you start over.
+A new board starts with your phone's time zone. To change it, or to get phone messages, open **Board** on the page and press **Change settings**. **Change prices** there changes the country, which sets the VAT, the grid plan and the contract. The car's VIN, battery and charging power stay as you set them up, until you start over.
 
 Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 

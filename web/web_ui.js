@@ -178,7 +178,6 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-error" class="note error" hidden></p>
@@ -319,7 +318,7 @@ function render() {
   $("settings-card").hidden = setup.step > 0 || (!broken() && settings.open !== "settings");
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
-  for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
+  $("margin-row").hidden = fixed;
   const unlisted = $("set-unlisted").checked;
   $("set-plan").disabled = unlisted;
   $("plans-note").hidden = !$("plan-row").hidden || !$("set-area").value;
@@ -538,8 +537,8 @@ function renderSavings() {
 
 // --- Settings --------------------------------------------------------------
 
-// What a new board starts with, as of October 2026: each market country's VAT on household electricity in %, which
-// northern Norway (NO4) doesn't charge, and its time zones, to guess the country from the phone's.
+// Each market country's VAT on household electricity in %, as of October 2026, which every save writes, as there's no
+// field for it (northern Norway, NO4, has none), and its time zones, for a new board's guesses.
 const COUNTRIES = {
   AT: [20, "Europe/Vienna"],
   BE: [6, "Europe/Brussels"],
@@ -566,7 +565,7 @@ const COUNTRIES = {
   SE: [25, "Europe/Stockholm"],
   SI: [22, "Europe/Ljubljana"],
 };
-const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? ""));
+const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? 0));
 const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));
 // The countries without the euro, by their currency, which their prices are in: Nord Pool's market prices come in it,
 // and the board converts SMARD's, in euros, at the ECB's daily rate where the settings set the currency.
@@ -718,17 +717,8 @@ function fillPlans(plan) {
   $("plan-row").hidden = $("unlisted-row").hidden = !plans.length;
 }
 
-// A new board's guesses for its market area: the VAT, and the area's time zone unless the phone's is one the board
-// knows.
-function guessFromArea() {
-  const area = $("set-area").value;
-  $("set-vat").value = vatOf(area);
-  const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!settings.options.time_zones.includes(phone)) $("set-zone").value = COUNTRIES[area.slice(0, 2)]?.[1] ?? "";
-}
-
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
-// zone, the market area's VAT, a 75 kWh battery and 11 kW, and on a new board, a dynamic price and the phone's
+// zone, a 75 kWh battery and 11 kW, and on a new board, a dynamic price and the phone's
 // country, where it has only one market area. Without a market, the supplier's price is fixed, and the country the
 // grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
@@ -767,8 +757,6 @@ function fillSettings() {
     ...zones.map((name) => new Option(name, name)),
   );
   $("set-zone").value = known ? zone : "";
-  const vat = values["market: vat"];
-  $("set-vat").value = vat ? Math.round(Number(vat) * 10000) / 100 : vatOf($("set-area").value);
   $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "0.00";
   $("set-vin").value = values.tesla_vin ?? "";
@@ -816,7 +804,7 @@ function formSettings(prices = true) {
   if (prices && v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
-    lines.push(`  vat: ${Number(v("set-vat")) / 100}`);
+    lines.push(`  vat: ${vatOf(v("set-area")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
   if (prices && gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
@@ -1189,10 +1177,13 @@ function bind() {
       button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
       requestRender();
     });
-  // another country's plans, with its only one chosen
+  // another country's plans, with its only one chosen, and on a new board, its time zone, unless the phone's is one
+  // the board knows
   $("set-area").addEventListener("change", () => {
     fillPlans();
-    if (unfinished()) guessFromArea();
+    const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (unfinished() && !settings.options.time_zones.includes(phone))
+      $("set-zone").value = COUNTRIES[$("set-area").value.slice(0, 2)]?.[1] ?? "";
     requestRender();
   });
   $("set-price").addEventListener("change", requestRender);
