@@ -211,6 +211,8 @@ const PAGE = `
     <div class="title">Settings</div>
     <div class="body">
       <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+      <p class="note">Phone messages come through the ntfy app: create a topic here, subscribe to it in the app, and press Save.</p>
+      <button id="topic">Create topic</button>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
       <button id="cancel-settings">Cancel</button>
@@ -319,6 +321,7 @@ function render() {
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
+  $("topic").textContent = $("set-topic").value.trim() ? "Copy topic" : "Create topic";
   // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
   // in place of the box, the notes and Upload custom plan
   const listed = $("set-plan").options.length > 2;
@@ -1207,6 +1210,24 @@ function bind() {
     const problem =
       "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
     say(long ? problem : "");
+    requestRender();
+  });
+  // Create topic, then Copy topic: a long random ntfy topic, copied to paste in the ntfy app on the same phone. The
+  // page is plain HTTP, without the clipboard API, so it copies the field's selected text. 32 letters and digits, so
+  // each byte picks one evenly: 20 of them make 100 random bits.
+  $("set-topic").addEventListener("input", requestRender); // the button's name follows the field
+  $("topic").addEventListener("click", () => {
+    const field = $("set-topic");
+    if (!field.value.trim()) {
+      const letters = "abcdefghijklmnopqrstuvwxyz234567";
+      const random = crypto.getRandomValues(new Uint8Array(20));
+      field.value = `tesla-${[...random].map((byte) => letters[byte & 31]).join("")}`;
+    }
+    field.select();
+    field.setSelectionRange(0, field.value.length);
+    const copied = document.execCommand("copy");
+    field.blur();
+    toast(copied ? "Topic copied: paste it in the ntfy app" : "Copy the topic, then paste it in the ntfy app");
     requestRender();
   });
   press($("save-settings"), saveSettings);

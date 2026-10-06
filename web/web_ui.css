@@ -278,9 +278,10 @@ input.wide {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Upload and Reset custom plan leave room before the next row. */
+/* Upload and Reset custom plan, and Create topic, leave room before what follows. */
 #upload-plan,
-#reset-plan {
+#reset-plan,
+#topic {
   margin-bottom: 8px;
 }
 
