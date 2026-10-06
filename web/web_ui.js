@@ -861,7 +861,7 @@ function formSettings(prices = true) {
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
 // until the next try.
 async function sendSettings(file) {
-  const saved = await send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
+  return send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
     const answer = await response.text();
     $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
     $("settings-error").hidden = response.ok || setup.step > 0;
@@ -878,8 +878,6 @@ async function sendSettings(file) {
     }
     return response.ok;
   });
-  requestRender();
-  return saved;
 }
 
 // Save: the form's own checks first, as the browser shows them by the field.
