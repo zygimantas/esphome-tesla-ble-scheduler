@@ -130,8 +130,9 @@ class SchedulerComponent : public PollingComponent {
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   void fetch_prices_(int64_t now);
+  std::optional<float> fetch_rate_();
   std::string prices_url_(int64_t now, int day) const;
-  int store_prices_(const std::string &body);
+  int store_prices_(const std::string &body, float rate);
   void fetch_plan_(int64_t now);
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);

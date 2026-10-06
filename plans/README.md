@@ -22,13 +22,13 @@ The board starts with the plan from the release you installed, and downloads the
 | Belgium | `BE` | `EUR` | [Fluvius, ORES, RESA and Sibelga's plans](be). Flanders' capacity tariff isn't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Bulgaria | `BG` | `EUR` | [The three big operators' plans](bg). |
 | Croatia | `HR` | `EUR` | [HEP ODS's plans](hr). |
-| Czechia | `CZ` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
+| Czechia | `CZ` | `CZK` or `EUR` | Prices from SMARD, in euros, converted into koruna at the ECB's daily rate with `currency: CZK`. [The three operators' plans](cz). |
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` or `EUR` | [The eight big grid companies' plans](dk). |
 | Estonia | `EE` | `EUR` | [Elektrilevi's plans](ee). |
 | Finland | `FI` | `EUR` | [The eight biggest network companies' plans](fi), without Helen Sähköverkko Aikasiirto's charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | France | `FR` | `EUR` | Off-peak hours are set for each address: [write your own plan](fr) with them. |
 | Germany | `DE` | `EUR` | [The big grid operators' plans](de), Modul 3 included. |
-| Hungary | `HU` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
+| Hungary | `HU` | `HUF` or `EUR` | Prices from SMARD, in euros, converted into forints at the ECB's daily rate with `currency: HUF`. [The network fees](hu). |
 | Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. [The TD plan](it). |
 | Latvia | `LV` | `EUR` | [Sadales tīkls' plans](lv). |
 | Lithuania | `LT` | `EUR` | [ESO's plans](lt). |
@@ -41,9 +41,9 @@ The board starts with the plan from the release you installed, and downloads the
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](si), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Spain | `ES` | `EUR` | Prices from OMIE. [The 2.0TD tolls and charges](es). |
 | Sweden | `SE1` to `SE4` | `SEK` or `EUR` | [The big network companies' plans](se). Power fees at some aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| Switzerland | `CH` | `EUR` | Prices from SMARD, in euros only: give your grid fees in euros too. |
+| Switzerland | `CH` | `CHF` or `EUR` | Prices from SMARD, in euros, converted into francs at the ECB's daily rate with `currency: CHF`. [Nine operators' plans](ch). |
 
-Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD or OMIE, and your grid fees are in the same.
+Your electricity contract or your supplier's price list names your area. Prices are in your area's own currency unless you set `currency`, or in euros where they come from SMARD or OMIE, and your grid fees are in the same. In Czechia, Hungary and Switzerland, `currency` set to the country's own converts SMARD's prices at the European Central Bank's daily rate, as the page does.
 
 ## Grid fees
 

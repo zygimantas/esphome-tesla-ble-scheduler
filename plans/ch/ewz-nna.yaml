@@ -1,0 +1,12 @@
+# ewz NNA, prices with VAT: https://www.ewz.ch/de/private/strom/tarife/tarifuebersicht.html
+# ewz prints the prices in Rappen without VAT: these are in francs, with 8.1% VAT. The same prices hold in Graubünden (GR-NNA).
+# On 1 January 2027 the prices become 0.13621 (high) and 0.06810 (low).
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sat: low 06:00 high 22:00 low
+    sun: low
+rates:
+  high: 0.12886
+  low: 0.06454

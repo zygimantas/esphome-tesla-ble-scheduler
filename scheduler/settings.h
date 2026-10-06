@@ -172,9 +172,12 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (read.currency.size() != 3 ||
       !std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }))
     return "currency must be a currency's three-letter code, like EUR";
-  if (read.area != nullptr && !comes_in(*read.area, read.currency))
+  if (read.area != nullptr && !comes_in(*read.area, read.currency)) {
+    const char *converted = converted_currency(*read.area);
     return concat({"currency: ", market_name(read.area->market), "'s prices come in ",
-                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR"});
+                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR",
+                   converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
+  }
 
   const size_t scheme = read.ntfy_server.find("://");
   if (scheme == std::string::npos ||

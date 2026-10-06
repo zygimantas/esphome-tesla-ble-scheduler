@@ -1,0 +1,10 @@
+# EKZ Netz 400F, steered by EKZ, prices with VAT: https://www.ekz.ch/de/angebote/strom/tarife/stromtarife-privatkunden.html
+# EKZ prints the prices in Rappen, with and without VAT: this is the price without VAT, in francs, with 8.1% VAT.
+# On 1 January 2027 the price becomes 0.07945.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.08108
