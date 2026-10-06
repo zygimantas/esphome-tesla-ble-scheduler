@@ -278,8 +278,9 @@ input.wide {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Upload custom plan leaves room before the next row. */
-#upload-plan {
+/* Upload and Reset custom plan leave room before the next row. */
+#upload-plan,
+#reset-plan {
   margin-bottom: 8px;
 }
 
