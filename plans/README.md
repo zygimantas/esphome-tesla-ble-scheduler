@@ -75,7 +75,7 @@ rates:
   high: 0.08
 ```
 
-To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Finish** in the setup or **Save** under **Prices**. **Grid plan** then shows it as **Custom:** and its `name`, and **Reset custom plan** drops it, to choose a plan from the list or upload another.
+To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Continue** in the setup or **Save** under **Prices**. **Grid plan** then shows it as **Custom:** and its `name`, and **Reset custom plan** drops it, to choose a plan from the list or upload another.
 
 Your plan stays as you uploaded it, while the board downloads a plan from the list every day: change yours when your prices change, and holidays that move, like Easter Monday, every year.
 

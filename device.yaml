@@ -39,7 +39,7 @@ http_request:
   timeout: 15s
 
 improv_serial:
-  next_url: "http://{{ip_address}}/#qr"
+  next_url: "http://{{ip_address}}/"
 
 logger:
   hardware_uart: UART0

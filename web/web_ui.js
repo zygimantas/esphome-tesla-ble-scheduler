@@ -114,46 +114,6 @@ const PAGE = `
     <p class="note"><span id="plan-why"></span> You can select one in Prices, below.</p>
   </section>
 
-  <section id="phone-card" class="card" hidden>
-    <div class="title">Continue on your phone</div>
-    <div id="qr" class="qr"></div>
-    <div>
-      <p class="note">Scan the code with your phone's camera to open this page there, or open <span id="address"></span> on it. Then finish the setup in the car, with these:</p>
-      <ul class="note">
-        <li>The board</li>
-        <li>A USB charger and cable for it</li>
-        <li>Your Tesla key card</li>
-      </ul>
-    </div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Car<span class="summary">Saved</span></div>
-    <div class="body">
-      <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
-      <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-      <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
-      <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-      <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
-      <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
-      <p class="note error" hidden></p>
-      <button class="primary save">Continue</button>
-    </div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Key<span class="summary">Saved</span></div>
-    <div class="body">
-      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
-      <ol class="note">
-        <li>Make sure the board is plugged into a USB charger next to the car.</li>
-        <li>Sit in the car with your Tesla key card.</li>
-        <li>Press Continue below.</li>
-        <li>Tap the Tesla key card on the console.</li>
-        <li>Confirm on the car's screen.</li>
-      </ol>
-      <button id="pair-now" class="primary">Continue</button>
-    </div>
-  </section>
-
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
     <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
@@ -184,7 +144,7 @@ const PAGE = `
   </section>
 
   <section id="prices-card" class="card step" hidden>
-    <div class="title">Prices</div>
+    <div class="title">Prices<span class="summary">Saved</span></div>
     <div class="body">
       <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
       <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
@@ -205,6 +165,47 @@ const PAGE = `
       <p class="note error" hidden></p>
       <button class="primary save">Finish</button>
       <button id="cancel-prices">Cancel</button>
+    </div>
+  </section>
+
+  <section id="phone-card" class="card step" hidden>
+    <div class="title">Continue on your phone</div>
+    <div class="body">
+      <div id="qr" class="qr"></div>
+      <p class="note">Scan the code with your phone's camera to go on there, or open <span id="address"></span> on it, and finish the setup in the car, with these:</p>
+      <ul class="note">
+        <li>The board</li>
+        <li>A USB charger and cable for it</li>
+        <li>Your Tesla key card</li>
+      </ul>
+      <button id="here">Continue here</button>
+    </div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">Car<span class="summary">Saved</span></div>
+    <div class="body">
+      <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+      <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+      <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+      <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
+      <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+      <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
+      <p class="note error" hidden></p>
+      <button class="primary save">Continue</button>
+    </div>
+  </section>
+  <section class="card step" hidden>
+    <div class="title">Key</div>
+    <div class="body">
+      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
+      <ol class="note">
+        <li>Make sure the board is plugged into a USB charger next to the car.</li>
+        <li>Sit in the car with your Tesla key card.</li>
+        <li>Press Continue below.</li>
+        <li>Tap the Tesla key card on the console.</li>
+        <li>Confirm on the car's screen.</li>
+      </ol>
+      <button id="pair-now" class="primary">Continue</button>
     </div>
   </section>
 
@@ -237,9 +238,9 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
 // the card open after the setup, "prices" or "settings", or "".
 const settings = { text: null, options: null, open: "" };
-// The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; and that a step
-// was opened by hand, which keeps Key from moving on by itself.
-const setup = { step: 0, reached: 0, stay: false };
+// The setup's open step, 1 to 4 (Prices, Continue on your phone, Car and Key, in the page's order), or 0; and the
+// furthest it got, as the steps up to it open with a click.
+const setup = { step: 0, reached: 0 };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -638,8 +639,8 @@ const ownPlanLabel = () => {
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
 // grid plan.
 const unfinished = () => settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text);
-// The setup's last step: Key once the settings have prices, else Prices.
-const lastStep = () => (unfinished() ? 3 : 2);
+// Whether the settings name the car, which the setup's Car step adds after the prices.
+const hasCar = () => /^tesla_vin:/m.test(settings.text ?? "");
 
 // A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which the setup's first
 // step fills in as the VIN is typed, for the owner to check, as the VIN tells the battery itself only in codes that
@@ -650,41 +651,28 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 // Whether the board turned away the settings it has, which then open to be fixed.
 const broken = () => text(E.status).startsWith("Settings: ");
 
-// The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
-// fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
-// the setup), later ones show only their titles. After it, Prices stays below Savings, folded like Settings, and opens
-// from its title, or for settings the board turned away; Car's fields stay as the setup saved them, as only a new
-// install changes them.
+// The setup, for a new board, settings without prices or the car, and a key the car doesn't know: Prices, then Continue
+// on your phone, whose QR code opens the page there at Car, as its link ends in #car, then Car, then Key, which ends
+// the setup once the car answers. The open step shows its fields, done ones fold to their titles and Saved, later ones
+// show only their titles. After it, Prices stays below Savings, folded like Settings, and opens from its title, or for
+// settings the board turned away; Car's fields stay as the setup saved them, as only a new install changes them.
 function renderSetup() {
-  const unpaired = text(E.status) === "Not paired";
-  if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
-  else if (!setup.step) setup.step = setup.reached = settings.text === "" ? 1 : unpaired ? 2 : 3;
-  if (unpaired) {
-    // a key the car doesn't know closes the steps after Key
-    setup.reached = Math.min(setup.reached, 2);
-    setup.step = Math.min(setup.step, setup.reached);
-  }
-  // Key moves on by itself once the car answers, unless it was opened by hand
-  const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
-  if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
+  const status = text(E.status);
+  // on Key, the setup waits for the car's answer, past the board's No car yet from before Car's save
+  const waiting = status === "Not paired" || (setup.step === 4 && ["", "No car yet"].includes(status));
+  if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = setup.reached = 0;
+  else if (!setup.step) setup.step = setup.reached = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
-  // At /#qr, which ESPHome Web's Visit Device opens, the setup goes on on the phone, in the car: the page's address as a
-  // QR code in place of the steps. The page's own address always shows the steps, on a computer too.
-  const qr = location.hash === "#qr";
-  $("phone-card").hidden = !setup.step || !qr;
-  const steps = document.querySelectorAll(".step");
-  for (const [i, card] of steps.entries()) {
+  for (const [i, card] of document.querySelectorAll(".step").entries()) {
     const after = !setup.step && card.id === "prices-card";
-    card.hidden = (!setup.step || qr || i + 1 > lastStep()) && !after;
+    card.hidden = !setup.step && !after;
     card.classList.toggle("open", i + 1 === setup.step || (after && (broken() || settings.open === "prices")));
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
     card.classList.toggle("fold", after);
   }
-  // Prices' Finish ends the setup; after it, it's Save, with Cancel
-  steps[2].querySelector(".save").textContent = setup.step ? "Finish" : "Save";
+  // Prices' Continue in the setup; after it, Save, with Cancel
+  $("prices-card").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
   $("cancel-prices").hidden = setup.step > 0 || broken();
-  // Key's is saved once the car knows the key
-  steps[1].querySelector(".summary").hidden = unpaired;
 }
 
 // Says what's wrong on the open card, Prices or a setup's step, else Settings, in sight, or "" for nothing.
@@ -695,32 +683,23 @@ function say(problem) {
   if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// Save: on to the next step. Car's Continue saves the VIN, the battery and the power where the VIN changed, as the
-// board needs it to find the car, with the guesses and no prices yet on a new board, and where the battery or the power
-// changed and Key is the last step, as no Finish follows to save them; Prices' Finish saves the prices too, which
-// restarts the board. Each checks the VIN first, as both save the one shown, and says what's wrong on its card; the
-// form keeps the settings the setup doesn't show, as the board has them.
+// Continue, in the setup's Prices and Car: the step's checks, Car's VIN first, and its save, which the board takes at
+// once while it has no car, as in the setup, then on to the next step.
 async function nextStep() {
-  const problem = vinProblem($("set-vin").value.trim().toUpperCase());
-  say(problem);
-  if (problem) return;
+  if (setup.step === 3) {
+    const problem = vinProblem($("set-vin").value.trim().toUpperCase());
+    say(problem);
+    if (problem) return;
+  }
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
-  const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
-  const saved = readSettings(settings.text);
-  const form = readSettings(formSettings(false));
-  const changed = car.filter((key) => form[key] !== saved[key]);
-  if (setup.step === 1 && (changed.includes("tesla_vin") || (lastStep() === 2 && changed.length))) {
-    if (!(await sendSettings(formSettings(!unfinished())))) return;
-  }
-  if (setup.step < lastStep()) {
-    setup.step += 1;
-    setup.reached = Math.max(setup.reached, setup.step);
-    setup.stay = false;
-    return;
-  }
-  await sendSettings(formSettings());
+  if (await sendSettings(formSettings())) moveOn();
+}
+
+// On to the next step, or back to the furthest one reached, as after a done step opened again.
+function moveOn() {
+  setup.step = setup.reached = Math.max(setup.step + 1, setup.reached);
 }
 
 // The grid plan chosen, or "" for one that isn't listed or none chosen yet.
@@ -797,7 +776,7 @@ async function loadSettings() {
     ]);
     if (file !== settings.text) {
       // the setup starts again from what the board has now
-      Object.assign(setup, { step: 0, stay: false });
+      setup.step = 0;
       settings.text = file;
       settings.options = options;
       fillSettings();
@@ -808,50 +787,53 @@ async function loadSettings() {
   requestRender();
 }
 
-// The form as the board's settings file, which the board checks before it takes it; without prices, as the setup's
-// first step saves them for a new board. A custom plan goes under tariff: line for line, indented, so the board's
-// errors in it count the plan's own lines.
-function formSettings(prices = true) {
+// The form as the board's settings file, which the board checks before it takes it; without the car until the setup's
+// Car step has its VIN, as the setup's first step saves the prices for a new board. A custom plan goes under tariff:
+// line for line, indented, so the board's errors in it count the plan's own lines.
+function formSettings() {
   const v = (id) => $(id).value.trim();
   const lines = [];
-  const fixed = prices && v("set-price") === "fixed";
+  const fixed = v("set-price") === "fixed";
   // the currency: a fixed price's, and a market's from SMARD, which the board otherwise keeps in euros
   const country = v("set-area").slice(0, 2);
-  const currency = prices && (fixed || SMARD_ONLY.includes(country)) && CURRENCIES[country];
+  const currency = (fixed || SMARD_ONLY.includes(country)) && CURRENCIES[country];
   if (currency) lines.push(`currency: ${currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
   if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
-  if (prices && v("set-price") === "market") {
+  if (v("set-price") === "market") {
     lines.push("market:", `  area: ${v("set-area")}`);
     if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
     lines.push(`  vat: ${vatOf(v("set-area")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (prices && gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
-  else if (prices && ownPlan) lines.push("tariff:", ...ownPlan.split("\n").map((line) => line && `  ${line}`));
-  lines.push(
-    `tesla_battery_kwh: ${v("set-battery")}`,
-    `tesla_charging_kw: ${v("set-power")}`,
-    `tesla_vin: ${v("set-vin").toUpperCase()}`,
-    `timezone: ${timeZone()}`,
-  );
+  if (gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
+  else if (ownPlan) lines.push("tariff:", ...ownPlan.split("\n").map((line) => line && `  ${line}`));
+  if (v("set-vin"))
+    lines.push(
+      `tesla_battery_kwh: ${v("set-battery")}`,
+      `tesla_charging_kw: ${v("set-power")}`,
+      `tesla_vin: ${v("set-vin").toUpperCase()}`,
+    );
+  lines.push(`timezone: ${timeZone()}`);
   return `${lines.join("\n")}\n`;
 }
 
-// Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the card
-// until the next try.
+// Sends a settings file. The board checks it and takes it, or answers what's wrong, which stays on the card until the
+// next try.
 async function sendSettings(file) {
   return send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
     const answer = await response.text();
     say(response.ok ? "" : `Not saved: ${answer}`);
     if (response.ok) {
       settings.open = "";
-      // A board that had settings restarts: the page waits for it, reconnecting soon rather than when the browser
-      // would. A new board takes its first at once, and the setup moves on.
-      if (settings.text !== "") {
+      // A board with the car restarts with them: the page waits for it, reconnecting soon rather than when the browser
+      // would. Without the car yet, as in the setup, it takes them at once, and the page goes on with them.
+      if (hasCar()) {
         toast("Settings saved: the board restarts");
         restarting = Date.now();
         setTimeout(reconnect, 3000);
+      } else {
+        settings.text = file;
       }
     }
     return response.ok;
@@ -1155,7 +1137,8 @@ function qrCode(text) {
 // --- Start -----------------------------------------------------------------
 
 function bind() {
-  $("qr").innerHTML = qrCode(location.origin);
+  // the QR code's link opens the setup on the phone at Car, past the steps the computer did
+  $("qr").innerHTML = qrCode(`${location.origin}/#car`);
   $("address").textContent = location.origin;
   $("limit-select").addEventListener("change", (e) => (draft.limit = Number(e.target.value)));
   $("ready-select").addEventListener("change", (e) => (draft.deadline = Number(e.target.value)));
@@ -1244,14 +1227,18 @@ function bind() {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
   });
   for (const [i, card] of document.querySelectorAll(".step").entries()) {
-    // a card the setup got to before opens with a click, and stays open
-    card.addEventListener("click", () => {
+    // a card the setup got to before opens with a click on its title, and stays open
+    card.querySelector(".title").addEventListener("click", () => {
       if (!card.classList.contains("done")) return;
       setup.step = i + 1;
-      setup.stay = true;
       requestRender();
     });
   }
+  // Continue here, under the QR code, for whoever goes on on the computer
+  $("here").addEventListener("click", () => {
+    moveOn();
+    requestRender();
+  });
   for (const button of document.querySelectorAll(".step .save"))
     press(button, () => (setup.step ? nextStep() : saveSettings()));
   // Update: the board downloads the release, then restarts with it.

@@ -209,7 +209,7 @@ select:disabled {
   color: var(--muted);
   font-size: 12px;
 }
-.setup .card:not(.step, #phone-card),
+.setup .card:not(.step),
 .card:not(.open) > .body,
 .step:not(.done) .summary {
   display: none;
@@ -217,7 +217,7 @@ select:disabled {
 .step:not(.open, .done, .fold) .title {
   opacity: 0.5;
 }
-.step.done {
+.step.done > .title {
   cursor: pointer;
 }
 /* The setup's fields take the width, each under its name, so their choices fit on a phone. */
@@ -355,7 +355,8 @@ button:disabled {
   color: var(--muted);
   font-size: 13px;
 }
-ol.note {
+ol.note,
+ul.note {
   padding-left: 20px;
 }
 /* As far below the text as a button below a row, like Key's Continue. */
@@ -405,44 +406,14 @@ ol.note {
   color: var(--accent);
 }
 
-/* --- The setup on a computer: only the page's address as a QR code for the phone: centred in the page with room
-   around it, without a card's frame, the code black on white in both themes, as cameras read it, 8 px a module --- */
-#phone-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  min-height: calc(100vh - 100px);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  text-align: center;
-}
-#phone-card .title {
-  margin: 0;
-  font-size: 24px;
-}
+/* --- The setup's step for the phone: the page's address as a QR code, black on white in both themes, as cameras
+   read it, 8 px a module, in the middle of the card --- */
 .qr svg {
   display: block;
   width: 296px;
   height: 296px;
+  margin: 16px auto 0;
   border-radius: 8px;
-}
-#phone-card .note {
-  max-width: 28em;
-  margin: 0 auto;
-  font-size: 15px;
-}
-/* What to take to the car, a list in the middle with its lines starting together */
-#phone-card ul.note {
-  display: inline-block;
-  padding-left: 20px;
-  text-align: left;
-}
-#phone-card .note + .note {
-  margin-top: 12px;
 }
 
 /* --- Toast --- */
