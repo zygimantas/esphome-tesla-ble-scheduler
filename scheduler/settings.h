@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -118,7 +117,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       place = "market: " + key;
     } else if (indent == 2 && section == "tariff" && key == "plan") {
       place = "tariff: plan";
-    } else if (indent >= 2 && section == "tariff") {
+    } else if (indent >= 2 && section == "tariff" && (indent > 2 || key != "currency")) {  // currency: is the file's
       own = line.substr(2);
     } else {
       return at(concat({"doesn't belong there: ", key}));
@@ -203,19 +202,21 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
   if (const std::string error = read_tariff(read.tariff, own); !error.empty())
     return concat({"tariff: ", error});
-  // Without either, the board has no prices yet, as after the setup's first step, and the car charges as usual.
-  if (plan_text.empty() && own.calendar.empty() && read.area == nullptr &&
-      std::find(seen.begin(), seen.end(), "tariff") != seen.end())
-    return "without market:, tariff needs a plan or a calendar of its own";
+  // Without market: and tariff:, the board has no prices yet, as after the setup's first step, and the car charges as
+  // usual. A tariff: with neither a plan nor a calendar under it, like one with the plan's name on its own line, would
+  // add nothing.
+  if (plan_text.empty() && own.calendar.empty() && std::find(seen.begin(), seen.end(), "tariff") != seen.end())
+    return "tariff needs a plan or a calendar of its own, on the lines under it";
   Tariff tariff;
   if (const std::string error = make_tariff(plan_text, read.tariff, read.currency, tariff); !error.empty())
     return concat({"tariff: ", error});
 
+  // Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
   read.battery_kwh = number(battery);
-  if (!(read.battery_kwh > 0.0f && std::isfinite(read.battery_kwh)))
+  if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
     return "tesla_battery_kwh must be the battery's size in kWh, like 75";
   read.charging_kw = number(charging);
-  if (!(read.charging_kw > 0.0f && std::isfinite(read.charging_kw)))
+  if (!(read.charging_kw >= 0.5f && read.charging_kw <= 100.0f))
     return "tesla_charging_kw must be the charging power in kW, like 11";
   if (read.vin.size() != 17 || !std::all_of(read.vin.begin(), read.vin.end(), [](char c) {
         return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z' && c != 'I' && c != 'O' && c != 'Q');

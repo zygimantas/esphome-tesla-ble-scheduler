@@ -127,7 +127,6 @@ class Controller {
   static constexpr int64_t WAKE_FOR = 30 * 60;     // how long it wakes the car to learn the plug state or battery level
   static constexpr int64_t COMMAND_GAP = 2 * 60;   // the least time between the board's own starts and stops
   static constexpr int COMMANDS_PER_SCHEDULE = 3;  // the most of them for one schedule
-  static constexpr float FULL_WITHIN = 0.5f;       // % under the limit that still counts as at it
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
@@ -215,7 +214,7 @@ class Controller {
       d.windows = format_windows(schedule_, settings.currency);
       starting = want_charge;
     }
-    if (want_charge && full_() && !charging) {
+    if (want_charge && charged_()) {
       d.status = "Charged";
       return d;
     }
@@ -228,8 +227,8 @@ class Controller {
     // last start counts as that request too.
     if (want_charge && !charging && car.charging_state == "No Power") {
       d.status = "Charger has no power";
-      if (now - std::max(no_power_asked_at_, started_at_) >= 10 * 60) {
-        no_power_asked_at_ = now;
+      if (now - asked_at_ >= 10 * 60) {
+        asked_at_ = now;
         d.command = Command::START_CHARGING;
       }
       no_power_asked_ = true;
@@ -248,7 +247,7 @@ class Controller {
   // Takes in what the car reports: battery, plug-ins and unplugs, and starts from the car or the Tesla app.
   // Returns whether the car charges.
   bool observe_(const CarState &car, int64_t now) {
-    const bool battery_was_known = battery_known_();
+    const bool battery_was_known = battery_known_(), was_charged = charged_();
     if (!std::isnan(car.soc))
       soc_ = car.soc;
     if (!std::isnan(car.limit)) {
@@ -295,18 +294,18 @@ class Controller {
         hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
       }
       charging_ = charging;
-      const bool complete = car.charging_state == "Complete";
-      if (complete != complete_)
-        reschedule_ = true;  // a car no longer full schedules from its battery level
-      complete_ = complete;
+      complete_ = car.charging_state == "Complete";
     }
+    // A car charged, or no longer, schedules from another battery level.
+    if (charged_() != was_charged)
+      reschedule_ = true;
     return charging_;  // the last known state: "Unknown" says nothing about it
   }
 
   // Schedules from the current quarter-hour; the schedule stands until the next one or reschedule().
   void update_schedule_(int64_t now, const Settings &settings) {
-    // A car that says Complete is at its limit, whatever the level reads: it won't take a start.
-    const ScheduleRequest request{now, deadline_(now, settings), complete_ ? limit_ : soc_, limit_, tariff_, settings};
+    // A charged car is at its limit, whatever the level reads: it won't take a start.
+    const ScheduleRequest request{now, deadline_(now, settings), charged_() ? limit_ : soc_, limit_, tariff_, settings};
     schedule_ = battery_known_() ? make_schedule(prices, request) : Schedule{};
     scheduled_slot_ = floor_to_slot(now);
     reschedule_ = false;
@@ -479,7 +478,7 @@ class Controller {
         commands_this_schedule_ >= COMMANDS_PER_SCHEDULE)
       return Command::NONE;
     last_command_at_ = now;
-    started_at_ = want_charge ? now : 0;
+    started_at_ = asked_at_ = want_charge ? now : 0;
     ++commands_this_schedule_;
     return want_charge ? Command::START_CHARGING : Command::STOP_CHARGING;
   }
@@ -487,7 +486,7 @@ class Controller {
   void allow_command_() {
     last_command_at_ = 0;
     commands_this_schedule_ = 0;
-    no_power_asked_at_ = 0;  // a button asks again at once, also while the charger has no power
+    asked_at_ = 0;  // a button asks again at once, also while the charger has no power
   }
 
   // At most one wake-up every 10 minutes.
@@ -529,6 +528,9 @@ class Controller {
   // At the limit by the car's word, or within half a percent; without a battery level, only by the car's word.
   bool full_() const { return complete_ || soc_ >= limit_ - FULL_WITHIN; }
 
+  // Full and not charging: the board starts no charge, and schedules none.
+  bool charged_() const { return full_() && !charging_; }
+
   // Whether the schedule charges in the quarter-hour it was made for (always without prices or battery level).
   bool in_schedule_() const { return !schedule_.valid || schedule_.contains(scheduled_slot_); }
 
@@ -555,7 +557,7 @@ class Controller {
   int64_t first_tick_at_ = 0;  // about when the board started, once the clock is set
   int64_t prices_tried_at_ = 0;
   int64_t last_wake_at_ = 0;
-  int64_t no_power_asked_at_ = 0;
+  int64_t asked_at_ = 0;         // when the board last asked the car to charge; 0 after its stop or a button
   bool no_power_asked_ = false;  // the car was asked to charge while its charger had no power
   int64_t last_command_at_ = 0;
   int64_t started_at_ = 0;  // the board's last start, 0 after its stop; the buttons don't reset it

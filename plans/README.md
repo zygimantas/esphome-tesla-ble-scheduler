@@ -99,7 +99,7 @@ tariff:
 
 Holidays that move, like Easter Monday, are this year's dates. Change them every year, or use a plan, whose maintainer does.
 
-If something is wrong, the board keeps the settings it has and says what when you upload them: a rate without a price, a rate of yours no day uses, a month or a day named twice or not at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a plan in another currency than yours.
+If something is wrong, the board keeps the settings it has and says what when you upload them: a `tariff:` with neither a plan nor a calendar under it, a rate without a price, a rate of yours no day uses, a rate, a date, a month, a day or the clock named twice, a month or a day not named at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a plan in another currency than yours.
 
 ## A fixed price
 

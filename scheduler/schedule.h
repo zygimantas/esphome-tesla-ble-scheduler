@@ -23,8 +23,9 @@
 
 namespace esphome::scheduler {
 
-constexpr float EFFICIENCY = 0.9f;  // share of the grid energy that reaches the battery
-constexpr int BUFFER_SLOTS = 1;     // one slot more than needed, in case charging runs slow
+constexpr float EFFICIENCY = 0.9f;   // share of the grid energy that reaches the battery
+constexpr int BUFFER_SLOTS = 1;      // one slot more than needed, in case charging runs slow
+constexpr float FULL_WITHIN = 0.5f;  // % under the limit that still counts as at it: the board starts no charge there
 
 // Indices of the `count` cheapest slots, in time order; of equal prices, the earlier slot.
 inline std::vector<int> cheapest_slots(const std::vector<float> &prices, int count) {
@@ -102,18 +103,22 @@ inline Schedule make_schedule(const PriceTable &prices, const ScheduleRequest &r
   // their prices; else it buys only what they can't do.
   const int buy = schedule.needed_slots - schedule.unpriced_slots;
   // The car charges through the chosen slots in turn at charging_kw, from now in the current one, and
-  // stops at the limit: the last slot is often only partly used, or spare (the buffer).
+  // stops at the limit: the last slot is often only partly used, or spare (the buffer). A later window that would
+  // start with the car within FULL_WITHIN of the limit is spare too, as are the rest: the board starts no charge there.
   float soc = request.soc, energy_kwh = 0, cost = 0;
+  bool full = false;
   for (int i : cheapest_slots(totals, buy)) {
     const int64_t start = first + i * SLOT_SECONDS;
+    const bool new_window = schedule.windows.empty() || schedule.windows.back().end != start;
+    full = full || (new_window && start > request.now && soc >= request.limit - FULL_WITHIN);
     const float hours = static_cast<float>(start + SLOT_SECONDS - std::max(start, request.now)) / 3600.0f;
-    const float room_kwh = std::max(0.0f, (request.limit - soc) / 100.0f * request.settings.battery_kwh);
+    const float room_kwh = full ? 0.0f : std::max(0.0f, (request.limit - soc) / 100.0f * request.settings.battery_kwh);
     const float stored_kwh = std::min(request.settings.charging_kw * hours * EFFICIENCY, room_kwh);
     soc += stored_kwh / request.settings.battery_kwh * 100.0f;
     const float grid_kwh = stored_kwh / EFFICIENCY;
     energy_kwh += grid_kwh;
     cost += grid_kwh * totals[i];
-    if (schedule.windows.empty() || schedule.windows.back().end != start)
+    if (new_window)
       schedule.windows.push_back({start, start});
     Window &w = schedule.windows.back();
     w.end = start + SLOT_SECONDS;
