@@ -134,8 +134,8 @@ details[open] > summary,
 details[open] > summary::after {
   transform: rotate(90deg);
 }
-/* While the board restarts, only the first card, with its status, until the page loads afresh. */
-.restarting main > .card:not(:first-child) {
+/* While the board restarts, only the card with its status, until the page loads afresh. */
+.restarting main > .card:not(#status-card) {
   display: none;
 }
 

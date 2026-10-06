@@ -26,7 +26,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 - A USB-C phone charger, with a socket near the car, to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
 - Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovenia, Spain, Sweden or Switzerland. [Countries and plans](plans/README.md) has the details, and how to use a fixed price instead.
-- A computer with Chrome or Edge, for the first install. The board updates itself after that.
+- A computer with Chrome or Edge, for the first install. After that, the board's page offers each new release.
 
 ## Setup
 
@@ -43,7 +43,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
 
-When a new release is out, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
+Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 
 ### From 3.x
 

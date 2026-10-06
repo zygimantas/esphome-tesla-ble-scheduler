@@ -90,15 +90,15 @@ const PAGE = `
   <span id="link" class="pill">Connecting …</span>
 </header>
 <main>
-  <section class="card">
-    <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
-    <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
-  </section>
-
   <section id="update-card" class="card" hidden>
     <div class="title">Update available</div>
     <p class="note">Release <span id="update-version"></span> is out: <a id="update-notes" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
     <button id="update" class="primary">Update</button>
+  </section>
+
+  <section id="status-card" class="card">
+    <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
+    <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
   </section>
 
   <section id="plan-card" class="card" hidden>
@@ -949,14 +949,18 @@ function connect() {
     seen();
     // Each ping has the board's uptime: shorter than the time since the page asked for a restart, the board is back
     // from it, and the page loads afresh.
-    if (restarting && JSON.parse(e.data).uptime * 1000 < Date.now() - restarting) location.reload();
+    if (restarting && JSON.parse(e.data).uptime * 1000 < Date.now() - restarting) {
+      events.close(); // nothing more from the board into this page, like the states that follow the ping
+      location.reload();
+    }
   });
   events.addEventListener("state", (e) => {
     seen();
     const data = JSON.parse(e.data);
     states[data.id] = data;
-    // A release that couldn't install leaves the board as it was, with the update still there.
-    if (updating && data.id === E.firmware && data.state === "UPDATE AVAILABLE") {
+    // A release that couldn't install, or an install that never started, as on a board that had just restarted and
+    // not checked for releases yet, leaves the board as it was.
+    if (updating && data.id === E.firmware && data.state !== "INSTALLING") {
       updating = false;
       restarting = 0;
       toast("The update didn't install. Try again later.");
