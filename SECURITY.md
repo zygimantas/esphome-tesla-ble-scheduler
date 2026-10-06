@@ -12,7 +12,7 @@ You get an answer within a week. A confirmed problem is fixed in a release, with
 
 ## What counts
 
-The firmware (`device.yaml`, `release.yaml`, `scheduler/`, `web/`), the example settings file and the GitHub workflows are in scope. Examples of things worth reporting:
+The firmware (`device.yaml`, `release.yaml`, `scheduler/`, `web/`) and the GitHub workflows are in scope. Examples of things worth reporting:
 
 - The board sending the car a command it shouldn't, or accepting one from someone who isn't on your Wi-Fi.
 - A board installing firmware that isn't signed with the project's key.
@@ -22,7 +22,7 @@ The firmware (`device.yaml`, `release.yaml`, `scheduler/`, `web/`), the example 
 
 ## What doesn't
 
-- The page has no password: anyone on your Wi-Fi can use it, and download its settings, the VIN and the ntfy topic included. That is a design choice, documented in the README.
+- The page has no password: anyone on your Wi-Fi can use it and see its settings, the VIN and the ntfy topic included. That is a design choice, documented in the README.
 - For 15 minutes after it starts, a board that can't join your Wi-Fi opens a hotspot without a password, to set its Wi-Fi from a phone, and the first client on your Wi-Fi can set the key of ESPHome's API, as Home Assistant does.
 - Someone with physical access to the board or its USB port.
 - Reading the phone messages with a guessed ntfy topic: the README says to use a long random name.
