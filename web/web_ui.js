@@ -222,7 +222,6 @@ const PAGE = `
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
-    <button id="pair">Create key</button>
     <button id="restart" class="danger">Restart board</button>
   </details>
 
@@ -1138,14 +1137,6 @@ function qrCode(text) {
 
 // --- Start -----------------------------------------------------------------
 
-// A button that asks first, then presses the board's button.
-function confirmPress(id, entity, message, question) {
-  press($(id), async () => {
-    if (!confirm(question)) return;
-    if (await post(entity, "press")) toast(message);
-  });
-}
-
 function bind() {
   $("qr").innerHTML = qrCode(location.origin);
   $("address").textContent = location.origin;
@@ -1155,18 +1146,10 @@ function bind() {
   press($("charge-now"), chargeNow);
   press($("delete-schedule"), () => stopCharging("Schedule deleted"));
   press($("stop-charging"), () => stopCharging("Charging stopped"));
-  confirmPress(
-    "pair",
-    E.pair,
-    "Creating the key: tap your key card",
-    "Create a new key? Sit in the car and tap your key card on the console when asked.",
-  );
-  confirmPress(
-    "reset-savings",
-    E.resetSavings,
-    "Savings reset",
-    "Reset the savings? They start again from zero today.",
-  );
+  press($("reset-savings"), async () => {
+    if (!confirm("Reset the savings? They start again from zero today.")) return;
+    if (await post(E.resetSavings, "press")) toast("Savings reset");
+  });
   // The VIN field takes only what a VIN can hold, as it's typed or pasted: capitals and digits, I, O and Q as the 1
   // and 0 they're taken for, as no VIN has them, and no more than 17. The caret stays where it was.
   $("set-vin").addEventListener("input", (e) => {
