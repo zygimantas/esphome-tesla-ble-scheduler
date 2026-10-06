@@ -9,7 +9,6 @@
 #include <cctype>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -64,13 +63,6 @@ inline std::string upper(std::string text) {
   return text;
 }
 
-// `text` as a number, or NaN.
-inline float number(const std::string &text) {
-  char *end = nullptr;
-  const float value = std::strtof(text.c_str(), &end);
-  return !text.empty() && end == text.c_str() + text.size() ? value : NAN;
-}
-
 // Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
 // or not, with the tariff: block as plans/README.md has it and the plans built in. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
@@ -97,8 +89,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   std::string section;
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
-    size_t end = text.find('\n', start);
-    end = end == std::string::npos ? text.size() : end;
+    const size_t end = std::min(text.find('\n', start), text.size());
     std::string line = text.substr(start, end - start);
     start = end + 1;
     line.erase(std::min(line.find(" #"), line.size()));

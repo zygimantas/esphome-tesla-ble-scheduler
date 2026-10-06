@@ -61,15 +61,14 @@ class ActionButton : public button::Button, public Parented<SchedulerComponent> 
 };
 
 #ifdef USE_WEBSERVER
-// /settings: GET answers the settings file in force, and POST takes a new one, which the board checks, saves and
-// restarts with, or answers what's wrong with it. GET /settings/options answers what the page's form offers.
+// /settings: GET answers the settings file saved, and POST takes a new one, which the board checks and saves
+// (save_settings()), or answers what's wrong with it. GET /settings/options answers what the page's form offers.
 class SettingsPage : public AsyncWebHandler {
  public:
   explicit SettingsPage(SchedulerComponent *parent) : parent_(parent) {}
   bool canHandle(AsyncWebServerRequest *request) const override;
   void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override;
   void handleRequest(AsyncWebServerRequest *request) override;
-  bool isRequestHandlerTrivial() const override { return false; }
 
  protected:
   SchedulerComponent *parent_;
@@ -98,8 +97,8 @@ class SchedulerComponent : public PollingComponent {
   const Plans &plans() const { return this->plans_; }
   // The settings saved on the board, read once the plans are added and before setup().
   void load_settings();
-  // Takes a settings file, as the simulation does: returns what's wrong with it, or "".
-  std::string use_settings(const std::string &text);
+  // Takes a settings file, as the simulation does.
+  void use_settings(const std::string &text);
   // Saves a settings file that read_settings() took: a board's first applies at once, later ones restart it.
   void save_settings(const std::string &text);
   // The settings file saved, empty without one, and the car's VIN from it.
@@ -139,7 +138,7 @@ class SchedulerComponent : public PollingComponent {
   http_request::HttpRequestComponent *http_{nullptr};
   Plans plans_;
   ESPPreferenceObject settings_pref_;
-  std::string settings_text_;   // the settings file in force
+  std::string settings_text_;   // the settings file saved
   std::string settings_error_;  // why there are none, for the page's status
   SettingsFile file_;
 #ifdef USE_WEBSERVER

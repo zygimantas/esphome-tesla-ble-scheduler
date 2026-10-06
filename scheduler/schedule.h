@@ -15,7 +15,8 @@
 #include <string>
 #include <vector>
 
-// make_schedule() relies on 0.0f / 0.0f giving NaN for a schedule without energy.
+// The scheduler relies on NaN: 0.0f / 0.0f for an average of nothing, and NAN for what isn't known, like a battery
+// level the car hasn't reported.
 #if defined(__FINITE_MATH_ONLY__) && __FINITE_MATH_ONLY__
 #error "build without -ffast-math and -ffinite-math-only"
 #endif

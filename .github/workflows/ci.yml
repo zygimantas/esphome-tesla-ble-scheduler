@@ -72,7 +72,7 @@ jobs:
         run: |
           clang++ @flags -fsanitize=address,undefined -fno-sanitize-recover=all test/scheduler_test.cpp -o scheduler_test
           ./scheduler_test
-      - name: Coverage of charger.h and the headers it includes, all of it
+      - name: Coverage of charger.h, settings.h and the headers they include, all of it
         run: |
           clang++ @flags -fprofile-instr-generate -fcoverage-mapping test/scheduler_test.cpp -o scheduler_test
           LLVM_PROFILE_FILE=scheduler_test.profraw ./scheduler_test

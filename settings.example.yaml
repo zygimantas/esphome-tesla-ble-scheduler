@@ -1,4 +1,5 @@
-# The board's settings, as README.md's Settings explains them. Upload this file on the board's page, under Board.
+# The board's settings, as README.md's Settings explains them.
+# Upload this file on the board's page: Board, Change settings, Upload settings.
 market:
   area: LT
   vat: 0.21

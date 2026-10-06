@@ -34,11 +34,13 @@ struct CarState {
   float power_kw = NAN;         // what the car draws from the charger
   bool port_open = false;       // the charge port flap; the car reports it even while asleep
   bool paired = true;           // the car has reported to the board's key since the settings named it
+
+  bool charging_known() const { return !charging_state.empty() && charging_state != "Unknown"; }
 };
 
-// A one-off phone message; the YAML sends it through ntfy.
+// A one-off phone message, which SchedulerComponent sends through ntfy.
 struct Notification {
-  std::string title;
+  std::string title = "ESPHome Tesla BLE Scheduler";
   std::string message;
 };
 
@@ -47,14 +49,14 @@ struct Decision {
   std::string status;
   std::string windows;  // format_windows() while the schedule decides, else empty
   // "schedule", "now" (charging regardless of price), "none" (no schedule), "unplugged" (the board's plug state, which
-  // ignores the Charger reading while the charging state is Unknown) or "wait" (no schedule possible yet: no clock,
-  // plug state, battery level or prices).
+  // ignores the Charger reading while the charging state is Unknown) or "wait" (no schedule possible yet: not paired,
+  // or no clock, plug state, battery level or prices).
   std::string mode;
   std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, once more
                                              // when the board falls back to charging at any price or a
                                              // start from the car takes over, and when Ready by passes
                                              // with the car short of its limit
-  std::string savings;                       // format_savings() once the clock is set, else empty
+  std::string savings;                       // format_savings() once the key is paired and the clock set, else empty
   bool save_savings = false;                 // Controller::savings changed: time to write it to flash
 };
 
@@ -87,7 +89,7 @@ class Controller {
   // What the buttons chose, for the board to keep across a restart (see Hold).
   int held_mode() const { return static_cast<int>(hold_); }
   void restore_mode(int mode) { hold_ = mode == 1 ? Hold::NOW : mode == 2 ? Hold::NONE : Hold::SCHEDULE; }
-  // Recompute the schedule on the next tick (new prices or settings).
+  // Recompute the schedule on the next tick (new prices or Ready by).
   void reschedule() { reschedule_ = true; }
   // Whether to download prices now, which counts as a try: every 5 minutes while some of today's prices are missing,
   // or from 12:45 CET, when the next day's prices start to come out, until tomorrow's are in. Never without market
@@ -125,6 +127,7 @@ class Controller {
   static constexpr int64_t WAKE_FOR = 30 * 60;     // how long it wakes the car to learn the plug state or battery level
   static constexpr int64_t COMMAND_GAP = 2 * 60;   // the least time between the board's own starts and stops
   static constexpr int COMMANDS_PER_SCHEDULE = 3;  // the most of them for one schedule
+  static constexpr float FULL_WITHIN = 0.5f;       // % under the limit that still counts as at it
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
@@ -218,8 +221,7 @@ class Controller {
     }
     if (fallback)  // only once the car really charges at any price: a full car waits for a higher limit
       notify_fallback_();
-    const bool charging_known = !car.charging_state.empty() && car.charging_state != "Unknown";
-    if (charging_known && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
+    if (car.charging_known() && car.charging_state != "No Power")  // "Unknown" says nothing: the request stands
       no_power_asked_ = false;
     // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
     // charges as soon as power comes, and another every 10 minutes in case its request lapsed. The board's
@@ -281,9 +283,8 @@ class Controller {
     if (plugged.has_value())
       plug_state_seen_ = true;
 
-    const bool charging_known = !car.charging_state.empty() && car.charging_state != "Unknown";
     const bool charging = car.charging_state == "Charging" || car.charging_state == "Starting";
-    if (charging_known) {
+    if (car.charging_known()) {
       const bool we_started_it = now - started_at_ < 5 * 60;
       // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge (after
       // Stop charging, that's the app's start).
@@ -426,7 +427,6 @@ class Controller {
       notify_car_start_ = false;
       notify_pending_ = false;  // a plug-in message still pending would only repeat this
       Notification &n = d.notification.emplace();
-      n.title = "ESPHome Tesla BLE Scheduler";
       n.message = "Started from the car or the Tesla app: charging";
       if (!std::isnan(limit_))
         n.message += " to " + std::to_string(std::lround(limit_)) + "%";
@@ -435,7 +435,6 @@ class Controller {
     }
     if (deadline_passed && plugged_ && hold_ == Hold::SCHEDULE && battery_known_() && !full_() && !notify_pending_) {
       Notification &n = d.notification.emplace();
-      n.title = "ESPHome Tesla BLE Scheduler";
       n.message = "Ready by passed at " + std::to_string(std::lround(soc_)) + "% of " +
                   std::to_string(std::lround(limit_)) + "%";
       return;
@@ -452,7 +451,6 @@ class Controller {
       return;
     notify_pending_ = false;
     Notification &n = d.notification.emplace();
-    n.title = "ESPHome Tesla BLE Scheduler";
     if (hold_ == Hold::NOW || !schedule_.valid) {  // no schedule without the battery level either
       n.message = d.status;
       return;
@@ -470,7 +468,7 @@ class Controller {
                   settings.currency, windows);
     n.title = "Tesla schedule created";
     n.message = text;
-    if (schedule_.soc_at_end < limit_ - 0.5f)
+    if (schedule_.soc_at_end < limit_ - FULL_WITHIN)
       n.message += "\nNot enough time to reach the limit";
   }
 
@@ -529,7 +527,7 @@ class Controller {
   bool battery_known_() const { return !std::isnan(soc_) && !std::isnan(limit_); }
 
   // At the limit by the car's word, or within half a percent; without a battery level, only by the car's word.
-  bool full_() const { return complete_ || soc_ >= limit_ - 0.5f; }
+  bool full_() const { return complete_ || soc_ >= limit_ - FULL_WITHIN; }
 
   // Whether the schedule charges in the quarter-hour it was made for (always without prices or battery level).
   bool in_schedule_() const { return !schedule_.valid || schedule_.contains(scheduled_slot_); }
