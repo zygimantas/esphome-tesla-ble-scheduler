@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: major when users must edit their settings files, minor for new behavior, patch for fixes
+        type: choice
+        options: [minor, patch, major]
+        default: minor # without it, a run started with no choice, as the GitHub app can, released an empty version
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Push the new version to main, whose CI publishes it
+    # From main only, as it pushes what it checked out to main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      # The deploy key may push to main without a pull request, and its push, unlike the workflow token's, starts CI.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+      - env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          old=$(yq '.esphome.project.version' device.yaml)
+          IFS=. read -r major minor patch <<< "$old"
+          case "$BUMP" in
+            major) new="$((major + 1)).0.0" ;;
+            minor) new="$major.$((minor + 1)).0" ;;
+            patch) new="$major.$minor.$((patch + 1))" ;;
+          esac
+          sed -i "s/^    version: $old\$/    version: $new/" device.yaml
+          sed -i "s/^  version: v$old\$/  version: v$new/" config.example.yaml
+          [ "$(git diff --name-only | wc -l)" = 2 ] ||
+            { echo "::error::The version is in another form in device.yaml or config.example.yaml"; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -a -m "chore(board): release v$new"
+          git push origin HEAD:main
