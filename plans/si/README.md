@@ -14,4 +14,4 @@ The hours follow the clock, summer time included. In 2026, block 4 costs a littl
 
 The plan counts the charge per kWh. Most of the network charge is a monthly charge per kW for each block, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). The contributions and the excise per kWh are left out too, as they're the same every hour.
 
-The blocks' hours change on 1 January 2027, and the plan changes with them, with 2027's prices. [Your own plan](../README.md#your-own-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload plan**.
+The blocks' hours change on 1 January 2027, and the plan changes with them, with 2027's prices. [Custom plan](../README.md#custom-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload custom plan**.

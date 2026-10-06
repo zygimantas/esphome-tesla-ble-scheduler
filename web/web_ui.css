@@ -265,16 +265,12 @@ input.wide {
   width: auto;
   text-align: left;
 }
-/* Off in the settings, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
-:is(#settings-card, .step) select:disabled {
+/* Off, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
+.step select:disabled {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Your own plan: in the setup, the plan's name sits under the row's, as a field does, and Upload plan leaves room
-   before the next row. */
-.step .row strong {
-  text-align: left;
-}
+/* Upload custom plan leaves room before the next row. */
 #upload-plan {
   margin-bottom: 8px;
 }

@@ -23,8 +23,8 @@ The hours follow the clock, summer time included.
 
 The plans leave out the monthly fees, and the electricity tax with its security of supply fee, which is the same every hour. Helen Sähköverkko's Aikasiirto also has a monthly fee per kW of the month's third highest hour, with night hours at 80%, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)): a lower charging current keeps it down.
 
-Not here: the products for temporary connections and for big connections with a fee per kW, and Savon Voima's Yösähkö and Kausisähkö, which ended on 1 November 2025. With another of Finland's network companies, write your own plan, as [Your own plan](../README.md#your-own-plan) says: most use the same hours.
+Not here: the products for temporary connections and for big connections with a fee per kW, and Savon Voima's Yösähkö and Kausisähkö, which ended on 1 November 2025. With another of Finland's network companies, write a custom plan, as [Custom plan](../README.md#custom-plan) says: most use the same hours.
 
 Each network company sets its own prices, which the Energy Authority (Energiavirasto) oversees, and may change them in any month, telling homes at least a month before.
 
-[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
+[Custom plan](../README.md#custom-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload custom plan**.

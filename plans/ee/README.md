@@ -15,4 +15,4 @@ Elektrilevi's network packages for Estonia, for connections up to 63 A, with pri
 
 The hours follow the clock, summer time included. The plans leave out the monthly fee and the charges that are the same every hour: the renewable energy fee, the electricity excise and the security of supply fee.
 
-[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
+[Custom plan](../README.md#custom-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload custom plan**.

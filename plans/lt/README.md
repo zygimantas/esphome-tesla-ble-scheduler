@@ -14,4 +14,4 @@ ESO's household plans for Lithuania, with prices with VAT. Your supplier bills E
 
 The plans leave out Efektyvus's monthly fee per kW of your permitted power and Namai's monthly fee, and the charges per kWh that are the same every hour, like the public service obligations (VIAP).
 
-VERT, the regulator, approves ESO's prices for each year, from 1 January. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
+VERT, the regulator, approves ESO's prices for each year, from 1 January. [Custom plan](../README.md#custom-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload custom plan**.

@@ -12,10 +12,10 @@ The board's page chooses it for you under **Grid plan**. The board takes Hungary
 
 With universal service's price, choose **Fixed (or a monthly average)** on the page and enter your price per kWh with VAT, less the plan's 29.72, as the supplier's part. Universal service's reduced price ends at 2523 kWh a year; above it, a kWh costs 70.104 forints with the network fees and VAT in, which makes 40.39. All hours then cost the same, so the board charges at once.
 
-Universal service's two-rate tariff A2, which an electric car's owner can have on a meter of its own next to A1, is cheaper on workdays at night, 22:00 - 06:00 (23:00 - 07:00 in summer), and all day on other days, up to 2523 kWh a year; above that, both cost the same. The cheap hours are in the supplier's price, not in the network fees, so no plan has them: write your own plan with your whole A2 prices, `clock: winter` and public holidays under `exceptions`, as [A fixed price](../README.md#a-fixed-price) says.
+Universal service's two-rate tariff A2, which an electric car's owner can have on a meter of its own next to A1, is cheaper on workdays at night, 22:00 - 06:00 (23:00 - 07:00 in summer), and all day on other days, up to 2523 kWh a year; above that, both cost the same. The cheap hours are in the supplier's price, not in the network fees, so no plan has them: write a custom plan with your whole A2 prices, `clock: winter` and public holidays under `exceptions`, as [A fixed price](../README.md#a-fixed-price) says.
 
 A controlled circuit (B tariff, vezérelt) on its own meter gets power only when the network operator switches it on, at least 8 hours a day, so no plan can say when. The H tariff is for heat pumps only.
 
 The plan leaves out the yearly fee per connection, a smart meter's fee per kW, which is 0 in 2026, and any levies and taxes per kWh, which are the same every hour.
 
-MEKH sets the network fees every year, from 1 January. [Your own plan](../README.md#your-own-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload plan**.
+MEKH sets the network fees every year, from 1 January. [Custom plan](../README.md#custom-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload custom plan**.
