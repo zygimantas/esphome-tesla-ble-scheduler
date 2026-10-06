@@ -1,6 +1,7 @@
-# BKK, households, prices with VAT: https://www.bkk.no/alt-om-nettleie/nettleiepriser/priser-privatkunder
+# Prices with VAT: https://www.bkk.no/alt-om-nettleie/nettleiepriser/priser-privatkunder
 # BKK prints the prices in øre with the Enova fee, the electricity tax and 25% VAT: these are in kroner, with VAT, without the fee and the tax.
 # Maintained by @zygimantas
+name: BKK, households
 currency: NOK
 calendar:
   jan-dec:

@@ -1,6 +1,7 @@
-# Arva, households, prices with VAT: https://arva.no/ny-nettleie/Priser
+# Prices with VAT: https://arva.no/ny-nettleie/Priser
 # Arva prints the prices in øre without the public charges. Homes in its area, in Nordland and Troms, pay no VAT on electricity: these are in kroner, without VAT.
 # Maintained by @zygimantas
+name: Arva, households
 currency: NOK
 calendar:
   jan-dec:

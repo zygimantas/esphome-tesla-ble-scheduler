@@ -1,7 +1,8 @@
-# ER Yug, households, prices with VAT: https://www.elyug.bg/Customers/Prices/Bitovi_Klienti.aspx
+# Prices with VAT: https://www.elyug.bg/Customers/Prices/Bitovi_Klienti.aspx
 # ER Yug prints its access and low voltage transmission fees for households with and without VAT: this is their sum, with 20% VAT.
 # The EWRC sets the prices from 1 July every year, these by its decision Ц-13 of 1 July 2026: https://www.dker.bg/uploads/reshenia/2026/res-c-13-2026.pdf
 # Maintained by @zygimantas
+name: ER Yug, households
 currency: EUR
 calendar:
   jan-dec:

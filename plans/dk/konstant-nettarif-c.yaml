@@ -1,7 +1,8 @@
-# Konstant Nettarif C, prices with VAT: https://konstant.dk/priser-og-vilkaar/nettarif-abonnement-gebyr-og-tilslutningsbidrag
+# Prices with VAT: https://konstant.dk/priser-og-vilkaar/nettarif-abonnement-gebyr-og-tilslutningsbidrag
 # Konstant publishes the prices in DataHub (Energi Data Service's DatahubPricelist) in kroner without VAT, the tariff (code C_FBTNTR_B) and its discount (C_FBTNTR_R): these are their sum, with 25% VAT.
 # The prices are 2026's, until Konstant publishes 2027's.
 # Maintained by @zygimantas
+name: Konstant Nettarif C
 currency: DKK
 calendar:
   apr-sep:

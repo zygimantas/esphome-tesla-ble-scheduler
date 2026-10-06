@@ -1,7 +1,8 @@
-# Network fees, households, prices with VAT: https://www.eon.hu/content/dam/eon/eon-hungary/documents/hatarozatok-szabalyzatok-aram/arak-tarifak/Aram_RHD_EON_20260101.pdf
+# Prices with VAT: https://www.eon.hu/content/dam/eon/eon-hungary/documents/hatarozatok-szabalyzatok-aram/arak-tarifak/Aram_RHD_EON_20260101.pdf
 # MEKH prints the fees without VAT, the same for every network operator (resolution H2995/2025, annex B): this is the transmission fee and the distribution fee per kWh together, with 27% VAT.
 # A smart meter's distribution fee has three zones, 06:00 - 17:00, 17:00 - 22:00 and 22:00 - 06:00, at the same price in 2026: if MEKH prices them apart, smart meters need a plan of their own.
 # Maintained by @zygimantas
+name: Network fees, households
 currency: HUF
 calendar:
   jan-dec:

@@ -1,7 +1,8 @@
-# PREdistribuce D02d, prices with VAT: https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf
+# Prices with VAT: https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf
 # ERÚ, the regulator, prints the prices in koruna per MWh without VAT, in its price decision 14/2025: these are per kWh, with 21% VAT.
 # ERÚ's next price decision, due at the end of November, sets the prices from 1 January 2027.
 # Maintained by @zygimantas
+name: PREdistribuce D02d
 currency: CZK
 calendar:
   jan-dec:

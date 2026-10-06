@@ -1,5 +1,6 @@
-# ESO Namai, one zone, prices with VAT: https://www.eso.lt
+# Prices with VAT: https://www.eso.lt
 # Maintained by @zygimantas
+name: ESO Namai, one zone
 currency: EUR
 calendar:
   jan-dec:

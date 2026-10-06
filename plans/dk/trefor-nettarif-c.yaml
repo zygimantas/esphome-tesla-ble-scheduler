@@ -1,6 +1,7 @@
-# TREFOR El-net Nettarif C, prices with VAT: https://www.trefor.dk/priser/
+# Prices with VAT: https://www.trefor.dk/priser/
 # TREFOR El-net prints the prices in øre without VAT, in its price sheet from 1 July 2026: these are in kroner, with 25% VAT.
 # Maintained by @zygimantas
+name: TREFOR El-net Nettarif C
 currency: DKK
 calendar:
   apr-sep:

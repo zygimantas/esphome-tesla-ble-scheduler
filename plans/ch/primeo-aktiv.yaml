@@ -1,7 +1,8 @@
-# Primeo Aktiv, region Basel, prices with VAT: https://www.primeo-energie.ch/privatkunden/strom-beziehen/aktiv.html
+# Prices with VAT: https://www.primeo-energie.ch/privatkunden/strom-beziehen/aktiv.html
 # Primeo Energie prints the prices in Rappen without VAT: these are the network prices (Netznutzung), in francs, with 8.1% VAT.
 # The prices and hours stay the same on 1 January 2027.
 # Maintained by @zygimantas
+name: Primeo Aktiv, region Basel
 currency: CHF
 calendar:
   apr-sep:

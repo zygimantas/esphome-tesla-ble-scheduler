@@ -1,6 +1,7 @@
-# Tekniska verken Linköping, apartment, prices with VAT: https://www.tekniskaverken.se/privat/elnat/priser-ersattningar
+# Prices with VAT: https://www.tekniskaverken.se/privat/elnat/priser-ersattningar
 # Tekniska verken prints the prices in öre with 25% VAT: these are in kronor.
 # Maintained by @zygimantas
+name: Tekniska verken Linköping, apartment
 currency: SEK
 calendar:
   jan-dec:

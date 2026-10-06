@@ -1,6 +1,7 @@
-# Vattenfall Eldistribution Enkeltariff, prices with VAT: https://www.vattenfalleldistribution.se/abonnemang-och-avgifter/avtal-och-avgifter/elnatsavgifter/sakringsabonnemang-16-63a/
+# Prices with VAT: https://www.vattenfalleldistribution.se/abonnemang-och-avgifter/avtal-och-avgifter/elnatsavgifter/sakringsabonnemang-16-63a/
 # Vattenfall Eldistribution prints the prices in öre with 25% VAT: these are in kronor.
 # Maintained by @zygimantas
+name: Vattenfall Eldistribution Enkeltariff
 currency: SEK
 calendar:
   jan-dec:

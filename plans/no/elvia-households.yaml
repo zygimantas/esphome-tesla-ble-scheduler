@@ -1,6 +1,7 @@
-# Elvia, households, prices with VAT: https://www.elvia.no/nettleie/alt-om-nettleiepriser/nettleie-pris/
+# Prices with VAT: https://www.elvia.no/nettleie/alt-om-nettleiepriser/nettleie-pris/
 # Elvia prints the prices in øre with the Enova fee, the electricity tax and 25% VAT: these are in kroner, with VAT, without the fee and the tax.
 # Maintained by @zygimantas
+name: Elvia, households
 currency: NOK
 calendar:
   jan-dec:

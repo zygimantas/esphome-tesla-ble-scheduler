@@ -1,7 +1,8 @@
-# IWB Doppeltarif, prices with VAT: https://www.iwb.ch/servicecenter/stromtarife/aktuelle-tarife
+# Prices with VAT: https://www.iwb.ch/servicecenter/stromtarife/aktuelle-tarife
 # IWB prints the prices in Rappen without VAT: these are the network fee (NNE), in francs, with 8.1% VAT.
 # The prices stay the same on 1 January 2027.
 # Maintained by @zygimantas
+name: IWB Doppeltarif
 currency: CHF
 calendar:
   jan-dec:

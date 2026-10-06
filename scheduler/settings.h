@@ -226,13 +226,6 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   return "";
 }
 
-// A plan's name for people, from its first line, like "# ESO Standartinis, four zones, prices with VAT:
-// ..."; empty when the line isn't like that.
-inline std::string plan_title(std::string_view text) {
-  const size_t end = text.find(", prices with VAT");
-  return text.rfind("# ", 0) == 0 && end < text.find('\n') ? std::string(text.substr(2, end - 2)) : "";
-}
-
 // `text` as a JSON string.
 inline std::string json_string(std::string_view text) {
   std::string json = "\"";
@@ -251,9 +244,10 @@ inline std::string settings_options(const Plans &plans) {
     json += concat({json.back() == '[' ? "" : ",", json_string(area.name)});
   json += "],\"plans\":[";
   for (const auto &plan : plans) {
-    const std::string title = plan_title(plan.second);
+    TariffText text;
+    read_tariff(std::string(plan.second), text);  // the plans built in read, as the tests check
     json += concat({json.back() == '[' ? "" : ",", "[", json_string(plan.first), ",",
-                    json_string(title.empty() ? plan.first : title), "]"});
+                    json_string(text.name.empty() ? plan.first : text.name), "]"});
   }
   return json + "]}";
 }
