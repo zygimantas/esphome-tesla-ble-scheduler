@@ -189,8 +189,7 @@ void SchedulerComponent::apply_settings_() {
   zone.dst_end = {7200 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 10, 5, 0};
   time::set_global_tz(zone);
 #endif
-  if (this->file_.area == nullptr)
-    this->controller_.without_market_prices();
+  this->controller_.set_market_prices(this->file_.area != nullptr);
   // read_settings() made the same tariff
   this->apply_tariff_(this->file_.plan.empty() ? this->file_.tariff : std::string(this->file_.plan_text));
 }

@@ -1566,9 +1566,14 @@ static void test_grid_fees_alone() {
   // Without market prices, each quarter-hour costs its grid fee: two_zones()' night, 0.07139 EUR/kWh, is from 00:00 to
   // 08:00 in summer time. Plugged in at 20:00, the schedule waits for midnight.
   Controller controller;
-  controller.without_market_prices();
+  controller.set_market_prices(false);
   controller.set_tariff(two_zones());
   CHECK(!controller.fetch_prices_due(SEP24_1700Z));  // nothing to download, even before the first tick
+  // and again, once settings with a market apply in place, as before the setup's Car step
+  Controller changed;
+  changed.set_market_prices(false);
+  changed.set_market_prices(true);
+  CHECK(changed.fetch_prices_due(SEP24_1700Z));
   const Decision d = controller.tick(plugged_in(false).state(SEP24_1700Z), Settings());
   CHECK_STR(d.status, "Charges at 00:00");
   REQUIRE(!controller.schedule().windows.empty());
@@ -1581,7 +1586,7 @@ static void test_grid_fees_alone() {
 
   // One fee for every hour: no hour is cheaper, so it charges at once.
   Controller flat;
-  flat.without_market_prices();
+  flat.set_market_prices(false);
   flat.set_tariff(one_zone());
   flat.tick(plugged_in(false).state(SEP24_1700Z), Settings());
   REQUIRE(!flat.schedule().windows.empty());
