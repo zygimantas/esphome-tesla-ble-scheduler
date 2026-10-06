@@ -17,6 +17,8 @@ static const char *const TAG = "scheduler";
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
+// Phone messages go through ntfy's own server, to the topic the settings name.
+static const char *const NTFY = "https://ntfy.sh";
 
 void ReadyBy::restore() {
   this->pref_ = this->make_entity_preference<datetime::TimeEntityRestoreState>();
@@ -164,7 +166,8 @@ void SchedulerComponent::apply_settings_() {
 #endif
   if (this->file_.area == nullptr)
     this->controller_.without_market_prices();
-  this->apply_tariff_(std::string(this->file_.plan_text));  // read_settings() made the same tariff
+  // read_settings() made the same tariff
+  this->apply_tariff_(this->file_.plan.empty() ? this->file_.tariff : std::string(this->file_.plan_text));
 }
 
 // A text sensor's new state, if it's new.
@@ -264,7 +267,7 @@ void SchedulerComponent::dump_config() {
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
   TariffText own;
   read_tariff(file.tariff, own);  // read_settings() checked it
-  const char *tariff = !file.plan.empty() ? file.plan.c_str() : own.calendar.empty() ? "none" : "its own rates";
+  const char *tariff = !file.plan.empty() ? file.plan.c_str() : own.calendar.empty() ? "none" : "your own plan";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
@@ -309,10 +312,10 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `text`, a plan's text, with the settings' own tariff. Returns what's wrong, or "".
+// Uses `text`, a plan's text, built in, downloaded or your own. Returns what's wrong, or "".
 std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   Tariff tariff;
-  const std::string error = make_tariff(text, this->file_.tariff, this->file_.currency, tariff);
+  const std::string error = make_tariff(text, this->file_.currency, tariff);
   if (!error.empty())
     return error;
   tariff.vat = this->file_.vat;
@@ -450,8 +453,8 @@ std::optional<float> SchedulerComponent::fetch_rate_() {
   return rate;
 }
 
-// The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use with
-// the settings' own tariff, leaves the one in use, and the board tries again in an hour.
+// The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use, leaves
+// the one in use, and the board tries again in an hour.
 void SchedulerComponent::fetch_plan_(int64_t now) {
   this->plan_tried_at_ = now;
   this->plan_usable_ = false;
@@ -504,7 +507,7 @@ bool SchedulerComponent::send_message_(const Notification &message) {
     root["tags"].to<JsonArray>().add("electric_plug");
     root["click"] = "http://" + App.get_name() + ".local";  // a tap opens the page, on the home Wi-Fi
   });
-  auto response = this->http_->post(this->file_.ntfy_server, body);
+  auto response = this->http_->post(NTFY, body);
   if (response == nullptr) {
     ESP_LOGW(TAG, "ntfy message failed; it's tried again in a minute");
     return false;

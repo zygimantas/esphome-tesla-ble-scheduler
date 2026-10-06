@@ -15,7 +15,7 @@ from esphome.const import CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIM
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
 
-# The plans a settings file can name, from this release; boards download them from GitHub every day.
+# The plans the settings can name, from this release; boards download them from GitHub every day.
 PLANS = Path(__file__).resolve().parent.parent / "plans"
 
 scheduler_ns = cg.esphome_ns.namespace("scheduler")

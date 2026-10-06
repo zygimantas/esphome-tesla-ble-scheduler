@@ -157,5 +157,5 @@ jobs:
                 path: "\($release)/download/v\($version)/esphome-tesla-ble-scheduler.ota.bin", md5: $md5,
                 release_url: "\($release)/tag/v\($version)"}}]}' > manifest.json
             gh release create "v$version" --target "$GITHUB_SHA" --title "ESPHome Tesla BLE Scheduler $version" --generate-notes \
-              esphome-tesla-ble-scheduler.bin esphome-tesla-ble-scheduler.ota.bin manifest.json settings.example.yaml
+              esphome-tesla-ble-scheduler.bin esphome-tesla-ble-scheduler.ota.bin manifest.json
           fi
