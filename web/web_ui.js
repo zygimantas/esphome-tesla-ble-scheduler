@@ -322,7 +322,8 @@ function render() {
   // the country's plans, and a custom plan by its name in place of Not listed, where there are none too
   const listed = $("set-plan").options.length > 2;
   const unlisted = $("set-unlisted").checked;
-  $("set-plan").options[1].text = ownPlan ? ownPlanLabel() : "Not listed";
+  const notListed = $("set-plan").options[1]; // none until the settings load
+  if (notListed) notListed.text = ownPlan ? ownPlanLabel() : "Not listed";
   $("plan-row").hidden = !listed && !ownPlan;
   $("unlisted-row").hidden = !listed;
   $("set-plan").disabled = unlisted || !listed;
