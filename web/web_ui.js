@@ -251,7 +251,7 @@ const pending = { mode: null, limit: null, deadline: null };
 const value = (id) => {
   const v = states[id]?.value;
   const n = typeof v === "string" && v.trim() !== "" ? Number(v) : v;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? n : null;
 };
 const text = (id) => {
   const s = states[id]?.state;
@@ -627,8 +627,7 @@ let batteryTyped = false;
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
 // grid plan.
-const unfinished = () =>
-  settings.text === "" || (settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text));
+const unfinished = () => settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text);
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
@@ -824,7 +823,7 @@ async function loadSettings() {
       fetch("/settings").then((r) => r.text()),
       fetch("/settings/options").then((r) => r.json()),
     ]);
-    if (file !== settings.text || !settings.options) {
+    if (file !== settings.text) {
       // the setup starts again from what the board has now, as after an upload
       Object.assign(setup, { step: 0, stay: false });
       settings.text = file;
