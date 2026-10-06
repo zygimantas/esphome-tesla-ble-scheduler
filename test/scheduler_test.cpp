@@ -471,7 +471,7 @@ static void test_schedule_windows_and_prices() {
 }
 
 // ---------------------------------------------------------------------------
-// Tariff: VAT, and the tariff's rates from a plan and the settings
+// Tariff: VAT, and the rates of a plan from plans/ or your own
 // ---------------------------------------------------------------------------
 
 // ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
@@ -855,7 +855,7 @@ static std::string as_yours(const std::string &plan) {
     end = plan.find('\n', start);
     lines += concat({end > start ? "  " : "", plan.substr(start, end - start), "\n"});
   }
-  return "tariff:\n" + lines;
+  return lines;
 }
 
 static void test_plans_in_the_repository() {
@@ -877,7 +877,7 @@ static void test_plans_in_the_repository() {
         label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", car, "timezone: Europe/Vilnius\n"}),
                               repository_plans(), settings),
         label);
-    CHECK_STR(label + read_settings(concat({currency, as_yours(plan), car, "timezone: Europe/Vilnius\n"}),
+    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_yours(plan), car, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
     CHECK(settings.plan.empty() && !settings.tariff.empty());
@@ -886,7 +886,7 @@ static void test_plans_in_the_repository() {
 }
 
 // ---------------------------------------------------------------------------
-// Settings: the file uploaded on the board's page
+// Settings: the file the board's page writes
 // ---------------------------------------------------------------------------
 
 // A board in Vilnius with ESO's plan, line by line.
@@ -1089,9 +1089,7 @@ static void test_settings_file_errors() {
             .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
   // Your own plan: alone under tariff:, in the settings' currency where it names one, and with its errors counted in
   // its own lines, from the line after tariff:, as in the file uploaded.
-  const auto yours = [](const std::string &plan) {
-    return settings_with("  plan", as_yours(plan).substr(std::strlen("tariff:\n")));
-  };
+  const auto yours = [](const std::string &plan) { return settings_with("  plan", as_yours(plan)); };
   CHECK_STR(settings_error(yours(ONE_ZONE)), "");
   CHECK_STR(settings_error(yours("currency: NOK\n" + calendar_of("    mon-sun: flat"))),
             "your plan: the plan's prices are in NOK, not EUR");
