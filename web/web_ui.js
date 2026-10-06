@@ -83,6 +83,10 @@ const planLinks = (ask) =>
   "choose it in Change settings, under Board, once a release brings it. Until then, fees that change with the hour " +
   "can go in a settings file, uploaded there.";
 
+// A field's "?", which opens its hint under the field.
+const info = (hint, label) =>
+  `<button type="button" class="info" data-hint="${hint}" aria-label="${label}" aria-expanded="false">?</button>`;
+
 const PAGE = `
 <header class="bar">
   ${LOGO}
@@ -108,24 +112,24 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label id="vin-row" class="row"><span>VIN<button type="button" class="info" data-hint="vin-hint" aria-label="About the VIN" aria-expanded="false">?</button></span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
     <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-    <label id="area-row" class="row"><span>Country / Area<button type="button" class="info" data-hint="area-hint" aria-label="About the country or area" aria-expanded="false">?</button></span><span class="dropdown"><select id="set-area" required></select></span></label>
+    <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
     <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT and the grid plans to choose from.</p>
-    <label id="plan-row" class="row"><span>Grid plan<button type="button" class="info" data-hint="plan-hint" aria-label="About the grid plan" aria-expanded="false">?</button></span><span class="dropdown"><select id="set-plan" required></select></span></label>
+    <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
     <p id="plans-note" class="note">No grid plans here yet: ${planLinks("ask for yours")}</p>
     <p id="unlisted-note" class="note">${planLinks("Ask for your plan")}</p>
-    <label id="price-row" class="row"><span>Contract type<button type="button" class="info" data-hint="price-hint" aria-label="About the contract type" aria-expanded="false">?</button></span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+    <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-    <label id="margin-row" class="row"><span>Supplier's margin<button type="button" class="info" data-hint="margin-hint" aria-label="About the supplier's margin" aria-expanded="false">?</button></span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
     <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-    <label id="fixed-row" class="row"><span>Supplier's part<button type="button" class="info" data-hint="fixed-hint" aria-label="About the supplier's part" aria-expanded="false">?</button></span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
     <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
-    <label id="battery-row" class="row"><span>Battery (kWh)<button type="button" class="info" data-hint="battery-hint" aria-label="About the battery" aria-expanded="false">?</button></span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+    <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
     <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-    <label id="power-row" class="row"><span>Charging power (kW)<button type="button" class="info" data-hint="power-hint" aria-label="About the charging power" aria-expanded="false">?</button></span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+    <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
     <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
@@ -251,7 +255,7 @@ const pending = { mode: null, limit: null, deadline: null };
 const value = (id) => {
   const v = states[id]?.value;
   const n = typeof v === "string" && v.trim() !== "" ? Number(v) : v;
-  return typeof n === "number" && Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? n : null;
 };
 const text = (id) => {
   const s = states[id]?.state;
@@ -436,7 +440,6 @@ function shownMode() {
 }
 function expectMode(mode) {
   pending.mode = { value: mode, until: Date.now() + 10000 };
-  requestRender();
 }
 
 // Both buttons, the schedule with Delete, or Stop while charging regardless of price. Charge limit and Ready by are for
@@ -628,8 +631,7 @@ let batteryTyped = false;
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
 // grid plan.
-const unfinished = () =>
-  settings.text === "" || (settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text));
+const unfinished = () => settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text);
 // The setup's last step: Key once the settings have prices, else Prices.
 const lastStep = () => (unfinished() ? 3 : 2);
 
@@ -729,7 +731,7 @@ async function nextStep() {
     setup.step += 1;
     setup.reached = Math.max(setup.reached, setup.step);
     setup.stay = false;
-    return requestRender();
+    return;
   }
   const keys = ["currency", "fixed_price", "market", "tariff", "tesla_battery_kwh", "tesla_charging_kw", "timezone"];
   await sendSettings(withForm(keys));
@@ -825,7 +827,7 @@ async function loadSettings() {
       fetch("/settings").then((r) => r.text()),
       fetch("/settings/options").then((r) => r.json()),
     ]);
-    if (file !== settings.text || !settings.options) {
+    if (file !== settings.text) {
       // the setup starts again from what the board has now, as after an upload
       Object.assign(setup, { step: 0, stay: false });
       settings.text = file;
@@ -1012,7 +1014,7 @@ async function post(entity, action, param) {
 }
 
 // One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
-// and renderSchedule() keeps Create schedule off meanwhile.
+// and renderSchedule() keeps Create schedule off meanwhile. A render follows, so handlers needn't ask for one.
 let busy = false;
 function press(button, handler) {
   button.addEventListener("click", async () => {
