@@ -95,8 +95,9 @@ class Controller {
     return true;
   }
   const Schedule &schedule() const { return schedule_; }
-  // Without market prices to download, every quarter-hour's spot price is 0: the tariff is the whole price.
-  void without_market_prices() { market_ = false; }
+  // Whether prices come from the market; without market prices to download, every quarter-hour's spot price is 0: the
+  // tariff is the whole price. Settings set it both ways, as they apply in place while the board has no car.
+  void set_market_prices(bool market) { market_ = market; }
   // The tariff and VAT, from the plan and the settings; until they're set, schedules use spot prices only.
   void set_tariff(const Tariff &tariff) {
     tariff_ = tariff;
@@ -542,7 +543,7 @@ class Controller {
   bool fallback_told_ = false;
   bool notify_car_start_ = false;
   bool plug_state_seen_ = false;
-  bool market_ = true;  // prices come from the market (see without_market_prices())
+  bool market_ = true;  // prices come from the market (see set_market_prices())
   int64_t scheduled_slot_ = -1;
   int64_t plugged_since_ = 0;
   int64_t deadline_at_ = 0;  // the deadline in force at the last tick, 0 before the clock is set

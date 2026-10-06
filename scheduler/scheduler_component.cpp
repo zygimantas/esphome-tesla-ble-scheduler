@@ -84,11 +84,16 @@ void SchedulerComponent::use_settings(const std::string &text) {
   this->settings_error_ = error.empty() ? "" : "Settings: " + error;
 }
 
+// Whether a settings file names the car, on a line of its own.
+static bool names_car(const std::string &text) {
+  return text.rfind("tesla_vin:", 0) == 0 || text.find("\ntesla_vin:") != std::string::npos;
+}
+
 // On the web server's task, the only one that uses settings_text_ once the board runs, so the next request sees the
-// new file; the rest on the next loop. A board's first settings apply at once, as nothing runs yet; later ones restart
-// it, which starts the schedule, the prices and the car's connection afresh.
+// new file; the rest on the next loop. Settings apply at once while the board has no car yet, as nothing runs, as in
+// the setup; once it has one, they restart it, which starts the schedule, the prices and the car's connection afresh.
 void SchedulerComponent::save_settings(const std::string &text) {
-  const bool restart = !this->settings_text_.empty();
+  const bool restart = names_car(this->settings_text_);
   this->settings_text_ = text;
   this->defer([this, text, restart]() {
     auto saved = std::make_unique<SavedSettings>();
@@ -184,8 +189,7 @@ void SchedulerComponent::apply_settings_() {
   zone.dst_end = {7200 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 10, 5, 0};
   time::set_global_tz(zone);
 #endif
-  if (this->file_.area == nullptr)
-    this->controller_.without_market_prices();
+  this->controller_.set_market_prices(this->file_.area != nullptr);
   // read_settings() made the same tariff
   this->apply_tariff_(this->file_.plan.empty() ? this->file_.tariff : std::string(this->file_.plan_text));
 }
@@ -199,6 +203,11 @@ static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
 void SchedulerComponent::update() {
   if (!this->settings_error_.empty()) {  // nothing to schedule until there are settings
     publish(this->status_, this->settings_error_);
+    publish(this->mode_, "wait");
+    return;
+  }
+  if (this->file_.vin.empty()) {  // nor until the setup's Car step, after its prices, names the car
+    publish(this->status_, "No car yet");
     publish(this->mode_, "wait");
     return;
   }
@@ -566,7 +575,7 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
   SettingsFile file;
   const std::string error = read_settings(this->body_, this->parent_->plans(), file);
   if (error.empty()) {
-    request->send(200, TEXT, this->parent_->settings_text().empty() ? "Saved" : "Saved: the board restarts");
+    request->send(200, TEXT, names_car(this->parent_->settings_text()) ? "Saved: the board restarts" : "Saved");
     this->parent_->save_settings(this->body_);
   } else {
     request->send(400, TEXT, error.c_str());

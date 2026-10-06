@@ -196,27 +196,29 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
   if (const std::string error = read_tariff(read.tariff, own); !error.empty())
     return concat({"your plan: ", error});
-  // Without market: and tariff:, the board has no prices yet, as after the setup's first step, and the car charges as
-  // usual. A tariff: with neither a plan nor a calendar under it, like one with the plan's name on its own line, would
-  // add nothing.
+  // Without market: and tariff:, the board has no prices, and the car charges as usual. A tariff: with neither a plan
+  // nor a calendar under it, like one with the plan's name on its own line, would add nothing.
   if (plan_text.empty() && own.calendar.empty() && std::find(seen.begin(), seen.end(), "tariff") != seen.end())
     return "tariff needs a plan or a calendar of its own, on the lines under it";
   Tariff tariff;
   if (const std::string error = make_tariff(yours ? read.tariff : plan_text, read.currency, tariff); !error.empty())
     return concat({yours ? "your plan: " : "tariff: ", error});
 
-  // Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
-  read.battery_kwh = number(battery);
-  if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
-    return "tesla_battery_kwh must be the battery's size in kWh, like 75";
-  read.charging_kw = number(charging);
-  if (!(read.charging_kw >= 0.5f && read.charging_kw <= 100.0f))
-    return "tesla_charging_kw must be the charging power in kW, like 11";
-  if (read.vin.size() != 17 || !std::all_of(read.vin.begin(), read.vin.end(), [](char c) {
-        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z' && c != 'I' && c != 'O' && c != 'Q');
-      }))
-    return "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
-           "screen under Controls, Software";
+  // The car, all three or none yet, as the setup's Car step comes after its prices. Wider than the page's 20 to 200 kWh
+  // and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
+  if (!battery.empty() || !charging.empty() || !read.vin.empty()) {
+    read.battery_kwh = number(battery);
+    if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
+      return "tesla_battery_kwh must be the battery's size in kWh, like 75";
+    read.charging_kw = number(charging);
+    if (!(read.charging_kw >= 0.5f && read.charging_kw <= 100.0f))
+      return "tesla_charging_kw must be the charging power in kW, like 11";
+    if (read.vin.size() != 17 || !std::all_of(read.vin.begin(), read.vin.end(), [](char c) {
+          return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z' && c != 'I' && c != 'O' && c != 'Q');
+        }))
+      return "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
+             "screen under Controls, Software";
+  }
   const auto *found = std::find_if(std::begin(TIME_ZONES), std::end(TIME_ZONES),
                                    [&](const auto &known) { return zone == known.first; });
   if (found == std::end(TIME_ZONES))

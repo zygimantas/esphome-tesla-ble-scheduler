@@ -1124,6 +1124,21 @@ static void test_settings_file_errors() {
               "screen under Controls, Software");
   CHECK_STR(settings_error(settings_set("timezone", "America/New_York")),
             "timezone must be one the board knows, like Europe/Vilnius");
+  // The car comes whole, or not yet, as the setup saves the prices before its Car step names the car
+  const auto without = [](std::string text, std::initializer_list<const char *> keys) {
+    for (const char *key : keys) {
+      const size_t at = text.find(key);
+      text.erase(at, text.find('\n', at) + 1 - at);
+    }
+    return text;
+  };
+  SettingsFile no_car;
+  CHECK_STR(read_settings(without(SETTINGS, {"tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"}),
+                          repository_plans(), no_car),
+            "");
+  CHECK(no_car.vin.empty() && no_car.battery_kwh == 0.0f && no_car.charging_kw == 0.0f && no_car.area != nullptr);
+  CHECK_STR(settings_error(without(SETTINGS, {"tesla_battery_kwh", "tesla_charging_kw"})),
+            "tesla_battery_kwh must be the battery's size in kWh, like 75");
   // Quotes only around a whole value
   CHECK_STR(settings_error(settings_set("tesla_vin", "\"5YJ3E1EA0KF000000'")),
             "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
@@ -1551,9 +1566,14 @@ static void test_grid_fees_alone() {
   // Without market prices, each quarter-hour costs its grid fee: two_zones()' night, 0.07139 EUR/kWh, is from 00:00 to
   // 08:00 in summer time. Plugged in at 20:00, the schedule waits for midnight.
   Controller controller;
-  controller.without_market_prices();
+  controller.set_market_prices(false);
   controller.set_tariff(two_zones());
   CHECK(!controller.fetch_prices_due(SEP24_1700Z));  // nothing to download, even before the first tick
+  // and again, once settings with a market apply in place, as before the setup's Car step
+  Controller changed;
+  changed.set_market_prices(false);
+  changed.set_market_prices(true);
+  CHECK(changed.fetch_prices_due(SEP24_1700Z));
   const Decision d = controller.tick(plugged_in(false).state(SEP24_1700Z), Settings());
   CHECK_STR(d.status, "Charges at 00:00");
   REQUIRE(!controller.schedule().windows.empty());
@@ -1566,7 +1586,7 @@ static void test_grid_fees_alone() {
 
   // One fee for every hour: no hour is cheaper, so it charges at once.
   Controller flat;
-  flat.without_market_prices();
+  flat.set_market_prices(false);
   flat.set_tariff(one_zone());
   flat.tick(plugged_in(false).state(SEP24_1700Z), Settings());
   REQUIRE(!flat.schedule().windows.empty());
