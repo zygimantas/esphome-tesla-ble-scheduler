@@ -201,24 +201,10 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The setup's steps, a new board's page: the open one shows its fields, a done one Saved, in a pill --- */
-.summary {
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--control);
-  color: var(--muted);
-  font-size: 12px;
-}
+/* --- The setup, a new board's page: its one card, at its step --- */
 .setup .card:not(.step),
-.card:not(.open) > .body,
-.step:not(.done) .summary {
+.card:not(.open) > .body {
   display: none;
-}
-.step:not(.open, .done, .fold) .title {
-  opacity: 0.5;
-}
-.step.done > .title {
-  cursor: pointer;
 }
 /* The setup's fields take the width, each under its name, so their choices fit on a phone. */
 .step .row {

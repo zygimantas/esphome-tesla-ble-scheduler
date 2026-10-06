@@ -4,8 +4,8 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 ## Before it knows the car
 
-- **Not paired**: the car hasn't answered the board's key since your settings named it, or it turned the key away, as when the key was removed in the car. The page shows the setup's Key step: create the key as in step 7 of the README's [Setup](../README.md#setup).
-- **No car yet**: the board has your prices, but not the car, as in the middle of the setup. Go on with the setup's Car step on the page, as the README's [Setup](../README.md#setup) says.
+- **Not paired**: the car hasn't answered the board's key since your settings named it, or it turned the key away, as when the key was removed in the car. The page's setup asks for the key: create it as in step 7 of the README's [Setup](../README.md#setup).
+- **No car yet**: the board has your prices, but not the car, as in the middle of the setup. Go on with the setup on the page, which asks for the car next, as the README's [Setup](../README.md#setup) says.
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal under Board. If the board's key was removed in the car, the status turns to **Not paired** once the car turns away one of the board's commands, like a scheduled start.

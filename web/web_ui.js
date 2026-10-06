@@ -144,68 +144,60 @@ const PAGE = `
   </section>
 
   <section id="prices-card" class="card step" hidden>
-    <div class="title">Prices<span class="summary">Saved</span></div>
+    <div class="title">Prices</div>
     <div class="body">
-      <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
-      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
-      <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-      <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
-      <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-      <p id="plans-note" class="note">No grid plans here yet. ${PLAN_LINKS}</p>
-      <p id="unlisted-note" class="note">${PLAN_LINKS}</p>
-      <button id="upload-plan">Upload custom plan</button>
-      <button id="reset-plan" class="danger">Reset custom plan</button>
-      <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
-      <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
-      <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-      <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
-      <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-      <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-      <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
-      <p class="note error" hidden></p>
-      <button class="primary save">Finish</button>
-      <button id="cancel-prices">Cancel</button>
-    </div>
-  </section>
-
-  <section id="phone-card" class="card step" hidden>
-    <div class="title">Continue on your phone</div>
-    <div class="body">
-      <div id="qr" class="qr"></div>
-      <p class="note">Scan the code with your phone's camera to go on there, or open <span id="address"></span> on it, and finish the setup in the car, with these:</p>
-      <ul class="note">
-        <li>The board</li>
-        <li>A USB charger and cable for it</li>
-        <li>Your Tesla key card</li>
-      </ul>
-      <button id="here">Continue here</button>
-    </div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Car<span class="summary">Saved</span></div>
-    <div class="body">
-      <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
-      <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-      <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
-      <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-      <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
-      <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
-      <p class="note error" hidden></p>
-      <button class="primary save">Continue</button>
-    </div>
-  </section>
-  <section class="card step" hidden>
-    <div class="title">Key</div>
-    <div class="body">
-      <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
-      <ol class="note">
-        <li>Make sure the board is plugged into a USB charger next to the car.</li>
-        <li>Sit in the car with your Tesla key card.</li>
-        <li>Press Continue below.</li>
-        <li>Tap the Tesla key card on the console.</li>
-        <li>Confirm on the car's screen.</li>
-      </ol>
-      <button id="pair-now" class="primary">Continue</button>
+      <div id="prices-step">
+        <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
+        <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
+        <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+        <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
+        <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
+        <p id="plans-note" class="note">No grid plans here yet. ${PLAN_LINKS}</p>
+        <p id="unlisted-note" class="note">${PLAN_LINKS}</p>
+        <button id="upload-plan">Upload custom plan</button>
+        <button id="reset-plan" class="danger">Reset custom plan</button>
+        <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
+        <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+        <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
+        <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+        <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
+        <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+        <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
+        <p class="note error" hidden></p>
+        <button class="primary save">Finish</button>
+        <button id="cancel-prices">Cancel</button>
+      </div>
+      <div id="phone-step" hidden>
+        <div id="qr" class="qr"></div>
+        <p class="note">Scan the code with your phone's camera to go on there, or open <span id="address"></span> on it, and finish the setup in the car, with these:</p>
+        <ul class="note">
+          <li>The board</li>
+          <li>A USB charger and cable for it</li>
+          <li>Your Tesla key card</li>
+        </ul>
+        <button id="here">Continue here</button>
+      </div>
+      <div id="car-step" hidden>
+        <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+        <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+        <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+        <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
+        <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+        <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
+        <p class="note error" hidden></p>
+        <button class="primary save">Continue</button>
+      </div>
+      <div id="key-step" hidden>
+        <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
+        <ol class="note">
+          <li>Make sure the board is plugged into a USB charger next to the car.</li>
+          <li>Sit in the car with your Tesla key card.</li>
+          <li>Press Continue below.</li>
+          <li>Tap the Tesla key card on the console.</li>
+          <li>Confirm on the car's screen.</li>
+        </ol>
+        <button id="pair-now" class="primary">Continue</button>
+      </div>
     </div>
   </section>
 
@@ -238,9 +230,8 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
 // the card open after the setup, "prices" or "settings", or "".
 const settings = { text: null, options: null, open: "" };
-// The setup's open step, 1 to 4 (Prices, Continue on your phone, Car and Key, in the page's order), or 0; and the
-// furthest it got, as the steps up to it open with a click.
-const setup = { step: 0, reached: 0 };
+// The setup's step, 1 to 4 (the prices, the phone, the car and its key), or 0.
+const setup = { step: 0 };
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -651,55 +642,50 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 // Whether the board turned away the settings it has, which then open to be fixed.
 const broken = () => text(E.status).startsWith("Settings: ");
 
-// The setup, for a new board, settings without prices or the car, and a key the car doesn't know: Prices, then Continue
-// on your phone, whose QR code opens the page there at Car, as its link ends in #car, then Car, then Key, which ends
-// the setup once the car answers. The open step shows its fields, done ones fold to their titles and Saved, later ones
-// show only their titles. After it, Prices stays below Savings, folded like Settings, and opens from its title, or for
-// settings the board turned away; Car's fields stay as the setup saved them, as only a new install changes them.
+// The setup, for a new board, settings without prices or the car, and a key the car doesn't know: one card, Setup,
+// with the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at
+// the car, as its link ends in #car, then the car, then its key, which ends the setup once the car answers. After it,
+// the card is Prices, below Savings, folded like Settings, which opens from its title, or for settings the board
+// turned away; the car's fields stay as the setup saved them, as only a new install changes them.
 function renderSetup() {
   const status = text(E.status);
-  // on Key, the setup waits for the car's answer, past the board's No car yet from before Car's save
+  // at the key, the setup waits for the car's answer, past the board's No car yet from before the car's save
   const waiting = status === "Not paired" || (setup.step === 4 && ["", "No car yet"].includes(status));
-  if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = setup.reached = 0;
-  else if (!setup.step) setup.step = setup.reached = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
+  if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = 0;
+  else if (!setup.step) setup.step = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
-  for (const [i, card] of document.querySelectorAll(".step").entries()) {
-    const after = !setup.step && card.id === "prices-card";
-    card.hidden = !setup.step && !after;
-    card.classList.toggle("open", i + 1 === setup.step || (after && (broken() || settings.open === "prices")));
-    card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
-    card.classList.toggle("fold", after);
-  }
-  // Prices' Continue in the setup; after it, Save, with Cancel
-  $("prices-card").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
+  const card = $("prices-card");
+  card.hidden = false;
+  card.querySelector(".title").textContent = setup.step ? "Setup" : "Prices";
+  card.classList.toggle("open", setup.step > 0 || broken() || settings.open === "prices");
+  card.classList.toggle("fold", !setup.step);
+  for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step"].entries())
+    $(id).hidden = i + 1 !== Math.max(setup.step, 1);
+  // Continue in the setup; after it, Save, with Cancel
+  $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
   $("cancel-prices").hidden = setup.step > 0 || broken();
 }
 
-// Says what's wrong on the open card, Prices or a setup's step, else Settings, in sight, or "" for nothing.
+// Says what's wrong on the open card, the setup's or Prices, at its step, else Settings, in sight, or "" for nothing.
 function say(problem) {
-  const error = document.querySelector(".step.open .error") ?? $("settings-error");
+  const error = document.querySelector("#prices-card.open > .body > :not([hidden]) > .error") ?? $("settings-error");
   error.textContent = problem;
   error.hidden = !problem;
   if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// Continue, in the setup's Prices and Car: the step's checks, Car's VIN first, and its save, which the board takes at
-// once while it has no car, as in the setup, then on to the next step.
+// Continue, at the setup's prices and car: the step's checks, the car's VIN first, and its save, which the board takes
+// at once while it has no car, as in the setup, then on to the next step.
 async function nextStep() {
   if (setup.step === 3) {
     const problem = vinProblem($("set-vin").value.trim().toUpperCase());
     say(problem);
     if (problem) return;
   }
-  const fields = document.querySelectorAll(".step.open input, .step.open select");
+  const fields = $("prices-card").querySelectorAll("input, select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
-  if (await sendSettings(formSettings())) moveOn();
-}
-
-// On to the next step, or back to the furthest one reached, as after a done step opened again.
-function moveOn() {
-  setup.step = setup.reached = Math.max(setup.step + 1, setup.reached);
+  if (await sendSettings(formSettings())) setup.step += 1;
 }
 
 // The grid plan chosen, or "" for one that isn't listed or none chosen yet.
@@ -1226,17 +1212,9 @@ function bind() {
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
   });
-  for (const [i, card] of document.querySelectorAll(".step").entries()) {
-    // a card the setup got to before opens with a click on its title, and stays open
-    card.querySelector(".title").addEventListener("click", () => {
-      if (!card.classList.contains("done")) return;
-      setup.step = i + 1;
-      requestRender();
-    });
-  }
   // Continue here, under the QR code, for whoever goes on on the computer
   $("here").addEventListener("click", () => {
-    moveOn();
+    setup.step += 1;
     requestRender();
   });
   for (const button of document.querySelectorAll(".step .save"))
