@@ -18,7 +18,7 @@ The board starts with the plan from the release you installed, and downloads the
 | Denmark | `DK1` (west), `DK2` (east) | `DKK` | [The eight big grid companies' plans](dk). |
 | Estonia | `EE` | `EUR` | [Elektrilevi's plans](ee). |
 | Finland | `FI` | `EUR` | [The eight biggest network companies' plans](fi), without Helen Sähköverkko Aikasiirto's charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
-| France | `FR` | `EUR` | Off-peak hours are set for each address: [write your own plan](fr) with them. |
+| France | `FR` | `EUR` | Off-peak hours are set for each address: [write a custom plan](fr) with them. |
 | Germany | `DE` | `EUR` | [The big grid operators' plans](de), Modul 3 included. |
 | Hungary | `HU` | `HUF` | Prices from SMARD, in euros, converted into forints at the ECB's daily rate. [The network fees](hu). |
 | Italy, the north | `IT-NORTH` | `EUR` | Prices from SMARD, for the north's price area only. [The TD plan](it). |
@@ -43,9 +43,9 @@ The board adds VAT to the market price, and a grid fee that can change every qua
 
 Some fees depend on your highest power instead, like Norway's capacity step. Until the board counts them ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), set the car's charging current low enough for your step, in the car or the Tesla app, and **Charging power** under **Change settings** to match.
 
-## Your own plan
+## Custom plan
 
-Without your grid operator's plan here, upload a plan of your own, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it. To change a plan's prices for yourself, download its `.yaml` file from its country's folder here, change it and upload it as your own.
+Without your grid operator's plan here, upload a custom plan, or [add the plan](../CONTRIBUTING.md#plans) for everyone on it. To change a plan's prices for yourself, download its `.yaml` file from its country's folder here, change it and upload it as a custom plan.
 
 A plan is a text file, like [ESO's with four zones](lt/eso-standartinis-4-zones.yaml):
 
@@ -74,7 +74,7 @@ rates:
   high: 0.08
 ```
 
-To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Finish** in the setup or **Save** under **Change settings**. The page shows the plan's name under **Your own plan**, and choosing a plan from the list again drops it.
+To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Finish** in the setup or **Save** under **Change settings**. The page names the plan in a short message, and choosing a plan from the list again drops it.
 
 Your plan stays as you uploaded it, while the board downloads a plan from the list every day: change yours when your prices change, and holidays that move, like Easter Monday, every year.
 
@@ -86,7 +86,7 @@ With a fixed price, or one that changes only with the hour of the day, choose **
 
 With your grid operator's plan, enter your supplier's own part per kWh, without the grid fees, as **Supplier's part**, which the board adds to the plan's fees in every hour. Where your supplier quotes one price with the grid fees in, it's the supplier's own line on the bill. Without a plan, all hours cost the same, so the board charges at once.
 
-With day and night prices, upload your own plan whose rates are your whole price per kWh, the supplier's price and the grid fee together, with VAT, and leave **Supplier's part** at 0: the board then charges in the cheap hours. A night rate that starts on the half-hour, from 00:30 to 05:30, with your rates:
+With day and night prices, upload a custom plan whose rates are your whole price per kWh, the supplier's price and the grid fee together, with VAT, and leave **Supplier's part** at 0: the board then charges in the cheap hours. A night rate that starts on the half-hour, from 00:30 to 05:30, with your rates:
 
 ```yaml
 # My night rate, prices with VAT: https://example.com

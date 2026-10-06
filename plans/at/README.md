@@ -27,10 +27,10 @@ The summer price needs a smart meter that sends your operator quarter-hour readi
 
 The plans leave out the yearly flat fee, the meter fee, the renewable energy fees (Erneuerbaren-Förderbeitrag and Erneuerbaren-Förderpauschale), the electricity tax and, in Vienna, the Gebrauchsabgabe, as they don't change which hours are cheapest.
 
-- **An interruptible circuit** (unterbrechbar) on its own meter, which the operator may switch off at times it sets, has lower prices. Put them in your area's plan, downloaded from this folder, and upload it as your own plan, as [Your own plan](../README.md#your-own-plan) says.
+- **An interruptible circuit** (unterbrechbar) on its own meter, which the operator may switch off at times it sets, has lower prices. Put them in your area's plan, downloaded from this folder, and upload it as a custom plan, as [Custom plan](../README.md#custom-plan) says.
 - **Day and night prices** (Doppeltarif) ended on 31 March 2026: those meters pay the area's plan now.
-- **The Kleinwalsertal** has prices of its own: write your own plan, as [Your own plan](../README.md#your-own-plan) says.
+- **The Kleinwalsertal** has prices of its own: write a custom plan, as [Custom plan](../README.md#custom-plan) says.
 
 E-Control sets the prices every year, from 1 January, and the plans change with them. For 2027, its draft adds a lower price from 22:00 to 04:00 from October to March (WiNAP), and a monthly fee per kW of the month's highest quarter-hour, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
 
-[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
+[Custom plan](../README.md#custom-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload custom plan**.

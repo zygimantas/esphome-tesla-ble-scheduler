@@ -75,15 +75,16 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
   </g>
 </svg>`;
 
-// How a plan the list doesn't have gets into it, and what to do until then: upload it as your own plan, with Upload
-// plan `where`.
+// What to do about a plan the list doesn't have: one that other customers have too goes into the list for everyone, and
+// any other goes up as a custom plan, with Upload custom plan `where`.
 const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
-const planLinks = (ask, where) =>
-  `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">${ask}</a>, or ` +
+const planLinks = (where) =>
+  "If your plan is a standard one that other customers have too, " +
+  `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for it</a> or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
-  `choose it in Change settings, under Board, once a release brings it. Until then, upload it ${where} as your own ` +
-  `plan, in <a href="${REPOSITORY}/blob/main/plans/README.md#your-own-plan" target="_blank" rel="noopener">the ` +
-  "plans' format</a>.";
+  "choose it in Change settings, under Board, once a release brings it. If not, create a custom plan in " +
+  `<a href="${REPOSITORY}/blob/main/plans/README.md#custom-plan" target="_blank" rel="noopener">the plans' ` +
+  `format</a> and upload it ${where}.`;
 
 // A field's "?", which opens its hint under the field.
 const info = (hint, label) =>
@@ -109,7 +110,7 @@ const PAGE = `
 
   <section id="plan-card" class="card" hidden>
     <div class="title">No grid plan</div>
-    <p class="note"><span id="plan-why"></span> ${planLinks("Ask for your plan", "there")}</p>
+    <p class="note"><span id="plan-why"></span> ${planLinks("there")}</p>
   </section>
 
   <section id="settings-card" class="card" hidden>
@@ -121,10 +122,10 @@ const PAGE = `
     <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-    <p id="plans-note" class="note">No grid plans here yet: ${planLinks("ask for yours", "below")}</p>
-    <p id="unlisted-note" class="note">${planLinks("Ask for your plan", "below")}</p>
-    <div id="own-row" class="row"><span>Your own plan</span><strong id="own-plan"></strong><input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden></div>
-    <button id="upload-plan">Upload plan</button>
+    <p id="plans-note" class="note">No grid plans here yet. ${planLinks("below, now or later")}</p>
+    <p id="unlisted-note" class="note">${planLinks("below, now or later")}</p>
+    <button id="upload-plan">Upload custom plan</button>
+    <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
     <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
     <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -307,7 +308,7 @@ function render() {
   $("update-card").hidden = text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = release;
   $("update-notes").href = `${REPOSITORY}/releases/tag/v${release}`;
-  // Without a grid plan or your own plan: what the board leaves out, and how a plan gets in.
+  // Without a grid plan or a custom plan: what the board leaves out, and how a plan gets in.
   $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
@@ -321,10 +322,8 @@ function render() {
   $("set-plan").disabled = unlisted;
   $("plans-note").hidden = !$("plan-row").hidden || !$("set-area").value;
   $("unlisted-note").hidden = !unlisted;
-  // your own plan under either note, by its name from its first line, like "# <name>, prices with VAT: <link>"
-  $("own-row").hidden = $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
-  $("own-plan").textContent =
-    ownPlan && (/^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim() || "Uploaded");
+  // Upload custom plan under either note
+  $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
   $("fixed-row").hidden = !fixed;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
@@ -576,7 +575,7 @@ const SMARD_ONLY = ["CH", "CZ", "HU"];
 // typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
 
-// The settings file's values by place, like "market: area", as the board reads them; deeper lines are your own plan's.
+// The settings file's values by place, like "market: area", as the board reads them; deeper lines are a custom plan's.
 function readSettings(file) {
   const values = {};
   let section = "";
@@ -607,7 +606,7 @@ function vinProblem(vin) {
 
 // Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
 let batteryTyped = false;
-// Your own plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
+// A custom plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
 let ownPlan = "";
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
@@ -662,8 +661,8 @@ function renderSetup() {
     "unlisted-row",
     "plans-note",
     "unlisted-note",
-    "own-row",
     "upload-plan",
+    "plan-file",
     "price-row",
     "price-hint",
     "margin-row",
@@ -784,7 +783,7 @@ function fillSettings() {
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
   fillPlans(unfinished() ? undefined : plan);
-  // your own plan: the lines under tariff:, without their indent, unless they name a plan from the list
+  // a custom plan: the lines under tariff:, without their indent, unless they name a plan from the list
   const [, own = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
   ownPlan = plan ? "" : own.replace(/^ {2}/gm, "").trimEnd();
   const zone = values.timezone ?? phone;
@@ -828,7 +827,7 @@ async function loadSettings() {
 }
 
 // The form as the board's settings file, which the board checks before it takes it; without prices, as the setup's
-// first step saves them for a new board. Your own plan goes under tariff: line for line, indented, so the board's
+// first step saves them for a new board. A custom plan goes under tariff: line for line, indented, so the board's
 // errors in it count the plan's own lines.
 function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
@@ -1234,7 +1233,7 @@ function bind() {
     ownPlan = "";
     requestRender();
   });
-  // Upload plan: your own plan, in the plans' format. The board takes 4 kB of settings, your own plan included, and
+  // Upload custom plan: a custom plan, in the plans' format. The board takes 4 kB of settings, the plan included, and
   // says only that the file is too long: too long a plan is turned away here at once, and the one before stays.
   $("upload-plan").addEventListener("click", () => $("plan-file").click());
   $("plan-file").addEventListener("change", async (e) => {
@@ -1248,6 +1247,9 @@ function bind() {
     const problem =
       "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
     say(long ? problem : "");
+    // its name, from its first line, like "# <name>, prices with VAT: <link>"
+    const name = /^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim();
+    if (!long) toast(name ? `Custom plan: ${name}` : "Custom plan taken");
     requestRender();
   });
   press($("save-settings"), saveSettings);

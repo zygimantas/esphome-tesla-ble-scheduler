@@ -2,13 +2,13 @@
 
 The grid fees (TURPE) that every home in France pays per kWh. The CRE, the energy regulator, sets them, the same with Enedis and with every local grid operator, and your supplier bills them in its price. Your home has one of the fees' options, and your supplier can tell you which.
 
-There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Write your own plan with the prices below and upload it with **Upload plan**, in the setup or later under **Change settings**, as [Your own plan](../README.md#your-own-plan) says.
+There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Write a custom plan with the prices below and upload it with **Upload custom plan**, in the setup or later under **Change settings**, as [Custom plan](../README.md#custom-plan) says.
 
 ## Off-peak hours
 
 Most homes have a Linky meter and the option CU4 or MU4. Both have 8 off-peak hours a day (heures creuses), which the grid operator sets for each address, and a dearer high season from November to March. From November 2025 to October 2027, Enedis moves the off-peak hours of about 11 million homes: at least 5 hours in a row between 23:00 and 07:00, and the other 3 may be between 11:00 and 17:00. From December 2026, many get other hours in summer than in winter. Your supplier tells you a month before.
 
-Write your own plan with your off-peak hours, which your bill gives, with these prices in euros with VAT per kWh, from 1 August 2026 to 31 July 2027:
+Write a custom plan with your off-peak hours, which your bill gives, with these prices in euros with VAT per kWh, from 1 August 2026 to 31 July 2027:
 
 | Hours | CU4 | MU4 |
 | --- | --- | --- |
@@ -52,10 +52,10 @@ rates:
 
 ## Your supplier's price
 
-With a contract that follows the market by the hour, choose **Dynamic (spot, exchange)** on the page, with your own plan. Most fixed prices in France already have the grid fees in: write your whole price per kWh as your own plan, with your off-peak hours if your contract has them, as [A fixed price](../README.md#a-fixed-price) says.
+With a contract that follows the market by the hour, choose **Dynamic (spot, exchange)** on the page, with a custom plan. Most fixed prices in France already have the grid fees in: write your whole price per kWh as a custom plan, with your off-peak hours if your contract has them, as [A fixed price](../README.md#a-fixed-price) says.
 
 ## Left out
 
 The prices above count the fee per kWh. The fees' fixed parts, for management, metering and your subscribed power in kVA, the contribution on top of them (CTA), and the excise on electricity, the same in every hour, are left out, as they don't change which hours are cheapest.
 
-The CRE sets the prices and changes them every 1 August. [Your own plan](../README.md#your-own-plan) says how to write one.
+The CRE sets the prices and changes them every 1 August. [Custom plan](../README.md#custom-plan) says how to write one.

@@ -16,9 +16,9 @@ The hours are on winter time all year, as the meters don't change their clocks, 
 
 Each fee is HEP ODS's distribution fee and HOPS's transmission fee together. The plans leave out the monthly metering point fee and the renewable energy and cogeneration fee, which is the same every hour.
 
-Crni isn't here: it's for storage heaters and water heaters on a meter of their own, which are switched on by remote control at times set for them. Where no plan fits, write your own plan, as [Your own plan](../README.md#your-own-plan) says.
+Crni isn't here: it's for storage heaters and water heaters on a meter of their own, which are switched on by remote control at times set for them. Where no plan fits, write a custom plan, as [Custom plan](../README.md#custom-plan) says.
 
-Most homes pay their supplier a fixed price, without the grid fees. With one price for every hour, choose Fixed on the page and give it as the supplier's part. With a day (VT) and a night (NT) price, choose Fixed with 0 as the supplier's part. Then download Bijeli's plan from this folder, change its rates to your whole prices, the supplier's and the grid fee together, with VAT, and upload it as your own plan, as [Your own plan](../README.md#your-own-plan) says:
+Most homes pay their supplier a fixed price, without the grid fees. With one price for every hour, choose Fixed on the page and give it as the supplier's part. With a day (VT) and a night (NT) price, choose Fixed with 0 as the supplier's part. Then download Bijeli's plan from this folder, change its rates to your whole prices, the supplier's and the grid fee together, with VAT, and upload it as a custom plan, as [Custom plan](../README.md#custom-plan) says:
 
 ```yaml
 rates:
@@ -26,4 +26,4 @@ rates:
   day: 0.18
 ```
 
-HERA, the energy regulator, sets the fees, usually from 1 January. Under a government decree, the operators won't ask for new ones before April 2027. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
+HERA, the energy regulator, sets the fees, usually from 1 January. Under a government decree, the operators won't ask for new ones before April 2027. [Custom plan](../README.md#custom-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload custom plan**.

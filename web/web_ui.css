@@ -270,11 +270,7 @@ input.wide {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Your own plan: in the setup, the plan's name sits under the row's, as a field does, and Upload plan leaves room
-   before the next row. */
-.step .row strong {
-  text-align: left;
-}
+/* Upload custom plan leaves room before the next row. */
 #upload-plan {
   margin-bottom: 8px;
 }

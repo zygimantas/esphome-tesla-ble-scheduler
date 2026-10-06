@@ -15,6 +15,6 @@ Each home also has a reference power, from 3 kW up, which is on its bill. In eac
 
 The plan also leaves out the monthly fees and the charges that are the same every hour: the electricity tax and the contribution to the compensation mechanism.
 
-A home with an old meter, or a smart meter that doesn't send its readings, pays the old fee, 6.07 cents per kWh with VAT in every hour: write your own plan, as [Your own plan](../README.md#your-own-plan) says.
+A home with an old meter, or a smart meter that doesn't send its readings, pays the old fee, 6.07 cents per kWh with VAT in every hour: write a custom plan, as [Custom plan](../README.md#custom-plan) says.
 
-The operators publish the next year's prices by 15 October, and the ILR, the regulator, approves them for 1 January. In 2026 the state pays part of the networks' costs, which lowers the prices. [Your own plan](../README.md#your-own-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload plan**.
+The operators publish the next year's prices by 15 October, and the ILR, the regulator, approves them for 1 January. In 2026 the state pays part of the networks' costs, which lowers the prices. [Custom plan](../README.md#custom-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload custom plan**.
