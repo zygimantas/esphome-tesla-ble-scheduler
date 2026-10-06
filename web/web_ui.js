@@ -436,7 +436,6 @@ function shownMode() {
 }
 function expectMode(mode) {
   pending.mode = { value: mode, until: Date.now() + 10000 };
-  requestRender();
 }
 
 // Both buttons, the schedule with Delete, or Stop while charging regardless of price. Charge limit and Ready by are for
@@ -729,7 +728,7 @@ async function nextStep() {
     setup.step += 1;
     setup.reached = Math.max(setup.reached, setup.step);
     setup.stay = false;
-    return requestRender();
+    return;
   }
   const keys = ["currency", "fixed_price", "market", "tariff", "tesla_battery_kwh", "tesla_charging_kw", "timezone"];
   await sendSettings(withForm(keys));
@@ -1012,7 +1011,7 @@ async function post(entity, action, param) {
 }
 
 // One press at a time: the pressed button stays off until its requests settle, so a second tap can't repeat them,
-// and renderSchedule() keeps Create schedule off meanwhile.
+// and renderSchedule() keeps Create schedule off meanwhile. A render follows, so handlers needn't ask for one.
 let busy = false;
 function press(button, handler) {
   button.addEventListener("click", async () => {
