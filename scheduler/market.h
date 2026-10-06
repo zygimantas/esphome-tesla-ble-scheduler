@@ -99,12 +99,6 @@ inline const char *converted_currency(const Area &area) {
   return nullptr;
 }
 
-// Whether an area's market prices can come in `currency`: their own, or converted where SMARD's euros can be.
-inline bool comes_in(const Area &area, const std::string &currency) {
-  const char *converted = converted_currency(area);
-  return currency == own_currency(area) || (converted != nullptr && currency == converted);
-}
-
 // Parses "2025-10-01T22:00:00Z", as Nord Pool sends it.
 inline std::optional<int64_t> parse_iso8601(const char *s) {
   int year, month, day, hour, minute, second, consumed;

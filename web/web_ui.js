@@ -572,9 +572,6 @@ const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code
 // and the board converts SMARD's, in euros, at the ECB's daily rate where the settings set the currency.
 const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
 const SMARD_ONLY = ["CH", "CZ", "HU"];
-// The currency the form writes: a fixed price's, and a market's from SMARD, which the board otherwise keeps in euros.
-const writtenCurrency = (area, fixed) =>
-  fixed || SMARD_ONLY.includes(area.slice(0, 2)) ? CURRENCIES[area.slice(0, 2)] : undefined;
 // About a euro in each of those currencies: the most a supplier's margin or part per kWh can be, which turns away cents
 // typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
@@ -837,7 +834,9 @@ function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
   const fixed = prices && v("set-price") === "fixed";
-  const currency = prices && writtenCurrency(v("set-area"), fixed);
+  // the currency: a fixed price's, and a market's from SMARD, which the board otherwise keeps in euros
+  const country = v("set-area").slice(0, 2);
+  const currency = prices && (fixed || SMARD_ONLY.includes(country)) && CURRENCIES[country];
   if (currency) lines.push(`currency: ${currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
   if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
@@ -861,7 +860,7 @@ function formSettings(prices = true) {
 // Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
 // until the next try.
 async function sendSettings(file) {
-  const saved = await send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
+  return send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
     const answer = await response.text();
     $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
     $("settings-error").hidden = response.ok || setup.step > 0;
@@ -878,8 +877,6 @@ async function sendSettings(file) {
     }
     return response.ok;
   });
-  requestRender();
-  return saved;
 }
 
 // Save: the form's own checks first, as the browser shows them by the field.
