@@ -75,16 +75,16 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
   </g>
 </svg>`;
 
-// What to do about a plan the list doesn't have: one that other customers have too goes into the list for everyone, and
-// any other goes up as a custom plan, with Upload custom plan `where`.
+// What to do about a plan the list doesn't have, in Prices: one that other customers have too goes into the list for
+// everyone, and any other goes up as a custom plan, with Upload custom plan below.
 const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
-const planLinks = (where) =>
+const PLAN_LINKS =
   "If your plan is a standard one that other customers have too, " +
   `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for it</a> or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
-  "choose it in Change prices, under Board, once a release brings it. If not, create a custom plan in " +
+  "choose it here once a release brings it. If not, create a custom plan in " +
   `<a href="${REPOSITORY}/blob/main/plans/README.md#custom-plan" target="_blank" rel="noopener">the plans' ` +
-  `format</a> and upload it ${where}.`;
+  "format</a> and upload it below, now or later.";
 
 // A field's "?", which opens its hint under the field.
 const info = (hint, label) =>
@@ -109,8 +109,8 @@ const PAGE = `
   </section>
 
   <section id="plan-card" class="card" hidden>
-    <div class="title">No grid plan</div>
-    <p class="note"><span id="plan-why"></span> ${planLinks("there")}</p>
+    <div class="title">No grid plan selected</div>
+    <p class="note"><span id="plan-why"></span> You can select one in Prices, below.</p>
   </section>
 
   <section id="phone-card" class="card" hidden>
@@ -152,37 +152,6 @@ const PAGE = `
       <button id="pair-now" class="primary">Continue</button>
     </div>
   </section>
-  <section id="prices-card" class="card step" hidden>
-    <div class="title">Prices</div>
-    <div class="body">
-      <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
-      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
-      <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-      <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
-      <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-      <p id="plans-note" class="note">No grid plans here yet. ${planLinks("below, now or later")}</p>
-      <p id="unlisted-note" class="note">${planLinks("below, now or later")}</p>
-      <button id="upload-plan">Upload custom plan</button>
-      <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
-      <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
-      <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-      <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
-      <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-      <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-      <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
-      <p class="note error" hidden></p>
-      <button class="primary save">Finish</button>
-      <button id="cancel-prices">Cancel</button>
-    </div>
-  </section>
-
-  <section id="settings-card" class="card" hidden>
-    <div class="title">Settings</div>
-    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
-    <p id="settings-error" class="note error" hidden></p>
-    <button id="save-settings" class="primary">Save</button>
-    <button id="cancel-settings">Cancel</button>
-  </section>
 
   <section id="target-card" class="card">
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
@@ -213,14 +182,46 @@ const PAGE = `
     <button id="reset-savings" class="danger">Reset savings</button>
   </section>
 
+  <section id="prices-card" class="card step" hidden>
+    <div class="title">Prices</div>
+    <div class="body">
+      <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
+      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
+      <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+      <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
+      <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
+      <p id="plans-note" class="note">No grid plans here yet. ${PLAN_LINKS}</p>
+      <p id="unlisted-note" class="note">${PLAN_LINKS}</p>
+      <button id="upload-plan">Upload custom plan</button>
+      <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
+      <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+      <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
+      <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+      <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
+      <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+      <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
+      <p class="note error" hidden></p>
+      <button class="primary save">Finish</button>
+      <button id="cancel-prices">Cancel</button>
+    </div>
+  </section>
+
+  <section id="settings-card" class="card fold">
+    <div class="title">Settings</div>
+    <div class="body">
+      <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+      <p id="settings-error" class="note error" hidden></p>
+      <button id="save-settings" class="primary">Save</button>
+      <button id="cancel-settings">Cancel</button>
+    </div>
+  </section>
+
   <details class="card">
     <summary>Board</summary>
     <div class="row"><span>Bluetooth</span><strong id="ble">-</strong></div>
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
-    <button id="change-prices">Change prices</button>
-    <button id="change-settings">Change settings</button>
     <button id="pair">Create key</button>
     <button id="restart" class="danger">Restart board</button>
   </details>
@@ -231,7 +232,7 @@ const PAGE = `
 // --- State -----------------------------------------------------------------
 
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
-// the card Change prices or Change settings opened, "prices" or "settings", or "".
+// the card open after the setup, "prices" or "settings", or "".
 const settings = { text: null, options: null, open: "" };
 // The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; and that a step
 // was opened by hand, which keeps Key from moving on by itself.
@@ -308,13 +309,13 @@ function render() {
   $("update-card").hidden = text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = release;
   $("update-notes").href = `${REPOSITORY}/releases/tag/v${release}`;
-  // Without a grid plan or a custom plan: what the board leaves out, and how a plan gets in.
+  // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
   $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
     : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
-  // Settings the board turned away open at once, with Prices, and without Cancel; others open from Board.
-  $("settings-card").hidden = setup.step > 0 || (!broken() && settings.open !== "settings");
+  // Settings the board turned away open at once, with Prices, and without Cancel.
+  $("settings-card").classList.toggle("open", broken() || settings.open === "settings");
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
@@ -633,8 +634,9 @@ const broken = () => text(E.status).startsWith("Settings: ");
 
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
-// the setup), later ones show only their titles. After it, Prices opens from Change prices, and for settings the board
-// turned away; Car's fields stay as the setup saved them, as only a new install changes them.
+// the setup), later ones show only their titles. After it, Prices stays below Savings, folded like Settings, and opens
+// from its title, or for settings the board turned away; Car's fields stay as the setup saved them, as only a new
+// install changes them.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -654,10 +656,11 @@ function renderSetup() {
   $("phone-card").hidden = !setup.step || !qr;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
-    const after = !setup.step && card.id === "prices-card" && (broken() || settings.open === "prices");
+    const after = !setup.step && card.id === "prices-card";
     card.hidden = (!setup.step || qr || i + 1 > lastStep()) && !after;
-    card.classList.toggle("open", i + 1 === setup.step || after);
+    card.classList.toggle("open", i + 1 === setup.step || (after && (broken() || settings.open === "prices")));
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
+    card.classList.toggle("fold", after);
   }
   // Prices' Finish ends the setup; after it, it's Save, with Cancel
   steps[2].querySelector(".save").textContent = setup.step ? "Finish" : "Save";
@@ -1240,19 +1243,20 @@ function bind() {
       setTimeout(reconnect, 3000);
     }
   });
-  // Change prices and Change settings open their card, one at a time, as Save sends both
+  // Prices and Settings, after the setup: a title opens its card or folds it, and Cancel folds it, one card at a time,
+  // as Save sends both, and each back to the board's settings
+  const fold = (card) => {
+    fillSettings();
+    settings.open = card;
+    render(); // now, to bring the card into view
+    if (card) $(`${card}-card`).scrollIntoView({ behavior: "smooth" });
+  };
   for (const card of ["prices", "settings"]) {
-    $(`change-${card}`).addEventListener("click", () => {
-      if (settings.open !== card) fillSettings(); // the other's changes go
-      settings.open = card;
-      render(); // now, as a hidden card has nowhere to scroll to
-      $(`${card}-card`).scrollIntoView({ behavior: "smooth" });
+    const title = $(`${card}-card`).querySelector(".title");
+    title.addEventListener("click", () => {
+      if (!setup.step) fold(settings.open === card ? "" : card); // in the setup, Prices is a step
     });
-    $(`cancel-${card}`).addEventListener("click", () => {
-      settings.open = "";
-      fillSettings(); // back to the board's
-      requestRender();
-    });
+    $(`cancel-${card}`).addEventListener("click", () => fold(""));
   }
 }
 
