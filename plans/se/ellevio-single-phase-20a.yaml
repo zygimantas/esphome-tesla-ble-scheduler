@@ -1,7 +1,8 @@
-# Ellevio, single phase up to 20 A, prices with VAT: https://www.ellevio.se/globalassets/content/priserabonnemang-pdf/2026/sakring/sakring_enfas_260601.pdf
+# Prices with VAT: https://www.ellevio.se/globalassets/content/priserabonnemang-pdf/2026/sakring/sakring_enfas_260601.pdf
 # Ellevio prints the prices in öre with 25% VAT: these are in kronor.
 # New connections can't have this subscription.
 # Maintained by @zygimantas
+name: Ellevio, single phase up to 20 A
 currency: SEK
 calendar:
   jan-dec:

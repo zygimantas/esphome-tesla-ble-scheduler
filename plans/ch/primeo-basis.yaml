@@ -1,7 +1,8 @@
-# Primeo Basis, region Basel, prices with VAT: https://www.primeo-energie.ch/privatkunden/strom-beziehen.html
+# Prices with VAT: https://www.primeo-energie.ch/privatkunden/strom-beziehen.html
 # Primeo Energie prints the prices in Rappen without VAT: these are the network prices (Netznutzung), in francs, with 8.1% VAT.
 # Public holidays are low tariff where the grid and the meter allow it. On 1 January 2027 the prices become 0.14972 (high) and 0.09945 (low).
 # Maintained by @zygimantas
+name: Primeo Basis, region Basel
 currency: CHF
 calendar:
   jan-dec:

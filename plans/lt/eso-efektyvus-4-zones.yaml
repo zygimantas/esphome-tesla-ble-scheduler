@@ -1,5 +1,6 @@
-# ESO Efektyvus, four zones, prices with VAT: https://www.eso.lt
+# Prices with VAT: https://www.eso.lt
 # Maintained by @zygimantas
+name: ESO Efektyvus, four zones
 currency: EUR
 calendar:
   jan-dec:

@@ -1,6 +1,7 @@
-# Oulun Energia Yleissähkö, prices with VAT: https://www.oulunenergia.fi/sahkoverkko/tuotteet-ja-hinnastot/verkkopalveluhinnasto/
+# Prices with VAT: https://www.oulunenergia.fi/sahkoverkko/tuotteet-ja-hinnastot/verkkopalveluhinnasto/
 # Oulun Energia Sähköverkko prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
 # Maintained by @zygimantas
+name: Oulun Energia Yleissähkö
 currency: EUR
 calendar:
   jan-dec:

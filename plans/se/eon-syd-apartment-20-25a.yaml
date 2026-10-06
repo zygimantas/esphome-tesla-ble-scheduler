@@ -1,7 +1,8 @@
-# E.ON Syd, apartment 20-25 A, prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
+# Prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
 # E.ON prints the prices in öre with 25% VAT: these are in kronor.
 # E.ON's area Syd: Skåne, Blekinge, Halland, Småland, eastern Götaland and Örebro.
 # Maintained by @zygimantas
+name: E.ON Syd, apartment 20-25 A
 currency: SEK
 calendar:
   jan-dec:

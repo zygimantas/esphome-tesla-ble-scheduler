@@ -20,6 +20,7 @@ namespace esphome::scheduler {
 // A plan as written (format in plans/README.md): one from plans/, or your own. Keys and lines stay text, in the order
 // written.
 struct TariffText {
+  std::string name;  // for people, like "ESO Standartinis, four zones"
   std::string clock;
   std::string currency;
   std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::string>>>> calendar;
@@ -65,9 +66,9 @@ inline std::string read_tariff(const std::string &text, TariffText &tariff) {
     value.erase(0, value.find_first_not_of(' '));
     if (indent == 0 && value.empty() && (key == "calendar" || key == "exceptions" || key == "rates")) {
       section = key;
-    } else if (indent == 0 && !value.empty() && (key == "clock" || key == "currency")) {
+    } else if (indent == 0 && !value.empty() && (key == "name" || key == "clock" || key == "currency")) {
       section.clear();
-      std::string &setting = key == "clock" ? tariff.clock : tariff.currency;
+      std::string &setting = key == "name" ? tariff.name : key == "clock" ? tariff.clock : tariff.currency;
       if (!setting.empty())
         return concat({"line ", std::to_string(number), " has ", key, " again"});
       setting = value;

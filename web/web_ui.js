@@ -621,9 +621,9 @@ function vinProblem(vin) {
 let batteryTyped = false;
 // A custom plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
 let ownPlan = "";
-// The custom plan as the page names it, from its first line, like "# <name>, prices with VAT: <link>".
+// The custom plan as the page names it, from its name: line.
 const ownPlanLabel = () => {
-  const name = /^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim();
+  const name = /^name: *(.*?) *$/m.exec(ownPlan)?.[1];
   return name ? `Custom plan: ${name}` : "Custom plan";
 };
 

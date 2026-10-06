@@ -1,6 +1,7 @@
-# ORES Monohoraire, one rate, prices with VAT: https://media.ores.be/ores-cms/ptefg3n3/ed_pr%C3%A9l%C3%A8vement_2026.pdf
+# Prices with VAT: https://media.ores.be/ores-cms/ptefg3n3/ed_pr%C3%A9l%C3%A8vement_2026.pdf
 # ORES prints the prices without VAT: this is its terme proportionnel, with 6% VAT.
 # Maintained by @zygimantas
+name: ORES Monohoraire, one rate
 currency: EUR
 calendar:
   jan-dec:

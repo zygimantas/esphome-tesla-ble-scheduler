@@ -1,6 +1,7 @@
-# Energa-Operator G11, prices with VAT: https://energa-operator.pl/dokumenty-i-formularze/taryfa
+# Prices with VAT: https://energa-operator.pl/dokumenty-i-formularze/taryfa
 # The tariff prints the prices without VAT: these add 23% VAT.
 # Maintained by @zygimantas
+name: Energa-Operator G11
 currency: PLN
 calendar:
   jan-dec:

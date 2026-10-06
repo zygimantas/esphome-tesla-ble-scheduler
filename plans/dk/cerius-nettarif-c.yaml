@@ -1,7 +1,8 @@
-# Cerius Nettarif C, prices with VAT: https://cerius.dk/priser/
+# Prices with VAT: https://cerius.dk/priser/
 # Cerius publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code 30TR_C_ET) in kroner without VAT: these add 25% VAT.
 # The winter prices hold until 31 March 2027; the summer ones are April to September 2026's, until Cerius publishes the next.
 # Maintained by @zygimantas
+name: Cerius Nettarif C
 currency: DKK
 calendar:
   apr-sep:

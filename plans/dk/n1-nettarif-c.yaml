@@ -1,7 +1,8 @@
-# N1 Nettarif C, prices with VAT: https://n1.dk/gaeldende-priser
+# Prices with VAT: https://n1.dk/gaeldende-priser
 # N1 publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code CD) in kroner without VAT: these add 25% VAT.
 # The prices are 2026's, until N1 publishes 2027's.
 # Maintained by @zygimantas
+name: N1 Nettarif C
 currency: DKK
 calendar:
   apr-sep:

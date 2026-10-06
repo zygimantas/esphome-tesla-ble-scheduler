@@ -1,6 +1,7 @@
-# Lnett, households, prices with VAT: https://www.l-nett.no/nettleie/priser-og-vilkar-privat/
+# Prices with VAT: https://www.l-nett.no/nettleie/priser-og-vilkar-privat/
 # Lnett prints its own part of the energy fee in øre with VAT, apart from the Enova fee and the electricity tax: these are in kroner.
 # Maintained by @zygimantas
+name: Lnett, households
 currency: NOK
 calendar:
   jan-dec:

@@ -1,6 +1,7 @@
-# Stoen Operator G12w, prices with VAT: https://www.stoen.pl/files/2026-03/stoen-taryfa-dystrybucji-calosc-25.02.2026-v2.pdf
+# Prices with VAT: https://www.stoen.pl/files/2026-03/stoen-taryfa-dystrybucji-calosc-25.02.2026-v2.pdf
 # The tariff prints the prices without VAT: these add 23% VAT.
 # Maintained by @zygimantas
+name: Stoen Operator G12w
 currency: PLN
 clock: winter
 calendar:

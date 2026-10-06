@@ -1,7 +1,8 @@
-# Göteborg Energi Tidsindelad, prices with VAT: https://www.goteborgenergi.se/privat/elnat/elnatspriser
+# Prices with VAT: https://www.goteborgenergi.se/privat/elnat/elnatspriser
 # Göteborg Energi prints the prices in öre with 25% VAT: these are in kronor.
 # Only its fee per kW changes with the hour, and it isn't in this.
 # Maintained by @zygimantas
+name: Göteborg Energi Tidsindelad
 currency: SEK
 calendar:
   jan-dec:

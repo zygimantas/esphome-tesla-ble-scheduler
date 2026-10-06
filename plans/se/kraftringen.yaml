@@ -1,7 +1,8 @@
-# Kraftringen, prices with VAT: https://www.kraftringen.se/privat/elnat/elnatsavgifter/
+# Prices with VAT: https://www.kraftringen.se/privat/elnat/elnatsavgifter/
 # Kraftringen prints the prices in öre with 25% VAT: these are in kronor.
 # Its fee also adds 5% of each hour's market price in SE4, with VAT, which isn't in this.
 # Maintained by @zygimantas
+name: Kraftringen
 currency: SEK
 calendar:
   jan-dec:

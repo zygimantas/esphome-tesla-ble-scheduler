@@ -1,6 +1,7 @@
-# Glitre Nett, households, prices with VAT: https://www.glitrenett.no/kunde/nettleie-og-priser/nettleiepriser-privatkunde
+# Prices with VAT: https://www.glitrenett.no/kunde/nettleie-og-priser/nettleiepriser-privatkunde
 # Glitre Nett prints its own part of the energy fee in øre with VAT, apart from the Enova fee and the electricity tax: these are in kroner.
 # Maintained by @zygimantas
+name: Glitre Nett, households
 currency: NOK
 calendar:
   jan-dec:

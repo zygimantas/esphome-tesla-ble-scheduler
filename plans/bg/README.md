@@ -17,7 +17,8 @@ The plans leave out what is the same every hour and isn't the operator's own: th
 With the regulated price and a day and night meter, the night is cheaper for the electricity, not for the network fees. The hours are the same in the whole country: the night is from 22:00 to 06:00 from November to March, and from 23:00 to 07:00 from April to October. Choose **Fixed** under **Contract type**, with **Supplier's part** at 0, and upload a custom plan with the whole price of each rate, network fees and VAT included, from your supplier's price list, as [A fixed price](../README.md#a-fixed-price) says. These are the prices in the west from July 2026:
 
 ```yaml
-# Day and night meter, prices with VAT: https://www.dker.bg
+# Prices with VAT: https://www.dker.bg
+name: Day and night meter
 currency: EUR
 calendar:
   apr-oct:

@@ -1,6 +1,7 @@
-# Göteborg Energi, house, prices with VAT: https://www.goteborgenergi.se/privat/elnat/elnatspriser
+# Prices with VAT: https://www.goteborgenergi.se/privat/elnat/elnatspriser
 # Göteborg Energi prints the prices in öre with 25% VAT: these are in kronor.
 # Maintained by @zygimantas
+name: Göteborg Energi, house
 currency: SEK
 calendar:
   jan-dec:

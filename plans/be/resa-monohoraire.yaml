@@ -1,6 +1,7 @@
-# RESA Monohoraire, one rate, prices with VAT: https://www.cwape.be/sites/default/files/cwape-documents/RESA%20-%20Tarifs%20p%C3%A9riodiques%20de%20pr%C3%A9l%C3%A8vement%202026.pdf
+# Prices with VAT: https://www.cwape.be/sites/default/files/cwape-documents/RESA%20-%20Tarifs%20p%C3%A9riodiques%20de%20pr%C3%A9l%C3%A8vement%202026.pdf
 # The CWaPE prints RESA's prices without VAT: this is its terme proportionnel, with 6% VAT.
 # Maintained by @zygimantas
+name: RESA Monohoraire, one rate
 currency: EUR
 calendar:
   jan-dec:

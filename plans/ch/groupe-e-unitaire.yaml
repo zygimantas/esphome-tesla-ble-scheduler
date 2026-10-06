@@ -1,7 +1,8 @@
-# Groupe E tarif unitaire, prices with VAT: https://www.groupe-e.ch/fr/electricite/plus
+# Prices with VAT: https://www.groupe-e.ch/fr/electricite/plus
 # Groupe E prints the prices in centimes without VAT: this is the network price (réseau), in francs, with 8.1% VAT.
 # On 1 January 2027 the price becomes 0.08248.
 # Maintained by @zygimantas
+name: Groupe E tarif unitaire
 currency: CHF
 calendar:
   jan-dec:

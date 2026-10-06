@@ -12,7 +12,8 @@ These are left out of every price the board shows, as they're the same in every 
 With one fixed price, all hours cost the same, so the board charges at once. With a normal and a cheaper off-peak (dal) price, choose **Fixed** with **Supplier's part** at 0, and upload a custom plan with both, each your whole price per kWh with VAT, as [A fixed price](../README.md#a-fixed-price) says. Off-peak is usually from 23:00 to 07:00 on workdays, in Noord-Brabant and Limburg from 21:00, and all day at weekends and on public holidays. Your contract says if yours differ. With your own prices:
 
 ```yaml
-# My contract, prices with VAT: https://example.com
+# Prices with VAT: https://example.com
+name: My contract
 currency: EUR
 calendar:
   jan-dec:

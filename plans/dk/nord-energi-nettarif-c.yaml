@@ -1,6 +1,7 @@
-# Nord Energi Net Nettarif C, prices with VAT: https://nordenerginet.dk/priser-og-vilkaar/priser-gebyrer/
+# Prices with VAT: https://nordenerginet.dk/priser-og-vilkaar/priser-gebyrer/
 # Nord Energi Net prints the prices in øre without VAT, in its price sheet for 2026: these are in kroner, with 25% VAT.
 # Maintained by @zygimantas
+name: Nord Energi Net Nettarif C
 currency: DKK
 calendar:
   apr-sep:

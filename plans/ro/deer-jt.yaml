@@ -1,6 +1,7 @@
-# DEER, low voltage, prices with VAT: https://www.distributie-energie.ro/tarife/
+# Prices with VAT: https://www.distributie-energie.ro/tarife/
 # ANRE prints the prices in lei per MWh without VAT, one for each voltage level, and a home on low voltage pays all three: this is their sum, in lei per kWh, with 21% VAT.
 # Maintained by @zygimantas
+name: DEER, low voltage
 currency: RON
 calendar:
   jan-dec:

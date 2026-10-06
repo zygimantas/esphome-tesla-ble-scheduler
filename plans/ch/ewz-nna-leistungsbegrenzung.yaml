@@ -1,7 +1,8 @@
-# ewz NNA Leistungsbegrenzung, prices with VAT: https://www.ewz.ch/de/private/strom/tarife/tarifuebersicht.html
+# Prices with VAT: https://www.ewz.ch/de/private/strom/tarife/tarifuebersicht.html
 # ewz prints the prices in Rappen without VAT: these are NNA's less the discount for a device ewz may switch off (2.00 high, 0.60 low), in francs, with 8.1% VAT.
 # The device needs a meter of its own, and ewz grants the discount only where it needs to steer the load. On 1 January 2027 the prices become 0.11459 (high) and 0.06162 (low).
 # Maintained by @zygimantas
+name: ewz NNA Leistungsbegrenzung
 currency: CHF
 calendar:
   jan-dec:

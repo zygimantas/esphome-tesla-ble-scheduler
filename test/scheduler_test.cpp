@@ -552,10 +552,12 @@ using Entries = std::vector<std::pair<std::string, std::string>>;
 
 static void test_reads_tariff_settings() {
   TariffText settings;
-  CHECK_STR(read_tariff("# a comment\r\n\ncurrency: EUR  \nclock: winter\ncalendar:\n  jan-dec:\n    # the days\n"
+  CHECK_STR(read_tariff("# a comment\r\n\nname: A plan, two rates\ncurrency: EUR  \nclock: winter\ncalendar:\n"
+                        "  jan-dec:\n    # the days\n"
                         "    mon-sun:   flat 07:00 day\nexceptions:\n  12-25: flat\nrates:\n  flat: 0.1\n  day: 0.2\n",
                         settings),
             "");
+  CHECK_STR(settings.name, "A plan, two rates");
   CHECK_STR(settings.currency, "EUR");
   CHECK_STR(settings.clock, "winter");
   REQUIRE(settings.calendar.size() == 1);
@@ -565,7 +567,7 @@ static void test_reads_tariff_settings() {
   CHECK((settings.rates == Entries{{"flat", "0.1"}, {"day", "0.2"}}));
   TariffText none;
   CHECK_STR(read_tariff("", none) + read_tariff("\n  \n# only a comment\n", none), "");
-  CHECK(none.calendar.empty() && none.rates.empty() && none.clock.empty());
+  CHECK(none.calendar.empty() && none.rates.empty() && none.clock.empty() && none.name.empty());
 
   struct Case {
     const char *text;
@@ -595,6 +597,7 @@ static void test_reads_tariff_settings() {
            Case{"calendar:\n  jan-dec:\nclock: winter\n    mon-sun: flat\n", "line 4 doesn't belong there: mon-sun"},
            Case{"clock: local\nclock: winter\n", "line 2 has clock again"},
            Case{"currency: EUR\n\ncurrency: NOK\n", "line 3 has currency again"},
+           Case{"name: One\nname: Two\n", "line 2 has name again"},
        }) {
     TariffText ignored;
     CHECK_STR(read_tariff(c.text, ignored), c.error);
@@ -870,7 +873,7 @@ static void test_plans_in_the_repository() {
     CHECK(read.currency.size() == 3 &&
           std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
     const std::string car = "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\n";
-    CHECK_STR(label + (plan_title(text).empty() ? "no name for people in its first line" : ""), label);
+    CHECK_STR(label + (read.name.empty() ? "no name:" : ""), label);
     SettingsFile settings;
     const std::string currency = concat({"currency: ", read.currency, "\n"});
     CHECK_STR(
@@ -928,7 +931,8 @@ static void test_reads_the_settings_file() {
   CHECK(s.area != nullptr && std::string(s.area->name) == "LT" && s.currency == "EUR");
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
   CHECK(s.ntfy_topic == "my-topic_1");
-  CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.plan_text.rfind("# ESO", 0) == 0 && s.tariff.empty());
+  CHECK(s.plan == "lt/eso-standartinis-4-zones" &&
+        s.plan_text.find("\nname: ESO Standartinis, four zones\n") != std::string::npos && s.tariff.empty());
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
@@ -1003,12 +1007,9 @@ static void test_reads_the_settings_file() {
 }
 
 static void test_settings_form_options() {
-  CHECK_STR(plan_title("# ESO Standartinis, four zones, prices with VAT: https://www.eso.lt\ncurrency: EUR\n"),
-            "ESO Standartinis, four zones");
-  CHECK_STR(plan_title("# A plan\n# prices with VAT\n"), "");
-  CHECK_STR(plan_title("A plan, prices with VAT\n"), "");
   CHECK_STR(json_string("a \"b\" \\ c"), "\"a \\\"b\\\" \\\\ c\"");
-  const Plans plans = {{"lt/one", "# One plan, prices with VAT: https://example.com\n"}, {"lt/two", "currency: EUR\n"}};
+  const Plans plans = {{"lt/one", "# Prices with VAT: https://example.com\nname: One plan\n"},
+                       {"lt/two", "currency: EUR\n"}};
   const std::string options = settings_options(plans);
   CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
   const std::string end = R"("SI"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
