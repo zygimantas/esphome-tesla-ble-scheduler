@@ -949,7 +949,7 @@ static void test_reads_the_settings_file() {
       "tesla_battery_kwh: \"82\"\n"
       "tesla_charging_kw: 7.4\n"
       "tesla_vin: '5YJ3E1EA0KF000000'\n"
-      "timezone: Europe/London";
+      "timezone: Europe/Lisbon";
   CHECK_STR(read_settings(fixed.substr(fixed.find('\n') + 1), repository_plans(), s), "");
   CHECK(s.currency == "EUR");  // without a market or a currency of its own
   CHECK_STR(read_settings(fixed, repository_plans(), s), "");
@@ -1011,10 +1011,8 @@ static void test_settings_form_options() {
   const Plans plans = {{"lt/one", "# One plan, prices with VAT: https://example.com\n"}, {"lt/two", "currency: EUR\n"}};
   const std::string options = settings_options(plans);
   CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
-  CHECK(options.find("\"SI\"],\"plans\":[[\"lt/one\",\"One plan\"],[\"lt/two\",\"lt/two\"]],\"time_zones\":[") !=
-        std::string::npos);
-  CHECK(options.find("\"Europe/Vilnius\",") != std::string::npos);
-  CHECK(options.size() > 2 && options.compare(options.size() - 17, 17, "\"Europe/Zurich\"]}") == 0);
+  const std::string end = R"("SI"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
+  CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);
 }
 
 static void test_settings_file_errors() {

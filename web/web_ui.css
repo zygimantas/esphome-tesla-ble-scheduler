@@ -251,12 +251,11 @@ input:not([type="checkbox"]) {
   border-radius: 6px;
   padding: 6px 12px;
 }
-#settings-card .dropdown,
 input.wide {
   flex: 0 1 60%;
   min-width: 0;
 }
-:is(#settings-card, .step) select {
+.step select {
   width: 100%;
   text-overflow: ellipsis;
 }
