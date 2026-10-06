@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: major when users must edit their settings files, minor for new behavior, patch for fixes
+        description: major when users must set something up again, minor for new behavior, patch for fixes
         type: choice
         options: [minor, patch, major]
         default: minor # without it, a run started with no choice, as the GitHub app can, released an empty version

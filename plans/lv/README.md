@@ -1,14 +1,6 @@
 # Latvian plans
 
-The plans of Sadales tīkls, the grid operator for nearly every home in Latvia, with prices with VAT. Name yours under `tariff:` in your settings file, with Latvia's market area and VAT:
-
-```yaml
-market:
-  area: LV
-  vat: 0.21
-tariff:
-  plan: lv/sadales-tikls-pamata
-```
+The plans of Sadales tīkls, the grid operator for nearly every home in Latvia, with prices with VAT. Choose yours under **Grid plan** on the board's page.
 
 | Tariff plan | Plan |
 | --- | --- |
@@ -26,4 +18,4 @@ Pamata-2 and Speciālais-2, for the few connections at a transformer's own switc
 
 Sadales tīkls sets its prices by the method of the regulator, SPRK, which can stop them. They have been the same since January 2024. On 1 January 2027, Pamata's fee drops a little and Speciālais' stays the same, Pamata-2 and Speciālais-2 become Pamata and Speciālais, and a third plan starts, Jaudīgais, with a lower fee per kWh and a higher monthly fee, for homes that use a lot for the size of their connection. The plans here change on that day.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

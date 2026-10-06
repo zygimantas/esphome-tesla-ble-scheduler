@@ -1,6 +1,6 @@
 #pragma once
-// The board's settings: the file uploaded on its page (README.md's Settings), read and checked before the board takes
-// it. Plain C++17, with nothing from ESPHome, like charger.h.
+// The board's settings: the file its page writes (README.md's Settings), read and checked before the board takes it.
+// Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "market.h"
 #include "tariff.h"
@@ -44,11 +44,10 @@ struct SettingsFile {
   const Area *area = nullptr;  // null without market prices
   float vat = 0.0f;            // on the market prices
   float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed part
-  std::string ntfy_server = "https://ntfy.sh";
   std::string ntfy_topic;      // empty: no phone messages
   std::string plan;            // the plan's name, empty without one
   std::string_view plan_text;  // the plan as built in
-  std::string tariff;          // the tariff's own settings, as read_tariff() reads them
+  std::string tariff;          // your own plan instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
   float charging_kw = 0.0f;
   std::string vin;
@@ -63,7 +62,8 @@ inline std::string upper(std::string text) {
 }
 
 // Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
-// or not, with the tariff: block as plans/README.md has it and the plans built in. Returns what's wrong, or "".
+// or not. tariff: has a plan built in, or your own plan: a plan's file (plans/README.md), each line indented by two
+// spaces, whose line numbers count from the line after tariff:, as in the file. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
@@ -76,7 +76,6 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
                                                            {"market: area", &area},
                                                            {"market: margin", &margin},
                                                            {"market: vat", &vat},
-                                                           {"ntfy_server", &read.ntfy_server},
                                                            {"ntfy_topic", &read.ntfy_topic},
                                                            {"tariff", nullptr},
                                                            {"tariff: plan", &read.plan},
@@ -86,6 +85,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
                                                            {"timezone", &zone}};
   std::vector<std::string> seen;
   std::string section;
+  bool yours = false;  // lines of your own plan under tariff:
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
     const size_t end = std::min(text.find('\n', start), text.size());
@@ -94,10 +94,16 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     line.erase(std::min(line.find(" #"), line.size()));
     line.erase(line.find_last_not_of(" \r") + 1);
     const size_t indent = line.find_first_not_of(' ');
-    std::string own;  // the line in the tariff's own settings, which keep the file's line numbers for read_tariff()
     const auto at = [&](std::string_view what) { return concat({"line ", std::to_string(number), " ", what}); };
     if (indent == std::string::npos || line[indent] == '#') {
-      read.tariff += "\n";
+      if (section == "tariff")
+        read.tariff += "\n";
+      continue;
+    }
+    // Your own plan's lines, which read_tariff() checks with the plan file's own line numbers.
+    if (section == "tariff" && indent >= 2 && !(indent == 2 && line.compare(2, 5, "plan:") == 0)) {
+      read.tariff += line.substr(2) + "\n";
+      yours = true;
       continue;
     }
     const size_t colon = line.find(':');
@@ -115,16 +121,11 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       place = key;
     } else if (indent == 2 && section == "market" && !heading) {
       place = "market: " + key;
-    } else if (indent == 2 && section == "tariff" && key == "plan") {
+    } else if (indent == 2 && section == "tariff") {  // plan:, as your own plan's lines are read above
       place = "tariff: plan";
-    } else if (indent >= 2 && section == "tariff" && (indent > 2 || key != "currency")) {  // currency: is the file's
-      own = line.substr(2);
     } else {
       return at(concat({"doesn't belong there: ", key}));
     }
-    read.tariff += own + "\n";
-    if (place.empty())
-      continue;
     const auto *found =
         std::find_if(std::begin(places), std::end(places), [&](const auto &known) { return place == known.first; });
     if (found == std::end(places))
@@ -164,20 +165,18 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     return "currency must be a currency's three-letter code, like EUR";
   if (read.area != nullptr && !comes_in(*read.area, read.currency)) {
     const char *converted = converted_currency(*read.area);
-    return concat({"currency: ", market_name(read.area->market), "'s prices come in ",
-                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR",
+    return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ",
+                   own_currency(*read.area),
                    converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
   }
 
-  const size_t scheme = read.ntfy_server.find("://");
-  if (scheme == std::string::npos ||
-      (read.ntfy_server.compare(0, scheme, "https") != 0 && read.ntfy_server.compare(0, scheme, "http") != 0))
-    return "ntfy_server must be the server's address, like https://ntfy.sh";
   if (read.ntfy_topic.size() > 64 || !std::all_of(read.ntfy_topic.begin(), read.ntfy_topic.end(), [](char c) {
         return std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_';
       }))
     return "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _";
 
+  if (!read.plan.empty() && yours)
+    return "tariff: a plan, or your own plan, not both";
   if (!read.plan.empty()) {
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
@@ -201,15 +200,15 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     return concat(
         {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
   if (const std::string error = read_tariff(read.tariff, own); !error.empty())
-    return concat({"tariff: ", error});
+    return concat({"your plan: ", error});
   // Without market: and tariff:, the board has no prices yet, as after the setup's first step, and the car charges as
   // usual. A tariff: with neither a plan nor a calendar under it, like one with the plan's name on its own line, would
   // add nothing.
   if (plan_text.empty() && own.calendar.empty() && std::find(seen.begin(), seen.end(), "tariff") != seen.end())
     return "tariff needs a plan or a calendar of its own, on the lines under it";
   Tariff tariff;
-  if (const std::string error = make_tariff(plan_text, read.tariff, read.currency, tariff); !error.empty())
-    return concat({"tariff: ", error});
+  if (const std::string error = make_tariff(yours ? read.tariff : plan_text, read.currency, tariff); !error.empty())
+    return concat({yours ? "your plan: " : "tariff: ", error});
 
   // Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
   read.battery_kwh = number(battery);

@@ -1,14 +1,6 @@
 # Austria's network charges
 
-The network charges that households in Austria pay per kWh, the network usage and network loss charges (Netznutzungsentgelt and Netzverlustentgelt), with prices with VAT. E-Control sets them for each network area, and every operator in an area charges the same: a smaller one, like a town's own, charges the prices of its area. Your bill names your operator (Netzbetreiber). Name its plan under `tariff:` in your settings file, with Austria's market area and VAT:
-
-```yaml
-market:
-  area: AT
-  vat: 0.2
-tariff:
-  plan: at/wiener-netze
-```
+The network charges that households in Austria pay per kWh, the network usage and network loss charges (Netznutzungsentgelt and Netzverlustentgelt), with prices with VAT. E-Control sets them for each network area, and every operator in an area charges the same: a smaller one, like a town's own, charges the prices of its area. Your bill names your operator (Netzbetreiber). Choose its plan under **Grid plan** on the board's page.
 
 | Operator | Area | Plan |
 | --- | --- | --- |
@@ -35,10 +27,10 @@ The summer price needs a smart meter that sends your operator quarter-hour readi
 
 The plans leave out the yearly flat fee, the meter fee, the renewable energy fees (Erneuerbaren-Förderbeitrag and Erneuerbaren-Förderpauschale), the electricity tax and, in Vienna, the Gebrauchsabgabe, as they don't change which hours are cheapest.
 
-- **An interruptible circuit** (unterbrechbar) on its own meter, which the operator may switch off at times it sets, has lower prices. Give them as your own rates, as [Your own changes](../README.md#your-own-changes) says.
+- **An interruptible circuit** (unterbrechbar) on its own meter, which the operator may switch off at times it sets, has lower prices. Put them in your area's plan, downloaded from this folder, and upload it as your own plan, as [Your own plan](../README.md#your-own-plan) says.
 - **Day and night prices** (Doppeltarif) ended on 31 March 2026: those meters pay the area's plan now.
 - **The Kleinwalsertal** has prices of its own: write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
 E-Control sets the prices every year, from 1 January, and the plans change with them. For 2027, its draft adds a lower price from 22:00 to 04:00 from October to March (WiNAP), and a monthly fee per kW of the month's highest quarter-hour, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

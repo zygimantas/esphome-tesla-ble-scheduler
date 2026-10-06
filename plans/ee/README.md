@@ -1,14 +1,6 @@
 # Elektrilevi plans
 
-Elektrilevi's network packages for Estonia, for connections up to 63 A, with prices with VAT. Name yours under `tariff:` in your settings file, with Estonia's market area and VAT:
-
-```yaml
-market:
-  area: EE
-  vat: 0.24
-tariff:
-  plan: ee/elektrilevi-vork-2
-```
+Elektrilevi's network packages for Estonia, for connections up to 63 A, with prices with VAT. Choose yours under **Grid plan** on the board's page.
 
 | Package | Plan |
 | --- | --- |
@@ -23,4 +15,4 @@ tariff:
 
 The hours follow the clock, summer time included. The plans leave out the monthly fee and the charges that are the same every hour: the renewable energy fee, the electricity excise and the security of supply fee.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

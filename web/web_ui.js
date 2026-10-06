@@ -75,13 +75,15 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
   </g>
 </svg>`;
 
-// How a plan the list doesn't have gets into it, and what to do until then.
+// How a plan the list doesn't have gets into it, and what to do until then: upload it as your own plan, with Upload
+// plan `where`.
 const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
-const planLinks = (ask) =>
+const planLinks = (ask, where) =>
   `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">${ask}</a>, or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
-  "choose it in Change settings, under Board, once a release brings it. Until then, fees that change with the hour " +
-  "can go in a settings file, uploaded there.";
+  `choose it in Change settings, under Board, once a release brings it. Until then, upload it ${where} as your own ` +
+  `plan, in <a href="${REPOSITORY}/blob/main/plans/README.md#your-own-plan" target="_blank" rel="noopener">the ` +
+  "plans' format</a>.";
 
 // A field's "?", which opens its hint under the field.
 const info = (hint, label) =>
@@ -107,7 +109,7 @@ const PAGE = `
 
   <section id="plan-card" class="card" hidden>
     <div class="title">No grid plan</div>
-    <p class="note"><span id="plan-why"></span> ${planLinks("Ask for your plan")}</p>
+    <p class="note"><span id="plan-why"></span> ${planLinks("Ask for your plan", "there")}</p>
   </section>
 
   <section id="settings-card" class="card" hidden>
@@ -119,8 +121,10 @@ const PAGE = `
     <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
     <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
     <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-    <p id="plans-note" class="note">No grid plans here yet: ${planLinks("ask for yours")}</p>
-    <p id="unlisted-note" class="note">${planLinks("Ask for your plan")}</p>
+    <p id="plans-note" class="note">No grid plans here yet: ${planLinks("ask for yours", "below")}</p>
+    <p id="unlisted-note" class="note">${planLinks("Ask for your plan", "below")}</p>
+    <div id="own-row" class="row"><span>Your own plan</span><strong id="own-plan"></strong><input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden></div>
+    <button id="upload-plan">Upload plan</button>
     <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
     <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
     <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
@@ -134,13 +138,9 @@ const PAGE = `
     <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
     <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
-    <p id="settings-more" class="note" hidden>Your settings have more than this form shows, which saving it drops: to keep it, change the file instead.</p>
     <p id="settings-error" class="note error" hidden></p>
     <button id="save-settings" class="primary">Save</button>
     <button id="cancel-settings">Cancel</button>
-    <a class="button" href="/settings" download="settings.yaml">Download settings</a>
-    <button id="upload-settings">Upload settings</button>
-    <input id="settings-file" type="file" accept=".yaml,.yml,.txt" hidden>
   </section>
 
   <section id="phone-card" class="card" hidden>
@@ -307,7 +307,7 @@ function render() {
   $("update-card").hidden = text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = release;
   $("update-notes").href = `${REPOSITORY}/releases/tag/v${release}`;
-  // Without a grid plan or hours of the owner's own: what the board leaves out, and how a plan gets in.
+  // Without a grid plan or your own plan: what the board leaves out, and how a plan gets in.
   $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
@@ -321,6 +321,10 @@ function render() {
   $("set-plan").disabled = unlisted;
   $("plans-note").hidden = !$("plan-row").hidden || !$("set-area").value;
   $("unlisted-note").hidden = !unlisted;
+  // your own plan under either note, by its name from its first line, like "# <name>, prices with VAT: <link>"
+  $("own-row").hidden = $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
+  $("own-plan").textContent =
+    ownPlan && (/^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim() || "Uploaded");
   $("fixed-row").hidden = !fixed;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
@@ -575,40 +579,18 @@ const writtenCurrency = (area, fixed) =>
 // typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
 
-// The places in the settings file that the form shows, like "market: area"; ntfy_server only as the default.
-const FORM_PLACES = [
-  "currency",
-  "fixed_price",
-  "market",
-  "market: area",
-  "market: margin",
-  "market: vat",
-  "ntfy_topic",
-  "tariff",
-  "tariff: plan",
-  "tesla_battery_kwh",
-  "tesla_charging_kw",
-  "tesla_vin",
-  "timezone",
-];
-
-// The settings file's values by place, as the board reads them, and whether it has more than the form shows.
+// The settings file's values by place, like "market: area", as the board reads them; deeper lines are your own plan's.
 function readSettings(file) {
   const values = {};
   let section = "";
-  let more = false;
   for (const line of file.split("\n")) {
     const m = /^( *)([^\s#:][^:]*):(?: +(.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
-    if (!m) continue;
+    if (!m || m[1].length > 2) continue;
     const [, indent, key, raw = ""] = m;
-    const value = raw.replace(/^(["'])(.*)\1$/, "$2");
-    const place = indent ? `${section}: ${key}` : key;
     if (!indent) section = raw ? "" : key;
-    if (place === "ntfy_server" && value === "https://ntfy.sh") continue;
-    if (indent.length > 2 || !FORM_PLACES.includes(place)) more = true;
-    else values[place] = value;
+    values[indent ? `${section}: ${key}` : key] = raw.replace(/^(["'])(.*)\1$/, "$2");
   }
-  return { values, more };
+  return values;
 }
 
 // What's wrong with a VIN, or "": a Tesla's starts with one of its makers' codes, and its 9th character is a check
@@ -628,6 +610,8 @@ function vinProblem(vin) {
 
 // Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
 let batteryTyped = false;
+// Your own plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
+let ownPlan = "";
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
 // grid plan.
@@ -681,6 +665,8 @@ function renderSetup() {
     "unlisted-row",
     "plans-note",
     "unlisted-note",
+    "own-row",
+    "upload-plan",
     "price-row",
     "price-hint",
     "margin-row",
@@ -704,28 +690,33 @@ function renderSetup() {
   }
 }
 
-// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power where the VIN
-// changed, as the board needs it to find the car, with the guesses and no prices yet on a new board, and where the
-// battery or the power changed and Key is the last step, as no Finish follows to save them; Prices' Finish saves the
-// prices, the battery and the power, which restarts the board. Each says what's wrong on its card, and the saves keep
-// the settings the setup doesn't show.
-async function nextStep() {
-  const vin = $("set-vin").value.trim().toUpperCase();
-  const problem = setup.step === 1 ? vinProblem(vin) : "";
-  const error = document.querySelector(".step.open .error");
+// Says what's wrong on the form's card, the setup's open step or the settings, in sight, or "" for nothing.
+function say(problem) {
+  const error = document.querySelector(".step.open .error") ?? $("settings-error");
   error.textContent = problem;
   error.hidden = !problem;
+  if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// Save: on to the next step. Car's Continue saves the VIN, the battery and the power where the VIN changed, as the
+// board needs it to find the car, with the guesses and no prices yet on a new board, and where the battery or the power
+// changed and Key is the last step, as no Finish follows to save them; Prices' Finish saves the prices too, which
+// restarts the board. Each checks the VIN first, as both save the one shown, and says what's wrong on its card; the
+// form keeps the settings the setup doesn't show, as the board has them.
+async function nextStep() {
+  const problem = vinProblem($("set-vin").value.trim().toUpperCase());
+  say(problem);
   if (problem) return;
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
   const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
-  const saved = readSettings(settings.text).values;
-  const form = readSettings(formSettings(false)).values;
+  const saved = readSettings(settings.text);
+  const form = readSettings(formSettings(false));
   const changed = car.filter((key) => form[key] !== saved[key]);
   if (setup.step === 1 && (changed.includes("tesla_vin") || (lastStep() === 2 && changed.length))) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
-    if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(car)))) return;
+    if (!(await sendSettings(formSettings(!unfinished())))) return;
   }
   if (setup.step < lastStep()) {
     setup.step += 1;
@@ -733,8 +724,7 @@ async function nextStep() {
     setup.stay = false;
     return;
   }
-  const keys = ["currency", "fixed_price", "market", "tariff", "tesla_battery_kwh", "tesla_charging_kw", "timezone"];
-  await sendSettings(withForm(keys));
+  await sendSettings(formSettings());
 }
 
 // The grid plan chosen, or "" for one that isn't listed or none chosen yet.
@@ -772,7 +762,7 @@ function guessFromArea() {
 // country, where it has only one market area. Without a market, the supplier's price is fixed, and the country the
 // grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
-  const { values, more } = readSettings(settings.text);
+  const values = readSettings(settings.text);
   const { areas, time_zones: zones } = settings.options;
   // a country by its name, with its market area where it has several, like "Sweden, SE3", or a part, "Italy (north)"
   const regions = new Intl.DisplayNames(["en"], { type: "region" });
@@ -797,6 +787,9 @@ function fillSettings() {
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
   fillPlans(unfinished() ? undefined : plan);
+  // your own plan: the lines under tariff:, without their indent, unless they name a plan from the list
+  const [, own = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
+  ownPlan = plan ? "" : own.replace(/^ {2}/gm, "").trimEnd();
   const zone = values.timezone ?? phone;
   const known = zones.includes(zone);
   $("set-zone").replaceChildren(
@@ -813,9 +806,6 @@ function fillSettings() {
   batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
-  // a currency of the file's own, other than the one the form writes, is more than the form shows
-  const written = writtenCurrency($("set-area").value, $("set-price").value === "fixed");
-  $("settings-more").hidden = !more && values.currency?.toUpperCase() === written;
   $("settings-error").hidden = true;
 }
 
@@ -828,7 +818,7 @@ async function loadSettings() {
       fetch("/settings/options").then((r) => r.json()),
     ]);
     if (file !== settings.text) {
-      // the setup starts again from what the board has now, as after an upload
+      // the setup starts again from what the board has now
       Object.assign(setup, { step: 0, stay: false });
       settings.text = file;
       settings.options = options;
@@ -840,35 +830,9 @@ async function loadSettings() {
   requestRender();
 }
 
-// A settings file's top-level settings, each with the lines below it, comments included; "" holds those above the
-// first.
-function settingsBlocks(text) {
-  const blocks = new Map([["", ""]]);
-  let key = "";
-  for (const line of text ? text.replace(/\n$/, "").split("\n") : []) {
-    if (/^[a-z_]+:/.test(line)) key = line.slice(0, line.indexOf(":"));
-    blocks.set(key, `${blocks.get(key) ?? ""}${line}\n`);
-  }
-  return blocks;
-}
-
-// The board's settings file with the form's `keys`, top-level settings with the lines below them, put in, and the
-// rest kept, in the order the form writes them.
-function withForm(keys) {
-  const blocks = settingsBlocks(settings.text);
-  const form = settingsBlocks(formSettings());
-  for (const key of keys) {
-    if (form.has(key)) blocks.set(key, form.get(key));
-    else blocks.delete(key);
-  }
-  return [...blocks.keys()]
-    .sort()
-    .map((key) => blocks.get(key))
-    .join("");
-}
-
-// The form as a settings file, which the board checks as any other; without prices, as the setup's first step saves
-// them for a new board.
+// The form as the board's settings file, which the board checks before it takes it; without prices, as the setup's
+// first step saves them for a new board. Your own plan goes under tariff: line for line, indented, so the board's
+// errors in it count the plan's own lines.
 function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
@@ -884,6 +848,7 @@ function formSettings(prices = true) {
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
   if (prices && gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
+  else if (prices && ownPlan) lines.push("tariff:", ...ownPlan.split("\n").map((line) => line && `  ${line}`));
   lines.push(
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
@@ -1267,6 +1232,27 @@ function bind() {
     $("set-plan").value = e.target.checked ? "none" : "";
     requestRender();
   });
+  // a plan from the list in place of your own
+  $("set-plan").addEventListener("change", () => {
+    ownPlan = "";
+    requestRender();
+  });
+  // Upload plan: your own plan, in the plans' format. The board takes 4 kB of settings, your own plan included, and
+  // says only that the file is too long: too long a plan is turned away here at once, and the one before stays.
+  $("upload-plan").addEventListener("click", () => $("plan-file").click());
+  $("plan-file").addEventListener("change", async (e) => {
+    const [file] = e.target.files;
+    e.target.value = ""; // so the same file can go again
+    if (!file) return;
+    const before = ownPlan;
+    ownPlan = (await file.text()).replace(/\r\n?/g, "\n").trimEnd();
+    const long = new TextEncoder().encode(formSettings()).length > 4096;
+    if (long) ownPlan = before;
+    const problem =
+      "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
+    say(long ? problem : "");
+    requestRender();
+  });
   press($("save-settings"), saveSettings);
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
@@ -1305,13 +1291,6 @@ function bind() {
     settings.open = false;
     fillSettings(); // back to the board's
     requestRender();
-  });
-  // Upload settings, under the settings form: a settings file of the user's own.
-  $("upload-settings").addEventListener("click", () => $("settings-file").click());
-  $("settings-file").addEventListener("change", async (e) => {
-    const [file] = e.target.files;
-    e.target.value = ""; // so the same file can go again
-    if (file) await sendSettings(await file.text());
   });
 }
 

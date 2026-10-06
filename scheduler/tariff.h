@@ -1,6 +1,6 @@
 #pragma once
-// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, and the settings' own tariff: lines over it
-// (format in plans/README.md). Plain C++17, with nothing from ESPHome, like charger.h.
+// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, or your own in the same format
+// (plans/README.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -17,8 +17,8 @@
 
 namespace esphome::scheduler {
 
-// The tariff as written (format in plans/README.md): a plan from plans/, or the tariff: block of the settings file.
-// Keys and lines stay text, in the order written.
+// A plan as written (format in plans/README.md): one from plans/, or your own. Keys and lines stay text, in the order
+// written.
 struct TariffText {
   std::string clock;
   std::string currency;
@@ -159,39 +159,21 @@ constexpr const char *MONTH_NAMES[] = {"jan", "feb", "mar", "apr", "may", "jun",
 constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 
-// The tariff of a plan's text and the settings' own tariff: lines, both as read_tariff() reads them: your calendar and
-// clock replace the plan's, and your exceptions and rates replace or add to its own, one key at a time, each key once
-// as in a plan. The plan's prices are in `currency`. Returns what's wrong, or "".
-inline std::string make_tariff(const std::string &plan_text, const std::string &own_text, const std::string &currency,
-                               Tariff &tariff) {
-  TariffText plan, own;
-  if (const std::string error = read_tariff(plan_text, plan) + read_tariff(own_text, own); !error.empty())
+// The tariff of a plan's text, as read_tariff() reads it, with each rate used and each key once. Its prices are in
+// `currency`, where it says one. Returns what's wrong, or "".
+inline std::string make_tariff(const std::string &text, const std::string &currency, Tariff &tariff) {
+  TariffText plan;
+  if (const std::string error = read_tariff(text, plan); !error.empty())
     return error;
-  if (!plan.rates.empty() && plan.currency != currency)
+  if (!plan.rates.empty() && !plan.currency.empty() && plan.currency != currency)
     return concat({"the plan's prices are in ", plan.currency, ", not ", currency});
-  TariffText all = plan;
-  if (!own.clock.empty())
-    all.clock = own.clock;
-  if (!own.calendar.empty())
-    all.calendar = own.calendar;
-  // The plan's entries that yours replace go, and yours follow, so that one of yours given twice is turned away below
-  // as in a plan.
-  const auto add = [](auto &table, const auto &yours) {
-    for (const auto &mine : yours)
-      table.erase(
-          std::remove_if(table.begin(), table.end(), [&](const auto &entry) { return entry.first == mine.first; }),
-          table.end());
-    table.insert(table.end(), yours.begin(), yours.end());
-  };
-  add(all.exceptions, own.exceptions);
-  add(all.rates, own.rates);
 
   Tariff made;
-  if (!all.clock.empty() && all.clock != "local" && all.clock != "winter")
-    return concat({"clock is local or winter, not ", all.clock});
-  made.winter_clock = all.clock == "winter";
+  if (!plan.clock.empty() && plan.clock != "local" && plan.clock != "winter")
+    return concat({"clock is local or winter, not ", plan.clock});
+  made.winter_clock = plan.clock == "winter";
   std::vector<std::string> names;
-  for (const auto &[name, price] : all.rates) {
+  for (const auto &[name, price] : plan.rates) {
     const float fee = number(price);
     if (!(fee >= 0.0f && fee < MAX_PRICE))
       return concat({"rate ", name, ": ", price, " isn't a price per kWh"});
@@ -202,7 +184,7 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
   }
   std::vector<bool> used(names.size());
   unsigned months_seen = 0;
-  for (const auto &[months, week] : all.calendar) {
+  for (const auto &[months, week] : plan.calendar) {
     const std::vector<size_t> in = named(months, MONTH_NAMES);
     if (in.empty())
       return concat({"calendar: ", months, " isn't a month or a range like nov-mar"});
@@ -231,9 +213,9 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
     if (days_seen != 0x7FU)
       return concat({"calendar: ", months, " needs every day of the week"});
   }
-  if (months_seen != 0xFFFU && !(all.calendar.empty() && all.exceptions.empty()))  // none: no grid fees
+  if (months_seen != 0xFFFU && !(plan.calendar.empty() && plan.exceptions.empty()))  // none: no grid fees
     return "the calendar needs every month";
-  for (const auto &[date, line] : all.exceptions) {
+  for (const auto &[date, line] : plan.exceptions) {
     static constexpr int LAST_DAY[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     const int month = two_digits(date, 0), day = two_digits(date, 3);
     const int month_day = month * 100 + day;
@@ -246,9 +228,9 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
       return concat({"exceptions: ", date, ": ", error});
     made.exceptions.emplace_back(month_day, rates);
   }
-  for (const auto &[name, price] : own.rates)
-    if (!used[std::find(names.begin(), names.end(), name) - names.begin()])
-      return concat({"rate ", name, " isn't used on any day"});
+  for (size_t i = 0; i < names.size(); i++)
+    if (!used[i])
+      return concat({"rate ", names[i], " isn't used on any day"});
   tariff = made;
   return "";
 }

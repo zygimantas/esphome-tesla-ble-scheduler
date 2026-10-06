@@ -520,16 +520,16 @@ rates:
   flat: 0.11132
 )";
 
-// What's wrong with a plan and the settings' own tariff together, as the board puts them, or "".
-static std::string tariff_error(const std::string &plan, const std::string &own = "", const char *currency = "EUR") {
+// What's wrong with a plan, or "".
+static std::string tariff_error(const std::string &plan, const char *currency = "EUR") {
   Tariff ignored;
-  return make_tariff(plan, own, currency, ignored);
+  return make_tariff(plan, currency, ignored);
 }
 
-// The tariff of a plan and the settings' own tariff, with 21% VAT.
-static Tariff tariff_of(const std::string &plan, const std::string &own = "") {
+// The tariff of a plan, with 21% VAT.
+static Tariff tariff_of(const std::string &plan) {
   Tariff tariff;
-  CHECK_STR(make_tariff(plan, own, "EUR", tariff), "");
+  CHECK_STR(make_tariff(plan, "EUR", tariff), "");
   tariff.vat = 0.21f;
   return tariff;
 }
@@ -618,33 +618,21 @@ static void test_plan_downloads() {
 }
 
 static void test_makes_tariffs() {
-  // Your rates replace the plan's, and add to them.
-  const Tariff cheaper = tariff_of(FOUR_ZONES, "rates:\n  night: 0.05\n");
-  CHECK(near(fee_at(cheaper, 2026, 9, 24, 3), 0.05f));
-  CHECK(near(fee_at(cheaper, 2026, 9, 24, 12), 0.10406f));
-  const Tariff peak = tariff_of(FOUR_ZONES, "exceptions:\n  12-28: peak\nrates:\n  peak: 0.2\n");
-  CHECK(near(fee_at(peak, 2026, 12, 28, 3), 0.2f));
-  // Your exceptions replace the plan's on the same date, and add others.
-  const Tariff special = tariff_of(FOUR_ZONES, "exceptions:\n  12-31: night 07:00 day 22:00 night\n  12-25: evening\n");
-  CHECK(near(fee_at(special, 2026, 12, 31, 18), 0.10406f));  // a Thursday, now a holiday
-  CHECK(near(fee_at(special, 2026, 12, 25, 3), 0.14641f));
-  CHECK(near(fee_at(special, 2026, 12, 24, 18), 0.10406f));  // the plan's holiday stays
-  // Your calendar replaces the plan's whole calendar, and your clock its clock.
-  const Tariff own_week = tariff_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: day\n");
-  CHECK(near(fee_at(own_week, 2026, 9, 26, 3), 0.12947f));
-  CHECK(near(fee_at(tariff_of(TWO_ZONES, "clock: local\n"), 2026, 9, 24, 7, 30), 0.12947f));
-  CHECK(near(fee_at(tariff_of(TWO_ZONES, "calendar:\n  jan-dec:\n    mon-sun: night  07:00   day\n"), 2026, 9, 24, 8),
-             0.12947f));
-  // Without a plan, your settings are the whole tariff; a plan's prices are in its currency.
-  CHECK(near(fee_at(tariff_of("", calendar_of("    mon-sun: flat", "flat: 0.2")), 2026, 9, 24, 3), 0.2f));
-  CHECK_STR(tariff_error(FOUR_ZONES, "", "NOK"), "the plan's prices are in EUR, not NOK");
+  // A plan's prices are in its currency, and one without a currency, as your own may be, is in the settings'.
+  CHECK(
+      near(fee_at(tariff_of(calendar_of("    mon-sun: night  07:00   day", "night: 0.1\n  day: 0.2")), 2026, 9, 24, 8),
+           0.2f));
+  // clock: local, the default, follows summer time, which TWO_ZONES' winter clock doesn't.
+  CHECK(near(
+      fee_at(tariff_of("clock: local\n" + std::string(TWO_ZONES).substr(std::strlen("currency: EUR\nclock: winter\n"))),
+             2026, 9, 24, 7, 30),
+      0.12947f));
+  CHECK_STR(tariff_error(FOUR_ZONES, "NOK"), "the plan's prices are in EUR, not NOK");
   CHECK_STR(tariff_error("currency: NOK\n" + calendar_of("    mon-sun: flat")),
             "the plan's prices are in NOK, not EUR");
-  CHECK_STR(tariff_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\n", "", "NOK"),
+  CHECK_STR(tariff_error("currency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\n", "NOK"),
             "calendar: jan-dec: mon-sun: rate flat has no price");
   CHECK_STR(tariff_error("calendar\n"), "line 1 isn't a key and a value");
-  // A rate the plan renamed or dropped, which yours still sets.
-  CHECK_STR(tariff_error(FOUR_ZONES, "rates:\n  nakts: 0.05\n"), "rate nakts isn't used on any day");
 
   std::string rates = "rates:";
   for (char rate = 'a'; rate <= 'z'; rate++)
@@ -655,11 +643,11 @@ static void test_makes_tariffs() {
     std::snprintf(when, sizeof(when), " %02d:%02d ", (rate - 'a') / 4, (rate - 'a') % 4 * 15);
     week += when + std::string(1, rate);
   }
-  CHECK_STR(tariff_error("", "calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n"), "");
-  CHECK_STR(tariff_error("", "calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n  extra: 0.1\n"),
+  CHECK_STR(tariff_error("calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n"), "");
+  CHECK_STR(tariff_error("calendar:\n  jan-dec:\n" + week + "\n" + rates + "\n  extra: 0.1\n"),
             "rate extra: a rate is there twice, or there are more than 26");
 
-  CHECK_STR(tariff_error("", ""), "");  // no plan and no calendar: no grid fees
+  CHECK_STR(tariff_error(""), "");  // no plan and no calendar: no grid fees
   struct Case {
     std::string own;
     const char *error;
@@ -702,40 +690,34 @@ static void test_makes_tariffs() {
                 "exceptions: 12-25: rate dark has no price"},
            Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
        }) {
-    CHECK_STR(tariff_error("", c.own), c.error);
+    CHECK_STR(tariff_error(c.own), c.error);
   }
   for (const char *time : {"7:00", "07:10", "07:60", "07-00", "0x:00", "07:x0", "00:00", "24:00", "0::00", "1/:00",
                            "07:0?", "07:000", "07x00", "25:00"})
-    CHECK_STR(tariff_error("", calendar_of(("    mon-sun: flat " + std::string(time) + " flat").c_str())),
+    CHECK_STR(tariff_error(calendar_of(("    mon-sun: flat " + std::string(time) + " flat").c_str())),
               std::string("calendar: jan-dec: mon-sun: ") + time + " isn't a later quarter-hour, like 07:00 or 22:15");
   for (const char *date : {"01+01", "13-01", "00-10", "01-00", "1-01", "01/01", "01-011"})
-    CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + date + ": flat\n"),
+    CHECK_STR(tariff_error(calendar_of("    mon-sun: flat") + "exceptions:\n  " + date + ": flat\n"),
               std::string("exceptions: ") + date + " isn't a date like 12-25, or it's there twice");
-  CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat 23:45 flat")), "");
+  CHECK_STR(tariff_error(calendar_of("    mon-sun: flat 23:45 flat")), "");
   // Prices of nothing and above 1, like Norway's in NOK, and exceptions in any order.
-  CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat 12:00 free", "flat: 12.5\n  free: 0")), "");
-  CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: flat\n  01-01: flat\n"), "");
+  CHECK_STR(tariff_error(calendar_of("    mon-sun: flat 12:00 free", "flat: 12.5\n  free: 0")), "");
+  CHECK_STR(tariff_error(calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: flat\n  01-01: flat\n"), "");
   // The last day of each month is a date, and the day after isn't.
   const int last_day[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   for (int month = 1; month <= 12; month++) {
     char last[16], after[16];
     std::snprintf(last, sizeof(last), "%02d-%02d", month, last_day[month - 1]);
     std::snprintf(after, sizeof(after), "%02d-%02d", month, last_day[month - 1] + 1);
-    CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + last + ": flat\n"), "");
-    CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat") + "exceptions:\n  " + after + ": flat\n"),
+    CHECK_STR(tariff_error(calendar_of("    mon-sun: flat") + "exceptions:\n  " + last + ": flat\n"), "");
+    CHECK_STR(tariff_error(calendar_of("    mon-sun: flat") + "exceptions:\n  " + after + ": flat\n"),
               std::string("exceptions: ") + after + " isn't a date like 12-25, or it's there twice");
   }
-  // A key twice in a plan, or in your own lines, also one the plan has.
+  // A key twice.
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
             "rate flat: a rate is there twice, or there are more than 26");
   CHECK_STR(tariff_error("currency: EUR\n" + calendar_of("    mon-sun: flat") +
                          "exceptions:\n  12-25: flat\n  12-25: flat\n"),
-            "exceptions: 12-25 isn't a date like 12-25, or it's there twice");
-  CHECK_STR(tariff_error("", calendar_of("    mon-sun: flat", "flat: 0.1\n  flat: 0.2")),
-            "rate flat: a rate is there twice, or there are more than 26");
-  CHECK_STR(tariff_error(FOUR_ZONES, "rates:\n  night: 0.05\n  night: 0.04\n"),
-            "rate night: a rate is there twice, or there are more than 26");
-  CHECK_STR(tariff_error(FOUR_ZONES, "exceptions:\n  12-25: day\n  12-25: day\n"),
             "exceptions: 12-25 isn't a date like 12-25, or it's there twice");
 }
 
@@ -794,10 +776,9 @@ static void test_eso_plans() {
 static void test_calendar_and_exceptions() {
   // A rate for each day of the week, a range that wraps past Sunday, and an exception: Monday 21 to Sunday 27
   // December 2026, with Christmas Eve, a Thursday, at its own rate.
-  const Tariff week =
-      tariff_of("",
-                "calendar:\n  jan-dec:\n    tue: b\n    wed: c\n    thu: d\n    fri-mon: a\n"
-                "exceptions:\n  12-24: e\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03\n  d: 0.04\n  e: 0.05\n");
+  const Tariff week = tariff_of(
+      "calendar:\n  jan-dec:\n    tue: b\n    wed: c\n    thu: d\n    fri-mon: a\n"
+      "exceptions:\n  12-24: e\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03\n  d: 0.04\n  e: 0.05\n");
   const float expected[] = {0.01f, 0.02f, 0.03f, 0.05f, 0.01f, 0.01f, 0.01f};
   for (unsigned day = 21; day <= 27; ++day)
     CHECK(near(fee_at(week, 2026, 12, day, 12), expected[day - 21]));
@@ -805,10 +786,10 @@ static void test_calendar_and_exceptions() {
 
   // Seasons: weekdays and Saturdays dearer from 07:00 to 22:00 from November to March, low the rest of the year,
   // and the same on 24 December in any year.
-  const Tariff seasons = tariff_of("",
-                                   "calendar:\n  apr-oct:\n    mon-sun: low\n  nov-mar:\n"
-                                   "    mon-sat: low 07:00 high 22:00 low\n    sun: low\n"
-                                   "exceptions:\n  12-24: high\nrates:\n  low: 0.03\n  high: 0.08\n");
+  const Tariff seasons = tariff_of(
+      "calendar:\n  apr-oct:\n    mon-sun: low\n  nov-mar:\n"
+      "    mon-sat: low 07:00 high 22:00 low\n    sun: low\n"
+      "exceptions:\n  12-24: high\nrates:\n  low: 0.03\n  high: 0.08\n");
   CHECK(fee_at(seasons, 2027, 1, 15, 12) == 0.08f);   // a Friday in January
   CHECK(fee_at(seasons, 2027, 1, 15, 3) == 0.03f);    // its night
   CHECK(fee_at(seasons, 2027, 1, 16, 12) == 0.08f);   // Saturday
@@ -822,17 +803,16 @@ static void test_calendar_and_exceptions() {
   CHECK(fee_at(seasons, 2028, 2, 29, 12) == 0.08f);   // a leap day, a Tuesday
 
   // Ranges that end and start in the middle of the year, at the months' names.
-  const Tariff thirds = tariff_of("",
-                                  "calendar:\n  jan-may:\n    mon-sun: a\n  jun-aug:\n    mon-sun: b\n  sep-dec:\n"
-                                  "    mon-sun: c\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03\n");
+  const Tariff thirds = tariff_of(
+      "calendar:\n  jan-may:\n    mon-sun: a\n  jun-aug:\n    mon-sun: b\n  sep-dec:\n"
+      "    mon-sun: c\nrates:\n  a: 0.01\n  b: 0.02\n  c: 0.03\n");
   CHECK(fee_at(thirds, 2026, 5, 31, 12) == 0.01f);
   CHECK(fee_at(thirds, 2026, 6, 1, 12) == 0.02f);
   CHECK(fee_at(thirds, 2026, 8, 31, 12) == 0.02f);
   CHECK(fee_at(thirds, 2026, 9, 1, 12) == 0.03f);
 
   // Quarter-hours, on UK time: Octopus Go's cheap 00:30 to 05:30, and a quarter-hour from 06:45.
-  const Tariff go =
-      tariff_of("", calendar_of("    mon-sun: n 00:30 c 05:30 n 06:45 c 07:00 n", "n: 0.245\n  c: 0.085"));
+  const Tariff go = tariff_of(calendar_of("    mon-sun: n 00:30 c 05:30 n 06:45 c 07:00 n", "n: 0.245\n  c: 0.085"));
   const auto uk = [&](unsigned month, unsigned day, int minutes) {
     return tariff_fee(local_to_utc(days_from_civil(2026, month, day), minutes, 0), go, 0);
   };
@@ -868,24 +848,39 @@ static const Plans &repository_plans() {
   return plans;
 }
 
+// `plan` as the page writes your own plan under tariff:, each line indented by two spaces.
+static std::string as_yours(const std::string &plan) {
+  std::string lines;
+  for (size_t start = 0, end; start < plan.size(); start = end + 1) {
+    end = plan.find('\n', start);
+    lines += concat({end > start ? "  " : "", plan.substr(start, end - start), "\n"});
+  }
+  return "tariff:\n" + lines;
+}
+
 static void test_plans_in_the_repository() {
-  // Each plan reads on the board in its own currency, three capital letters, and uses all its rates given as a
-  // settings file's own too. A settings file can name it.
+  // Each plan reads on the board in its own currency, three capital letters, and uses all its rates. Settings can name
+  // it, and it fits in them as your own plan too, as when you upload an edited copy.
   for (const auto &[name, text] : repository_plans()) {
     const std::string plan(text), label = std::string(name) + ": ";
     TariffText read;
     Tariff tariff;
     CHECK_STR(label + read_tariff(plan, read), label);
-    CHECK_STR(label + make_tariff(plan, plan, read.currency, tariff), label);
+    CHECK_STR(label + make_tariff(plan, read.currency, tariff), label);
     CHECK(read.currency.size() == 3 &&
           std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
     const std::string car = "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\n";
     CHECK_STR(label + (plan_title(text).empty() ? "no name for people in its first line" : ""), label);
     SettingsFile settings;
-    CHECK_STR(label + read_settings(concat({"currency: ", read.currency, "\ntariff:\n  plan: ", name, "\n", car,
-                                            "timezone: Europe/Vilnius\n"}),
+    const std::string currency = concat({"currency: ", read.currency, "\n"});
+    CHECK_STR(
+        label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", car, "timezone: Europe/Vilnius\n"}),
+                              repository_plans(), settings),
+        label);
+    CHECK_STR(label + read_settings(concat({currency, as_yours(plan), car, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
+    CHECK(settings.plan.empty() && !settings.tariff.empty());
   }
   CHECK(repository_plans().size() >= 8);
 }
@@ -932,25 +927,15 @@ static void test_reads_the_settings_file() {
   CHECK_STR(read_settings(SETTINGS, repository_plans(), s), "");
   CHECK(s.area != nullptr && std::string(s.area->name) == "LT" && s.currency == "EUR");
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
-  CHECK(s.ntfy_server == "https://ntfy.sh" && s.ntfy_topic == "my-topic_1");
-  CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.plan_text.rfind("# ESO", 0) == 0);
-  CHECK(s.tariff == std::string(12, '\n'));
+  CHECK(s.ntfy_topic == "my-topic_1");
+  CHECK(s.plan == "lt/eso-standartinis-4-zones" && s.plan_text.rfind("# ESO", 0) == 0 && s.tariff.empty());
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
-  // settings.example.yaml, with a VIN.
-  std::ifstream file("settings.example.yaml");
-  std::stringstream example;
-  example << file.rdbuf();
-  std::string text = example.str();
-  REQUIRE(text.find("tesla_vin: REPLACEME\n") != std::string::npos);
-  CHECK_STR(read_settings(text.replace(text.find("REPLACEME"), 9, "5YJ3E1EA0KF000000"), repository_plans(), s), "");
-
-  // A fixed price: no market, a tariff of its own, any currency; quotes, comments after values and Windows line
-  // endings; the last line without a line break.
+  // A fixed price: no market, your own plan, any currency; quotes, comments after values and Windows line endings; the
+  // last line without a line break.
   const std::string fixed =
       "currency: gbp\r\n"
-      "ntfy_server: 'http://192.168.1.2:8080'\n"
       "ntfy_topic: \"\"\n"
       "tariff:\n"
       "  calendar:\n"
@@ -969,7 +954,7 @@ static void test_reads_the_settings_file() {
   CHECK(s.currency == "EUR");  // without a market or a currency of its own
   CHECK_STR(read_settings(fixed, repository_plans(), s), "");
   CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan_text.empty());
-  CHECK(s.ntfy_server == "http://192.168.1.2:8080" && s.ntfy_topic.empty() && s.standard_offset == 0);
+  CHECK(s.ntfy_topic.empty() && s.standard_offset == 0);
   TariffText own;
   CHECK_STR(read_tariff(s.tariff, own), "");
   CHECK(own.calendar.size() == 1 && own.calendar[0].second[0].second == "day 00:30 night 05:30 day");
@@ -993,10 +978,10 @@ static void test_reads_the_settings_file() {
       "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Oslo\n";
   CHECK_STR(read_settings(norway, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "NO1" && s.currency == "NOK" && s.margin == 0.0f && s.standard_offset == 3600);
-  CHECK_STR(read_settings("currency: eur\n" + norway, repository_plans(), s), "");
-  CHECK(s.currency == "EUR");
-  CHECK_STR(settings_error("currency: GBP\n" + norway),
-            "currency: Nord Pool's prices come in DKK, EUR, NOK, PLN, RON or SEK");
+  CHECK_STR(read_settings("currency: nok\n" + norway, repository_plans(), s), "");
+  for (const char *currency : {"EUR", "GBP"})  // the area's own only, as the page writes it
+    CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + norway),
+              "currency: Nord Pool's prices for NO1 come in NOK");
   // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
   const std::string czech =
       "currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
@@ -1007,9 +992,11 @@ static void test_reads_the_settings_file() {
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: CZK\n"),
-            "currency: SMARD's prices come in EUR, or HUF at the ECB's daily rate");
-  CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"), "currency: SMARD's prices come in EUR");
-  CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"), "currency: OMIE's prices come in EUR");
+            "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
+  CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"),
+            "currency: SMARD's prices for SI come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"),
+            "currency: OMIE's prices for ES come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU")), "");
   CHECK_STR(settings_error(settings_set("  area", "PT")), "");
 }
@@ -1084,10 +1071,9 @@ static void test_settings_file_errors() {
   for (const char *currency : {"EURO", "E1R", "E[R"})
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + SETTINGS),
               "currency must be a currency's three-letter code, like EUR");
-  // Phone messages
-  for (const char *server : {"ntfy.sh", "ntfy://ntfy.sh"})
-    CHECK_STR(settings_error(settings_with("ntfy_topic", std::string("ntfy_server: ") + server + "\n")),
-              "ntfy_server must be the server's address, like https://ntfy.sh");
+  // Phone messages, through ntfy's own server
+  CHECK_STR(settings_error(settings_with("ntfy_topic", "ntfy_server: https://ntfy.sh\n")),
+            "line 6 has ntfy_server, which isn't a setting");
   for (const std::string &topic : {std::string("https://ntfy.sh/mine"), std::string(65, 'a')})
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
@@ -1101,24 +1087,27 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(settings_set("  plan", "nope")), "tariff: there's no plan nope");
   CHECK(settings_error(settings_set("  plan", "lt"))
             .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
-  CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n")),
-            "tariff: rate nope isn't used on any day");
-  CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates: 1\n")),
-            "tariff: line 9 doesn't belong there: rates");
-  // Your own lines: each key once, as in a plan, and the currency at the top of the file.
+  // Your own plan: alone under tariff:, in the settings' currency where it names one, and with its errors counted in
+  // its own lines, from the line after tariff:, as in the file uploaded.
+  const auto yours = [](const std::string &plan) {
+    return settings_with("  plan", as_yours(plan).substr(std::strlen("tariff:\n")));
+  };
+  CHECK_STR(settings_error(yours(ONE_ZONE)), "");
+  CHECK_STR(settings_error(yours("currency: NOK\n" + calendar_of("    mon-sun: flat"))),
+            "your plan: the plan's prices are in NOK, not EUR");
+  CHECK_STR(settings_error(yours("# My plan\n\nclock: local\nclock: winter\n" + calendar_of("    mon-sun: flat"))),
+            "your plan: line 4 has clock again");
+  CHECK_STR(settings_error(yours(calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"))),
+            "your plan: rate spare isn't used on any day");
+  CHECK_STR(settings_error(yours("# My plan\ncalendar:\n  jan-dec\n")), "your plan: line 3 isn't a key and a value");
+  for (const char *both : {"  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n",
+                           "  currency: EUR\n  plan: lt/eso-standartinis-4-zones\n"})
+    CHECK_STR(settings_error(settings_with("  plan", both)), "tariff: a plan, or your own plan, not both");
+  // A plan built in that the board can't use, as from a broken release.
+  SettingsFile ignored;
   CHECK_STR(
-      settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  clock: local\n  clock: winter\n")),
-      "tariff: line 10 has clock again");
-  CHECK_STR(settings_error(settings_with("  plan",
-                                         "  plan: lt/eso-standartinis-4-zones\n  rates:\n    night: 0.05\n"
-                                         "    night: 0.04\n")),
-            "tariff: rate night: a rate is there twice, or there are more than 26");
-  CHECK_STR(settings_error(settings_with("  plan",
-                                         "  plan: lt/eso-standartinis-4-zones\n  exceptions:\n    12-31: day\n"
-                                         "    12-31: night\n")),
-            "tariff: exceptions: 12-31 isn't a date like 12-25, or it's there twice");
-  CHECK_STR(settings_error(settings_with("  plan", "  currency: EUR\n  plan: lt/eso-standartinis-4-zones\n")),
-            "line 8 doesn't belong there: currency");
+      read_settings(settings_set("  plan", "xx/broken"), Plans{{"xx/broken", "currency: EUR\ncalendar\n"}}, ignored),
+      "tariff: line 2 isn't a key and a value");
   // The car, with sizes and powers wider than the page's, and closed, and the time zone
   for (const char *kwh : {"10", "1000"})
     CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)), "");

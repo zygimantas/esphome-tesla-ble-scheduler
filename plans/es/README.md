@@ -1,14 +1,6 @@
 # Spain's 2.0TD
 
-The access tolls and charges (peajes y cargos) of tariff 2.0TD, which every household up to 15 kW pays per kWh, whoever its supplier, with prices with VAT. Name it under `tariff:` in your settings file:
-
-```yaml
-market:
-  area: ES
-  vat: 0.21
-tariff:
-  plan: es/2-0td
-```
+The access tolls and charges (peajes y cargos) of tariff 2.0TD, which every household up to 15 kW pays per kWh, whoever its supplier, with prices with VAT. The board's page chooses it for you under **Grid plan**.
 
 | Hours | Monday to Friday | Saturday, Sunday and national holidays |
 | --- | --- | --- |
@@ -22,4 +14,4 @@ With PVPC, or another price that follows the market by the hour, choose **Dynami
 
 The plan counts the tolls and charges per kWh. The power term, the electricity tax, which adds the same share to every hour, and the meter's rent are left out, as they don't change which hours are cheapest.
 
-The CNMC sets the tolls and the ministry the charges, every January. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+The CNMC sets the tolls and the ministry the charges, every January. [Your own plan](../README.md#your-own-plan) says how to change the plan's prices for yourself: download its file from this folder, change it and upload it with **Upload plan**.

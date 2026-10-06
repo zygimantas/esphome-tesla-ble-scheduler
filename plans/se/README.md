@@ -1,16 +1,8 @@
 # Swedish plans
 
-The household plans of Sweden's eight biggest network companies, which together have nearly two thirds of the country's connections, with prices with VAT, in kronor. Your network bill names your company, your subscription and your main fuse. Name your plan under `tariff:` in your settings file, with your price area and Sweden's VAT, which make kronor the currency:
+The household plans of Sweden's eight biggest network companies, which together have nearly two thirds of the country's connections, with prices with VAT, in kronor. Your network bill names your company, your subscription and your main fuse. Choose your plan under **Grid plan** on the board's page.
 
-```yaml
-market:
-  area: SE3
-  vat: 0.25
-tariff:
-  plan: se/vattenfall-tidstariff
-```
-
-| Network company | Plan | In the settings file |
+| Network company | Plan | File |
 | --- | --- | --- |
 | Ellevio | Houses, apartments and single phase 25 A to 35 A | `se/ellevio` |
 | Ellevio | Single phase up to 20 A | `se/ellevio-single-phase-20a` |
@@ -49,4 +41,4 @@ If your company or subscription isn't here, like a subscription over 63 A, write
 
 Each network company sets its own prices, within a limit set by the Energy Markets Inspectorate (Ei). Most change them on 1 January, some also during the year. E.ON's three areas move to one price list by 1 January 2028.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

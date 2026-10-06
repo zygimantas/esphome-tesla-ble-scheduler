@@ -1,16 +1,8 @@
 # Danish plans
 
-The household grid plans (Nettarif C) of Denmark's eight biggest grid companies, with prices with VAT, in kroner. Name yours under `tariff:` in your settings file, with your market area and Denmark's VAT, which make kroner the currency:
+The household grid plans (Nettarif C) of Denmark's eight biggest grid companies, with prices with VAT, in kroner. Choose your area and your plan on the board's page, under **Country / Area** and **Grid plan**.
 
-```yaml
-market:
-  area: DK2
-  vat: 0.25
-tariff:
-  plan: dk/radius-nettarif-c
-```
-
-| Grid company | `market: area` | Plan |
+| Grid company | Area | Plan |
 | --- | --- | --- |
 | Radius Elnet | `DK2` | `dk/radius-nettarif-c` |
 | N1 | `DK1` | `dk/n1-nettarif-c` |
@@ -35,8 +27,8 @@ High and peak cost less from April to September than from October to March. The 
 
 The plans leave out the yearly subscription and the charges that are the same every hour: Energinet's grid and system tariffs and the electricity tax (elafgift). What homes with solar panels pay or get for their own power is left out too.
 
-Most other grid companies have the same hours. Name one of these plans and give your company's prices with VAT under `rates:`, for `low`, `summer-high`, `summer-peak`, `winter-high` and `winter-peak`, as [Your own changes](../README.md#your-own-changes) says. Where the hours differ, write your own plan, as [Your own plan](../README.md#your-own-plan) says.
+Most other grid companies have the same hours. Download one of these plans from this folder, give your company's prices with VAT under `rates:`, for `low`, `summer-high`, `summer-peak`, `winter-high` and `winter-peak`, change the hours too where they differ, and upload it as your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
 Each grid company sets its own prices, within a revenue cap the Danish Utility Regulator (Forsyningstilsynet) sets. Most change them on 1 January, some also during the year.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

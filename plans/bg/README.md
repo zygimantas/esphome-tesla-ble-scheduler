@@ -1,14 +1,6 @@
 # Bulgarian plans
 
-The network fees that Bulgaria's three big distribution operators charge households, with prices with VAT, in euros. Name yours under `tariff:` in your settings file, with Bulgaria's market area and VAT:
-
-```yaml
-market:
-  area: BG
-  vat: 0.2
-tariff:
-  plan: bg/erm-zapad-households
-```
+The network fees that Bulgaria's three big distribution operators charge households, with prices with VAT, in euros. Choose yours under **Grid plan** on the board's page.
 
 | Operator | Where | Plan |
 | --- | --- | --- |
@@ -22,20 +14,21 @@ The plans leave out what is the same every hour and isn't the operator's own: th
 
 ## Day and night meters
 
-With the regulated price and a day and night meter, the night is cheaper for the electricity, not for the network fees. The hours are the same in the whole country: the night is from 22:00 to 06:00 from November to March, and from 23:00 to 07:00 from April to October. Leave `market:` out and write your own plan with the whole price of each rate, network fees and VAT included, from your supplier's price list, as [A fixed price](../README.md#a-fixed-price) says. These are the prices in the west from July 2026:
+With the regulated price and a day and night meter, the night is cheaper for the electricity, not for the network fees. The hours are the same in the whole country: the night is from 22:00 to 06:00 from November to March, and from 23:00 to 07:00 from April to October. Choose **Fixed** under **Contract type**, with **Supplier's part** at 0, and upload your own plan with the whole price of each rate, network fees and VAT included, from your supplier's price list, as [A fixed price](../README.md#a-fixed-price) says. These are the prices in the west from July 2026:
 
 ```yaml
-tariff:
-  calendar:
-    apr-oct:
-      mon-sun: night 07:00 day 23:00 night
-    nov-mar:
-      mon-sun: night 06:00 day 22:00 night
-  rates:
-    day: 0.15425
-    night: 0.09192
+# Day and night meter, prices with VAT: https://www.dker.bg
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: night 07:00 day 23:00 night
+  nov-mar:
+    mon-sun: night 06:00 day 22:00 night
+rates:
+  day: 0.15425
+  night: 0.09192
 ```
 
 In Golden Sands, whose own small operator has no plan here, write your own plan too.
 
-The Energy and Water Regulatory Commission (EWRC) sets the network fees every year from 1 July, the same whoever your supplier is. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+The Energy and Water Regulatory Commission (EWRC) sets the network fees every year from 1 July, the same whoever your supplier is. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
