@@ -201,8 +201,8 @@ select:disabled {
   -webkit-text-fill-color: var(--text);
 }
 
-/* --- The setup, a new board's page: its one card, at its step --- */
-.setup .card:not(.step),
+/* --- The setup, a new board's page: its one card, at its step, with Update available above it --- */
+.setup .card:not(.step, #update-card),
 .card:not(.open) > .body {
   display: none;
 }
