@@ -23,6 +23,15 @@ packages:
 
 update:
   - name: Firmware
+    id: firmware
     platform: http_request
     source: https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/manifest.json
-    update_interval: 24h
+    update_interval: never # with an interval, ESPHome also checks at every start
+
+# A check for a release once a day, from a day after the start: the page's Update card shows it, and it installs only
+# from there.
+interval:
+  - interval: 24h
+    startup_delay: 24h
+    then:
+      - component.update: firmware
