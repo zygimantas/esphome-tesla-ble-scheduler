@@ -80,11 +80,7 @@ constexpr Area AREAS[] = {
     {"SI", "SI", Market::SMARD, 260},
 };
 
-// The currencies Nord Pool's prices come in; the other markets' come in euros.
-constexpr const char *NORD_POOL_CURRENCIES[] = {"DKK", "EUR", "NOK", "PLN", "RON", "SEK"};
-
-// The currency of an area's market prices unless the settings set one: the country's own where Nord Pool has it,
-// otherwise euros.
+// The currency of an area's market prices: the country's own where Nord Pool has it, otherwise euros.
 inline const char *own_currency(const Area &area) {
   static constexpr const char *OWN[][2] = {{"DK", "DKK"}, {"NO", "NOK"}, {"PL", "PLN"}, {"RO", "RON"}, {"SE", "SEK"}};
   for (const auto &[country, currency] : OWN)
@@ -103,14 +99,10 @@ inline const char *converted_currency(const Area &area) {
   return nullptr;
 }
 
-// Whether an area's market prices can come in `currency`.
+// Whether an area's market prices can come in `currency`: their own, or converted where SMARD's euros can be.
 inline bool comes_in(const Area &area, const std::string &currency) {
-  if (area.market != Market::NORD_POOL) {
-    const char *converted = converted_currency(area);
-    return currency == "EUR" || (converted != nullptr && currency == converted);
-  }
-  return std::any_of(std::begin(NORD_POOL_CURRENCIES), std::end(NORD_POOL_CURRENCIES),
-                     [&](const char *own) { return currency == own; });
+  const char *converted = converted_currency(area);
+  return currency == own_currency(area) || (converted != nullptr && currency == converted);
 }
 
 // Parses "2025-10-01T22:00:00Z", as Nord Pool sends it.

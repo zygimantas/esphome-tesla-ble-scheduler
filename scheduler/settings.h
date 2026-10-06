@@ -100,6 +100,12 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         read.tariff += "\n";
       continue;
     }
+    // Your own plan's lines, which read_tariff() checks with the plan file's own line numbers.
+    if (section == "tariff" && indent >= 2 && !(indent == 2 && line.compare(2, 5, "plan:") == 0)) {
+      read.tariff += line.substr(2) + "\n";
+      yours = true;
+      continue;
+    }
     const size_t colon = line.find(':');
     if (colon == std::string::npos || colon == indent || (colon + 1 < line.size() && line[colon + 1] != ' '))
       return at("isn't a key and a value");
@@ -115,12 +121,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       place = key;
     } else if (indent == 2 && section == "market" && !heading) {
       place = "market: " + key;
-    } else if (indent == 2 && section == "tariff" && key == "plan") {
+    } else if (indent == 2 && section == "tariff") {  // plan:, as your own plan's lines are read above
       place = "tariff: plan";
-    } else if (indent >= 2 && section == "tariff") {
-      read.tariff += line.substr(2) + "\n";
-      yours = true;
-      continue;
     } else {
       return at(concat({"doesn't belong there: ", key}));
     }
@@ -163,8 +165,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     return "currency must be a currency's three-letter code, like EUR";
   if (read.area != nullptr && !comes_in(*read.area, read.currency)) {
     const char *converted = converted_currency(*read.area);
-    return concat({"currency: ", market_name(read.area->market), "'s prices come in ",
-                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR",
+    return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ",
+                   own_currency(*read.area),
                    converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
   }
 

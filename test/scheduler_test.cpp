@@ -978,10 +978,10 @@ static void test_reads_the_settings_file() {
       "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Oslo\n";
   CHECK_STR(read_settings(norway, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "NO1" && s.currency == "NOK" && s.margin == 0.0f && s.standard_offset == 3600);
-  CHECK_STR(read_settings("currency: eur\n" + norway, repository_plans(), s), "");
-  CHECK(s.currency == "EUR");
-  CHECK_STR(settings_error("currency: GBP\n" + norway),
-            "currency: Nord Pool's prices come in DKK, EUR, NOK, PLN, RON or SEK");
+  CHECK_STR(read_settings("currency: nok\n" + norway, repository_plans(), s), "");
+  for (const char *currency : {"EUR", "GBP"})  // the area's own only, as the page writes it
+    CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + norway),
+              "currency: Nord Pool's prices for NO1 come in NOK");
   // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
   const std::string czech =
       "currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
@@ -992,9 +992,11 @@ static void test_reads_the_settings_file() {
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: CZK\n"),
-            "currency: SMARD's prices come in EUR, or HUF at the ECB's daily rate");
-  CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"), "currency: SMARD's prices come in EUR");
-  CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"), "currency: OMIE's prices come in EUR");
+            "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
+  CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"),
+            "currency: SMARD's prices for SI come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"),
+            "currency: OMIE's prices for ES come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU")), "");
   CHECK_STR(settings_error(settings_set("  area", "PT")), "");
 }
@@ -1097,6 +1099,7 @@ static void test_settings_file_errors() {
             "your plan: line 4 has clock again");
   CHECK_STR(settings_error(yours(calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"))),
             "your plan: rate spare isn't used on any day");
+  CHECK_STR(settings_error(yours("# My plan\ncalendar:\n  jan-dec\n")), "your plan: line 3 isn't a key and a value");
   for (const char *both : {"  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n",
                            "  currency: EUR\n  plan: lt/eso-standartinis-4-zones\n"})
     CHECK_STR(settings_error(settings_with("  plan", both)), "tariff: a plan, or your own plan, not both");
