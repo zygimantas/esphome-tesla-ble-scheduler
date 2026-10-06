@@ -41,7 +41,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-To change the country, the grid plan or the contract, open **Board** on the page and press **Change prices**: the country sets the VAT and the time zone too. The car's VIN, battery and charging power stay as you set them up, until you start over.
+To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's VIN, battery and charging power stay as you set them up, until you start over.
 
 Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 
@@ -60,7 +60,7 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 
 ### Phone messages
 
-Phone messages are optional, through the ntfy app: install it, subscribe to a topic with a long random name, and enter that name as **ntfy topic** under **Change settings**. Anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
+Phone messages are optional, through the ntfy app: install it, subscribe to a topic with a long random name, and enter that name as **ntfy topic** under **Settings**. Anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
 
 ## Troubleshooting
 
@@ -70,7 +70,7 @@ Phone messages are optional, through the ntfy app: install it, subscribe to a to
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The schedule's times are an hour or two off**: check **Country / Area** under **Change prices**, which sets the board's time zone.
+- **The schedule's times are an hour or two off**: check **Country / Area** under **Prices**, which sets the board's time zone.
 
 ## Development
 

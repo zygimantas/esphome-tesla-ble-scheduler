@@ -96,7 +96,7 @@ main {
   white-space: nowrap;
 }
 
-/* --- Cards, with a title; Board folds open --- */
+/* --- Cards, with a title; Board, Prices and Settings fold open --- */
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -120,7 +120,8 @@ summary {
 summary::-webkit-details-marker {
   display: none;
 }
-summary::after {
+summary::after,
+.fold > .title::after {
   content: "›";
   color: var(--muted);
   font-size: 24px;
@@ -131,8 +132,16 @@ details[open] > summary,
 .title {
   margin-bottom: 4px;
 }
-details[open] > summary::after {
+details[open] > summary::after,
+.fold.open > .title::after {
   transform: rotate(90deg);
+}
+/* Prices and Settings fold like Board after the setup: the title opens the card. */
+.fold > .title {
+  cursor: pointer;
+}
+.fold:not(.open) > .title {
+  margin-bottom: 0;
 }
 /* While the board restarts, only the card with its status, until the page loads afresh. */
 .restarting main > .card:not(#status-card) {
@@ -201,11 +210,11 @@ select:disabled {
   font-size: 12px;
 }
 .setup .card:not(.step, #phone-card),
-.step:not(.open) .body,
+.card:not(.open) > .body,
 .step:not(.done) .summary {
   display: none;
 }
-.step:not(.open, .done) .title {
+.step:not(.open, .done, .fold) .title {
   opacity: 0.5;
 }
 .step.done {
