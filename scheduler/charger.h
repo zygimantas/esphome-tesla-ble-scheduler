@@ -580,11 +580,4 @@ class Controller {
   int64_t at_once_charged_ = 0;
 };
 
-// Whether a new release can install itself now: the board restarts with it, so not while the car charges or is told to,
-// and an hour after a try that failed. Not before the clock is set: 0 is never past a try.
-inline bool update_due(const CarState &car, const Decision &d, int64_t tried_at) {
-  return car.now - tried_at >= 3600 && car.charging_state != "Charging" && car.charging_state != "Starting" &&
-         d.command != Command::START_CHARGING;
-}
-
 }  // namespace esphome::scheduler

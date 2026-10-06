@@ -43,11 +43,11 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
 
-The board installs each new release by itself within a day, while the car isn't charging. **Board** on the page shows the version it runs.
+When a new release is out, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 
 ### From 3.x
 
-Boards on 3.x don't update themselves. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own, tick **My plan isn't listed** in the setup, then upload a settings file with them under **Change settings**, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
+Boards on 3.x can't update from the page. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own, tick **My plan isn't listed** in the setup, then upload a settings file with them under **Change settings**, as [Settings](#settings) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
 
 ## Settings
 
