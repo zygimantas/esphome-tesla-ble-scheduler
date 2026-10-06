@@ -156,7 +156,7 @@ const PAGE = `
     <div class="title">Prices</div>
     <div class="body">
       <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
-      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT and the grid plans to choose from.</p>
+      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
       <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
       <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
       <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
@@ -178,7 +178,6 @@ const PAGE = `
 
   <section id="settings-card" class="card" hidden>
     <div class="title">Settings</div>
-    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
     <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
     <p id="settings-error" class="note error" hidden></p>
     <button id="save-settings" class="primary">Save</button>
@@ -537,8 +536,9 @@ function renderSavings() {
 
 // --- Settings --------------------------------------------------------------
 
-// Each market country's VAT on household electricity in %, as of October 2026, which every save writes, as there's no
-// field for it (northern Norway, NO4, has none), and its time zones, for a new board's guesses.
+// Each market country's VAT on household electricity in %, as of October 2026, which northern Norway (NO4) doesn't
+// charge, and its time zones, the main one first. Every save writes the VAT and a time zone from here, as no field asks
+// for them, and the board knows no other zones.
 const COUNTRIES = {
   AT: [20, "Europe/Vienna"],
   BE: [6, "Europe/Brussels"],
@@ -567,6 +567,13 @@ const COUNTRIES = {
 };
 const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? 0));
 const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));
+// The board's time zone, which follows the country: the phone's, where it's one of the country's, as on the Canary
+// Islands, else the country's main one; before the country is chosen, the phone's country's, else Brussels' for now.
+function timeZone() {
+  const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zones = COUNTRIES[$("set-area").value.slice(0, 2) || countryOf(phone)] ?? COUNTRIES.BE;
+  return zones.includes(phone) ? phone : zones[1];
+}
 // The countries without the euro, by their currency, which their prices are in: Nord Pool's market prices come in it,
 // and the board converts SMARD's, in euros, at the ECB's daily rate where the settings set the currency.
 const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
@@ -684,7 +691,6 @@ async function nextStep() {
   const form = readSettings(formSettings(false));
   const changed = car.filter((key) => form[key] !== saved[key]);
   if (setup.step === 1 && (changed.includes("tesla_vin") || (lastStep() === 2 && changed.length))) {
-    if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
     if (!(await sendSettings(formSettings(!unfinished())))) return;
   }
   if (setup.step < lastStep()) {
@@ -717,13 +723,13 @@ function fillPlans(plan) {
   $("plan-row").hidden = $("unlisted-row").hidden = !plans.length;
 }
 
-// The form, from the board's settings file and what it offers. What the file doesn't have starts as the phone's time
-// zone, a 75 kWh battery and 11 kW, and on a new board, a dynamic price and the phone's
+// The form, from the board's settings file and what it offers. What the file doesn't have starts as a 75 kWh battery and
+// 11 kW, and on a new board, a dynamic price and the phone's
 // country, where it has only one market area. Without a market, the supplier's price is fixed, and the country the
 // grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
 function fillSettings() {
   const values = readSettings(settings.text);
-  const { areas, time_zones: zones } = settings.options;
+  const { areas } = settings.options;
   // a country by its name, with its market area where it has several, like "Sweden, SE3", or a part, "Italy (north)"
   const regions = new Intl.DisplayNames(["en"], { type: "region" });
   const areaName = (area) => {
@@ -750,13 +756,6 @@ function fillSettings() {
   // a custom plan: the lines under tariff:, without their indent, unless they name a plan from the list
   const [, own = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
   ownPlan = plan ? "" : own.replace(/^ {2}/gm, "").trimEnd();
-  const zone = values.timezone ?? phone;
-  const known = zones.includes(zone);
-  $("set-zone").replaceChildren(
-    ...(known ? [] : [new Option("Choose", "")]),
-    ...zones.map((name) => new Option(name, name)),
-  );
-  $("set-zone").value = known ? zone : "";
   $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "0.00";
   $("set-vin").value = values.tesla_vin ?? "";
@@ -813,7 +812,7 @@ function formSettings(prices = true) {
     `tesla_battery_kwh: ${v("set-battery")}`,
     `tesla_charging_kw: ${v("set-power")}`,
     `tesla_vin: ${v("set-vin").toUpperCase()}`,
-    `timezone: ${v("set-zone")}`,
+    `timezone: ${timeZone()}`,
   );
   return `${lines.join("\n")}\n`;
 }
@@ -1177,13 +1176,9 @@ function bind() {
       button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
       requestRender();
     });
-  // another country's plans, with its only one chosen, and on a new board, its time zone, unless the phone's is one
-  // the board knows
+  // another country's plans, with its only one chosen
   $("set-area").addEventListener("change", () => {
     fillPlans();
-    const phone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (unfinished() && !settings.options.time_zones.includes(phone))
-      $("set-zone").value = COUNTRIES[$("set-area").value.slice(0, 2)]?.[1] ?? "";
     requestRender();
   });
   $("set-price").addEventListener("change", requestRender);

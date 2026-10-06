@@ -41,7 +41,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-A new board starts with your phone's time zone. To change it, or to get phone messages, open **Board** on the page and press **Change settings**. **Change prices** there changes the country, which sets the VAT, the grid plan and the contract. The car's VIN, battery and charging power stay as you set them up, until you start over.
+To change the country, the grid plan or the contract, open **Board** on the page and press **Change prices**: the country sets the VAT and the time zone too. The car's VIN, battery and charging power stay as you set them up, until you start over.
 
 Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 
@@ -70,7 +70,7 @@ Phone messages are optional, through the ntfy app: install it, subscribe to a to
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
 - **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The schedule's times are an hour or two off**: check **Time zone** under **Change settings**.
+- **The schedule's times are an hour or two off**: check **Country / Area** under **Change prices**, which sets the board's time zone.
 
 ## Development
 

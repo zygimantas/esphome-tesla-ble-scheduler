@@ -21,22 +21,17 @@ constexpr size_t MAX_SETTINGS_BYTES = 4096;
 // The plans built in, by name like lt/eso-standartinis-4-zones, with their text.
 using Plans = std::vector<std::pair<std::string_view, std::string_view>>;
 
-// The time zones whose clocks change on the EU's dates, as calendar.h has them, with their offset from UTC in winter,
-// in hours.
+// The time zones of the market countries, which the page writes, with their offset from UTC in winter, in hours: their
+// clocks all change on the EU's dates, as calendar.h has them.
 constexpr std::pair<const char *, int> TIME_ZONES[] = {
-    {"Africa/Ceuta", 1},      {"Arctic/Longyearbyen", 1}, {"Asia/Famagusta", 2},     {"Asia/Nicosia", 2},
-    {"Atlantic/Canary", 0},   {"Atlantic/Faroe", 0},      {"Atlantic/Madeira", 0},   {"Europe/Amsterdam", 1},
-    {"Europe/Andorra", 1},    {"Europe/Athens", 2},       {"Europe/Belgrade", 1},    {"Europe/Berlin", 1},
-    {"Europe/Bratislava", 1}, {"Europe/Brussels", 1},     {"Europe/Bucharest", 2},   {"Europe/Budapest", 1},
-    {"Europe/Busingen", 1},   {"Europe/Copenhagen", 1},   {"Europe/Dublin", 0},      {"Europe/Gibraltar", 1},
-    {"Europe/Guernsey", 0},   {"Europe/Helsinki", 2},     {"Europe/Isle_of_Man", 0}, {"Europe/Jersey", 0},
-    {"Europe/Lisbon", 0},     {"Europe/Ljubljana", 1},    {"Europe/London", 0},      {"Europe/Luxembourg", 1},
-    {"Europe/Madrid", 1},     {"Europe/Malta", 1},        {"Europe/Mariehamn", 2},   {"Europe/Monaco", 1},
-    {"Europe/Oslo", 1},       {"Europe/Paris", 1},        {"Europe/Podgorica", 1},   {"Europe/Prague", 1},
-    {"Europe/Riga", 2},       {"Europe/Rome", 1},         {"Europe/San_Marino", 1},  {"Europe/Sarajevo", 1},
-    {"Europe/Skopje", 1},     {"Europe/Sofia", 2},        {"Europe/Stockholm", 1},   {"Europe/Tallinn", 2},
-    {"Europe/Tirane", 1},     {"Europe/Vaduz", 1},        {"Europe/Vatican", 1},     {"Europe/Vienna", 1},
-    {"Europe/Vilnius", 2},    {"Europe/Warsaw", 1},       {"Europe/Zagreb", 1},      {"Europe/Zurich", 1},
+    {"Africa/Ceuta", 1},     {"Atlantic/Canary", 0},   {"Atlantic/Madeira", 0}, {"Europe/Amsterdam", 1},
+    {"Europe/Berlin", 1},    {"Europe/Brussels", 1},   {"Europe/Bucharest", 2}, {"Europe/Budapest", 1},
+    {"Europe/Busingen", 1},  {"Europe/Copenhagen", 1}, {"Europe/Helsinki", 2},  {"Europe/Lisbon", 0},
+    {"Europe/Ljubljana", 1}, {"Europe/Luxembourg", 1}, {"Europe/Madrid", 1},    {"Europe/Mariehamn", 2},
+    {"Europe/Oslo", 1},      {"Europe/Paris", 1},      {"Europe/Prague", 1},    {"Europe/Riga", 2},
+    {"Europe/Rome", 1},      {"Europe/Sofia", 2},      {"Europe/Stockholm", 1}, {"Europe/Tallinn", 2},
+    {"Europe/Vienna", 1},    {"Europe/Vilnius", 2},    {"Europe/Warsaw", 1},    {"Europe/Zagreb", 1},
+    {"Europe/Zurich", 1},
 };
 
 struct SettingsFile {
@@ -249,8 +244,7 @@ inline std::string json_string(std::string_view text) {
   return json + "\"";
 }
 
-// What the settings form on the page offers, as JSON: the market areas, the plans built in by name and name for people,
-// and the time zones.
+// What the page offers for the settings, as JSON: the market areas, and the plans built in by name and name for people.
 inline std::string settings_options(const Plans &plans) {
   std::string json = "{\"areas\":[";
   for (const Area &area : AREAS)
@@ -261,9 +255,6 @@ inline std::string settings_options(const Plans &plans) {
     json += concat({json.back() == '[' ? "" : ",", "[", json_string(plan.first), ",",
                     json_string(title.empty() ? plan.first : title), "]"});
   }
-  json += "],\"time_zones\":[";
-  for (const auto &zone : TIME_ZONES)
-    json += concat({json.back() == '[' ? "" : ",", json_string(zone.first)});
   return json + "]}";
 }
 
