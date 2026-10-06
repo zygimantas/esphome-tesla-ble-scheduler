@@ -75,14 +75,11 @@ void SchedulerComponent::load_settings() {
     this->settings_error_ = "No settings yet";
 }
 
-// A file the checks turn away stays the one the page shows, to fix.
+// A file the checks turn away stays the one the page shows, to fix, and read_settings() leaves file_ as it was.
 void SchedulerComponent::use_settings(const std::string &text) {
   this->settings_text_ = text;
-  SettingsFile file;
-  const std::string error = read_settings(text, this->plans_, file);
+  const std::string error = read_settings(text, this->plans_, this->file_);
   this->settings_error_ = error.empty() ? "" : "Settings: " + error;
-  if (error.empty())
-    this->file_ = file;
 }
 
 // On the web server's task, the only one that uses settings_text_ once the board runs, so the next request sees the
