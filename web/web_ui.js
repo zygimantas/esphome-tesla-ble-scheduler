@@ -702,10 +702,11 @@ function renderSetup() {
   }
 }
 
-// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power where one of
-// them changed, as the board needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices'
-// Finish saves the prices, which restarts the board. Each says what's wrong on its card, and the saves keep the
-// settings the setup doesn't show.
+// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power where the VIN
+// changed, as the board needs it to find the car, with the guesses and no prices yet on a new board, and where the
+// battery or the power changed and Key is the last step, as no Finish follows to save them; Prices' Finish saves the
+// prices, the battery and the power, which restarts the board. Each says what's wrong on its card, and the saves keep
+// the settings the setup doesn't show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
   const problem = setup.step === 1 ? vinProblem(vin) : "";
@@ -719,7 +720,8 @@ async function nextStep() {
   const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
   const saved = readSettings(settings.text).values;
   const form = readSettings(formSettings(false)).values;
-  if (setup.step === 1 && car.some((key) => form[key] !== saved[key])) {
+  const changed = car.filter((key) => form[key] !== saved[key]);
+  if (setup.step === 1 && (changed.includes("tesla_vin") || (lastStep() === 2 && changed.length))) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
     if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(car)))) return;
   }
