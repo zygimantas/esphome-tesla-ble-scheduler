@@ -1764,6 +1764,30 @@ static void test_full_within_half_a_percent() {
   const Decision later = slow.tick(behind.state(SEP24_1700Z + 5 * HOUR), Settings());
   CHECK(later.command == Command::NONE);
   CHECK_STR(later.status, "Charged");
+
+  // Paused there by the charger in its window, mid quarter-hour or across its end, the car resumes by itself after
+  // 90 s: it's finishing, not a start from the car, and the schedule goes on.
+  for (const int64_t pause : {TROUGH + 2 * HOUR + 5 * 60, TROUGH + 2 * HOUR + 14 * 60})
+    for (const bool no_power : {false, true}) {
+      Controller paused = with_prices();
+      const Run night = simulate(paused, FakeTesla(), SEP24_1700Z - 60, TROUGH + 4 * HOUR,
+                                 {{SEP24_1700Z, &FakeTesla::plug_in},
+                                  {pause,
+                                   [no_power](FakeTesla &c) {
+                                     c.soc = 79.6f;
+                                     c.charging = false;
+                                     c.no_power = no_power;
+                                   }},
+                                  {pause + 90, [](FakeTesla &c) {
+                                     c.no_power = false;
+                                     c.charging = true;
+                                   }}});
+      CHECK(night.messages.size() == 1);  // the plug-in's
+      CHECK(!contains(night.statuses, "Charging now"));
+      CHECK(std::none_of(night.commands.begin(), night.commands.end(),
+                         [pause](const auto &c) { return c.first >= pause; }));
+      CHECK(night.car.soc >= 79.9f);
+    }
 }
 
 static void test_retries_are_rate_limited() {

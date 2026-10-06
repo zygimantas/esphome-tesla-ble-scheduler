@@ -288,7 +288,9 @@ class Controller {
       // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge (after
       // Stop charging, that's the app's start).
       const bool auto_start = now - plugged_since_ < 3 * 60 || (hold_ != Hold::NONE && now - limit_raised_at_ < 3 * 60);
-      const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start;
+      // Charged by its level, short of Complete: a car that charges again is finishing, as after a charger's pause.
+      const bool finishing = charged_() && !complete_;
+      const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start && !finishing;
       if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_schedule_())) {
         notify_car_start_ = hold_ != Hold::NOW;  // once per hold
         hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
