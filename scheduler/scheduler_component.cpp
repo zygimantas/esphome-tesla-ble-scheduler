@@ -346,6 +346,19 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
   return std::nullopt;
 }
 
+// GETs `url`: the answer's HTTP status, or nothing when the request fails, and with 200 its body, or nothing when it's
+// cut off (read_body_()). The response ends before the body is parsed: the connection's memory isn't needed any more.
+std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<std::string> &body) {
+  auto response = this->http_->get(url);
+  if (response == nullptr)
+    return std::nullopt;
+  const int status = response->status_code;
+  if (status == http_request::HTTP_STATUS_OK)
+    body = this->read_body_(*response);
+  response->end();
+  return status;
+}
+
 // Where the prices of the CET delivery day `day` days after `now` are.
 std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
   const Area &area = *this->file_.area;
@@ -396,14 +409,13 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
     if (url == fetched)
       continue;
     fetched = url;
-    auto response = this->http_->get(url);
-    if (response == nullptr) {
+    std::optional<std::string> body;
+    const std::optional<int> status = this->fetch_(url, body);
+    if (!status) {
       ESP_LOGW(TAG, "%s request failed", source);
       break;
     }
-    if (response->status_code == http_request::HTTP_STATUS_OK) {
-      const std::optional<std::string> body = this->read_body_(*response);
-      response->end();  // before the parse: the connection's memory isn't needed any more
+    if (*status == http_request::HTTP_STATUS_OK) {
       PriceTable &prices = this->controller_.prices;
       const int64_t until = prices.known_until(now);
       const int stored = body ? this->store_prices_(*body, rate) : -1;
@@ -415,12 +427,11 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
       } else if (stored == 0 && day == 0) {
         ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, area.name);
       }
-    } else if (response->status_code != not_yet) {
-      ESP_LOGW(TAG, "%s answered HTTP %d", source, response->status_code);
+    } else if (*status != not_yet) {
+      ESP_LOGW(TAG, "%s answered HTTP %d", source, *status);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
       ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, area.name);
     }
-    response->end();
   }
 }
 
@@ -428,23 +439,17 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
 // fails: then the prices wait for the next try.
 std::optional<float> SchedulerComponent::fetch_rate_() {
   const char *currency = this->file_.currency.c_str();
-  auto response = this->http_->get(ECB_RATES_URL);
-  if (response == nullptr) {
+  std::optional<std::string> body;
+  const std::optional<int> status = this->fetch_(ECB_RATES_URL, body);
+  const std::optional<float> rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
+  if (!status)
     ESP_LOGW(TAG, "ECB request failed");
-    return std::nullopt;
-  }
-  std::optional<float> rate;
-  if (response->status_code == http_request::HTTP_STATUS_OK) {
-    const std::optional<std::string> body = this->read_body_(*response);
-    rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
-    if (rate)
-      ESP_LOGI(TAG, "ECB: 1 EUR = %.4f %s", *rate, currency);
-    else
-      ESP_LOGW(TAG, "ECB: no rate for %s in the answer", currency);
-  } else {
-    ESP_LOGW(TAG, "ECB answered HTTP %d", response->status_code);
-  }
-  response->end();
+  else if (*status != http_request::HTTP_STATUS_OK)
+    ESP_LOGW(TAG, "ECB answered HTTP %d", *status);
+  else if (rate)
+    ESP_LOGI(TAG, "ECB: 1 EUR = %.4f %s", *rate, currency);
+  else
+    ESP_LOGW(TAG, "ECB: no rate for %s in the answer", currency);
   return rate;
 }
 
@@ -454,17 +459,12 @@ void SchedulerComponent::fetch_plan_(int64_t now) {
   this->plan_tried_at_ = now;
   this->plan_usable_ = false;
   const char *plan = this->file_.plan.c_str();
-  auto response = this->http_->get(std::string(PLANS) + plan + ".yaml");
-  if (response == nullptr) {
+  std::optional<std::string> text;
+  const std::optional<int> status = this->fetch_(std::string(PLANS) + plan + ".yaml", text);
+  if (!status) {
     ESP_LOGW(TAG, "Plan %s: request failed", plan);
-    return;
-  }
-  const int status = response->status_code;
-  const std::optional<std::string> text =
-      status == http_request::HTTP_STATUS_OK ? this->read_body_(*response) : std::nullopt;
-  response->end();
-  if (status != http_request::HTTP_STATUS_OK) {
-    ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", plan, status);
+  } else if (*status != http_request::HTTP_STATUS_OK) {
+    ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", plan, *status);
   } else if (!text) {
     ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", plan);
   } else if (*text == this->plan_text_) {
