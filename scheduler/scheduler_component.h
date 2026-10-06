@@ -97,11 +97,12 @@ class SchedulerComponent : public PollingComponent {
   const Plans &plans() const { return this->plans_; }
   // The settings saved on the board, read once the plans are added and before setup().
   void load_settings();
-  // Takes a settings file, as the simulation does.
+  // Takes a settings file before the web server starts, as the simulation does.
   void use_settings(const std::string &text);
-  // Saves a settings file that read_settings() took: a board's first applies at once, later ones restart it.
+  // Saves a settings file that read_settings() took, from the web server's task: a board's first applies at once,
+  // later ones restart it.
   void save_settings(const std::string &text);
-  // The settings file saved, empty without one, and the car's VIN from it.
+  // The settings file saved, empty without one (for the web server's task), and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
   const std::string &vin() const { return this->file_.vin; }
   void set_ready_by(ReadyBy *ready_by) { this->ready_by_ = ready_by; }
@@ -138,7 +139,7 @@ class SchedulerComponent : public PollingComponent {
   http_request::HttpRequestComponent *http_{nullptr};
   Plans plans_;
   ESPPreferenceObject settings_pref_;
-  std::string settings_text_;   // the settings file saved
+  std::string settings_text_;   // the settings file saved: once the board runs, only the web server's task uses it
   std::string settings_error_;  // why there are none, for the page's status
   SettingsFile file_;
 #ifdef USE_WEBSERVER

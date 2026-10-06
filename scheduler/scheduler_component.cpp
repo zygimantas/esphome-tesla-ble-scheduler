@@ -85,19 +85,23 @@ void SchedulerComponent::use_settings(const std::string &text) {
     this->file_ = file;
 }
 
-// On the next loop, as the web server calls from its own task. A board's first settings apply at once, as nothing
-// runs yet; later ones restart it, which starts the schedule, the prices and the car's connection afresh.
+// On the web server's task, the only one that uses settings_text_ once the board runs, so the next request sees the
+// new file; the rest on the next loop. A board's first settings apply at once, as nothing runs yet; later ones restart
+// it, which starts the schedule, the prices and the car's connection afresh.
 void SchedulerComponent::save_settings(const std::string &text) {
-  this->defer([this, text]() {
+  const bool restart = !this->settings_text_.empty();
+  this->settings_text_ = text;
+  this->defer([this, text, restart]() {
     auto saved = std::make_unique<SavedSettings>();
     std::snprintf(saved->text, sizeof(saved->text), "%s", text.c_str());
     this->settings_pref_.save(saved.get());
     global_preferences->sync();
-    if (!this->settings_text_.empty()) {
+    if (restart) {
       App.safe_reboot();
       return;
     }
-    this->use_settings(text);
+    read_settings(text, this->plans_, this->file_);  // the web server checked it
+    this->settings_error_.clear();
     this->apply_settings_();
     this->tick_soon_();
   });
@@ -261,6 +265,9 @@ void SchedulerComponent::dump_config() {
   }
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
+  TariffText own;
+  read_tariff(file.tariff, own);  // read_settings() checked it
+  const char *tariff = !file.plan.empty() ? file.plan.c_str() : own.calendar.empty() ? "none" : "its own rates";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
@@ -268,8 +275,8 @@ void SchedulerComponent::dump_config() {
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                market.c_str(), file.currency.c_str(), file.plan.empty() ? "its own rates" : file.plan.c_str(),
-                file.battery_kwh, file.charging_kw, file.ntfy_topic.empty() ? "off" : "on");
+                market.c_str(), file.currency.c_str(), tariff, file.battery_kwh, file.charging_kw,
+                file.ntfy_topic.empty() ? "off" : "on");
   LOG_UPDATE_INTERVAL(this);
 }
 
@@ -323,8 +330,8 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
   std::string body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
-  while (body.size() < MAX_BODY_BYTES) {
-    const int read = response.read(chunk, std::min(sizeof(chunk), MAX_BODY_BYTES - body.size()));
+  while (body.size() <= MAX_BODY_BYTES) {  // a byte past it tells a longer body from one of exactly MAX_BODY_BYTES
+    const int read = response.read(chunk, std::min(sizeof(chunk), MAX_BODY_BYTES + 1 - body.size()));
     App.feed_wdt();
     yield();
     const auto result =
