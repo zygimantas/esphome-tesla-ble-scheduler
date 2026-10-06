@@ -1,6 +1,6 @@
 """Charges a Tesla in the cheapest quarter-hours of the day-ahead market before Ready by.
 
-charger.h decides; scheduler_component.h connects it to ESPHome. The settings are a file uploaded on the board's page,
+charger.h decides; scheduler_component.h connects it to ESPHome. The settings are a file the board's page writes,
 which settings.h reads and checks. This file builds in the plans of plans/ and creates the web page's entities.
 """
 

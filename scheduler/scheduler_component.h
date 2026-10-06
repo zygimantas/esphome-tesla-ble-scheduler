@@ -92,7 +92,7 @@ class SchedulerComponent : public PollingComponent {
 
   void set_clock(time::RealTimeClock *clock) { this->clock_ = clock; }
   void set_http(http_request::HttpRequestComponent *http) { this->http_ = http; }
-  // A plan of this release's plans/, which a settings file can name; the board downloads it anew every day.
+  // A plan of this release's plans/, which the settings can name; the board downloads it anew every day.
   void add_plan(const char *name, const char *text) { this->plans_.emplace_back(name, text); }
   const Plans &plans() const { return this->plans_; }
   // The settings saved on the board, read once the plans are added and before setup().
