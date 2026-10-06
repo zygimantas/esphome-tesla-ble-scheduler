@@ -319,9 +319,14 @@ function render() {
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
+  // the country's plans, and a custom plan by its name in place of Not listed, where there are none too
+  const listed = $("set-plan").options.length > 2;
   const unlisted = $("set-unlisted").checked;
-  $("set-plan").disabled = unlisted;
-  $("plans-note").hidden = !$("plan-row").hidden || !$("set-area").value;
+  $("set-plan").options[1].text = ownPlan ? ownPlanLabel() : "Not listed";
+  $("plan-row").hidden = !listed && !ownPlan;
+  $("unlisted-row").hidden = !listed;
+  $("set-plan").disabled = unlisted || !listed;
+  $("plans-note").hidden = listed || !$("set-area").value;
   $("unlisted-note").hidden = !unlisted;
   // Upload custom plan under either note
   $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
@@ -616,6 +621,11 @@ function vinProblem(vin) {
 let batteryTyped = false;
 // A custom plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
 let ownPlan = "";
+// The custom plan as the page names it, from its first line, like "# <name>, prices with VAT: <link>".
+const ownPlanLabel = () => {
+  const name = /^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim();
+  return name ? `Custom plan: ${name}` : "Custom plan";
+};
 
 // Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
 // grid plan.
@@ -712,8 +722,8 @@ const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").valu
 // isn't in plans/: a box under the list rather than an option in it, as no one should have to search a long list for
 // a way out. A new board's, with `plan` undefined, starts at the country's only plan, as everyone in Spain and
 // Slovenia pays it, or at Choose where there are several, as nearly every home is on one and skipping it would leave
-// out its hours. Choose and Not listed show only in the closed list. No rows, and no box ticked, where the country has
-// no plans, as its own note says the same.
+// out its hours. Choose and Not listed, which render() names after a custom plan, show only in the closed list. Not
+// listed, without the box, where the country has no plans, as its own note says the same.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
@@ -721,9 +731,8 @@ function fillPlans(plan) {
   for (const option of closed) option.disabled = option.hidden = true;
   $("set-plan").replaceChildren(...closed, ...plans.map(([name, title]) => new Option(title, name)));
   $("set-unlisted").checked = plan === "" && plans.length > 0;
-  const fallback = plan === "" ? "none" : plans.length === 1 ? plans[0][0] : "";
+  const fallback = plan === "" || !plans.length ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
-  $("plan-row").hidden = $("unlisted-row").hidden = !plans.length;
 }
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as a 75 kWh battery and
@@ -1208,9 +1217,7 @@ function bind() {
     const problem =
       "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
     say(long ? problem : "");
-    // its name, from its first line, like "# <name>, prices with VAT: <link>"
-    const name = /^#([^\n]*?)(?:, prices with VAT|\n|$)/.exec(ownPlan)?.[1].trim();
-    if (!long) toast(name ? `Custom plan: ${name}` : "Custom plan taken");
+    if (!long) toast(ownPlanLabel());
     requestRender();
   });
   press($("save-settings"), saveSettings);
