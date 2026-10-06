@@ -82,14 +82,14 @@ The board turns away a plan without a calendar, a rate without a price, a rate n
 
 ## A fixed price
 
-With a fixed price, or one that changes only with the hour of the day, choose **Fixed** under **Contract type** on the board's page: no market prices are downloaded. It works in any country whose clocks change on the EU's dates.
+With a fixed price, or one that changes only with the hour of the day, choose **Fixed** under **Contract type** on the board's page: no market prices are downloaded. It works in every country under **Country / Area**, in its currency.
 
 With your grid operator's plan, enter your supplier's own part per kWh, without the grid fees, as **Supplier's part**, which the board adds to the plan's fees in every hour. Where your supplier quotes one price with the grid fees in, it's the supplier's own line on the bill. Without a plan, all hours cost the same, so the board charges at once.
 
-With day and night prices, upload your own plan whose rates are your whole price per kWh, the supplier's price and the grid fee together, with VAT, and leave **Supplier's part** at 0: the board then charges in the cheap hours. A night rate that starts on the half-hour, like Octopus Go's from 00:30 to 05:30 in the UK, with your rates:
+With day and night prices, upload your own plan whose rates are your whole price per kWh, the supplier's price and the grid fee together, with VAT, and leave **Supplier's part** at 0: the board then charges in the cheap hours. A night rate that starts on the half-hour, from 00:30 to 05:30, with your rates:
 
 ```yaml
-# Octopus Go, prices with VAT: https://octopus.energy/smart/go/
+# My night rate, prices with VAT: https://example.com
 calendar:
   jan-dec:
     mon-sun: standard 00:30 cheap 05:30 standard
@@ -102,7 +102,7 @@ rates:
 
 | Where | Why | Issue |
 | --- | --- | --- |
-| The rest of Italy, Slovakia, Greece, Ireland and other countries outside Nord Pool, SMARD and OMIE | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. A fixed price works already, in Italy with [the TD plan](it). | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
-| United Kingdom | Neither Nord Pool nor ENTSO-E has British prices. Suppliers like Octopus Agile publish their own. A fixed price works already, also with a night rate on the half-hour like Octopus Go's ([A fixed price](#a-fixed-price)). | [#81](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/81) |
+| The rest of Italy, Slovakia, Greece, Ireland and other countries outside Nord Pool, SMARD and OMIE | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. In Italy a fixed price works already, with [the TD plan](it); the others aren't under **Country / Area** yet. | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
+| United Kingdom | Neither Nord Pool nor ENTSO-E has British prices. Suppliers like Octopus Agile publish their own. The page has no British pounds, so not even a fixed price works yet. | [#81](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/81) |
 
 The page and these documents are in English.
