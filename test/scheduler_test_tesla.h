@@ -26,7 +26,7 @@ struct FakeTesla {
   // A Tesla starts charging on plug-in when no schedule applies.
   void plug_in() {
     plugged = true;
-    charging = soc < limit && !complete;
+    charging = soc < limit && !complete && !no_power;
   }
   void unplug() { plugged = charging = false; }
   void set_charging(bool on) {

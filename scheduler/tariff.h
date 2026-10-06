@@ -67,7 +67,10 @@ inline std::string read_tariff(const std::string &text, TariffText &tariff) {
       section = key;
     } else if (indent == 0 && !value.empty() && (key == "clock" || key == "currency")) {
       section.clear();
-      (key == "clock" ? tariff.clock : tariff.currency) = value;
+      std::string &setting = key == "clock" ? tariff.clock : tariff.currency;
+      if (!setting.empty())
+        return concat({"line ", std::to_string(number), " has ", key, " again"});
+      setting = value;
     } else if (indent == 2 && value.empty() && section == "calendar") {
       tariff.calendar.push_back({key, {}});
     } else if (indent == 4 && !value.empty() && section == "calendar" && !tariff.calendar.empty()) {
@@ -157,8 +160,8 @@ constexpr size_t MAX_RATES = 26;
 constexpr float MAX_PRICE = 1e6f;
 
 // The tariff of a plan's text and the settings' own tariff: lines, both as read_tariff() reads them: your calendar and
-// clock replace the plan's, and your exceptions and rates replace or add to its own, one key at a time. The plan's
-// prices are in `currency`. Returns what's wrong, or "".
+// clock replace the plan's, and your exceptions and rates replace or add to its own, one key at a time, each key once
+// as in a plan. The plan's prices are in `currency`. Returns what's wrong, or "".
 inline std::string make_tariff(const std::string &plan_text, const std::string &own_text, const std::string &currency,
                                Tariff &tariff) {
   TariffText plan, own;
@@ -171,18 +174,17 @@ inline std::string make_tariff(const std::string &plan_text, const std::string &
     all.clock = own.clock;
   if (!own.calendar.empty())
     all.calendar = own.calendar;
-  const auto set = [](auto &table, const auto &entry) {
-    const auto found =
-        std::find_if(table.begin(), table.end(), [&](const auto &other) { return other.first == entry.first; });
-    if (found == table.end())
-      table.push_back(entry);
-    else
-      found->second = entry.second;
+  // The plan's entries that yours replace go, and yours follow, so that one of yours given twice is turned away below
+  // as in a plan.
+  const auto add = [](auto &table, const auto &yours) {
+    for (const auto &mine : yours)
+      table.erase(
+          std::remove_if(table.begin(), table.end(), [&](const auto &entry) { return entry.first == mine.first; }),
+          table.end());
+    table.insert(table.end(), yours.begin(), yours.end());
   };
-  for (const auto &entry : own.exceptions)
-    set(all.exceptions, entry);
-  for (const auto &entry : own.rates)
-    set(all.rates, entry);
+  add(all.exceptions, own.exceptions);
+  add(all.rates, own.rates);
 
   Tariff made;
   if (!all.clock.empty() && all.clock != "local" && all.clock != "winter")
