@@ -646,7 +646,8 @@ const broken = () => text(E.status).startsWith("Settings: ");
 // with the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at
 // the car, as its link ends in #car, then the car, then its key, which ends the setup once the car answers. After it,
 // the card is Prices, below Savings, folded like Settings, which opens from its title, or for settings the board
-// turned away; the car's fields stay as the setup saved them, as only a new install changes them.
+// turned away; the VIN stays as the setup saved it, as only a new install changes it, while the battery and the power
+// move to Settings.
 function renderSetup() {
   const status = text(E.status);
   // at the key, the setup waits for the car's answer, past the board's No car yet from before the car's save
@@ -664,6 +665,11 @@ function renderSetup() {
   // Continue in the setup; after it, Save, with Cancel
   $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
   $("cancel-prices").hidden = setup.step > 0 || broken();
+  // the battery and the power, at the setup's car and after it in Settings, above the topic, by request; the VIN stays
+  // the setup's
+  const rows = ["battery-row", "battery-hint", "power-row", "power-hint"].map($);
+  const before = setup.step ? $("car-step").querySelector(".error") : $("set-topic").closest("label");
+  if (rows[3].nextElementSibling !== before) before.before(...rows);
 }
 
 // Says what's wrong on the open card, the setup's or Prices, at its step, else Settings, in sight, or "" for nothing.
