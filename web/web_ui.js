@@ -1213,13 +1213,15 @@ function bind() {
     requestRender();
   });
   // Create topic, then Copy topic: a long random ntfy topic, copied to paste in the ntfy app on the same phone. The
-  // page is plain HTTP, without the clipboard API, so it copies the field's selected text.
+  // page is plain HTTP, without the clipboard API, so it copies the field's selected text. 32 letters and digits, so
+  // each byte picks one evenly: 20 of them make 100 random bits.
+  $("set-topic").addEventListener("input", requestRender); // the button's name follows the field
   $("topic").addEventListener("click", () => {
     const field = $("set-topic");
     if (!field.value.trim()) {
-      const letters = "abcdefghijklmnopqrstuvwxyz0123456789";
+      const letters = "abcdefghijklmnopqrstuvwxyz234567";
       const random = crypto.getRandomValues(new Uint8Array(20));
-      field.value = `tesla-${[...random].map((byte) => letters[byte % letters.length]).join("")}`;
+      field.value = `tesla-${[...random].map((byte) => letters[byte & 31]).join("")}`;
     }
     field.select();
     field.setSelectionRange(0, field.value.length);
