@@ -101,7 +101,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       continue;
     }
     // Your own plan's lines, which read_tariff() checks with the plan file's own line numbers.
-    if (section == "tariff" && indent >= 2 && !(indent == 2 && line.compare(2, 5, "plan:") == 0)) {
+    if (section == "tariff" && indent >= 2 && line.compare(2, 5, "plan:") != 0) {
       read.tariff += line.substr(2) + "\n";
       yours = true;
       continue;
@@ -163,11 +163,11 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (read.currency.size() != 3 ||
       !std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }))
     return "currency must be a currency's three-letter code, like EUR";
-  if (read.area != nullptr && !comes_in(*read.area, read.currency)) {
-    const char *converted = converted_currency(*read.area);
-    return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ",
-                   own_currency(*read.area),
-                   converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
+  if (read.area != nullptr) {
+    const char *own = own_currency(*read.area), *converted = converted_currency(*read.area);
+    if (read.currency != own && (converted == nullptr || read.currency != converted))
+      return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ", own,
+                     converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
   }
 
   if (read.ntfy_topic.size() > 64 || !std::all_of(read.ntfy_topic.begin(), read.ntfy_topic.end(), [](char c) {
