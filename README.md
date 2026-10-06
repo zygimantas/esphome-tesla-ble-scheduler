@@ -41,7 +41,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - Then press **Continue**, tap your key card on the console and confirm on the car's screen: once the car answers, the setup is done.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's VIN, battery and charging power stay as you set them up, until you start over.
+To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's battery and charging power are under **Settings**; its VIN stays as you set it up, until you start over.
 
 When you open the page after a new release, it says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
 
