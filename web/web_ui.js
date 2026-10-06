@@ -9,7 +9,7 @@
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
-//   Settings       the setup's steps and the settings form, and the settings file they make, sent to the board and back
+//   Settings       the setup's steps, the prices and settings cards, and the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
 //   QR code        the page's address as a QR code, at /#qr after ESPHome Web's Visit Device
@@ -82,7 +82,7 @@ const planLinks = (where) =>
   "If your plan is a standard one that other customers have too, " +
   `<a href="${REPOSITORY}/issues/new?template=grid_plan.yml" target="_blank" rel="noopener">ask for it</a> or ` +
   `<a href="${REPOSITORY}/blob/main/CONTRIBUTING.md#plans" target="_blank" rel="noopener">add it yourself</a>, and ` +
-  "choose it in Change settings, under Board, once a release brings it. If not, create a custom plan in " +
+  "choose it in Change prices, under Board, once a release brings it. If not, create a custom plan in " +
   `<a href="${REPOSITORY}/blob/main/plans/README.md#custom-plan" target="_blank" rel="noopener">the plans' ` +
   `format</a> and upload it ${where}.`;
 
@@ -113,37 +113,6 @@ const PAGE = `
     <p class="note"><span id="plan-why"></span> ${planLinks("there")}</p>
   </section>
 
-  <section id="settings-card" class="card" hidden>
-    <div class="title">Settings</div>
-    <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" class="wide" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
-    <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
-    <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
-    <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT and the grid plans to choose from.</p>
-    <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
-    <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
-    <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
-    <p id="plans-note" class="note">No grid plans here yet. ${planLinks("below, now or later")}</p>
-    <p id="unlisted-note" class="note">${planLinks("below, now or later")}</p>
-    <button id="upload-plan">Upload custom plan</button>
-    <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
-    <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
-    <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-    <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
-    <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-    <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
-    <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
-    <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
-    <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-    <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
-    <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
-    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
-    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
-    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
-    <p id="settings-error" class="note error" hidden></p>
-    <button id="save-settings" class="primary">Save</button>
-    <button id="cancel-settings">Cancel</button>
-  </section>
-
   <section id="phone-card" class="card" hidden>
     <div class="title">Continue on your phone</div>
     <div id="qr" class="qr"></div>
@@ -159,6 +128,12 @@ const PAGE = `
   <section class="card step" hidden>
     <div class="title">Car<span class="summary">Saved</span></div>
     <div class="body">
+      <label id="vin-row" class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" required pattern="[A-HJ-NPR-Z0-9]{17}" title="17 letters and digits, none of them I, O or Q, on the car's screen under Controls, Software" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+      <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+      <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+      <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
+      <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+      <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
       <p class="note error" hidden></p>
       <button class="primary save">Continue</button>
     </div>
@@ -177,12 +152,38 @@ const PAGE = `
       <button id="pair-now" class="primary">Continue</button>
     </div>
   </section>
-  <section class="card step" hidden>
+  <section id="prices-card" class="card step" hidden>
     <div class="title">Prices</div>
     <div class="body">
+      <label id="area-row" class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
+      <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT and the grid plans to choose from.</p>
+      <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
+      <p id="plan-hint" class="note hint" hidden>Your grid operator's plan, the part of your bill for bringing the electricity, which your bill names: a plan, a package or a tariff group. Its hours make some times cheaper, and the board charges when the grid fee and the supplier's price together cost the least.</p>
+      <label id="unlisted-row" class="row check"><input id="set-unlisted" type="checkbox"><span>My plan isn't listed</span></label>
+      <p id="plans-note" class="note">No grid plans here yet. ${planLinks("below, now or later")}</p>
+      <p id="unlisted-note" class="note">${planLinks("below, now or later")}</p>
+      <button id="upload-plan">Upload custom plan</button>
+      <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
+      <label id="price-row" class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
+      <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
+      <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+      <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
+      <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+      <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
       <p class="note error" hidden></p>
       <button class="primary save">Finish</button>
+      <button id="cancel-prices">Cancel</button>
     </div>
+  </section>
+
+  <section id="settings-card" class="card" hidden>
+    <div class="title">Settings</div>
+    <label class="row"><span>VAT (%)</span><input id="set-vat" type="number" required min="0" max="30" step="any" inputmode="decimal" placeholder="21"></label>
+    <label class="row"><span>Time zone</span><span class="dropdown"><select id="set-zone" required></select></span></label>
+    <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
+    <p id="settings-error" class="note error" hidden></p>
+    <button id="save-settings" class="primary">Save</button>
+    <button id="cancel-settings">Cancel</button>
   </section>
 
   <section id="target-card" class="card">
@@ -220,6 +221,7 @@ const PAGE = `
     <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
+    <button id="change-prices">Change prices</button>
     <button id="change-settings">Change settings</button>
     <button id="pair">Create key</button>
     <button id="restart" class="danger">Restart board</button>
@@ -230,9 +232,9 @@ const PAGE = `
 
 // --- State -----------------------------------------------------------------
 
-// The board's settings file ("" without one, null until read), what the form offers, from /settings/options, and
-// whether Change settings opened the form.
-const settings = { text: null, options: null, open: false };
+// The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
+// the card Change prices or Change settings opened, "prices" or "settings", or "".
+const settings = { text: null, options: null, open: "" };
 // The setup's open step, 1 to 3, or 0; the furthest it got, as the steps up to it open with a click; and that a step
 // was opened by hand, which keeps Key from moving on by itself.
 const setup = { step: 0, reached: 0, stay: false };
@@ -313,9 +315,9 @@ function render() {
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
     : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
-  // Settings the board can't use come first; others open from Board.
-  const needed = text(E.status).startsWith("Settings: ");
-  $("settings-card").hidden = setup.step > 0 || (!needed && !settings.open);
+  // Settings the board turned away open at once, with Prices, and without Cancel; others open from Board.
+  $("settings-card").hidden = setup.step > 0 || (!broken() && settings.open !== "settings");
+  $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   for (const id of ["set-vat", "set-margin"]) $(id).closest("label").hidden = fixed;
   const unlisted = $("set-unlisted").checked;
@@ -337,7 +339,6 @@ function render() {
   for (const button of document.querySelectorAll(".info"))
     $(button.dataset.hint).hidden =
       button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
-  $("cancel-settings").hidden = needed;
 }
 
 // Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
@@ -621,11 +622,13 @@ const lastStep = () => (unfinished() ? 3 : 2);
 const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
 const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 
+// Whether the board turned away the settings it has, which then open to be fixed.
+const broken = () => text(E.status).startsWith("Settings: ");
+
 // The setup, for a new board, settings without prices and a key the car doesn't know yet: the open step shows its
 // fields, done ones fold to their titles and Saved (Prices to its title alone, as only its Finish saves it, which ends
-// the setup), later ones show only their titles. Car and Prices borrow the form's rows, the VIN, battery and power
-// and those from the country to the supplier's part, around their notes and above their buttons, and give them back
-// to the form after.
+// the setup), later ones show only their titles. After it, Prices opens from Change prices, and for settings the board
+// turned away; Car's fields stay as the setup saved them, as only a new install changes them.
 function renderSetup() {
   const unpaired = text(E.status) === "Not paired";
   if (settings.text === null || !(unfinished() || unpaired)) setup.step = setup.reached = 0;
@@ -645,48 +648,19 @@ function renderSetup() {
   $("phone-card").hidden = !setup.step || !qr;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
-    card.hidden = !setup.step || qr || i + 1 > lastStep();
-    card.classList.toggle("open", i + 1 === setup.step);
+    const after = !setup.step && card.id === "prices-card" && (broken() || settings.open === "prices");
+    card.hidden = (!setup.step || qr || i + 1 > lastStep()) && !after;
+    card.classList.toggle("open", i + 1 === setup.step || after);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
+  // Prices' Finish ends the setup; after it, it's Save, with Cancel
+  steps[2].querySelector(".save").textContent = setup.step ? "Finish" : "Save";
+  $("cancel-prices").hidden = setup.step > 0 || broken();
   // Key's is saved once the car knows the key
   steps[1].querySelector(".summary").hidden = unpaired;
-  const names = [
-    "vin-row",
-    "vin-hint",
-    "area-row",
-    "area-hint",
-    "plan-row",
-    "plan-hint",
-    "unlisted-row",
-    "plans-note",
-    "unlisted-note",
-    "upload-plan",
-    "plan-file",
-    "price-row",
-    "price-hint",
-    "margin-row",
-    "margin-hint",
-    "fixed-row",
-    "fixed-hint",
-    "battery-row",
-    "battery-hint",
-    "power-row",
-    "power-hint",
-  ];
-  const rows = names.map($);
-  // each before its step's error: the car's fields, with their hints, in Car, the prices in Prices
-  const places = rows.map((row) => steps[/^(vin|battery|power)-/.test(row.id) ? 0 : 2].querySelector(".error"));
-  if (setup.step) {
-    for (const [i, row] of rows.entries()) if (row.parentNode !== places[i].parentNode) places[i].before(row);
-  } else if (rows[0].parentNode !== $("settings-card")) {
-    $("set-vat")
-      .closest("label")
-      .before(...rows);
-  }
 }
 
-// Says what's wrong on the form's card, the setup's open step or the settings, in sight, or "" for nothing.
+// Says what's wrong on the open card, Prices or a setup's step, else Settings, in sight, or "" for nothing.
 function say(problem) {
   const error = document.querySelector(".step.open .error") ?? $("settings-error");
   error.textContent = problem;
@@ -802,7 +776,7 @@ function fillSettings() {
   batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
-  $("settings-error").hidden = true;
+  for (const error of document.querySelectorAll(".error")) error.hidden = true;
 }
 
 // Reads the board's settings and what the form offers, when the page connects and again when the board comes back,
@@ -856,16 +830,14 @@ function formSettings(prices = true) {
   return `${lines.join("\n")}\n`;
 }
 
-// Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the page
+// Sends a settings file. The board checks it and restarts with it, or answers what's wrong, which stays on the card
 // until the next try.
 async function sendSettings(file) {
   return send("/settings", { headers: { "Content-Type": "text/plain" }, body: file }, async (response) => {
     const answer = await response.text();
-    $("settings-error").textContent = response.ok ? "" : `Not saved: ${answer}`;
-    $("settings-error").hidden = response.ok || setup.step > 0;
-    if (!response.ok && setup.step) toast(`Not saved: ${answer}`);
+    say(response.ok ? "" : `Not saved: ${answer}`);
     if (response.ok) {
-      settings.open = false;
+      settings.open = "";
       // A board that had settings restarts: the page waits for it, reconnecting soon rather than when the browser
       // would. A new board takes its first at once, and the setup moves on.
       if (settings.text !== "") {
@@ -878,11 +850,11 @@ async function sendSettings(file) {
   });
 }
 
-// Save: the form's own checks first, as the browser shows them by the field.
+// Save, in Prices and Settings: the fields' own checks first, as the browser shows them by the field.
 async function saveSettings() {
-  $("set-vin").setCustomValidity(vinProblem($("set-vin").value.trim().toUpperCase())); // the setup's checks
-  // the shown fields only, as a hidden one can't say what's wrong, and isn't saved
-  const fields = document.querySelectorAll("#settings-card input, #settings-card select");
+  // the shown fields only, as a hidden one can't say what's wrong: a closed card's go as the board has them, and those
+  // a choice hides not at all
+  const fields = document.querySelectorAll("#settings-card :is(input, select), .step.open :is(input, select)");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) wrong.reportValidity();
   else await sendSettings(formSettings());
@@ -1265,7 +1237,8 @@ function bind() {
       requestRender();
     });
   }
-  for (const button of document.querySelectorAll(".step .save")) press(button, nextStep);
+  for (const button of document.querySelectorAll(".step .save"))
+    press(button, () => (setup.step ? nextStep() : saveSettings()));
   // Update: the board downloads the release, then restarts with it.
   press($("update"), async () => {
     if (await post(E.firmware, "install")) {
@@ -1281,16 +1254,20 @@ function bind() {
       setTimeout(reconnect, 3000);
     }
   });
-  $("change-settings").addEventListener("click", () => {
-    settings.open = true;
-    render(); // now, as a hidden card has nowhere to scroll to
-    $("settings-card").scrollIntoView({ behavior: "smooth" });
-  });
-  $("cancel-settings").addEventListener("click", () => {
-    settings.open = false;
-    fillSettings(); // back to the board's
-    requestRender();
-  });
+  // Change prices and Change settings open their card, one at a time, as Save sends both
+  for (const card of ["prices", "settings"]) {
+    $(`change-${card}`).addEventListener("click", () => {
+      if (settings.open !== card) fillSettings(); // the other's changes go
+      settings.open = card;
+      render(); // now, as a hidden card has nowhere to scroll to
+      $(`${card}-card`).scrollIntoView({ behavior: "smooth" });
+    });
+    $(`cancel-${card}`).addEventListener("click", () => {
+      settings.open = "";
+      fillSettings(); // back to the board's
+      requestRender();
+    });
+  }
 }
 
 // Last, so every declaration above is initialised before the page starts.

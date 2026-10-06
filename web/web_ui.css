@@ -265,8 +265,8 @@ input.wide {
   width: auto;
   text-align: left;
 }
-/* Off in the settings, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
-:is(#settings-card, .step) select:disabled {
+/* Off, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
+.step select:disabled {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }

@@ -2,7 +2,7 @@
 
 The grid fees (TURPE) that every home in France pays per kWh. The CRE, the energy regulator, sets them, the same with Enedis and with every local grid operator, and your supplier bills them in its price. Your home has one of the fees' options, and your supplier can tell you which.
 
-There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Write a custom plan with the prices below and upload it with **Upload custom plan**, in the setup or later under **Change settings**, as [Custom plan](../README.md#custom-plan) says.
+There are no plans for France: most homes' off-peak hours are set for each address, which a plan can't hold. Write a custom plan with the prices below and upload it with **Upload custom plan**, in the setup or later under **Change prices**, as [Custom plan](../README.md#custom-plan) says.
 
 ## Off-peak hours
 
