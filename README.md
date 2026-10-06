@@ -47,7 +47,7 @@ Within a day of a new release, the page says so at the top, with **Update**: the
 
 ### From 4.x
 
-In 5.0.0 you set everything on the page: the only file you upload is a plan of your own. Boards on 4.x update from the page as usual. If your settings have something that's gone (an ntfy server of your own, a currency of your own, or rates of your own next to a plan), the board shows **Settings: …** after the update, and the page asks for your settings again: check them and press **Save**. With hours or rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. Phone messages now always go through ntfy.sh.
+In 5.0.0 you set everything on the page: the only file you upload is a plan of your own. Boards on 4.x install it by themselves, one last time: from 5.0.0 on, the page offers each new release at the top, with **Update**. If your settings have something that's gone (an ntfy server of your own, a currency of your own, or rates of your own next to a plan), the board shows **Settings: …** after the update, and the page asks for your settings again: check them and press **Save**. With hours or rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. Phone messages now always go through ntfy.sh.
 
 ### From 3.x
 
