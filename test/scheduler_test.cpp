@@ -991,8 +991,9 @@ static void test_reads_the_settings_file() {
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
-  CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: CZK\n"),
-            "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
+  for (const char *currency : {"CZK", "SEK"})  // before and after HUF
+    CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: " + currency + "\n"),
+              "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
   CHECK_STR(settings_error(settings_set("  area", "SI") + "currency: HUF\n"),
             "currency: SMARD's prices for SI come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"),
