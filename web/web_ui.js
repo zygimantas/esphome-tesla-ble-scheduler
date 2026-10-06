@@ -702,10 +702,10 @@ function renderSetup() {
   }
 }
 
-// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power, as the board
-// needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices' Finish saves the prices,
-// which restarts the board. Each says what's wrong on its card, and the saves keep the settings the setup doesn't
-// show.
+// Save: on to the next step. Car's Continue checks the VIN and saves it with the battery and the power where one of
+// them changed, as the board needs the VIN to find the car, with the guesses and no prices yet on a new board; Prices'
+// Finish saves the prices, which restarts the board. Each says what's wrong on its card, and the saves keep the
+// settings the setup doesn't show.
 async function nextStep() {
   const vin = $("set-vin").value.trim().toUpperCase();
   const problem = setup.step === 1 ? vinProblem(vin) : "";
@@ -716,10 +716,11 @@ async function nextStep() {
   const fields = document.querySelectorAll(".step.open input, .step.open select");
   const wrong = [...fields].find((field) => !field.closest("[hidden]") && !field.checkValidity());
   if (wrong) return wrong.reportValidity();
-  const { values } = readSettings(settings.text);
-  if (setup.step === 1 && vin !== values.tesla_vin) {
+  const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
+  const saved = readSettings(settings.text).values;
+  const form = readSettings(formSettings(false)).values;
+  if (setup.step === 1 && car.some((key) => form[key] !== saved[key])) {
     if (!$("set-zone").value) $("set-zone").value = "Europe/Brussels"; // for now, if the phone's isn't one the board knows
-    const car = ["tesla_battery_kwh", "tesla_charging_kw", "tesla_vin"];
     if (!(await sendSettings(settings.text === "" ? formSettings(false) : withForm(car)))) return;
   }
   if (setup.step < lastStep()) {
@@ -739,14 +740,15 @@ const gridPlan = () => ($("set-plan").value === "none" ? "" : $("set-plan").valu
 // isn't in plans/: a box under the list rather than an option in it, as no one should have to search a long list for
 // a way out. A new board's, with `plan` undefined, starts at the country's only plan, as everyone in Spain and
 // Slovenia pays it, or at Choose where there are several, as nearly every home is on one and skipping it would leave
-// out its hours. Choose and Not listed show only in the closed list. No rows where the country has no plans.
+// out its hours. Choose and Not listed show only in the closed list. No rows, and no box ticked, where the country has
+// no plans, as its own note says the same.
 function fillPlans(plan) {
   const country = $("set-area").value.slice(0, 2).toLowerCase();
   const plans = settings.options.plans.filter(([name]) => name.startsWith(`${country}/`));
   const closed = [new Option("Choose", ""), new Option("Not listed", "none")];
   for (const option of closed) option.disabled = option.hidden = true;
   $("set-plan").replaceChildren(...closed, ...plans.map(([name, title]) => new Option(title, name)));
-  $("set-unlisted").checked = plan === "";
+  $("set-unlisted").checked = plan === "" && plans.length > 0;
   const fallback = plan === "" ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
   $("plan-row").hidden = $("unlisted-row").hidden = !plans.length;
@@ -1292,7 +1294,7 @@ function bind() {
   });
   $("change-settings").addEventListener("click", () => {
     settings.open = true;
-    requestRender();
+    render(); // now, as a hidden card has nowhere to scroll to
     $("settings-card").scrollIntoView({ behavior: "smooth" });
   });
   $("cancel-settings").addEventListener("click", () => {
