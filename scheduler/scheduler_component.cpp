@@ -265,9 +265,7 @@ void SchedulerComponent::dump_config() {
   }
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
-  TariffText own;
-  read_tariff(file.tariff, own);  // read_settings() checked it
-  const char *tariff = !file.plan.empty() ? file.plan.c_str() : own.calendar.empty() ? "none" : "your own plan";
+  const char *tariff = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "your own plan";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
