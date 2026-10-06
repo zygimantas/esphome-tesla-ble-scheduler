@@ -877,8 +877,8 @@ static void test_plans_in_the_repository() {
         label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", car, "timezone: Europe/Vilnius\n"}),
                               repository_plans(), settings),
         label);
-    CHECK_STR(label + read_settings(currency + as_yours(plan) + car + "timezone: Europe/Vilnius\n", repository_plans(),
-                                    settings),
+    CHECK_STR(label + read_settings(concat({currency, as_yours(plan), car, "timezone: Europe/Vilnius\n"}),
+                                    repository_plans(), settings),
               label);
     CHECK(settings.plan.empty() && !settings.tariff.empty());
   }
