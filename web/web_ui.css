@@ -224,10 +224,6 @@ select:disabled {
   color: var(--muted);
   font-size: 13px;
 }
-.step .row input {
-  width: auto;
-  text-align: left;
-}
 /* A box before its words, as in a list of options, in the setup too. */
 .row.check {
   justify-content: flex-start;
@@ -263,6 +259,11 @@ input.wide {
 :is(#settings-card, .step) select {
   width: 100%;
   text-overflow: ellipsis;
+}
+/* In the setup, a field under its name takes the width too, but a box keeps its 18 px. */
+.step .row input:not([type="checkbox"]) {
+  width: auto;
+  text-align: left;
 }
 /* Off in the settings, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
 :is(#settings-card, .step) select:disabled {
