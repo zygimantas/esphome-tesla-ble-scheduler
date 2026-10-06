@@ -1,14 +1,6 @@
 # Norwegian plans
 
-The network fees for households (nettleie) of Norway's biggest network companies, which serve more than three homes in four, with prices with VAT, in kroner. Your network company is the one that owns the grid where you live, and your bill names it. Name its plan under `tariff:` in your settings file, with your price area and VAT:
-
-```yaml
-market:
-  area: NO1
-  vat: 0.25
-tariff:
-  plan: no/elvia-households
-```
+The network fees for households (nettleie) of Norway's biggest network companies, which serve more than three homes in four, with prices with VAT, in kroner. Your network company is the one that owns the grid where you live, and your bill names it. Choose its plan under **Grid plan** on the board's page.
 
 | Network company | Mostly in | Plan |
 | --- | --- | --- |
@@ -29,7 +21,7 @@ tariff:
 
 The public holidays are 1 January, Maundy Thursday, Good Friday, Easter Monday, 1 May, Ascension Day, 17 May, Whit Monday and 25 and 26 December. The hours follow the clock, summer time included.
 
-Homes in Nordland, Troms and Finnmark pay no VAT on electricity: set `vat: 0`. Arva's plan has no VAT in it, as all its homes are there.
+Homes in Nordland, Troms and Finnmark pay no VAT on electricity: set **VAT (%)** to 0 under **Change settings**. Arva's plan has no VAT in it, as all its homes are there.
 
 The plans count the energy fee (energiledd) per kWh. They leave out the capacity step (kapasitetsledd), a monthly fee set by your three highest hours, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)), and the charges that are the same every hour: the electricity tax (elavgift) and the Enova fee, which some companies print inside their energy fee. The electricity subsidy (strømstøtte), which pays back 90% of the hourly market price above 77 øre/kWh without VAT, isn't counted either.
 
@@ -37,4 +29,4 @@ With Norgespris, your power costs 50 øre/kWh with VAT whatever the market does,
 
 For another network company, write your own plan with its day and night fees, as [Your own plan](../README.md#your-own-plan) says.
 
-Each network company sets its own fees, within the income the regulator, RME, allows it. They change every January and often in the middle of the year too, at 14 days' notice. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+Each network company sets its own fees, within the income the regulator, RME, allows it. They change every January and often in the middle of the year too, at 14 days' notice. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

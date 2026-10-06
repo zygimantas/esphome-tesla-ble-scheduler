@@ -1,14 +1,6 @@
 # Belgian plans
 
-The household plans of Belgium's distribution operators, with prices with VAT: Fluvius in Flanders, ORES and RESA in Wallonia, and Sibelga in Brussels. Your bill names your operator, and in Flanders your Fluvius area. Name your plan under `tariff:` in your settings file, with Belgium's market area and VAT:
-
-```yaml
-market:
-  area: BE
-  vat: 0.06
-tariff:
-  plan: be/ores-impact
-```
+The household plans of Belgium's distribution operators, with prices with VAT: Fluvius in Flanders, ORES and RESA in Wallonia, and Sibelga in Brussels. Your bill names your operator, and in Flanders your Fluvius area. Choose your plan under **Grid plan** on the board's page.
 
 ## Flanders
 
@@ -57,4 +49,4 @@ The small Walloon operators AIEG, AIESH and REW, and exclusive night meters, whi
 
 The regulators approve the prices, which change on 1 January: the Vlaamse Nutsregulator for Fluvius, the CWaPE for ORES and RESA, and Brugel for Sibelga. In Brussels, Brugel brings a fee by your connection's power in 2028 and three periods a day in 2030.
 
-[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+[Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.

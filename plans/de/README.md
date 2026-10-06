@@ -1,14 +1,6 @@
 # German plans
 
-The network charges per kWh (Netzentgelt) of Germany's big grid operators for homes, with prices with VAT. Your electricity bill names your grid operator (Netzbetreiber). Name its plan under `tariff:` in your settings file, with Germany's market area and VAT:
-
-```yaml
-market:
-  area: DE
-  vat: 0.19
-tariff:
-  plan: de/westnetz-modul-3
-```
+The network charges per kWh (Netzentgelt) of Germany's big grid operators for homes, with prices with VAT. Your electricity bill names your grid operator (Netzbetreiber). Choose its plan under **Grid plan** on the board's page.
 
 | Operator | Standard | Modul 2 | Modul 3 |
 | --- | --- | --- | --- |
@@ -56,4 +48,4 @@ The plans count the network charge per kWh. They leave out the yearly base price
 
 Schleswig-Holstein Netz, LEW Verteilnetz, Syna, Netze ODR and the hundreds of smaller operators aren't here yet, nor the reduced fees of wallboxes and heat pumps that had them before 2024, with the operator's own hours. For those, write your own plan, as [Your own plan](../README.md#your-own-plan) says.
 
-Each operator sets its prices, and Modul 3's hours, for a calendar year, under the Federal Network Agency's rules. It publishes next year's by 15 October, as preliminary, and they change on 1 January. [Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.
+Each operator sets its prices, and Modul 3's hours, for a calendar year, under the Federal Network Agency's rules. It publishes next year's by 15 October, as preliminary, and they change on 1 January. [Your own plan](../README.md#your-own-plan) says how to change the plans' prices for yourself: download a plan's file from this folder, change it and upload it with **Upload plan**.
