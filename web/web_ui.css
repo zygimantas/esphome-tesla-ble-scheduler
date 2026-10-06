@@ -143,6 +143,10 @@ details[open] > summary::after,
 .fold:not(.open) > .title {
   margin-bottom: 0;
 }
+/* Until the settings are in, no cards, as they decide between the setup and the rest. */
+.loading main > .card {
+  display: none;
+}
 /* While the board restarts, only the card with its status, until the page loads afresh. */
 .restarting main > .card:not(#status-card) {
   display: none;

@@ -527,12 +527,22 @@ void SchedulerComponent::send_unsent_(int64_t now) {
 bool SchedulerComponent::send_message_(const Notification &message) {
   if (this->file_.ntfy_topic.empty())
     return true;
-  const std::string body = json::build_json([this, &message](JsonObject root) {
+  // A tap opens the page, on the home Wi-Fi, at the board's address now, which every phone opens, as some Android
+  // phones don't find tesla.local. An unset address reads 0.0.0.0.
+  std::string page = "http://" + App.get_name() + ".local";
+  for (const auto &ip : network::get_ip_addresses()) {
+    char address[network::IP_ADDRESS_BUFFER_SIZE];
+    if (ip.is_ip4() && std::strcmp(ip.str_to(address), "0.0.0.0") != 0) {
+      page = concat({"http://", address});
+      break;
+    }
+  }
+  const std::string body = json::build_json([this, &message, &page](JsonObject root) {
     root["topic"] = this->file_.ntfy_topic;
     root["title"] = message.title;
     root["message"] = message.message;
     root["tags"].to<JsonArray>().add("electric_plug");
-    root["click"] = "http://" + App.get_name() + ".local";  // a tap opens the page, on the home Wi-Fi
+    root["click"] = page;
   });
   auto response = this->http_->post(NTFY, body);
   if (response == nullptr) {

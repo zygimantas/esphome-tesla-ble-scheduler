@@ -106,7 +106,7 @@ const PAGE = `
 
   <section id="status-card" class="card">
     <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
-    <div class="row"><span>Status</span><strong id="status">Connecting …</strong></div>
+    <div class="row"><span>Status<a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></span><strong id="status">Connecting …</strong></div>
   </section>
 
   <section id="plan-card" class="card" hidden>
@@ -198,6 +198,10 @@ const PAGE = `
         </ol>
         <button id="pair-now" class="primary">Continue</button>
       </div>
+      <div id="done-step" hidden>
+        <p class="note">The setup is done: the board charges when it's cheapest. To open this page like an app, add it to your home screen: on an iPhone, Share → Add to Home Screen; on Android, the browser's menu → Add to Home screen.</p>
+        <button id="done" class="primary">OK</button>
+      </div>
     </div>
   </section>
 
@@ -230,7 +234,7 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
 // the card open after the setup, "prices" or "settings", or "".
 const settings = { text: null, options: null, open: "" };
-// The setup's step, 1 to 4 (the prices, the phone, the car and its key), or 0.
+// The setup's step, 1 to 5 (the prices, the phone, the car, its key and done), or 0.
 const setup = { step: 0 };
 
 const states = {}; // entity id -> latest state event
@@ -284,11 +288,21 @@ function render() {
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
   const link = live === null ? "Connecting …" : live ? "Connected" : "No connection";
-  const status = live === false ? link : (text(E.status) || "Connecting …") + power;
   const waiting = updating ? "Updating …" : "Restarting …";
-  $("status").textContent = restarting ? waiting : status;
+  const board = !restarting && live !== false; // the board's own status, rather than the page's
+  const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : link;
+  $("status").textContent = board ? said + power : said;
   $("link").textContent = restarting ? waiting : link;
+  // its "?": the status's own line in docs/status.md, which a text fragment scrolls to
+  const line = said.startsWith("Charges at")
+    ? "Charges at 01:30"
+    : said.startsWith("Settings: ")
+      ? "Settings: …"
+      : `${said}:`;
+  $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
   document.body.classList.toggle("restarting", restarting > 0);
+  // no cards until the settings are in, which decide between the setup and the rest
+  document.body.classList.toggle("loading", settings.text === null && !restarting);
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
@@ -340,7 +354,7 @@ function render() {
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
   $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
   // a hint shows while its "?" is open and its field is shown
-  for (const button of document.querySelectorAll(".info"))
+  for (const button of document.querySelectorAll(".info[data-hint]"))
     $(button.dataset.hint).hidden =
       button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
 }
@@ -642,25 +656,26 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 // Whether the board turned away the settings it has, which then open to be fixed.
 const broken = () => text(E.status).startsWith("Settings: ");
 
-// The setup, for a new board, settings without prices or the car, and a key the car doesn't know: one card, Setup,
-// with the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at
-// the car, as its link ends in #car, then the car, then its key, which ends the setup once the car answers. After it,
-// the card is Prices, below Savings, folded like Settings, which opens from its title, or for settings the board
-// turned away; the VIN stays as the setup saved it, as only a new install changes it, while the battery and the power
-// move to Settings.
+// The setup, for a new board, settings without prices or the car, and a key the car doesn't know: one card, Setup, with
+// the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at the
+// car, as its link ends in #car, then the car, then its key, which ends the setup once the car answers, with a word
+// that it's done and how to add the page to the home screen, until OK. After it, the card is Prices, below Savings,
+// folded like Settings, which opens from its title, or for settings the board turned away; the VIN stays as the setup
+// saved it, as only a new install changes it, while the battery and the power move to Settings.
 function renderSetup() {
   const status = text(E.status);
   // at the key, the setup waits for the car's answer, past the board's No car yet from before the car's save
   const waiting = status === "Not paired" || (setup.step === 4 && ["", "No car yet"].includes(status));
-  if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = 0;
-  else if (!setup.step) setup.step = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
+  if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = setup.step > 0 ? 5 : 0;
+  else if (!setup.step || setup.step === 5)
+    setup.step = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
   const card = $("prices-card");
   card.hidden = false;
   card.querySelector(".title").textContent = setup.step ? "Setup" : "Prices";
   card.classList.toggle("open", setup.step > 0 || broken() || settings.open === "prices");
   card.classList.toggle("fold", !setup.step);
-  for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step"].entries())
+  for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
   // Continue in the setup; after it, Save, with Cancel
   $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
@@ -774,7 +789,10 @@ async function loadSettings() {
       fillSettings();
     }
   } catch {
-    // the next connection tries again
+    // again in a moment, while the board is there, as the page shows no cards without them
+    setTimeout(() => {
+      if (live) void loadSettings();
+    }, 5000);
   }
   requestRender();
 }
@@ -1158,7 +1176,7 @@ function bind() {
     if (setup.step && !batteryTyped && field.value.length === 17) $("set-battery").value = batteryOf(field.value);
   });
   $("set-battery").addEventListener("input", () => (batteryTyped = true));
-  for (const button of document.querySelectorAll(".info"))
+  for (const button of document.querySelectorAll(".info[data-hint]"))
     button.addEventListener("click", (e) => {
       e.preventDefault();
       button.setAttribute("aria-expanded", String(button.getAttribute("aria-expanded") !== "true"));
@@ -1218,6 +1236,11 @@ function bind() {
   press($("pair-now"), async () => {
     if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
   });
+  // OK, after the setup's word that it's done
+  $("done").addEventListener("click", () => {
+    setup.step = 0;
+    requestRender();
+  });
   // Continue here, under the QR code, for whoever goes on on the computer
   $("here").addEventListener("click", () => {
     setup.step += 1;
@@ -1265,6 +1288,7 @@ if (new URLSearchParams(location.search).has("full")) {
   document.body.append(script);
 } else {
   document.title = "ESPHome Tesla BLE Scheduler";
+  document.body.classList.add("loading"); // before the first paint
   document.body.insertAdjacentHTML("afterbegin", PAGE);
   bind();
   connect();
