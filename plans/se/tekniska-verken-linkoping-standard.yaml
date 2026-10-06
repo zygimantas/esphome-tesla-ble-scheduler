@@ -1,0 +1,9 @@
+# Tekniska verken Linköping Standard, prices with VAT: https://www.tekniskaverken.se/privat/elnat/priser-ersattningar
+# Tekniska verken prints the prices in öre with 25% VAT: these are in kronor.
+# Maintained by @zygimantas
+currency: SEK
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.14900

@@ -1,0 +1,11 @@
+# Network fee, standard client, prices with VAT: https://www.creos-net.lu/fileadmin/dokumente/downloads/fr_tarif_electricite_2026.pdf
+# Creos, Sudstroum, Diekirch and Ettelbruck charge one fee, set for the whole country, and print it without VAT: this adds 8% VAT.
+# The supplement for the kWh above the reference power depends on power, not the hour, and is left out.
+# The operators publish the next year's prices by 15 October, and the ILR approves them for 1 January.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.05508

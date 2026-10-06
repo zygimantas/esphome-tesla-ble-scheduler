@@ -1,0 +1,10 @@
+# Sadales tīkls Speciālais, prices with VAT: https://sadalestikls.lv/lv/tarifi
+# Sadales tīkls prints the prices without VAT: these add 21% VAT. This is Speciālais-1, for connections to 0.4 kV lines, as homes have.
+# On 1 January 2027 Speciālais-1 and Speciālais-2 become Speciālais, at Speciālais-1's price: https://www.vestnesis.lv/op/2026/145.DA8
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.19176

@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the tariff, and `settings.h` reads and checks the settings file, which the page's form writes (plain C++, unit-tested on a computer). `scheduler_component.h` and `.cpp` connect them to ESPHome (the settings file, the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD and OMIE, the savings, the schedule and the plan, and `settings.h` reads and checks the settings file, which the page's form writes (plain C++, unit-tested on a computer). `scheduler_component.h` and `.cpp` connect them to ESPHome (the settings file, the page's entities, price and plan downloads, phone messages and the Tesla's entities), and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
 
 Releases ship one firmware for every board, which CI builds from `release.yaml`: `device.yaml` with the component of this folder, and nothing of a user's, who sets Wi-Fi with ESPHome Web and enters the settings on the page. For a build of your own, start from `config.example.yaml`, which loads both from a release, or point a `config.yaml` at this folder like `release.yaml` does, and add what you need, like your Wi-Fi, an API key and OTA from your computer.
 
@@ -12,7 +12,7 @@ In `device.yaml`, `ble_mac_address` stays all zeros because the board finds the 
 
 ## Branching
 
-1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/tariff`, using the commit types below.
+1. Branch off `main`. Name branches `type/short-description`, e.g. `feat/postpone-suggestion`, `fix/price-retry`, `docs/plans`, using the commit types below.
 2. Keep branches short-lived and scoped to one change.
 3. Open a pull request early.
 
@@ -96,8 +96,9 @@ chore(plans): update ESO's plans for 2027
 
 A plan is a grid operator's prices and hours, in `plans/`, in a folder for its country, asked for with the Grid plan issue form or added by anyone: `plans/lt/eso-standartinis-4-zones.yaml`. Its name says the operator, the plan and, where the plan comes in several, the number of zones or rates.
 
-- **The format** is that of `tariff:` in [Tariff](docs/tariff.md), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
-- **The prices** are the operator's fees per kWh, with VAT, in its currency. Monthly fees, fees per kW and the charges that are the same every hour, like taxes, stay out, and the operator's page in `docs/` says which.
+- **The format** is that of `tariff:` in [Your own plan](plans/README.md#your-own-plan), with the plan's `currency` too. Boards read the file as plain text: two-space indents, comments on lines of their own, no quotes, and a line break at the end.
+- **The prices** are the operator's fees per kWh, with VAT, in its currency. Monthly fees, fees per kW and the charges that are the same every hour, like taxes, stay out, and the folder's `README.md` says which.
+- **The folder's `README.md`** is the country's page for people, which GitHub shows under the folder's files: which plans there are and for whom, their hours, what's left out, how to name one in a settings file, and who sets the prices and when. A new plan adds its row there, and a new country's folder its row in the table of [Countries and plans](plans/README.md#countries). Boards download only the `.yaml` files.
 - **A comment at the top** names the plan for the page's list, short enough for a phone, with a link to the operator's prices, like `# ESO Standartinis, four zones, prices with VAT: https://www.eso.lt`, and says who maintains it: `# Maintained by @your-github-name`. Where the operator prints its prices otherwise, like in cents or without VAT, it also says how they were converted.
 - **The maintainer updates it every January,** and whenever prices change: the prices, and the dates of holidays that move, like Easter Monday. Merge the change on the day the prices start. Boards download their plan from `main` every day, so merging publishes it, without a release.
 - **A new plan reaches users with the next release,** as the install checks a plan against the release's own copy.

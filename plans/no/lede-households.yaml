@@ -1,0 +1,9 @@
+# Lede, households, prices with VAT: https://lede.no/priser/nettleie-privatkunder/
+# Lede prints its own part of the energy fee in øre with VAT, apart from the Enova fee and the electricity tax: this is in kroner.
+# Maintained by @zygimantas
+currency: NOK
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.14260

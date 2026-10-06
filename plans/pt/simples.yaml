@@ -1,0 +1,10 @@
+# Simples, prices with VAT: https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/
+# ERSE's access tariff for homes on the mainland up to 20.7 kVA, the same with every grid operator.
+# ERSE prints the prices without VAT: these add 23% VAT. Up to 6.9 kVA, a home's first 200 kWh in 30 days pay 6%, and a car's kWh come on top of them.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.07466

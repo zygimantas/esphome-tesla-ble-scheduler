@@ -1,0 +1,15 @@
+# ČEZ Distribuce D61d, prices with VAT: https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf
+# ERÚ, the regulator, prints the prices in koruna per MWh without VAT, in its price decision 14/2025: these are per kWh, with 21% VAT.
+# ERÚ fixes the low tariff, nt, from Friday 12:00 to Sunday 22:00 all year, for every meter; the high tariff, vt, is the rest of the week.
+# ERÚ's next price decision, due at the end of November, sets the prices from 1 January 2027.
+# Maintained by @zygimantas
+currency: CZK
+calendar:
+  jan-dec:
+    mon-thu: vt
+    fri: vt 12:00 nt
+    sat: nt
+    sun: nt 22:00 vt
+rates:
+  nt: 0.14097
+  vt: 4.00107

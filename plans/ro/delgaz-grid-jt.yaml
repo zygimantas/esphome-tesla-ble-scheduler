@@ -1,0 +1,9 @@
+# Delgaz Grid, low voltage, prices with VAT: https://anre.ro/wp-content/uploads/2026/01/Ord-76-2025.pdf
+# ANRE prints the prices in lei per MWh without VAT, one for each voltage level, and a home on low voltage pays all three: this is their sum, in lei per kWh, with 21% VAT.
+# Maintained by @zygimantas
+currency: RON
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.46937

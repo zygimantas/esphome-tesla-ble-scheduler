@@ -1,0 +1,12 @@
+# ewz NNE-H, for car chargers, prices with VAT: https://www.ewz.ch/de/private/strom/tarife/tarifuebersicht.html
+# ewz prints the prices in Rappen without VAT: these are in francs, with 8.1% VAT. The same prices hold in Graubünden (GR-NNE-H).
+# The charger needs a meter of its own. The prices stay the same on 1 January 2027.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sat: low 11:00 high 13:00 low 18:00 high 20:00 low
+    sun: low
+rates:
+  high: 0.26776
+  low: 0.05373

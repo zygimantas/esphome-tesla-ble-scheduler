@@ -1,0 +1,12 @@
+# HEP ODS Crveni, over 22 kW, prices with VAT: https://www.hep.hr/ods/korisnici/kucanstvo/tarifne-stavke-cijene/160
+# HEP ODS prints the prices without VAT: these are distribution and transmission together, with 13% VAT.
+# The fee per kW of the month's highest power in the day rate's hours is left out.
+# Maintained by @zygimantas
+currency: EUR
+clock: winter
+calendar:
+  jan-dec:
+    mon-sun: night 07:00 day 21:00 night
+rates:
+  night: 0.01915
+  day: 0.04208

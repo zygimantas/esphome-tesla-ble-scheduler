@@ -1,0 +1,10 @@
+# IWB Einfachtarif, prices with VAT: https://www.iwb.ch/servicecenter/stromtarife/aktuelle-tarife
+# IWB prints the prices in Rappen without VAT: this is the network fee (NNE), in francs, with 8.1% VAT.
+# The price stays the same on 1 January 2027.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.14269

@@ -1,0 +1,26 @@
+# Elektrilevi plans
+
+Elektrilevi's network packages for Estonia, for connections up to 63 A, with prices with VAT. Name yours under `tariff:` in your settings file, with Estonia's market area and VAT:
+
+```yaml
+market:
+  area: EE
+  vat: 0.24
+tariff:
+  plan: ee/elektrilevi-vork-2
+```
+
+| Package | Plan |
+| --- | --- |
+| Võrk 1 | `ee/elektrilevi-vork-1` |
+| Võrk 2 | `ee/elektrilevi-vork-2` |
+| Võrk 4 | `ee/elektrilevi-vork-4` |
+| Võrk 5 | `ee/elektrilevi-vork-5` |
+
+- **Võrk 1:** the same fee every hour.
+- **Võrk 2 and Võrk 4:** day from 07:00 to 22:00 on workdays, night the rest, and all day at weekends and on public holidays.
+- **Võrk 5:** the same, but from November to March there's a dearer peak on workdays from 09:00 to 12:00 and from 16:00 to 20:00, and at weekends and on public holidays from 16:00 to 20:00.
+
+The hours follow the clock, summer time included. The plans leave out the monthly fee and the charges that are the same every hour: the renewable energy fee, the electricity excise and the security of supply fee.
+
+[Your own changes](../README.md#your-own-changes) says how to change the plans' prices for yourself.

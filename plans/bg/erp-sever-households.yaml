@@ -1,0 +1,10 @@
+# ERP Sever, households, prices with VAT: https://www.erpsever.bg/bg/ceni/ceni-za-prenos-i-dostyp
+# ERP Sever prints its access and low voltage transmission fees for households without VAT: this is their sum, with 20% VAT.
+# The EWRC sets the prices from 1 July every year, these by its decision Ц-13 of 1 July 2026: https://www.dker.bg/uploads/reshenia/2026/res-c-13-2026.pdf
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.03373

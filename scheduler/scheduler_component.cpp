@@ -398,13 +398,13 @@ std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
   }
 }
 
-// Stores an answer's prices: how many, or -1 if it can't be read.
-int SchedulerComponent::store_prices_(const std::string &body) {
+// Stores an answer's prices, SMARD's times `rate`: how many, or -1 if it can't be read.
+int SchedulerComponent::store_prices_(const std::string &body, float rate) {
   PriceTable &prices = this->controller_.prices;
   const Area &area = *this->file_.area;
   switch (area.market) {
     case Market::SMARD:
-      return prices.add_smard(body.data(), body.size());
+      return prices.add_smard(body.data(), body.size(), rate);
     case Market::OMIE:
       return prices.add_omie(body.data(), body.size(), area.source_name);
     default:
@@ -417,6 +417,14 @@ int SchedulerComponent::store_prices_(const std::string &body) {
 void SchedulerComponent::fetch_prices_(int64_t now) {
   const Area &area = *this->file_.area;
   const char *source = market_name(area.market);
+  // SMARD's prices are in euros: in the country's own currency, where the settings ask for it, at the ECB's latest rate
+  float rate = 1.0f;
+  if (area.market == Market::SMARD && this->file_.currency != "EUR") {
+    const std::optional<float> ecb = this->fetch_rate_();
+    if (!ecb)
+      return;
+    rate = *ecb;
+  }
   // Not out yet: Nord Pool has no content for tomorrow, SMARD no file for a week that hasn't begun, OMIE none for the
   // day.
   const int not_yet =
@@ -437,7 +445,7 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
       response->end();  // before the parse: the connection's memory isn't needed any more
       PriceTable &prices = this->controller_.prices;
       const int64_t until = prices.known_until(now);
-      const int stored = body ? this->store_prices_(*body) : -1;
+      const int stored = body ? this->store_prices_(*body, rate) : -1;
       if (stored < 0) {
         ESP_LOGW(TAG, "%s: %s", source, body ? "could not parse the answer" : "the answer was cut off");
       } else if (prices.known_until(now) > until) {  // not just the week's earlier prices again, as SMARD sends
@@ -453,6 +461,30 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
     }
     response->end();
   }
+}
+
+// What a euro is worth in the settings' currency, from the ECB's latest reference rates, or nothing when the request
+// fails: then the prices wait for the next try.
+std::optional<float> SchedulerComponent::fetch_rate_() {
+  const char *currency = this->file_.currency.c_str();
+  auto response = this->http_->get(ECB_RATES_URL);
+  if (response == nullptr) {
+    ESP_LOGW(TAG, "ECB request failed");
+    return std::nullopt;
+  }
+  std::optional<float> rate;
+  if (response->status_code == http_request::HTTP_STATUS_OK) {
+    const std::optional<std::string> body = this->read_body_(*response);
+    rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
+    if (rate)
+      ESP_LOGI(TAG, "ECB: 1 EUR = %.4f %s", *rate, currency);
+    else
+      ESP_LOGW(TAG, "ECB: no rate for %s in the answer", currency);
+  } else {
+    ESP_LOGW(TAG, "ECB answered HTTP %d", response->status_code);
+  }
+  response->end();
+  return rate;
 }
 
 // The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use with

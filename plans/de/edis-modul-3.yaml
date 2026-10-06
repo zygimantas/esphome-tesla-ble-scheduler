@@ -1,0 +1,14 @@
+# E.DIS Netz Modul 3, three rates, prices with VAT: https://www.e-dis-netz.de/content/dam/revu-global/e-dis-netz/dokumente/Preisblaetter_Netzentgelte_Strom_20260101.pdf
+# E.DIS Netz prints the prices in cents without VAT: these are in euros, with 19% VAT.
+# E.DIS Netz sets the hours and prices for each calendar year: 2027's apply from 1 January, published as preliminary by 15 October 2026.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-sep:
+    mon-sun: standard
+  oct-mar:
+    mon-sun: low 05:00 standard 10:15 high 12:00 standard 16:45 high 20:15 standard 23:30 low
+rates:
+  low: 0.00655
+  standard: 0.06509
+  high: 0.10472

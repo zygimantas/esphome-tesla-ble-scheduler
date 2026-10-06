@@ -1,0 +1,16 @@
+# Dinel Nettarif C, prices with VAT: https://dinel.dk/priser-og-bestemmelser/hvad-skal-private-elkunder-betale-i-nettarif/
+# Dinel publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code TCL<100_02) in kroner without VAT: these add 25% VAT.
+# The prices are 2026's, until Dinel publishes 2027's.
+# Maintained by @zygimantas
+currency: DKK
+calendar:
+  apr-sep:
+    mon-sun: low 06:00 summer-high 17:00 summer-peak 21:00 summer-high
+  oct-mar:
+    mon-sun: low 06:00 winter-high 17:00 winter-peak 21:00 winter-high
+rates:
+  low: 0.07688
+  summer-high: 0.11538
+  summer-peak: 0.3
+  winter-high: 0.23075
+  winter-peak: 0.69238

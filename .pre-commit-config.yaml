@@ -11,7 +11,9 @@ repos:
     rev: v2.4.3
     hooks:
       - id: codespell
-        args: [--ignore-words-list=trough]
+        # names in the plans and their pages, like Modul in Germany's Modul 3
+        args:
+          - --ignore-words-list=alternativ,groupe,konstant,lew,linz,modul,olt,trough,whit
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v23.1.1
     hooks:

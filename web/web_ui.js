@@ -304,7 +304,7 @@ function render() {
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
   const country = $("set-area").value.slice(0, 2);
-  const currency = (fixed || !SMARD_ONLY.includes(country) ? CURRENCIES[country] : null) ?? "EUR";
+  const currency = CURRENCIES[country] ?? "EUR";
   const unit = `${currency} with VAT per kWh`;
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
@@ -545,9 +545,13 @@ const COUNTRIES = {
 };
 const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? ""));
 const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));
-// The countries without the euro, by their currency, which a market from Nord Pool comes in too; SMARD's only in euros.
+// The countries without the euro, by their currency, which their prices are in: Nord Pool's market prices come in it,
+// and the board converts SMARD's, in euros, at the ECB's daily rate where the settings set the currency.
 const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
 const SMARD_ONLY = ["CH", "CZ", "HU"];
+// The currency the form writes: a fixed price's, and a market's from SMARD, which the board otherwise keeps in euros.
+const writtenCurrency = (area, fixed) =>
+  fixed || SMARD_ONLY.includes(area.slice(0, 2)) ? CURRENCIES[area.slice(0, 2)] : undefined;
 // About a euro in each of those currencies: the most a supplier's margin or part per kWh can be, which turns away cents
 // typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
@@ -789,7 +793,7 @@ function fillSettings() {
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
   // a currency of the file's own, other than the one the form writes, is more than the form shows
-  const written = $("set-price").value === "fixed" ? CURRENCIES[$("set-area").value.slice(0, 2)] : undefined;
+  const written = writtenCurrency($("set-area").value, $("set-price").value === "fixed");
   $("settings-more").hidden = !more && values.currency?.toUpperCase() === written;
   $("settings-error").hidden = true;
 }
@@ -847,9 +851,9 @@ function withForm(keys) {
 function formSettings(prices = true) {
   const v = (id) => $(id).value.trim();
   const lines = [];
-  const currency = CURRENCIES[v("set-area").slice(0, 2)];
   const fixed = prices && v("set-price") === "fixed";
-  if (fixed && currency) lines.push(`currency: ${currency}`);
+  const currency = prices && writtenCurrency(v("set-area"), fixed);
+  if (currency) lines.push(`currency: ${currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
   if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
   if (prices && v("set-price") === "market") {

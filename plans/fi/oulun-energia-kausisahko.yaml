@@ -1,0 +1,24 @@
+# Oulun Energia Kausisähkö, prices with VAT: https://www.oulunenergia.fi/sahkoverkko/tuotteet-ja-hinnastot/verkkopalveluhinnasto/
+# Oulun Energia Sähköverkko prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
+# Winter weekdays are working days, Saturdays and eves included, as the price list says: public holidays take the other rate all day.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+exceptions:
+  01-01: other
+  01-06: other
+  # Good Friday, 2027
+  03-26: other
+  # Easter Monday, 2027
+  03-29: other
+  12-06: other
+  12-25: other
+  12-26: other
+rates:
+  other: 0.01945
+  winter-day: 0.02912

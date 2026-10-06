@@ -1,0 +1,12 @@
+# Romande Energie Double, prices with VAT: https://www.romande-energie.ch/electricite/votre-electricite
+# Romande Energie prints the prices in centimes without VAT, the regional and the national network apart: these are their sum, in francs, with 8.1% VAT.
+# On 1 January 2027 the prices become 0.14896 (high) and 0.08605 (low), with the same hours.
+# Maintained by @zygimantas
+currency: CHF
+calendar:
+  jan-dec:
+    mon-fri: low 17:00 high 22:00 low
+    sat-sun: low
+rates:
+  high: 0.15058
+  low: 0.08983

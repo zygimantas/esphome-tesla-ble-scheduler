@@ -1,0 +1,9 @@
+# Vantaan Energia Yleissiirto, prices with VAT: https://www.vantaanenergiasahkoverkot.fi/tuotteet-ja-palvelut/verkkopalvelut/
+# Vantaan Energia Sähköverkot prints the prices in cents with 25.5% VAT: these are in euros.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.03300

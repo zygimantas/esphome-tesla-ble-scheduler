@@ -1,0 +1,14 @@
+# Tampereen Energia Kausisiirto, prices with VAT: https://www.tampereensahkoverkko.fi/sahkon-jakelu-ja-kulutus/verkkopalvelutuotteet-hinnat-ja-sopimusehdot/
+# Tampereen Energia Sähköverkko prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
+# Public holidays from Monday to Saturday count as winter weekdays, as the price list says.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+rates:
+  other: 0.02410
+  winter-day: 0.05572

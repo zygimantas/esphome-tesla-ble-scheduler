@@ -72,7 +72,7 @@ inline float number(const std::string &text) {
 }
 
 // Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
-// or not, with the tariff: block as docs/tariff.md has it and the plans built in. Returns what's wrong, or "".
+// or not, with the tariff: block as plans/README.md has it and the plans built in. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
@@ -151,7 +151,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       if (upper(area) == known.name)
         read.area = &known;
     if (read.area == nullptr)
-      return "market: area must be one the board knows, like LT or SE3: see Countries";
+      return "market: area must be one the board knows, like LT or SE3: see Countries and plans";
     read.vat = number(vat);
     if (!(read.vat >= 0.0f && read.vat < 1.0f))
       return "market: vat must be the VAT as a fraction, like 0.21 for 21%";
@@ -172,9 +172,12 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (read.currency.size() != 3 ||
       !std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }))
     return "currency must be a currency's three-letter code, like EUR";
-  if (read.area != nullptr && !comes_in(*read.area, read.currency))
+  if (read.area != nullptr && !comes_in(*read.area, read.currency)) {
+    const char *converted = converted_currency(*read.area);
     return concat({"currency: ", market_name(read.area->market), "'s prices come in ",
-                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR"});
+                   read.area->market == Market::NORD_POOL ? "DKK, EUR, NOK, PLN, RON or SEK" : "EUR",
+                   converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
+  }
 
   const size_t scheme = read.ntfy_server.find("://");
   if (scheme == std::string::npos ||
@@ -189,10 +192,15 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
     if (found == plans.end()) {
+      // the plans of the same country's folder, as all of them make too long a list; a name without one is taken as
+      // a country's, like lt
+      const size_t slash = read.plan.find('/');
+      const std::string folder = slash == std::string::npos ? read.plan + "/" : read.plan.substr(0, slash + 1);
       std::string names;
       for (const auto &known : plans)
-        names += concat({names.empty() ? "" : ", ", known.first});
-      return concat({"tariff: there's no plan ", read.plan, "; there are ", names});
+        if (known.first.compare(0, folder.size(), folder) == 0)
+          names += concat({names.empty() ? "; there are " : ", ", known.first});
+      return concat({"tariff: there's no plan ", read.plan, names});
     }
     read.plan_text = found->second;
   }

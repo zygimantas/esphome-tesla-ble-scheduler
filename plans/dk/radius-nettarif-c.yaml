@@ -1,0 +1,16 @@
+# Radius Elnet Nettarif C, prices with VAT: https://radiuselnet.dk/priser/
+# Radius publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code DT_C_01) in kroner without VAT: these add 25% VAT.
+# The winter prices hold until 31 March 2027; the summer ones are April to September 2026's, until Radius publishes the next.
+# Maintained by @zygimantas
+currency: DKK
+calendar:
+  apr-sep:
+    mon-sun: low 06:00 summer-high 17:00 summer-peak 21:00 summer-high
+  oct-mar:
+    mon-sun: low 06:00 winter-high 17:00 winter-peak 21:00 winter-high
+rates:
+  low: 0.13272
+  summer-high: 0.19908
+  summer-peak: 0.5176
+  winter-high: 0.39816
+  winter-peak: 1.19447

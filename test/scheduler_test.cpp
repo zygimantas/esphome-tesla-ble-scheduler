@@ -281,6 +281,23 @@ static void test_smard_prices() {
   CHECK(!prices.get(1790548200));  // null: not out yet
   CHECK(prices.add_smard("{oops", 5) == -1);
   CHECK(prices.add_smard("{}", 2) == 0);
+  PriceTable koruna;  // in the country's own currency, at the ECB's rate
+  CHECK(koruna.add_smard(json, std::strlen(json), 25.0f) == 2);
+  const auto converted = koruna.get(1790546400);
+  CHECK(converted && near(*converted, 4.1645f));
+}
+
+static void test_ecb_rates() {
+  const std::string xml =
+      "<gesmes:Envelope><Cube><Cube time='2026-10-05'><Cube currency='USD' rate='1.1652'/>"
+      "<Cube currency='CZK' rate='24.335'/><Cube currency='HUF' rate='0'/>"
+      "<Cube currency='CHF' rate='soon'/></Cube></Cube></gesmes:Envelope>";
+  const auto czk = ecb_rate(xml.data(), xml.size(), "CZK");
+  CHECK(czk && near(*czk, 24.335f));
+  CHECK(!ecb_rate(xml.data(), xml.size(), "PLN"));  // not in the file
+  CHECK(!ecb_rate(xml.data(), xml.size(), "HUF"));  // not a rate
+  CHECK(!ecb_rate(xml.data(), xml.size(), "CHF"));
+  CHECK(std::string(ECB_RATES_URL) == "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml");
 }
 
 static void test_omie_prices() {
@@ -987,7 +1004,18 @@ static void test_reads_the_settings_file() {
   CHECK(s.currency == "EUR");
   CHECK_STR(settings_error("currency: GBP\n" + norway),
             "currency: Nord Pool's prices come in DKK, EUR, NOK, PLN, RON or SEK");
-  CHECK_STR(settings_error(settings_with("  area:", "  area: HU\n") + "currency: HUF\n"),
+  // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
+  const std::string czech =
+      "currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
+      "flat\n  rates:\n    flat: 2.5\ntesla_battery_kwh: 75\ntesla_charging_kw: 11\n"
+      "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Prague\n";
+  CHECK_STR(read_settings(czech, repository_plans(), s), "");
+  CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
+  CHECK_STR(settings_error(settings_with("  area:", "  area: CH\n") + "currency: CHF\n"),
+            "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
+  CHECK_STR(settings_error(settings_with("  area:", "  area: HU\n") + "currency: CZK\n"),
+            "currency: SMARD's prices come in EUR, or HUF at the ECB's daily rate");
+  CHECK_STR(settings_error(settings_with("  area:", "  area: SI\n") + "currency: HUF\n"),
             "currency: SMARD's prices come in EUR");
   CHECK_STR(settings_error(settings_with("  area:", "  area: ES\n") + "currency: NOK\n"),
             "currency: OMIE's prices come in EUR");
@@ -1047,7 +1075,7 @@ static void test_settings_file_errors() {
   // Market
   for (const char *area : {"  area: GB\n", ""})
     CHECK_STR(settings_error(settings_with("  area", area)),
-              "market: area must be one the board knows, like LT or SE3: see Countries");
+              "market: area must be one the board knows, like LT or SE3: see Countries and plans");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: -0.1\n")),
             "market: vat must be the VAT as a fraction, like 0.21 for 21%");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 1\n")),
@@ -1078,8 +1106,14 @@ static void test_settings_file_errors() {
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
   const std::string no_plan = settings_error(settings_with("  plan", "  plan: lt/nope\n"));
-  CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are ee/", 0) == 0);
-  CHECK(no_plan.find(", lt/eso-standartinis-4-zones, ") != std::string::npos);
+  CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
+  const std::string last = ", lt/eso-standartinis-2-zones, lt/eso-standartinis-4-zones";
+  CHECK(no_plan.size() > last.size() && no_plan.compare(no_plan.size() - last.size(), last.size(), last) == 0);
+  CHECK(no_plan.find("pl/") == std::string::npos);
+  CHECK_STR(settings_error(settings_with("  plan", "  plan: xx/nope\n")), "tariff: there's no plan xx/nope");
+  CHECK_STR(settings_error(settings_with("  plan", "  plan: nope\n")), "tariff: there's no plan nope");
+  CHECK(settings_error(settings_with("  plan", "  plan: lt\n"))
+            .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n")),
             "tariff: rate nope isn't used on any day");
   CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n  rates: 1\n")),
@@ -2646,6 +2680,7 @@ int main() {
   test_calendar();
   test_nord_pool_prices();
   test_smard_prices();
+  test_ecb_rates();
   test_omie_prices();
   test_cheapest_slots();
   test_schedule_picks_the_night_trough();

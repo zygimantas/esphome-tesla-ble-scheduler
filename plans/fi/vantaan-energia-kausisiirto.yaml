@@ -1,0 +1,13 @@
+# Vantaan Energia Kausisiirto, prices with VAT: https://www.vantaanenergiasahkoverkot.fi/tuotteet-ja-palvelut/verkkopalvelut/
+# Vantaan Energia Sähköverkot prints the prices in cents with 25.5% VAT: these are in euros.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  apr-oct:
+    mon-sun: other
+  nov-mar:
+    mon-sat: other 07:00 winter-day 22:00 other
+    sun: other
+rates:
+  other: 0.02700
+  winter-day: 0.04300

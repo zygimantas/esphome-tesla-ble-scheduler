@@ -1,0 +1,10 @@
+# ORES Bihoraire, two rates, prices with VAT: https://media.ores.be/ores-cms/ptefg3n3/ed_pr%C3%A9l%C3%A8vement_2026.pdf
+# ORES prints the prices without VAT: these are its terme proportionnel, with 6% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: off-peak 07:00 peak 11:00 off-peak 17:00 peak 22:00 off-peak
+rates:
+  off-peak: 0.05168
+  peak: 0.11054

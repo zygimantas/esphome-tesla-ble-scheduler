@@ -1,0 +1,9 @@
+# Sibelga Monohoraire, one rate, prices with VAT: https://brugel.brussels/publication/document/decisions/2025/fr/DECISION-370-ADAPTATIONS-TARIFAIRES-2026-SIBELGA.pdf
+# Brugel prints Sibelga's prices without VAT: the single rate is the peak rate (heures pleines), with 6% VAT.
+# Maintained by @zygimantas
+currency: EUR
+calendar:
+  jan-dec:
+    mon-sun: flat
+rates:
+  flat: 0.06067
