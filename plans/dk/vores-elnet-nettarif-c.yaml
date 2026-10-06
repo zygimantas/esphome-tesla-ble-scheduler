@@ -1,6 +1,7 @@
-# Vores Elnet Nettarif C, prices with VAT: https://www.voreselnet.dk/priser
+# Prices with VAT: https://www.voreselnet.dk/priser
 # Vores Elnet prints the prices in øre without VAT, in its price sheet from 1 October 2026: these are in kroner, with 25% VAT.
 # Maintained by @zygimantas
+name: Vores Elnet Nettarif C
 currency: DKK
 calendar:
   apr-sep:

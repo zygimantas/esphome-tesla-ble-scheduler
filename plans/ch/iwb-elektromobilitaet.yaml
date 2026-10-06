@@ -1,7 +1,8 @@
-# IWB Elektromobilität, prices with VAT: https://www.iwb.ch/servicecenter/stromtarife/aktuelle-tarife
+# Prices with VAT: https://www.iwb.ch/servicecenter/stromtarife/aktuelle-tarife
 # IWB prints the prices in Rappen without VAT: this is the network fee (NNE), in francs, with 8.1% VAT.
 # The charger needs a meter of its own, and IWB may switch it off up to three times two hours a day. The price stays the same on 1 January 2027.
 # Maintained by @zygimantas
+name: IWB Elektromobilität
 currency: CHF
 calendar:
   jan-dec:

@@ -1,6 +1,7 @@
-# Enea Operator G11, prices with VAT: https://www.operator.enea.pl/media/3988/enea-operatorwyciag-z-taryfy01022026-31122026pdf.pdf
+# Prices with VAT: https://www.operator.enea.pl/media/3988/enea-operatorwyciag-z-taryfy01022026-31122026pdf.pdf
 # The tariff prints the prices without VAT: these add 23% VAT.
 # Maintained by @zygimantas
+name: Enea Operator G11
 currency: PLN
 calendar:
   jan-dec:

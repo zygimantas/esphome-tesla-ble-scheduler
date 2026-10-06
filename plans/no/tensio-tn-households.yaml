@@ -1,6 +1,7 @@
-# Tensio TN, households, prices with VAT: https://www.tensio.no/no/kunde/nettleie/nettleiepriser-for-privat
+# Prices with VAT: https://www.tensio.no/no/kunde/nettleie/nettleiepriser-for-privat
 # Tensio prints its own part of the energy fee in øre with VAT, apart from the Enova fee and the electricity tax, for northern Trøndelag (Tensio TN): these are in kroner.
 # Maintained by @zygimantas
+name: Tensio TN, households
 currency: NOK
 calendar:
   jan-dec:

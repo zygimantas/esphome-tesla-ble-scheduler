@@ -1,7 +1,8 @@
-# Dinel Nettarif C, prices with VAT: https://dinel.dk/priser-og-bestemmelser/hvad-skal-private-elkunder-betale-i-nettarif/
+# Prices with VAT: https://dinel.dk/priser-og-bestemmelser/hvad-skal-private-elkunder-betale-i-nettarif/
 # Dinel publishes the prices in DataHub (Energi Data Service's DatahubPricelist, code TCL<100_02) in kroner without VAT: these add 25% VAT.
 # The prices are 2026's, until Dinel publishes 2027's.
 # Maintained by @zygimantas
+name: Dinel Nettarif C
 currency: DKK
 calendar:
   apr-sep:

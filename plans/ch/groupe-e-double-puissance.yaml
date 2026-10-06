@@ -1,7 +1,8 @@
-# Groupe E double à puissance, prices with VAT: https://www.groupe-e.ch/fr/electricite/plus
+# Prices with VAT: https://www.groupe-e.ch/fr/electricite/plus
 # Groupe E prints the prices in centimes without VAT: this is the network price (réseau), the same in the high and the low tariff, in francs, with 8.1% VAT.
 # The fee per kW of the year's highest power is left out. On 1 January 2027 the price becomes 0.02832.
 # Maintained by @zygimantas
+name: Groupe E double à puissance
 currency: CHF
 calendar:
   jan-dec:

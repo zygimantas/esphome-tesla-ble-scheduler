@@ -1,7 +1,8 @@
-# E.ON Syd, 16 A up to 8,000 kWh, prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
+# Prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
 # E.ON prints the prices in öre with 25% VAT: these are in kronor.
 # E.ON's area Syd: Skåne, Blekinge, Halland, Småland, eastern Götaland and Örebro.
 # Maintained by @zygimantas
+name: E.ON Syd, 16 A up to 8,000 kWh
 currency: SEK
 calendar:
   jan-dec:

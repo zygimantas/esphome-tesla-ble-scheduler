@@ -1,6 +1,7 @@
-# Fluvius Limburg, digital meter, prices with VAT: https://www.fluvius.be/nl/factuur-en-tarieven/netkosten/netkosten-afname-elektriciteit
+# Prices with VAT: https://www.fluvius.be/nl/factuur-en-tarieven/netkosten/netkosten-afname-elektriciteit
 # Fluvius prints the prices without VAT: this is the kWh-tarief for a digital meter (piekmeting), with 6% VAT.
 # Maintained by @zygimantas
+name: Fluvius Limburg, digital meter
 currency: EUR
 calendar:
   jan-dec:

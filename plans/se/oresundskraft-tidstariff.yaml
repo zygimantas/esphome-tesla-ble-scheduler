@@ -1,7 +1,8 @@
-# Öresundskraft Tidstariff, prices with VAT: https://www.oresundskraft.se/privat/elnat/elnatsavgifter/
+# Prices with VAT: https://www.oresundskraft.se/privat/elnat/elnatsavgifter/
 # Öresundskraft prints the prices in öre with 25% VAT: these are in kronor.
 # Its fee also adds 5.57% of the month's average market price in SE4, which isn't in this.
 # Maintained by @zygimantas
+name: Öresundskraft Tidstariff
 currency: SEK
 calendar:
   apr-oct:

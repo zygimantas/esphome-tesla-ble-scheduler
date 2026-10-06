@@ -1,6 +1,7 @@
-# Mälarenergi, prices with VAT: https://www.malarenergi.se/elnat/priser-elnat/
+# Prices with VAT: https://www.malarenergi.se/elnat/priser-elnat/
 # Mälarenergi prints the prices in öre, without VAT and with 25% VAT: these are in kronor, with VAT.
 # Maintained by @zygimantas
+name: Mälarenergi
 currency: SEK
 calendar:
   jan-dec:

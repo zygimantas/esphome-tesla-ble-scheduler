@@ -1,7 +1,8 @@
-# SIG Profil Simple, prices with VAT: https://ww2.sig-ge.ch/particuliers/offres/electricite/composition-tarifs
+# Prices with VAT: https://ww2.sig-ge.ch/particuliers/offres/electricite/composition-tarifs
 # SIG prints the prices in centimes, with and without VAT: this is the network price (utilisation du réseau) without VAT, in francs, with 8.1% VAT.
 # The price stays the same on 1 January 2027.
 # Maintained by @zygimantas
+name: SIG Profil Simple
 currency: CHF
 calendar:
   jan-dec:

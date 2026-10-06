@@ -1,6 +1,7 @@
-# Elektrilevi Võrk 5, up to 63 A, prices with VAT: https://elektrilevi.ee/et/hinnakirjad/vorguteenuste-hinnakiri
+# Prices with VAT: https://elektrilevi.ee/et/hinnakirjad/vorguteenuste-hinnakiri
 # Elektrilevi prints the prices in cents without VAT: these are in euros, with 24% VAT.
 # Maintained by @zygimantas
+name: Elektrilevi Võrk 5, up to 63 A
 currency: EUR
 calendar:
   apr-oct:

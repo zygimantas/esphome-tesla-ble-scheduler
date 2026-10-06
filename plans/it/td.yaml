@@ -1,7 +1,8 @@
-# TD transport and meter charges, prices with VAT: https://www.arera.it/area-operatori/prezzi-e-tariffe/tariffe-trasmissione-distribuzione-e-misura-clienti-domestici
+# Prices with VAT: https://www.arera.it/area-operatori/prezzi-e-tariffe/tariffe-trasmissione-distribuzione-e-misura-clienti-domestici
 # ARERA prints the TD tariff's charge per kWh there, and the UC3 and UC6 components at https://www.arera.it/area-operatori/prezzi-e-tariffe/oneri-generali-di-sistema-e-ulteriori-componenti, in cents without VAT: these are their sum, in euros, with 10% VAT.
 # The TD tariff changes every 1 January, and UC3 and UC6 may change with any quarter.
 # Maintained by @zygimantas
+name: TD transport and meter charges
 currency: EUR
 calendar:
   jan-dec:

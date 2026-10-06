@@ -49,7 +49,7 @@ Without your grid operator's plan here, upload a custom plan, or [add the plan](
 
 A plan is a text file, like [ESO's with four zones](lt/eso-standartinis-4-zones.yaml):
 
-- The first line names it, as the page shows it: `# <name>, prices with VAT: <link>`, with a link to where its prices are.
+- `name`: what the page calls it, like `My grid plan`. It can be left out.
 - `currency`: the currency of its prices, your country's in [Countries](#countries), like `EUR` or `NOK`. It can be left out.
 - `calendar`: the months, like `jan-dec`, each with the days of the week, like `mon-fri` and `sat-sun`. Each month and each day of the week is named once. Ranges may run past the end of the year or the week, like `nov-mar` and `fri-mon`.
 - A day's line: the rate from midnight, then each time it changes, on a quarter-hour, and the rate from then: `night 07:00 day 23:00 night`. One rate alone is the whole day.
@@ -61,7 +61,8 @@ A plan is a text file, like [ESO's with four zones](lt/eso-standartinis-4-zones.
 A fee that's dearer from November to March, Monday to Saturday from 07:00 to 22:00, like Finland's seasonal grid fee:
 
 ```yaml
-# My grid plan, prices with VAT: https://example.com
+# Prices with VAT: https://example.com
+name: My grid plan
 currency: EUR
 calendar:
   apr-oct:
@@ -74,7 +75,7 @@ rates:
   high: 0.08
 ```
 
-To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Finish** in the setup or **Save** under **Prices**. **Grid plan** then shows it as **Custom plan:** and the name on its first line, and choosing a plan from the list again drops it.
+To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Finish** in the setup or **Save** under **Prices**. **Grid plan** then shows it as **Custom plan:** and its `name`, and choosing a plan from the list again drops it.
 
 Your plan stays as you uploaded it, while the board downloads a plan from the list every day: change yours when your prices change, and holidays that move, like Easter Monday, every year.
 
@@ -89,7 +90,8 @@ With your grid operator's plan, enter your supplier's own part per kWh, without 
 With day and night prices, upload a custom plan whose rates are your whole price per kWh, the supplier's price and the grid fee together, with VAT, and leave **Supplier's part** at 0: the board then charges in the cheap hours. A night rate that starts on the half-hour, from 00:30 to 05:30, with your rates:
 
 ```yaml
-# My night rate, prices with VAT: https://example.com
+# Prices with VAT: https://example.com
+name: My night rate
 calendar:
   jan-dec:
     mon-sun: standard 00:30 cheap 05:30 standard

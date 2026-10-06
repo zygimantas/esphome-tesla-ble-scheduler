@@ -1,7 +1,8 @@
-# Ellevio, prices with VAT: https://www.ellevio.se/abonnemang/elnatspriser/hus/
+# Prices with VAT: https://www.ellevio.se/abonnemang/elnatspriser/hus/
 # Ellevio prints the prices in öre with 25% VAT: these are in kronor.
 # The same for houses (three phase, 16-63 A), apartments and single phase 25-35 A.
 # Maintained by @zygimantas
+name: Ellevio
 currency: SEK
 calendar:
   jan-dec:

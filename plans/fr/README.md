@@ -20,7 +20,8 @@ Write a custom plan with your off-peak hours, which your bill gives, with these 
 With CU4 and off-peak hours from 22:00 to 06:00:
 
 ```yaml
-# TURPE CU4, prices with VAT: https://www.cre.fr
+# Prices with VAT: https://www.cre.fr
+name: TURPE CU4
 currency: EUR
 calendar:
   nov-mar:
@@ -41,7 +42,8 @@ If your off-peak hours change with the season, give each season its own. A meter
 The options LU (long use, rare in homes) and CU (short use, for meters that aren't Linky meters) have one price for every hour: 0.01548 and 0.05988 euros with VAT per kWh. They don't change which hours are cheapest, only the costs the board shows:
 
 ```yaml
-# TURPE LU, prices with VAT: https://www.cre.fr
+# Prices with VAT: https://www.cre.fr
+name: TURPE LU
 currency: EUR
 calendar:
   jan-dec:

@@ -1,7 +1,8 @@
-# E.ON Stockholm, apartment 16 A, prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
+# Prices with VAT: https://www.eon.se/el/elnat/elnaetsabonnemang-priser
 # E.ON prints the prices in öre with 25% VAT: these are in kronor.
 # E.ON's area Stockholm: Danderyd, Enköping, Åkersberga and southern Uppland.
 # Maintained by @zygimantas
+name: E.ON Stockholm, apartment 16 A
 currency: SEK
 calendar:
   jan-dec:

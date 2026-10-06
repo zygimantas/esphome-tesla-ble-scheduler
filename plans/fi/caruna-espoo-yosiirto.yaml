@@ -1,6 +1,7 @@
-# Caruna Espoo Yösiirto, prices with VAT: https://caruna.fi/tuotteet-ja-palvelut/kotiin-ja-kiinteistoon/verkkopalveluhinnastot/verkkopalveluhinnasto-caruna-0
+# Prices with VAT: https://caruna.fi/tuotteet-ja-palvelut/kotiin-ja-kiinteistoon/verkkopalveluhinnastot/verkkopalveluhinnasto-caruna-0
 # Caruna prints the prices in cents without VAT: these are in euros, with 25.5% VAT.
 # Maintained by @zygimantas
+name: Caruna Espoo Yösiirto
 currency: EUR
 calendar:
   jan-dec:

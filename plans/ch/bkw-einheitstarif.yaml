@@ -1,7 +1,8 @@
-# BKW Einheitstarif, prices with VAT: https://www.bkw.ch/de/strom-in-der-grundversorgung/strom-beziehen/stromkosten-rechnung/stromtarife
+# Prices with VAT: https://www.bkw.ch/de/strom-in-der-grundversorgung/strom-beziehen/stromkosten-rechnung/stromtarife
 # BKW prints the prices in Rappen, with and without VAT: this is the price without VAT, in francs, with 8.1% VAT.
 # On 1 January 2027 the price becomes 0.09978.
 # Maintained by @zygimantas
+name: BKW Einheitstarif
 currency: CHF
 calendar:
   jan-dec:
