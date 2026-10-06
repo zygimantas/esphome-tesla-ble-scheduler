@@ -41,29 +41,9 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** (see [Grid plan](#grid-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
+A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**.
 
 Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
-
-### From 4.x
-
-In 5.0.0 you set everything on the page: the only file you upload is a plan of your own. Boards on 4.x install it by themselves, one last time: from 5.0.0 on, the page offers each new release at the top, with **Update**. If your settings have something that's gone (an ntfy server of your own, a currency of your own, or rates of your own next to a plan), the board shows **Settings: …** after the update, and the page asks for your settings again: check them and press **Save**. With hours or rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. Phone messages now always go through ntfy.sh.
-
-### From 3.x
-
-Boards on 3.x can't update from the page. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
-
-## Settings
-
-The setup asks only for what the board can't guess. To change a setting later, open **Board** and press **Change settings**. Besides the setup's fields, the form has:
-
-- **VAT (%)**, with a dynamic contract: the VAT on electricity, which the board adds to the market prices it downloads. A new board starts with your country's.
-- **Time zone**: where the car lives. A new board starts with your phone's.
-- **ntfy topic**: your topic for [phone messages](#phone-messages), or empty for none.
-
-Every price you enter, and every price in a plan, is per kWh with VAT, as on your bill. **Supplier's margin**, with a dynamic contract, is what your supplier adds to the market price. **Supplier's part**, with a fixed one, is your supplier's own price without the grid fees, which the board adds to your grid plan's fees in every hour (see [Grid plan](#grid-plan)). Neither changes when the car charges, only the costs the board shows.
-
-If a setting is wrong, the board keeps the ones it has and says what.
 
 ## Using it
 

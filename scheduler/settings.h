@@ -1,6 +1,6 @@
 #pragma once
-// The board's settings: the file its page writes (README.md's Settings), read and checked before the board takes it.
-// Plain C++17, with nothing from ESPHome, like charger.h.
+// The board's settings: the file its page writes, read and checked before the board takes it. Plain C++17, with
+// nothing from ESPHome, like charger.h.
 
 #include "market.h"
 #include "tariff.h"
