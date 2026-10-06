@@ -38,32 +38,12 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 6. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If it isn't, open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak).
    - At **Car**, enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Check the battery's size, guessed from your car's model, and the charging power the Tesla app shows while the car charges at home. Press **Continue**: the page checks the VIN, and says what's wrong if anything is.
    - At **Key**, press **Continue**, tap your key card on the console and confirm on the car's screen: once the car answers, the page moves on by itself.
-   - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** (see [Grid plan](#grid-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
+   - At **Prices**, check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload yours (see [Your own plan](plans/README.md#your-own-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Finish**. The board restarts with the settings, or says what's wrong.
 7. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**: [Settings](#settings) says what each one is.
+A new board starts with your country's VAT on electricity and your phone's time zone. To change them, or to get phone messages, open **Board** on the page and press **Change settings**.
 
 Within a day of a new release, the page says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
-
-### From 4.x
-
-In 5.0.0 you set everything on the page: the only file you upload is a plan of your own. Boards on 4.x install it by themselves, one last time: from 5.0.0 on, the page offers each new release at the top, with **Update**. If your settings have something that's gone (an ntfy server of your own, a currency of your own, or rates of your own next to a plan), the board shows **Settings: …** after the update, and the page asks for your settings again: check them and press **Save**. With hours or rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. Phone messages now always go through ntfy.sh.
-
-### From 3.x
-
-Boards on 3.x can't update from the page. Install the latest release once with steps 1 to 3, and don't erase the board when ESPHome Web asks, so it keeps the car's key and its savings. Then go through the setup as in steps 4 to 6 and, under **Change settings**, enter the rest of the ones in your `config.yaml`. With rates of your own, tick **My plan isn't listed** and upload them as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says. If Home Assistant had the board, delete it there and add it again within 15 minutes of plugging the board in: Home Assistant then gives it a new key, as the old one stayed with the old firmware.
-
-## Settings
-
-The setup asks only for what the board can't guess. To change a setting later, open **Board** and press **Change settings**. Besides the setup's fields, the form has:
-
-- **VAT (%)**, with a dynamic contract: the VAT on electricity, which the board adds to the market prices it downloads. A new board starts with your country's.
-- **Time zone**: where the car lives. A new board starts with your phone's.
-- **ntfy topic**: your topic for [phone messages](#phone-messages), or empty for none.
-
-Every price you enter, and every price in a plan, is per kWh with VAT, as on your bill. **Supplier's margin**, with a dynamic contract, is what your supplier adds to the market price. **Supplier's part**, with a fixed one, is your supplier's own price without the grid fees, which the board adds to your grid plan's fees in every hour (see [Grid plan](#grid-plan)). Neither changes when the car charges, only the costs the board shows.
-
-If a setting is wrong, the board keeps the ones it has and says what.
 
 ## Using it
 
@@ -81,14 +61,6 @@ Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home
 ### Phone messages
 
 Phone messages are optional, through the ntfy app: install it, subscribe to a topic with a long random name, and enter that name as **ntfy topic** under **Change settings**. Anyone who knows it can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
-
-## Grid plan
-
-Your **Grid plan** is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Your supplier usually bills the grid operator's fee unchanged, and its bill names your plan. Without one, the board picks the hours by the market price alone, and the page says so. The board downloads the current plan every day, so new prices reach it without a reinstall. [Countries and plans](plans/README.md) lists the plans for each country.
-
-If your plan isn't in the list, tick **My plan isn't listed** and upload it as your own plan with **Upload plan**, as [Your own plan](plans/README.md#your-own-plan) says, or [ask for it](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/new?template=grid_plan.yml). The same way, you can change a plan's prices for yourself.
-
-With a fixed price, or one that follows the monthly average, choose **Fixed** under **Contract type**: the board downloads no market prices and charges by your grid plan's zones. Enter your supplier's own part, without the grid fees, under **Supplier's part**, so what the savings card says charging cost is complete. Where your supplier quotes one price with them in, it's the supplier's own line on the bill: the whole price would count the grid fees twice. With a monthly average, leave it at 0.00: the cost is then only the grid's part, while what it saved is right. Without a plan, every hour costs the same, so the board charges at once, and the page says so. With day and night prices that no plan in the list has, from your grid operator or your supplier, upload them as your own plan, as [A fixed price](plans/README.md#a-fixed-price) shows.
 
 ## Troubleshooting
 
