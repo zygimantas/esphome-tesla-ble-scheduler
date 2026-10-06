@@ -12,7 +12,7 @@
 //   Settings       the setup's steps and the settings form, and the settings file they make, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates, dBm and uptime as text
-//   QR code        the page's address as a QR code, for the setup on a computer
+//   QR code        the page's address as a QR code, at /#qr after ESPHome Web's Visit Device
 //   Start          wiring, then this page or ESPHome's (?full)
 
 // --- Page ------------------------------------------------------------------
@@ -643,13 +643,13 @@ function renderSetup() {
   const answered = settings.text !== "" && !unpaired && !["", "No settings yet"].includes(text(E.status));
   if (setup.step === 2 && answered && !setup.stay && setup.step < lastStep()) setup.step = setup.reached = 3;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
-  // On a computer, as after ESPHome Web's Visit Device, the setup goes on on the phone, in the car: the page's address
-  // as a QR code in place of the steps.
-  const computer = matchMedia("(pointer: fine)").matches;
-  $("phone-card").hidden = !setup.step || !computer;
+  // At /#qr, which ESPHome Web's Visit Device opens, the setup goes on on the phone, in the car: the page's address as a
+  // QR code in place of the steps. The page's own address always shows the steps, on a computer too.
+  const qr = location.hash === "#qr";
+  $("phone-card").hidden = !setup.step || !qr;
   const steps = document.querySelectorAll(".step");
   for (const [i, card] of steps.entries()) {
-    card.hidden = !setup.step || computer || i + 1 > lastStep();
+    card.hidden = !setup.step || qr || i + 1 > lastStep();
     card.classList.toggle("open", i + 1 === setup.step);
     card.classList.toggle("done", i + 1 !== setup.step && i + 1 <= setup.reached);
   }
