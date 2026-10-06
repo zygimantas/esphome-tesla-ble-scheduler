@@ -69,21 +69,12 @@ class Controller {
   // The buttons on the web page. Each acts at once, free of command_()'s limits.
 
   // Charge regardless of price until the car is unplugged.
-  void charge_now() {
-    hold_ = Hold::NOW;
-    allow_command_();
-  }
+  void charge_now() { press_(Hold::NOW); }
   // Follow the schedule: cancels charge_now(), a start from the car or app, or stop_charging().
-  void create_schedule() {
-    hold_ = Hold::SCHEDULE;
-    allow_command_();
-  }
+  void create_schedule() { press_(Hold::SCHEDULE); }
   // No schedule and no charging until create_schedule(), charge_now(), a start from the car or app, or the car is
   // unplugged.
-  void stop_charging() {
-    hold_ = Hold::NONE;
-    allow_command_();
-  }
+  void stop_charging() { press_(Hold::NONE); }
   // The page's Reset savings: the figures start afresh on the next tick.
   void reset_savings() { savings = Savings{}; }
   // What the buttons chose, for the board to keep across a restart (see Hold).
@@ -478,7 +469,9 @@ class Controller {
     return want_charge ? Command::START_CHARGING : Command::STOP_CHARGING;
   }
 
-  void allow_command_() {
+  // What each button does: holds its choice, and lets the next command go out at once.
+  void press_(Hold hold) {
+    hold_ = hold;
     last_command_at_ = 0;
     commands_this_schedule_ = 0;
     asked_at_ = 0;  // a button asks again at once, also while the charger has no power
