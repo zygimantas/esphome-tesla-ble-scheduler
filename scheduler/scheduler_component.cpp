@@ -166,9 +166,6 @@ void SchedulerComponent::setup() {
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
-#ifdef USE_UPDATE
-  this->firmware_ = find(App.get_updates(), "Firmware");
-#endif
 
   if (this->settings_error_.empty())
     this->apply_settings_();
@@ -198,18 +195,6 @@ void SchedulerComponent::apply_settings_() {
     ESP_LOGE(TAG, "Tariff: %s", error.c_str());
 }
 
-// A new release installs itself while the car isn't charging: the board restarts with it.
-void SchedulerComponent::install_update_([[maybe_unused]] const CarState &car, [[maybe_unused]] const Decision &d) {
-#ifdef USE_UPDATE
-  if (this->firmware_ == nullptr || this->firmware_->state != update::UPDATE_STATE_AVAILABLE ||
-      !update_due(car, d, this->update_tried_at_))
-    return;
-  ESP_LOGI(TAG, "Installing release %s", this->firmware_->update_info.latest_version.c_str());
-  this->update_tried_at_ = car.now;
-  this->firmware_->perform();
-#endif
-}
-
 // A text sensor's new state, if it's new.
 static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
   if (sensor->state != value)
@@ -217,6 +202,11 @@ static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
 }
 
 void SchedulerComponent::update() {
+  if (!this->settings_error_.empty()) {  // nothing to schedule until there are settings
+    publish(this->status_, this->settings_error_);
+    publish(this->mode_, "wait");
+    return;
+  }
   const ESPTime now = this->clock_->now();
   CarState car;
   car.now = now.is_valid() ? now.timestamp : 0;
@@ -228,12 +218,6 @@ void SchedulerComponent::update() {
   car.limit = this->limit_ != nullptr && this->limit_->has_state() ? this->limit_->state : NAN;
   car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
-  if (!this->settings_error_.empty()) {  // nothing to schedule until there are settings, but a release can come
-    publish(this->status_, this->settings_error_);
-    publish(this->mode_, "wait");
-    this->install_update_(car, Decision{});
-    return;
-  }
 
   // The car reports only to a key it knows: its first report shows the key is paired with the car the settings
   // name, which erasing the board or another VIN undoes.
@@ -287,7 +271,6 @@ void SchedulerComponent::update() {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
-  this->install_update_(car, d);
   if (this->plug_ == nullptr || this->charging_state_ == nullptr || this->battery_ == nullptr ||
       this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
     d.status = "Tesla entities not found";

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest release gets fixes. Boards install it by themselves within a day, so there is no reason to stay on an older one.
+Only the latest release gets fixes. Within a day, the board's page offers it at the top, under **Update available**: press **Update**, as there is no reason to stay on an older one.
 
 ## Reporting a vulnerability
 
