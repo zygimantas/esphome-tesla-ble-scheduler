@@ -397,15 +397,15 @@ function render() {
       button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
 }
 
-// Replaces a dropdown's options only when their values or greying changed, as render() runs on every board
-// update; then selects `selected`.
-function setOptions(select, options, selected) {
+// Replaces a dropdown's options, in `groups` if it has them, only when their values or greying changed, as render()
+// runs on every board update; then selects `selected`.
+function setOptions(select, options, selected, groups = options) {
   const old = select.options;
   if (
     old.length !== options.length ||
     options.some((o, i) => old[i].value !== o.value || old[i].disabled !== o.disabled)
   )
-    select.replaceChildren(...options);
+    select.replaceChildren(...groups);
   select.value = selected;
 }
 
@@ -456,9 +456,10 @@ function readyBy() {
   return { daily, once: null, deadline: /^\d\d:\d\d$/.test(daily) ? nextAt(daily) : null };
 }
 
-// Fills the dropdown with each half-hour that can be picked, like "Thu 07:00", and the deadline
-// shown, greyed out when it can't be (a daily time whose prices aren't out yet). The hour repeated when the clocks
-// go back is offered once, as the board takes a time in it as the first.
+// Fills the dropdown with each half-hour that can be picked, like "Thu 07:00", in a group for each day, by request,
+// and the deadline shown, greyed out when it can't be (a daily time whose prices aren't out yet). The hour repeated
+// when the clocks go back is offered once, as the board takes a time in it as the first. The options keep their day,
+// as a closed dropdown shows only the option.
 function fillReady(deadline) {
   const now = Date.now();
   const until = pricesUntil();
@@ -469,7 +470,13 @@ function fillReady(deadline) {
   const options = times
     .map((t) => Object.assign(new Option(dayTime(t), t), { disabled: t <= now || t > until }))
     .filter((o, i, all) => all.findIndex((p) => p.text === o.text) === i);
-  setOptions($("ready-select"), options, deadline);
+  const groups = [];
+  for (const option of options) {
+    const day = new Date(Number(option.value)).toLocaleDateString("en", { weekday: "long" });
+    if (groups.at(-1)?.label !== day) groups.push(Object.assign(document.createElement("optgroup"), { label: day }));
+    groups.at(-1).append(option);
+  }
+  setOptions($("ready-select"), options, deadline, groups);
 }
 
 function renderReady() {
