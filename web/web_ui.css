@@ -100,9 +100,10 @@ html {
 .pill.warn {
   background: var(--orange);
 }
-/* No data, once the page has the board's settings, or no board: in ESPHome Web's error red. */
+/* No data, once the page has the board's settings, or no board: in a darker red than ESPHome Web's error red, by
+   request, which reads better on the bar's blue. */
 .pill.none {
-  background: var(--red);
+  background: #c0392b;
 }
 
 /* --- Cards, with a title; Board, Prices and Settings fold open --- */

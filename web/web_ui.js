@@ -157,7 +157,7 @@ const PAGE = `
     <div class="row"><span>Last 12 months</span><strong id="saved-year">-</strong></div>
     <p id="against-average" class="note"></p>
     <p id="against-at-once" class="note"></p>
-    <a class="button" href="https://buymeacoffee.com/zygimantas_berziunas" target="_blank" rel="noopener">Buy me a coffee</a>
+    <a class="button" href="https://buymeacoffee.com/zygimantas_berziunas" target="_blank" rel="noopener">Buy the developer a coffee</a>
     <button id="reset-savings" class="danger">Reset savings</button>
   </section>
 
