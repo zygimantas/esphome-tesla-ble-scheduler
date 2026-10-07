@@ -2,9 +2,6 @@ api:
   encryption:
   reboot_timeout: 0s
 
-debug:
-  update_interval: never
-
 esp32_ble_tracker:
   on_ble_advertise:
     - then:
@@ -75,9 +72,6 @@ tesla_ble_vehicle:
   role: CHARGING_MANAGER
 
 text_sensor:
-  - platform: debug
-    reset_reason:
-      name: "Reset reason"
   - lambda: return {ESPHOME_PROJECT_VERSION};
     name: Release
     platform: template
