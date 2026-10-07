@@ -28,7 +28,7 @@ It charges the owner's car every night.
 ## How users get it
 
 - A change to device.yaml reaches users only with a release (CONTRIBUTING.md's The code says how releases and custom builds are made). The owner's config.yaml points at this folder (`source: .` for the component, `!include device.yaml`) and adds Wi-Fi, an API key and OTA.
-- Boards download their plan from plans/ on `main` every day, while the page lists only the plans built into the release. A change there reaches every board within a day, without a release, so it has to read with the code that's out: a format change needs a new folder.
+- A change in plans/ reaches every board within a day, without a release (CONTRIBUTING.md's Plans), so it has to read with the code that's out: a format change needs a new folder.
 - In device.yaml, a relative path that's missing next to a custom build's config.yaml resolves next to device.yaml (the page files), but a local `external_components` path always resolves in the config's folder: that's why the component's source is in config.yaml and release.yaml, not in device.yaml.
 
 ## Settled; don't propose again

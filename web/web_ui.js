@@ -9,7 +9,7 @@
 //   Ready by       the deadline dropdown and sending it: the daily time and the one-off
 //   Schedule       the schedule card: the mode, the charge windows and the schedule buttons
 //   Savings        the savings card
-//   Settings       the setup's steps, the prices and settings cards, and the settings file, sent to the board and back
+//   Settings       the setup's steps, the Settings card, and the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates and uptime as text
 //   QR code        the page's address as a QR code, for the setup's phone step
@@ -201,9 +201,9 @@ const PAGE = `
         <label class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
         <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
         <div id="car-fields">
-        <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+        <label class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
         <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-        <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+        <label class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
         <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
         </div>
         <p class="note error" hidden></p>
@@ -303,10 +303,9 @@ function render() {
   // The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece).
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
-  const link = live === null ? "Connecting …" : live ? "Connected" : "No connection";
   const waiting = updating ? "Updating …" : "Restarting …";
   const board = !restarting && live !== false; // the board's own status, rather than the page's
-  const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : link;
+  const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : "No connection";
   $("status").textContent = board ? said + power : said;
   // its "?": the status's own line in docs/status.md, which a text fragment scrolls to
   const line = said.startsWith("Charges at")
@@ -594,8 +593,8 @@ function renderSavings() {
 // --- Settings --------------------------------------------------------------
 
 // Each market country's VAT on household electricity in %, as of October 2026, which northern Norway (NO4) doesn't
-// charge, and its time zones, the main one first. Every save writes the VAT and a time zone from here, as no field asks
-// for them, and the board knows no other zones.
+// charge, and its time zones, the main one first. Every save writes a time zone from here, and with Dynamic the VAT, as
+// no field asks for them, and the board knows no other zones.
 const COUNTRIES = {
   AT: [20, "Europe/Vienna"],
   BE: [6, "Europe/Brussels"],
