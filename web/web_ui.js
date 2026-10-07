@@ -704,7 +704,7 @@ function renderSetup() {
   const card = $("prices-card");
   card.hidden = false;
   card.querySelector(".title").textContent =
-    setup.step === 4 ? "Setup: create charging key" : setup.step ? "Setup" : "Prices";
+    { 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? (setup.step ? "Setup" : "Prices");
   card.classList.toggle("open", setup.step > 0 || broken() || settings.open === "prices");
   card.classList.toggle("fold", !setup.step);
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
