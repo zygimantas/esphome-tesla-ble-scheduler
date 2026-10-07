@@ -160,7 +160,7 @@ html {
   min-height: 48px;
   border-top: 1px solid var(--line);
 }
-.row:first-child,
+.card > .row:first-child,
 .title + .row,
 hr + .row {
   border-top: 0;
@@ -348,10 +348,6 @@ button:disabled {
 }
 
 /* --- Schedule card --- */
-#create-schedule,
-#stop-charging {
-  margin-top: 0;
-}
 .or {
   display: flex;
   align-items: center;

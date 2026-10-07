@@ -137,13 +137,10 @@ const PAGE = `
     <p class="note"><span id="plan-why"></span> You can select one in Settings, below.</p>
   </section>
 
-  <section id="target-card" class="card">
-    <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
-    <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
-  </section>
-
   <section id="schedule-card" class="card" hidden>
     <div class="title">Schedule</div>
+    <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
+    <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
     <div id="schedule-start">
       <button id="create-schedule" class="primary">Create schedule</button>
       <div class="or">or</div>
@@ -503,8 +500,9 @@ function expectMode(mode) {
 // a new schedule or charge, so only then can they change.
 function renderSchedule() {
   const mode = shownMode();
-  $("target-card").hidden = mode === "wait"; // nothing to set or show until the board can schedule
-  $("schedule-card").hidden = mode === "unplugged" || mode === "wait";
+  // Charge limit and Ready by at the top, always, and below them what the mode offers: nothing while unplugged, and no
+  // card until the board can schedule
+  $("schedule-card").hidden = mode === "wait";
   $("schedule-start").hidden = mode !== "none";
   $("schedule-rows").hidden = mode !== "schedule";
   $("stop-charging").hidden = mode !== "now";
