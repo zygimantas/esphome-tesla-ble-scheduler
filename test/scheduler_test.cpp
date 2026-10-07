@@ -1044,6 +1044,31 @@ static void test_settings_form_options() {
   CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);
 }
 
+// Which saves restart a board: once it has a car, another car, market area or currency; the rest applies at once.
+static void test_settings_that_restart() {
+  const auto read = [](const std::string &text) {
+    SettingsFile settings;
+    CHECK_STR(read_settings(text, repository_plans(), settings), "");
+    return settings;
+  };
+  const SettingsFile was = read(SETTINGS);
+  CHECK(!restarts(SettingsFile(), was));  // the setup's car, on a board without one
+  CHECK(!restarts(was, was));
+  for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("tesla_battery_kwh", "60"),
+                                  settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
+                                  settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
+    CHECK(!restarts(was, read(text)));
+  SettingsFile now = was;
+  now.vin = "5YJ3E1EA2KF317000";
+  CHECK(restarts(was, now));
+  now = was;
+  now.area = nullptr;  // a fixed price
+  CHECK(restarts(was, now));
+  now = was;
+  now.currency = "SEK";
+  CHECK(restarts(was, now));
+}
+
 static void test_settings_file_errors() {
   CHECK_STR(settings_error(SETTINGS + std::string(MAX_SETTINGS_BYTES, '#')), "the file is longer than 4 kB");
   // Lines
@@ -2760,6 +2785,7 @@ int main() {
   test_schedule_counts_the_tariff_fee();
   test_reads_the_settings_file();
   test_settings_form_options();
+  test_settings_that_restart();
   test_settings_file_errors();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();

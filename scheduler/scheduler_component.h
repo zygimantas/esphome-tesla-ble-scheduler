@@ -99,9 +99,9 @@ class SchedulerComponent : public PollingComponent {
   void load_settings();
   // Takes a settings file before the web server starts, as the simulation does.
   void use_settings(const std::string &text);
-  // Saves a settings file that read_settings() took, from the web server's task: it applies at once while the board
-  // has no car, and restarts the board once it has one.
-  void save_settings(const std::string &text);
+  // Saves a settings file that read_settings() took, from the web server's task: it applies at once, or restarts the
+  // board, as restarts() in settings.h says.
+  void save_settings(const std::string &text, bool restart);
   // The settings file saved, empty without one (for the web server's task), and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
   const std::string &vin() const { return this->file_.vin; }

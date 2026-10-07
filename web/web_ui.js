@@ -887,13 +887,14 @@ async function sendSettings(file) {
     say(response.ok ? "" : `Not saved: ${answer}`);
     if (response.ok) {
       settings.open = "";
-      // A board with the car restarts with them: the page waits for it, reconnecting soon rather than when the browser
-      // would. Without the car yet, as in the setup, it takes them at once, and the page goes on with them.
-      if (hasCar()) {
+      // The board restarts for another car, market area or currency, as it answers: the page waits for it,
+      // reconnecting soon rather than when the browser would. Else it takes them at once, and the page goes on with them.
+      if (answer.endsWith("restarts")) {
         toast("Settings saved: the board restarts");
         restarting = Date.now();
         setTimeout(reconnect, 3000);
       } else {
+        toast("Settings saved");
         settings.text = file;
       }
     }

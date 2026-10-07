@@ -38,5 +38,5 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 - **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Setup](../README.md#setup) says.
 - **Connecting …**: the page has just opened and waits for the board.
 - **No connection**: the page lost the board. Check that the phone is on the same Wi-Fi and the board has power; the page reconnects by itself.
-- **Restarting …**: the board restarts, after you saved settings or pressed Restart board. The page loads afresh once it's back.
+- **Restarting …**: the board restarts, after you saved another country or area or contract type, or pressed Restart board. The page loads afresh once it's back.
 - **Updating …**: you pressed Update: the board downloads the new release and restarts with it, in about a minute. If it can't, the page says the update didn't install.
