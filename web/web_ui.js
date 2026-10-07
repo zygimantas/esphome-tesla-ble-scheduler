@@ -209,7 +209,7 @@ const PAGE = `
         <div id="key-ask">
           <div class="row"><span>The board's key can only charge: it can't unlock or drive the car.${info("key-hint", "About the key")}</span></div>
           <p id="key-hint" class="note hint" hidden>The car only takes orders from keys it knows, so the board makes its own, like a phone key. You can remove it in the car under Controls → Locks.</p>
-          <label class="row check"><input id="key-card" type="checkbox"><span>You're in the car with your Tesla key card</span></label>
+          <label class="row check"><input id="key-card" type="checkbox"><span>I am in the car with my Tesla key card</span></label>
           <p id="key-reach" class="note"></p>
           <button id="pair-now" class="primary">Continue</button>
         </div>
