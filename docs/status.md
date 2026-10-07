@@ -17,7 +17,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 - **Charges at 01:30**, or **Charges at Mon 01:30** when it's more than a day away: the schedule's next window. The schedule's windows are listed below the status.
 - **Starting**: the schedule wants to charge, or you pressed Start charging now, and the board has told the car; it says Charging, or Charging now, once the car reports that it does, usually within a minute.
 - **Charging**: the car charges, as scheduled.
-- **Can't start charging**: the car ignored three starts in a quarter-hour. The board tries again in the next one. If it keeps saying this, see the Troubleshooting section of the README.
+- **Can't start charging**: the car ignored three starts in a quarter-hour. The board tries again in the next one. If it keeps saying this, see the README's [Troubleshooting](../README.md#troubleshooting).
 - **Charger has no power**: the car says its charger gives no power. Turn off the charger's own schedule, auto-lock or OCPP approval. The board has asked the car to charge, so it starts as soon as power comes.
 - **Charged**: the battery is at the charge limit.
 - **Waiting for prices**: Ready by is later than the published prices, which come out around 13:00 CET for the next day. The schedule is made as soon as they're out.
