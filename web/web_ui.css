@@ -354,9 +354,12 @@ button:disabled {
 }
 
 /* --- Schedule card --- */
-#create-schedule,
-#stop-charging {
-  margin-top: 0;
+/* Charge limit and Ready by as one group, without a line between them, and the windows a gap below it. */
+#ready-row {
+  border-top: 0;
+}
+#windows {
+  margin-top: 16px;
 }
 .or {
   display: flex;
