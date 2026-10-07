@@ -129,7 +129,7 @@ const PAGE = `
   </section>
 
   <section id="status-card" class="card">
-    <div class="row"><span>Status</span><strong id="status">Connecting …</strong><a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></div>
+    <div class="row"><strong id="status">Connecting …</strong><a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></div>
   </section>
 
   <section id="plan-card" class="card" hidden>
