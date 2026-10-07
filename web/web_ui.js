@@ -391,6 +391,7 @@ function render() {
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
   $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
+  for (const id of ["set-margin", "set-fixed"]) checkRange($(id)); // the range, and its unit, of the country now
   // a hint shows while its "?" is open and its field is shown
   for (const button of document.querySelectorAll(".info[data-hint]"))
     $(button.dataset.hint).hidden =
