@@ -321,18 +321,19 @@ function render() {
   renderSavings();
 
   // the header, while the page has the board: the board's signals, a weak one in orange, the moon while the car
-  // sleeps, and the car's battery
+  // sleeps, and the car's battery, in orange too below 20%
   for (const [id, entity, weak] of [
     ["wifi", E.wifi, -75],
     ["ble", E.ble, -85],
   ]) {
     const signal = live ? value(entity) : null;
     $(id).textContent = signal == null ? "-" : signal.toFixed(0); // dBm, without the unit
-    $(id).parentElement.classList.toggle("weak", signal != null && signal < weak);
+    $(id).parentElement.classList.toggle("warn", signal != null && signal < weak);
   }
   $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
   const soc = live ? value(E.battery) : null;
   $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
+  $("soc").parentElement.classList.toggle("warn", soc != null && Math.round(soc) < 20);
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();

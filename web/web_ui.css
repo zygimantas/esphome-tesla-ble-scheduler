@@ -88,8 +88,8 @@ main {
   width: 14px;
   height: 14px;
 }
-/* A weak signal, in ESPHome Web's warning orange. */
-.pill.weak {
+/* A weak signal or a low battery, in ESPHome Web's warning orange. */
+.pill.warn {
   background: var(--orange);
 }
 
