@@ -207,7 +207,7 @@ const PAGE = `
       </div>
       <div id="key-step" hidden>
         <div id="key-ask">
-          <p class="note">The board adds its own key to the car, like a phone key. It can only charge: it can't unlock or drive the car.</p>
+          <p class="note">The board adds its own key to the car, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>.</p>
           <label class="row check"><input id="key-card" type="checkbox"><span>I am in the car with my Tesla key card</span></label>
           <p id="key-reach" class="note"></p>
           <button id="pair-now" class="primary">Continue</button>
