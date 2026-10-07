@@ -124,7 +124,7 @@ const PAGE = `
   </section>
 
   <section id="status-card" class="card">
-    <div class="row"><span>Status<a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></span><strong id="status">Connecting …</strong></div>
+    <div class="row"><span>Status</span><strong id="status">Connecting …</strong><a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></div>
   </section>
 
   <section id="plan-card" class="card" hidden>
@@ -157,7 +157,7 @@ const PAGE = `
     <div class="row"><span>Last 12 months</span><strong id="saved-year">-</strong></div>
     <p id="against-average" class="note"></p>
     <p id="against-at-once" class="note"></p>
-    <a class="button" href="https://buymeacoffee.com/zygimantas_berziunas" target="_blank" rel="noopener">Buy me a coffee</a>
+    <a class="button" href="https://buymeacoffee.com/zygimantas_berziunas" target="_blank" rel="noopener">Buy the developer a coffee</a>
     <button id="reset-savings" class="danger">Reset savings</button>
   </section>
 
@@ -324,7 +324,8 @@ function render() {
   renderSavings();
 
   // the header, while the page has the board: the board's signals, a weak one in orange, the moon while the car
-  // sleeps, and the car's battery, in orange too below 20%
+  // sleeps, and the car's battery, in orange too below 20%; a pill without data in red, once the page is loaded
+  const loaded = settings.text !== null || live === false;
   for (const [id, entity, weak] of [
     ["wifi", E.wifi, -75],
     ["ble", E.ble, -85],
@@ -332,11 +333,13 @@ function render() {
     const signal = live ? value(entity) : null;
     $(id).textContent = signal == null ? "-" : signal.toFixed(0); // dBm, without the unit
     $(id).parentElement.classList.toggle("warn", signal != null && signal < weak);
+    $(id).parentElement.classList.toggle("none", loaded && signal == null);
   }
   $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
   const soc = live ? value(E.battery) : null;
   $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
   $("soc").parentElement.classList.toggle("warn", soc != null && Math.round(soc) < 20);
+  $("soc").parentElement.classList.toggle("none", loaded && soc == null);
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
