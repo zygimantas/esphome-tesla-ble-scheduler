@@ -506,7 +506,8 @@ async function createSchedule() {
   const current = readyBy();
   let deadline = draft.deadline ?? current.deadline;
   if (deadline == null) return;
-  const time = hhmm(deadline);
+  // Nothing picked, the daily time stays, though on the night the clocks skip it, its deadline comes an hour later.
+  const time = draft.deadline == null && deadline === nextAt(current.daily) ? current.daily : hhmm(deadline);
   if (deadline <= Date.now()) deadline = nextAt(time);
   const once = deadline === nextAt(time) ? null : deadline;
   pending.deadline = { value: deadline, until: Date.now() + 20000 };
