@@ -65,8 +65,8 @@ main {
 }
 .bar svg {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px; /* as tall as the pills */
   margin-right: auto;
   color: var(--accent);
 }
