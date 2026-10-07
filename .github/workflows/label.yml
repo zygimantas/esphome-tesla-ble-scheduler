@@ -24,7 +24,7 @@ jobs:
             build | chore | ci | perf | refactor | revert | test) label=maintenance ;;
             *) label= ;;
           esac
-          # A ! before the colon, as in "feat(board)!:", means users must change their settings.
+          # A ! before the colon, as in "feat(board)!:", marks a change users must act on.
           case "${TITLE%%:*}" in
             *!) breaking=breaking ;;
             *) breaking= ;;

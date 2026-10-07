@@ -149,7 +149,7 @@ jobs:
           if gh release view "v$version" > /dev/null 2>&1; then
             echo "v$version is out already"
           else
-            # What boards check every day, at releases/latest/download/manifest.json.
+            # What boards check when their page opens, at releases/latest/download/manifest.json.
             release="https://github.com/$GITHUB_REPOSITORY/releases"
             jq -n --arg version "$version" --arg release "$release" \
               --arg md5 "$(md5sum esphome-tesla-ble-scheduler.ota.bin | cut -d ' ' -f 1)" \
