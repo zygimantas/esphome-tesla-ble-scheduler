@@ -603,6 +603,8 @@ static void test_reads_a_plan() {
            Case{"clock: local\nclock: winter\n", "line 2 has clock again"},
            Case{"currency: EUR\n\ncurrency: NOK\n", "line 3 has currency again"},
            Case{"name: One\nname: Two\n", "line 2 has name again"},
+           Case{"name: Home # night rate\n", "line 1 has a comment that isn't on a line of its own"},
+           Case{"rates: # with VAT\n", "line 1 has a comment that isn't on a line of its own"},
        }) {
     TariffText ignored;
     CHECK_STR(read_tariff(c.text, ignored), c.error);
@@ -966,23 +968,23 @@ static void test_reads_the_settings_file() {
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
-  // A fixed price: no market, a custom plan, any currency; quotes, comments after values and Windows line endings; the
-  // last line without a line break.
+  // A fixed price: no market, a custom plan with a comment and an empty line, any currency, an empty value, and Windows
+  // line endings; the last line without a line break.
   const std::string fixed =
       "currency: gbp\r\n"
-      "ntfy_topic: \"\"\n"
+      "ntfy_topic:\n"
       "tariff:\n"
       "  calendar:\n"
       "    # all year\n"
       "    jan-dec:\n"
-      "      mon-sun: day 00:30 night 05:30 day  # Octopus Go\n"
+      "      mon-sun: day 00:30 night 05:30 day  \n"
       "\n"
       "  rates:\n"
       "    day: 0.245\n"
       "    night: 0.085\n"
-      "tesla_battery_kwh: \"82\"\n"
+      "tesla_battery_kwh: 82\n"
       "tesla_charging_kw: 7.4\n"
-      "tesla_vin: '5YJ3E1EA0KF000000'\n"
+      "tesla_vin: 5YJ3E1EA0KF000000\n"
       "timezone: Europe/Lisbon";
   CHECK_STR(read_settings(fixed.substr(fixed.find('\n') + 1), repository_plans(), s), "");
   CHECK(s.currency == "EUR");  // without a market or a currency of its own
@@ -1209,12 +1211,20 @@ static void test_settings_file_errors() {
   CHECK(no_car.vin.empty() && no_car.battery_kwh == 0.0f && no_car.charging_kw == 0.0f && no_car.area != nullptr);
   CHECK_STR(settings_error(without(SETTINGS, {"tesla_battery_kwh", "tesla_charging_kw"})),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
-  // Quotes only around a whole value
-  CHECK_STR(settings_error(settings_set("tesla_vin", "\"5YJ3E1EA0KF000000'")),
+  // No quotes, and no comment after a value, which the page doesn't write: a hand-written file from before 5.0.0 with
+  // them doesn't read, and the page saves it anew. A custom plan with such a comment, which YAML would leave out of
+  // the value, doesn't either.
+  CHECK_STR(settings_error(settings_set("tesla_battery_kwh", "\"75\"")),
+            "tesla_battery_kwh must be the battery's size in kWh, like 75");
+  CHECK_STR(settings_error(settings_set("tesla_vin", "'5YJ3E1EA0KF000000'")),
             "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
             "screen under Controls, Software");
-  CHECK_STR(settings_error(settings_set("tesla_battery_kwh", "\"")),
-            "tesla_battery_kwh must be the battery's size in kWh, like 75");
+  CHECK_STR(settings_error(settings_set("  area", "LT # Lithuania")),
+            "line 3 has a comment that isn't on a line of its own");
+  CHECK_STR(settings_error(custom("name: Home # night rate\n" + calendar_of("    mon-sun: flat"))),
+            "custom plan: line 1 has a comment that isn't on a line of its own");
+  CHECK_STR(settings_error(custom(calendar_of("    mon-sun: flat # all day"))),
+            "custom plan: line 3 has a comment that isn't on a line of its own");
 }
 
 // ---------------------------------------------------------------------------

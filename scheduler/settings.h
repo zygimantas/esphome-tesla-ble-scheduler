@@ -57,9 +57,11 @@ inline std::string upper(std::string text) {
   return text;
 }
 
-// Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
+// Reads and checks the settings file, in the plans' YAML (tariff.h) as the page writes it, the last line break left out
 // or not. tariff: has a plan built in, or a custom plan: a plan's file (plans/README.md), each line indented by two
 // spaces, whose line numbers count from the line after tariff:, as in the file. Returns what's wrong, or "".
+// Quotes and comments after a value don't read: in hand-written files from before 5.0.0, which the page then saves
+// anew, and in custom plans uploaded since, which need uploading again without them.
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
@@ -84,11 +86,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   bool custom = false;  // a custom plan's lines under tariff:
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
-    const size_t end = std::min(text.find('\n', start), text.size());
-    std::string line = text.substr(start, end - start);
-    start = end + 1;
-    line.erase(std::min(line.find(" #"), line.size()));
-    line.erase(line.find_last_not_of(" \r") + 1);
+    const std::string line = next_line(text, start);
     const size_t indent = line.find_first_not_of(' ');
     const auto at = [&](std::string_view what) { return concat({"line ", std::to_string(number), " ", what}); };
     if (indent == std::string::npos || line[indent] == '#') {
@@ -102,15 +100,10 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       custom = true;
       continue;
     }
-    const size_t colon = line.find(':');
-    if (colon == std::string::npos || colon == indent || (colon + 1 < line.size() && line[colon + 1] != ' '))
-      return at("isn't a key and a value");
-    const std::string key = line.substr(indent, colon - indent);
-    std::string value = line.substr(colon + 1);
-    value.erase(0, value.find_first_not_of(' '));
-    const bool heading = value.empty();  // a key with lines of its own below, unlike one with "" for a value
-    if (value.size() >= 2 && (value[0] == '"' || value[0] == '\'') && value.back() == value[0])
-      value = value.substr(1, value.size() - 2);
+    std::string key, value;
+    if (const std::string error = key_value(line, indent, key, value); !error.empty())
+      return at(error);
+    const bool heading = value.empty();  // a key with lines of its own below
     std::string place;
     if (indent == 0) {
       section = heading ? key : "";

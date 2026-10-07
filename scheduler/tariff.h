@@ -43,27 +43,46 @@ inline float number(const std::string &text) {
   return !text.empty() && end == text.c_str() + text.size() ? value : NAN;
 }
 
-// Reads a plan in the plans' YAML: two-space indents, `key: value` or `key:` lines, and comments on
-// lines of their own, without quotes, flow style or anchors, ending with a line break. Returns what's wrong, or "".
+// The plans' and the settings' YAML: two-space indents, `key: value` or `key:` lines, and comments on lines of their
+// own, without quotes, flow style or anchors.
+
+// The line of `text` at `start`, without its line break and the spaces at its end; `start` moves past it.
+inline std::string next_line(const std::string &text, size_t &start) {
+  const size_t end = std::min(text.find('\n', start), text.size());
+  std::string line = text.substr(start, end - start);
+  start = end + 1;
+  line.erase(line.find_last_not_of(" \r") + 1);
+  return line;
+}
+
+// The key and the value of a `key: value` or `key:` line indented by `indent`. A comment after them, which YAML would
+// leave out, is turned away rather than read as part of the value. Returns what's wrong, or "".
+inline std::string key_value(const std::string &line, size_t indent, std::string &key, std::string &value) {
+  const size_t colon = line.find(':');
+  if (colon == std::string::npos || colon == indent || (colon + 1 < line.size() && line[colon + 1] != ' '))
+    return "isn't a key and a value";
+  if (line.find(" #") != std::string::npos)
+    return "has a comment that isn't on a line of its own";
+  key = line.substr(indent, colon - indent);
+  value = line.substr(colon + 1);
+  value.erase(0, value.find_first_not_of(' '));
+  return "";
+}
+
+// Reads a plan, ending with a line break. Returns what's wrong, or "".
 inline std::string read_tariff(const std::string &text, TariffText &tariff) {
   if (!text.empty() && text.back() != '\n')
     return "the text ends inside a line, as if cut off";
   std::string section;
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
-    const size_t end = text.find('\n', start);
-    std::string line = text.substr(start, end - start);
-    start = end + 1;
-    line.erase(line.find_last_not_of(" \r") + 1);
+    const std::string line = next_line(text, start);
     const size_t indent = line.find_first_not_of(' ');
     if (indent == std::string::npos || line[indent] == '#')
       continue;
-    const size_t colon = line.find(':');
-    if (colon == std::string::npos || colon == indent || (colon + 1 < line.size() && line[colon + 1] != ' '))
-      return concat({"line ", std::to_string(number), " isn't a key and a value"});
-    const std::string key = line.substr(indent, colon - indent);
-    std::string value = line.substr(colon + 1);
-    value.erase(0, value.find_first_not_of(' '));
+    std::string key, value;
+    if (const std::string error = key_value(line, indent, key, value); !error.empty())
+      return concat({"line ", std::to_string(number), " ", error});
     if (indent == 0 && value.empty() && (key == "calendar" || key == "exceptions" || key == "rates")) {
       section = key;
     } else if (indent == 0 && !value.empty() && (key == "name" || key == "clock" || key == "currency")) {
