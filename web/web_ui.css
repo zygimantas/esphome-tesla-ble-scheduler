@@ -55,6 +55,10 @@ main {
 }
 
 /* --- The header bar, as ESPHome Web's: the logo, and the board's Wi-Fi and Bluetooth signals on the right --- */
+/* What the page scrolls into view, a card it opens or an error, stops below the sticky header, even when it wraps. */
+html {
+  scroll-padding-top: calc(env(safe-area-inset-top) + 72px);
+}
 .bar {
   position: sticky; /* in sight while the page scrolls, by request */
   top: 0;
