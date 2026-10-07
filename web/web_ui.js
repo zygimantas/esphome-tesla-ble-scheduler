@@ -77,7 +77,7 @@ const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
   </g>
 </svg>`;
 
-// What to do about a plan the list doesn't have, in Prices: one that other customers have too goes into the list for
+// What to do about a plan the list doesn't have: one that other customers have too goes into the list for
 // everyone, and any other goes up as a custom plan, with Upload custom plan below.
 const REPOSITORY = "https://github.com/zygimantas/esphome-tesla-ble-scheduler";
 const PLAN_LINKS =
@@ -134,7 +134,7 @@ const PAGE = `
 
   <section id="plan-card" class="card" hidden>
     <div class="title">No grid plan selected</div>
-    <p class="note"><span id="plan-why"></span> You can select one in Prices, below.</p>
+    <p class="note"><span id="plan-why"></span> You can select one in Settings, below.</p>
   </section>
 
   <section id="target-card" class="card">
@@ -166,10 +166,11 @@ const PAGE = `
     <button id="reset-savings" class="danger">Reset savings</button>
   </section>
 
-  <section id="prices-card" class="card step">
-    <div class="title">Prices</div>
+  <section id="setup-card" class="card step open">
+    <div class="title">Setup</div>
     <div class="body">
       <div id="prices-step">
+        <div id="price-fields">
         <label class="row"><span>Country / Area${info("area-hint", "About the country or area")}</span><span class="dropdown"><select id="set-area" required></select></span></label>
         <p id="area-hint" class="note hint" hidden>Where you buy electricity: your country, or in Sweden, Norway and Denmark your price area, which your contract names. It sets the market prices, the VAT, the time zone and the grid plans to choose from.</p>
         <label id="plan-row" class="row"><span>Grid plan${info("plan-hint", "About the grid plan")}</span><span class="dropdown"><select id="set-plan" required></select></span></label>
@@ -186,9 +187,9 @@ const PAGE = `
         <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
         <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
         <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
+        </div>
         <p class="note error" hidden></p>
         <button class="primary save">Continue</button>
-        <button id="cancel-prices">Cancel</button>
       </div>
       <div id="phone-step" hidden>
         <div id="qr" class="qr"></div>
@@ -203,10 +204,12 @@ const PAGE = `
       <div id="car-step" hidden>
         <label class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
         <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
+        <div id="car-fields">
         <label id="battery-row" class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
         <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
         <label id="power-row" class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
         <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
+        </div>
         <p class="note error" hidden></p>
         <button class="primary save">Continue</button>
       </div>
@@ -226,8 +229,9 @@ const PAGE = `
   <section id="settings-card" class="card fold">
     <div class="title">Settings</div>
     <div class="body">
-      <label class="row"><span>ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
+      <label id="topic-row" class="row"><span>ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
+      <hr>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
       <button id="cancel-settings">Cancel</button>
@@ -247,8 +251,8 @@ const PAGE = `
 // --- State -----------------------------------------------------------------
 
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
-// the card open after the setup, "prices" or "settings", or "".
-const settings = { text: null, options: null, open: "" };
+// whether Settings is open.
+const settings = { text: null, options: null, open: false };
 // The setup's step, 1 to 5 (the prices, the phone, the car, its key and done), or 0, and when the key's step asked the
 // car for the key, or 0.
 const setup = { step: 0, asked: 0 };
@@ -362,8 +366,8 @@ function render() {
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
     : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
-  // Settings the board turned away open at once, with Prices, and without Cancel.
-  $("settings-card").classList.toggle("open", broken() || settings.open === "settings");
+  // Settings the board turned away open at once, without Cancel.
+  $("settings-card").classList.toggle("open", broken() || settings.open);
   $("cancel-settings").hidden = broken();
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
@@ -697,8 +701,7 @@ const broken = () => text(E.status).startsWith("Settings: ");
 // the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at the
 // car, as its link ends in #car, and which a phone or a tablet skips, then the car, then its key, which ends the setup
 // once the car answers, with a word that it's done and how to add the page to the home screen, until OK. After it, the
-// card is Prices, below Savings, folded like Settings, which opens from its title, or for settings the board turned
-// away; the VIN stays as the setup saved it, as only a new install changes it, while the battery and the power move to
+// card goes, and its fields but the VIN, which stays as the setup saved it, as only a new install changes it, move to
 // Settings.
 function renderSetup() {
   const status = text(E.status);
@@ -710,11 +713,9 @@ function renderSetup() {
   // a phone or a tablet is already the one to take to the car, so it goes on without the QR code
   if (setup.step === 2 && matchMedia("(pointer: coarse)").matches) setup.step = 3;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
-  const card = $("prices-card");
-  card.querySelector(".title").textContent =
-    { 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? (setup.step ? "Setup" : "Prices");
-  card.classList.toggle("open", setup.step > 0 || broken() || settings.open === "prices");
-  card.classList.toggle("fold", !setup.step);
+  const card = $("setup-card");
+  card.hidden = !setup.step;
+  card.querySelector(".title").textContent = { 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? "Setup";
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
   // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for
@@ -738,19 +739,21 @@ function renderSetup() {
         ? "Try again"
         : "Create key";
   pair.disabled = busy || !reach || asking || (!setup.asked && !$("key-card").checked);
-  // Continue in the setup; after it, Save, with Cancel
-  $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
-  $("cancel-prices").hidden = setup.step > 0 || broken();
-  // the battery and the power, at the setup's car and after it in Settings, above the topic, by request; the VIN stays
-  // the setup's
-  const rows = ["battery-row", "battery-hint", "power-row", "power-hint"].map($);
-  const before = setup.step ? $("car-step").querySelector(".error") : $("set-topic").closest("label");
-  if (rows[3].nextElementSibling !== before) before.before(...rows);
+  // the car's battery and power and the prices, at their steps in the setup and after it in Settings, by request: the
+  // battery and the power above the topic, and the prices below it and a line
+  for (const [fields, step, after] of [
+    ["car-fields", "car-step", "topic-row"],
+    ["price-fields", "prices-step", "settings-error"],
+  ]) {
+    const before = setup.step ? $(step).querySelector(".error") : $(after);
+    if ($(fields).parentElement !== before.parentElement) before.before($(fields));
+  }
 }
 
-// Says what's wrong on the open card, the setup's or Prices, at its step, else Settings, in sight, or "" for nothing.
+// Says what's wrong at the setup's step, else in Settings, in sight, or "" for nothing.
 function say(problem) {
-  const error = document.querySelector("#prices-card.open > .body > :not([hidden]) > .error") ?? $("settings-error");
+  const error =
+    document.querySelector("#setup-card:not([hidden]) > .body > :not([hidden]) > .error") ?? $("settings-error");
   error.textContent = problem;
   error.hidden = !problem;
   if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -768,7 +771,7 @@ async function nextStep() {
     say(problem);
     if (problem) return;
   }
-  if (!valid($("prices-card").querySelectorAll("input, select"))) return;
+  if (!valid($("setup-card").querySelectorAll("input, select"))) return;
   if (await sendSettings(formSettings())) setup.step += 1;
 }
 
@@ -897,7 +900,7 @@ async function sendSettings(file) {
     const answer = await response.text();
     say(response.ok ? "" : `Not saved: ${answer}`);
     if (response.ok) {
-      settings.open = "";
+      settings.open = false;
       // The board restarts for another car, market area or currency, as it answers: the page waits for it,
       // reconnecting soon rather than when the browser would. Else it takes them at once, and the page goes on with them.
       if (answer.endsWith("restarts")) {
@@ -913,10 +916,9 @@ async function sendSettings(file) {
   });
 }
 
-// Save, in Prices and Settings: the fields' own checks first, as the browser shows them by the field.
+// Save, in Settings: the fields' own checks first, as the browser shows them by the field, and only the shown ones.
 async function saveSettings() {
-  // the open cards' shown fields only: a closed card's go as the board has them, and those a choice hides not at all
-  if (valid(document.querySelectorAll(".open :is(input, select)"))) await sendSettings(formSettings());
+  if (valid($("settings-card").querySelectorAll("input, select"))) await sendSettings(formSettings());
 }
 
 // --- Board link ------------------------------------------------------------
@@ -1302,8 +1304,7 @@ function bind() {
     setup.step += 1;
     requestRender();
   });
-  for (const button of $("prices-card").querySelectorAll(".save"))
-    press(button, () => (setup.step ? nextStep() : saveSettings()));
+  for (const button of $("setup-card").querySelectorAll(".save")) press(button, nextStep);
   // Update: the board downloads the release, then restarts with it.
   press($("update"), async () => {
     if (await post(E.firmware, "install")) {
@@ -1324,21 +1325,17 @@ function bind() {
       setTimeout(reconnect, 3000);
     }
   });
-  // Prices and Settings, after the setup: a title opens its card or folds it, and Cancel folds it, one card at a time,
-  // as Save sends both, and each back to the board's settings
-  const fold = (card) => {
+  // Settings: its title opens or folds it, and Cancel folds it, each back to the board's settings
+  const fold = (open) => {
     fillSettings();
-    settings.open = card;
+    settings.open = open;
     render(); // now, to bring the card into view
-    if (card) $(`${card}-card`).scrollIntoView({ behavior: "smooth" });
+    if (open) $("settings-card").scrollIntoView({ behavior: "smooth" });
   };
-  for (const card of ["prices", "settings"]) {
-    const title = $(`${card}-card`).querySelector(".title");
-    title.addEventListener("click", () => {
-      if (!setup.step) fold(settings.open === card ? "" : card); // in the setup, Prices is a step
-    });
-    $(`cancel-${card}`).addEventListener("click", () => fold(""));
-  }
+  $("settings-card")
+    .querySelector(".title")
+    .addEventListener("click", () => fold(!settings.open));
+  $("cancel-settings").addEventListener("click", () => fold(false));
 }
 
 // Last, so every declaration above is initialised before the page starts.

@@ -27,14 +27,14 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 - **Charging now**: you pressed Start charging now, or charging was started from the car or the Tesla app. The car charges at any price until you unplug.
 - **No schedule**: you pressed Stop charging or Delete schedule. Press Create schedule or Start charging now, or plug in again.
-- **Charging (no prices)**: the board has no price for this quarter-hour, because the download failed for the 10 minutes after a start or the prices ran out later, so the car charges as usual. Check that the board has internet, and **Country / Area** under **Prices**.
+- **Charging (no prices)**: the board has no price for this quarter-hour, because the download failed for the 10 minutes after a start or the prices ran out later, so the car charges as usual. Check that the board has internet, and **Country / Area** under **Settings**.
 - **Charging (battery unknown)**: the car didn't report its battery level in half an hour, so it charges as usual. Check the Bluetooth signal at the top of the page.
 
 ## The board and the page
 
 - **Unplugged**: the car isn't plugged in.
 - **No settings yet**: the board has no settings yet. Go through the setup on the page, as the README's [Setup](../README.md#setup) says.
-- **Settings: …**: the settings the board had no longer pass its checks, after an update made one stricter. The page opens its prices and settings: check them and press Save.
+- **Settings: …**: the settings the board had no longer pass its checks, after an update made one stricter. The page opens its settings: check them and press Save.
 - **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Setup](../README.md#setup) says.
 - **Connecting …**: the page has just opened and waits for the board.
 - **No connection**: the page lost the board. Check that the phone is on the same Wi-Fi and the board has power; the page reconnects by itself.

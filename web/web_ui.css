@@ -106,7 +106,7 @@ html {
   background: #c0392b;
 }
 
-/* --- Cards, with a title; Board, Prices and Settings fold open --- */
+/* --- Cards, with a title; Board and Settings fold open --- */
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -146,7 +146,7 @@ details[open] > summary::after,
 .fold.open > .title::after {
   transform: rotate(90deg);
 }
-/* Prices and Settings fold like Board after the setup: the title opens the card. */
+/* Settings folds like Board: the title opens the card. */
 .fold > .title {
   cursor: pointer;
 }
@@ -386,7 +386,7 @@ ul.note {
   opacity: 0.5;
 }
 
-/* --- The setup, Prices and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
+/* --- The setup and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
 /* Settings by its id without the id's weight, so these rules weigh what .step's did and a box's row (.row.check) keeps
    its words beside it. */
 :is(.step, :where(#settings-card)) .row {
@@ -411,9 +411,15 @@ ul.note {
   text-align: left;
 }
 /* The grid plan's list while it's off: greyed out, unlike a locked dropdown elsewhere. */
-.step select:disabled {
+:is(.step, :where(#settings-card)) select:disabled {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
+}
+/* Settings' line above the prices, as far from the fields on either side. */
+hr {
+  margin: 24px 0 8px;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 /* My plan isn't listed and the key card's: a box before its words, as in a list of options. */
 .row.check {
