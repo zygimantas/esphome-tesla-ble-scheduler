@@ -137,13 +137,10 @@ void SchedulerComponent::setup() {
       }
     });
   }
-  // The charge port flap, which the car reports even while it sleeps.
+  // The charge port flap, which the car reports even while it sleeps, and to any key, one it doesn't know too.
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
-    this->port_->add_on_state_callback([this]() {
-      this->port_reported_ = true;
-      this->turned_away_ = false;
-    });
+    this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
   if (this->plug_ != nullptr)
     this->plug_->add_on_state_callback([this](bool) { this->turned_away_ = false; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
@@ -156,7 +153,6 @@ void SchedulerComponent::setup() {
         return;
       ESP_LOGW(TAG, "The car doesn't know the board's key: %s", result.c_str());
       this->turned_away_ = true;
-      this->port_reported_ = false;
       this->paired_vin_ = 0;
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
@@ -208,10 +204,11 @@ void SchedulerComponent::update() {
   car.power_kw = this->power_ != nullptr ? this->power_->state : NAN;
   car.port_open = this->port_reported_ && this->port_->position == cover::COVER_OPEN;
 
-  // The car reports only to a key it knows: its first report shows the key is paired with the car the settings
-  // name, which erasing the board, another VIN or the car turning the key away undoes.
+  // The car reports the plug state only to a key it knows: its first report shows the key is paired with the car the
+  // settings name, which erasing the board, another VIN or the car turning the key away undoes. The charge port flap
+  // shows nothing, as the car reports it to any key.
   const uint32_t vin = fnv1_hash(this->file_.vin);
-  if (!this->turned_away_ && (this->port_reported_ || car.plugged.has_value()) && this->paired_vin_ != vin) {
+  if (!this->turned_away_ && car.plugged.has_value() && this->paired_vin_ != vin) {
     this->paired_vin_ = vin;
     this->paired_pref_.save(&this->paired_vin_);
     global_preferences->sync();
