@@ -56,6 +56,9 @@ main {
 
 /* --- The header bar, as ESPHome Web's: the logo, and the board's Wi-Fi and Bluetooth signals on the right --- */
 .bar {
+  position: sticky; /* in sight while the page scrolls, by request */
+  top: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap; /* a pill goes on below, on the right, where a phone is too narrow for them all */
   justify-content: flex-end;
@@ -92,6 +95,10 @@ main {
 /* A weak signal or a low battery, in ESPHome Web's warning orange. */
 .pill.warn {
   background: var(--orange);
+}
+/* No data, once the page has the board's settings, or no board: in ESPHome Web's error red. */
+.pill.none {
+  background: var(--red);
 }
 
 /* --- Cards, with a title; Board, Prices and Settings fold open --- */
@@ -169,6 +176,10 @@ summary + .row,
   font-weight: 400;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+/* Status on the right, with its "?" after it. */
+#status {
+  margin-left: auto;
 }
 
 /* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them --- */
@@ -344,8 +355,8 @@ ul.note {
   opacity: 0.5;
 }
 
-/* --- Setup and Prices, one card: each field under its name and the card's width, so its choices fit on a phone --- */
-.step .row {
+/* --- The setup, Prices and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
+:is(.step, #settings-card) .row {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
@@ -353,16 +364,16 @@ ul.note {
   margin-top: 16px;
   border-top: 0;
 }
-.step .row > span:first-child {
+:is(.step, #settings-card) .row > span:first-child {
   color: var(--muted);
   font-size: 13px;
 }
-.step select {
+:is(.step, #settings-card) select {
   width: 100%;
   text-overflow: ellipsis;
 }
-/* A field takes the width too, but a checkbox keeps its 18 px. */
-.step .row input:not([type="checkbox"]) {
+/* A field takes the width too, but a checkbox keeps its own size. */
+:is(.step, #settings-card) .row input:not([type="checkbox"]) {
   width: auto;
   text-align: left;
 }
