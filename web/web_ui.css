@@ -235,6 +235,10 @@ input[type="checkbox"] {
   flex-direction: row;
   align-items: center;
 }
+/* The key's step's reach to the car, which the board ticks, not a finger, in the colour of a ticked box. */
+#key-reach {
+  pointer-events: none;
+}
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
 input:not([type="checkbox"]) {
