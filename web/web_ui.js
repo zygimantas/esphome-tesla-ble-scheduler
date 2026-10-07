@@ -330,7 +330,7 @@ function render() {
     ["ble", E.ble, -85],
   ]) {
     const signal = live ? value(entity) : null;
-    $(id).textContent = signal == null ? "-" : signal.toFixed(0); // dBm, without the unit
+    $(id).textContent = signal == null ? "-" : `${signal.toFixed(0)}\u00a0dBm`; // one piece, as the money is
     $(id).parentElement.classList.toggle("warn", signal != null && signal < weak);
     $(id).parentElement.classList.toggle("none", loaded && signal == null);
   }
