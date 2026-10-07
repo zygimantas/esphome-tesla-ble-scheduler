@@ -6,8 +6,8 @@
 
 universalmutator (run with uvx, from uv) writes copies of each header with one small change each. The unit tests
 build against every copy that changes the code, with the other headers as they are, and run with undefined behavior
-caught; a failing run kills the mutant. A survivor is a change no test notices: a missing test, or code that makes no
-difference. Copies that build the same program as the headers or another copy count once.
+and memory errors caught; a failing run kills the mutant. A survivor is a change no test notices: a missing test, or
+code that makes no difference. Copies that build the same program as the headers or another copy count once.
 """
 
 import concurrent.futures

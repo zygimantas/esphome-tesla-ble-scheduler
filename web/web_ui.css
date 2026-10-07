@@ -1,4 +1,5 @@
-/* Phone-first page for the Tesla BLE board; see web_ui.js. Sections go from general to specific. */
+/* Phone-first page for the Tesla BLE board; see web_ui.js. Sections go from general to specific, the specific ones in
+   the page's order. */
 
 /* --- Theme: light, then dark, as ESPHome Web (web.esphome.io) has them --- */
 :root {
@@ -140,12 +141,13 @@ details[open] > summary::after,
 .fold:not(.open) > .title {
   margin-bottom: 0;
 }
-/* Until the settings are in, no cards, as they decide between the setup and the rest. */
-.loading main > .card {
-  display: none;
-}
-/* While the board restarts, only the card with its status, until the page loads afresh. */
-.restarting main > .card:not(#status-card) {
+/* No cards until the settings are in, as they decide between the setup and the rest; only the one with Status while
+   the board restarts, until the page loads afresh; in the setup, only its card, with Update available above it; and
+   of a folded card, only its title. */
+.loading .card,
+.restarting .card:not(#status-card),
+.setup .card:not(.step, #update-card),
+.card:not(.open) > .body {
   display: none;
 }
 
@@ -168,17 +170,22 @@ summary + .row,
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-/* --- Dropdowns, all the same width, with their own arrow --- */
-select {
-  appearance: none;
+
+/* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them --- */
+select,
+input:not([type="checkbox"]) {
   width: 7em;
   font: inherit;
-  font-variant-numeric: tabular-nums;
   color: var(--text);
   background: var(--card);
   border: 1px solid var(--field);
   border-radius: 6px;
-  padding: 6px 30px 6px 12px;
+  padding: 6px 12px;
+}
+select {
+  appearance: none;
+  padding-right: 30px;
+  font-variant-numeric: tabular-nums;
 }
 .dropdown {
   position: relative;
@@ -193,7 +200,7 @@ select {
   color: var(--muted);
   pointer-events: none;
 }
-/* Locked: only the arrow fades, so the value stays readable; the fill colour overrides iOS Safari's own fading. */
+/* Locked: only the arrow fades, so the value stays readable; the fill color overrides iOS Safari's own fading. */
 .dropdown:has(select:disabled)::after {
   opacity: 0.4;
 }
@@ -201,29 +208,12 @@ select:disabled {
   opacity: 1;
   -webkit-text-fill-color: var(--text);
 }
-
-/* --- The setup, a new board's page: its one card, at its step, with Update available above it --- */
-.setup .card:not(.step, #update-card),
-.card:not(.open) > .body {
-  display: none;
+input:not([type="checkbox"]) {
+  text-align: right;
 }
-/* The setup's fields take the width, each under its name, so their choices fit on a phone. */
-.step .row {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  min-height: 0;
-  margin-top: 16px;
-  border-top: 0;
-}
-.step .row > span:first-child {
-  color: var(--muted);
-  font-size: 13px;
-}
-/* A box before its words, as in a list of options, in the setup too. */
-.row.check {
-  justify-content: flex-start;
-  gap: 14px;
+input.wide {
+  flex: 0 1 60%;
+  min-width: 0;
 }
 /* As big as a finger can tap at ease, with its words. */
 input[type="checkbox"] {
@@ -232,46 +222,6 @@ input[type="checkbox"] {
   height: 24px;
   margin: 0;
   accent-color: var(--accent);
-}
-.step .row.check {
-  flex-direction: row;
-  align-items: center;
-}
-
-/* --- The settings form: fields like the dropdowns, and room for names --- */
-input:not([type="checkbox"]) {
-  width: 7em;
-  font: inherit;
-  text-align: right;
-  color: var(--text);
-  background: var(--card);
-  border: 1px solid var(--field);
-  border-radius: 6px;
-  padding: 6px 12px;
-}
-input.wide {
-  flex: 0 1 60%;
-  min-width: 0;
-}
-.step select {
-  width: 100%;
-  text-overflow: ellipsis;
-}
-/* In the setup, a field under its name takes the width too, but a box keeps its 18 px. */
-.step .row input:not([type="checkbox"]) {
-  width: auto;
-  text-align: left;
-}
-/* Off, like the grid plan while it isn't listed: greyed out, unlike a locked dropdown elsewhere. */
-.step select:disabled {
-  background: var(--control);
-  -webkit-text-fill-color: var(--muted);
-}
-/* Upload and Reset custom plan, and Create topic, leave room before what follows. */
-#upload-plan,
-#reset-plan,
-#topic {
-  margin-bottom: 8px;
 }
 
 /* --- Buttons, and links that look like one --- */
@@ -315,29 +265,6 @@ button:disabled {
   opacity: 0.4;
 }
 
-/* --- Schedule card --- */
-#create-schedule,
-#stop-charging {
-  margin-top: 0;
-}
-.or {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 8px 0 2px;
-  color: var(--muted);
-  font-size: 13px;
-}
-.or::before,
-.or::after {
-  content: "";
-  flex: 1;
-  border-top: 1px solid var(--line);
-}
-.row.spare {
-  opacity: 0.5;
-}
-
 /* --- Notes, hints and errors --- */
 .note {
   margin: 8px 0 0;
@@ -352,7 +279,8 @@ ul.note {
 .note + :is(button, .button) {
   margin-top: 22px;
 }
-/* A field's hint: a small "?" by its name, which opens the words under the field, with room around it for a finger. */
+/* A field's hint: a small "?" by its name, which opens the words under the field, with room around it for a finger;
+   Status's, a link, looks the same. */
 .info {
   position: relative;
   display: inline-flex;
@@ -364,10 +292,9 @@ ul.note {
   margin: 0 0 0 6px;
   padding: 0;
   color: var(--field);
-  border-color: currentColor; /* the "?" and its box in the fields' border colour, and their rounding at its size */
+  border-color: currentColor; /* the "?" and its box in the fields' border color, and their rounding at its size */
   border-radius: 4px;
   font-size: 12px;
-  vertical-align: middle;
 }
 .info::after {
   content: "";
@@ -392,6 +319,64 @@ ul.note {
 }
 .note a {
   color: var(--accent);
+}
+
+/* --- Schedule card --- */
+#create-schedule,
+#stop-charging {
+  margin-top: 0;
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+.row.spare {
+  opacity: 0.5;
+}
+
+/* --- Setup and Prices, one card: each field under its name and the card's width, so its choices fit on a phone --- */
+.step .row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 0;
+  margin-top: 16px;
+  border-top: 0;
+}
+.step .row > span:first-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+.step select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+/* A field takes the width too, but a checkbox keeps its 18 px. */
+.step .row input:not([type="checkbox"]) {
+  width: auto;
+  text-align: left;
+}
+/* The grid plan's list while it's off: greyed out, unlike a locked dropdown elsewhere. */
+.step select:disabled {
+  background: var(--control);
+  -webkit-text-fill-color: var(--muted);
+}
+/* My plan isn't listed and the key card's: a box before its words, as in a list of options. */
+.row.check {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
 }
 
 /* --- The setup's step for the phone: the page's address as a QR code, black on white in both themes, as cameras

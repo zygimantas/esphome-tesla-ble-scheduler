@@ -153,7 +153,7 @@ void SchedulerComponent::setup() {
   if (this->plug_ != nullptr)
     this->plug_->add_on_state_callback([this](bool) { this->turned_away_ = false; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
-  // forgets the pairing, and the setup's Key step comes back, until the car reports again. esphome-tesla-ble says so
+  // forgets the pairing, and the setup's key step comes back, until the car reports again. esphome-tesla-ble says so
   // only for its commands, in Last Command; its polls just go unanswered.
   text_sensor::TextSensor *last_command = find(App.get_text_sensors(), "Last Command");
   if (last_command != nullptr)
@@ -172,21 +172,16 @@ void SchedulerComponent::setup() {
     this->apply_settings_();
 }
 
-// What the settings set outside the file: the controller's settings, the clock's time zone and the tariff.
+// What the settings set outside the file: the clock's time zone, market prices or none, and the tariff.
 void SchedulerComponent::apply_settings_() {
-  Settings &settings = this->settings_;
-  settings.currency = this->file_.currency.c_str();
-  settings.battery_kwh = this->file_.battery_kwh;
-  settings.charging_kw = this->file_.charging_kw;
-  settings.standard_offset = this->file_.standard_offset;
 #ifdef USE_TIME_TIMEZONE
   // The clock's time zone: its offset in winter, and the EU's summer time from 01:00 UTC on the last Sunday of March
   // to 01:00 UTC on the last Sunday of October, as calendar.h has it.
   time::ParsedTimezone zone{};
-  zone.std_offset_seconds = -settings.standard_offset;
-  zone.dst_offset_seconds = -settings.standard_offset - 3600;
-  zone.dst_start = {3600 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 3, 5, 0};
-  zone.dst_end = {7200 + settings.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 10, 5, 0};
+  zone.std_offset_seconds = -this->file_.standard_offset;
+  zone.dst_offset_seconds = -this->file_.standard_offset - 3600;
+  zone.dst_start = {3600 + this->file_.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 3, 5, 0};
+  zone.dst_end = {7200 + this->file_.standard_offset, 0, time::DSTRuleType::MONTH_WEEK_DAY, 10, 5, 0};
   time::set_global_tz(zone);
 #endif
   this->controller_.set_market_prices(this->file_.area != nullptr);
@@ -201,13 +196,9 @@ static void publish(text_sensor::TextSensor *sensor, const std::string &value) {
 }
 
 void SchedulerComponent::update() {
-  if (!this->settings_error_.empty()) {  // nothing to schedule until there are settings
-    publish(this->status_, this->settings_error_);
-    publish(this->mode_, "wait");
-    return;
-  }
-  if (this->file_.vin.empty()) {  // nor until the setup's Car step, after its prices, names the car
-    publish(this->status_, "No car yet");
+  // Nothing to schedule until there are settings, nor until the setup's car step, after its prices, names the car.
+  if (!this->settings_error_.empty() || this->file_.vin.empty()) {
+    publish(this->status_, this->settings_error_.empty() ? "No car yet" : this->settings_error_);
     publish(this->mode_, "wait");
     return;
   }
@@ -233,7 +224,11 @@ void SchedulerComponent::update() {
   }
   car.paired = this->paired_vin_ == vin;
 
-  Settings &settings = this->settings_;
+  Settings settings;
+  settings.currency = this->file_.currency.c_str();
+  settings.battery_kwh = this->file_.battery_kwh;
+  settings.charging_kw = this->file_.charging_kw;
+  settings.standard_offset = this->file_.standard_offset;
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
   const ReadyByOnce &once = *this->ready_by_once_;
   settings.ready_by_once = once.year >= 2020 ? local_to_utc(days_from_civil(once.year, once.month, once.day),
@@ -257,7 +252,7 @@ void SchedulerComponent::update() {
     this->savings_pref_.save(&this->controller_.savings);
     global_preferences->sync();
   }
-  if (d.notification) {  // a new message replaces an unsent older one
+  if (d.notification && !this->file_.ntfy_topic.empty()) {  // a new message replaces an unsent older one
     this->unsent_ = *d.notification;
     this->unsent_since_ = car.now;
     this->message_tried_at_ = 0;
@@ -296,15 +291,15 @@ void SchedulerComponent::dump_config() {
   }
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
-  const char *tariff = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "your own plan";
+  const char *plan = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "custom plan";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
-                "  Tariff: %s\n"
+                "  Plan: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                market.c_str(), file.currency.c_str(), tariff, file.battery_kwh, file.charging_kw,
+                market.c_str(), file.currency.c_str(), plan, file.battery_kwh, file.charging_kw,
                 file.ntfy_topic.empty() ? "off" : "on");
   LOG_UPDATE_INTERVAL(this);
 }
@@ -341,7 +336,7 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `text`, a plan's text, built in, downloaded or your own. Returns what's wrong, or "".
+// Uses `text`, a plan's text, built in, downloaded or custom. Returns what's wrong, or "".
 std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   Tariff tariff;
   const std::string error = make_tariff(text, this->file_.currency, tariff);
@@ -397,7 +392,7 @@ std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
     case Market::OMIE:
       return omie_url(now, day);
     default:
-      return nord_pool_url(area.source_name, this->settings_.currency, now, day);
+      return nord_pool_url(area.source_name, this->file_.currency.c_str(), now, day);
   }
 }
 
@@ -454,12 +449,12 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
         ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
         this->controller_.reschedule();
       } else if (stored == 0 && day == 0) {
-        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, area.name);
+        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Prices", source, area.name);
       }
     } else if (*status != not_yet) {
       ESP_LOGW(TAG, "%s answered HTTP %d", source, *status);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, area.name);
+      ESP_LOGW(TAG, "%s has no prices for %s today: check Country / Area under Prices", source, area.name);
     }
   }
 }
@@ -525,10 +520,8 @@ void SchedulerComponent::send_unsent_(int64_t now) {
     this->unsent_.reset();
 }
 
-// Whether ntfy took the message. Without a topic there's nothing to send.
+// Whether ntfy took the message.
 bool SchedulerComponent::send_message_(const Notification &message) {
-  if (this->file_.ntfy_topic.empty())
-    return true;
   // A tap opens the page, on the home Wi-Fi, at the board's address now, which every phone opens, as some Android
   // phones don't find tesla.local. An unset address reads 0.0.0.0.
   std::string host = App.get_name() + ".local";
