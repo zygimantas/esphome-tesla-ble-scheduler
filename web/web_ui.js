@@ -994,6 +994,7 @@ let checked = false;
 function setLive(on) {
   if (live === on) return;
   live = on;
+  if (!on) delete states[E.status]; // so a new link shows only Status until it brings the board's status (alone())
   if (on) void loadSettings(); // it catches its own errors
   if (on && !checked) {
     checked = true;
