@@ -42,6 +42,7 @@ body {
     sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y; /* scrolls up and down only: no pinch or double-tap zoom, no sideways pan */
 }
 [hidden] {
   /* biome-ignore lint/complexity/noImportantStyles: the hidden attribute must win over every display rule */

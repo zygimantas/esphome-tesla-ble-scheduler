@@ -1433,6 +1433,10 @@ if (new URLSearchParams(location.search).has("full")) {
   document.title = "ESPHome Tesla BLE Scheduler";
   document.body.classList.add("loading"); // before the first paint
   document.body.insertAdjacentHTML("afterbegin", PAGE);
+  // The page at its own size, like an app, by request, while ESPHome's at ?full zooms as usual: no zooming in or out,
+  // which Safari on an iPhone allows despite user-scalable=no, so a pinch is stopped there too.
+  document.querySelector('meta[name="viewport"]').content += ", maximum-scale=1, user-scalable=no";
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
   bind();
   connect();
   void addIcon();
