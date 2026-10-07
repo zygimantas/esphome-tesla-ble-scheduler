@@ -165,14 +165,12 @@ html {
 hr + .row {
   border-top: 0;
 }
+/* A value on the right, with a "?" after it, as Status's and Savings' have. */
 .row strong {
+  margin-left: auto;
   font-weight: 400;
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-/* Status on the right, with its "?" after it. */
-#status {
-  margin-left: auto;
 }
 
 /* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them --- */
@@ -339,6 +337,10 @@ button:disabled {
 .hint {
   padding-left: 10px;
   background: linear-gradient(var(--field), var(--field)) left 3px / 1px calc(100% - 6px) no-repeat;
+}
+/* A row after a hint, as Savings' second, as far below it as the hint is below its own row. */
+.hint + .row {
+  margin-top: 8px;
 }
 .error {
   color: var(--red);
