@@ -165,14 +165,12 @@ html {
 hr + .row {
   border-top: 0;
 }
+/* A value on the right, with a "?" after it, as Status's and Savings' have. */
 .row strong {
+  margin-left: auto;
   font-weight: 400;
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-/* Status on the right, with its "?" after it. */
-#status {
-  margin-left: auto;
 }
 
 /* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them --- */
@@ -377,6 +375,15 @@ button:disabled {
 }
 .row.spare {
   opacity: 0.5;
+}
+
+/* --- Savings card: its rows without lines between them, and one below an open hint as far below it as the hint is
+   below its own row --- */
+#savings-card .row {
+  border-top: 0;
+}
+#savings-card .hint:not([hidden]) + .row {
+  margin-top: 8px;
 }
 
 /* --- The setup and Settings: each field under its name and the card's width, so its choices fit on a phone --- */

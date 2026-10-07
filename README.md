@@ -55,7 +55,7 @@ Open the page on your phone, from the home screen once you've added it there, as
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
-- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months, and underneath, against plugging in and charging at once. Prices count VAT, grid fees and the supplier's margin or part per kWh, not monthly fees. **Reset savings** starts again from zero.
+- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months. The **?** after each shows the energy and what it cost, and the saving against plugging in and charging at once. Prices count VAT, grid fees and the supplier's margin or part per kWh, not monthly fees. **Reset savings** starts again from zero.
 - **To start over**, as for another car, install the firmware again with steps 1 to 3 of [Setup](#setup), and let ESPHome Web erase the board when it asks: it forgets its settings, Wi-Fi, the car's key and savings. Then set it up again, and remove its old key in the car under **Controls** → **Locks**.
 
 ### Phone messages

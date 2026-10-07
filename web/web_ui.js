@@ -155,10 +155,10 @@ const PAGE = `
 
   <section id="savings-card" class="card" hidden>
     <div class="title">Savings</div>
-    <div class="row"><span>Last 30 days</span><strong id="saved-month">-</strong></div>
-    <div class="row"><span>Last 12 months</span><strong id="saved-year">-</strong></div>
-    <p id="against-average" class="note"></p>
-    <p id="against-at-once" class="note"></p>
+    <div class="row"><span>Last 30 days</span><strong id="saved-month">-</strong>${info("month-hint", "About the last 30 days")}</div>
+    <p id="month-hint" class="note hint" hidden></p>
+    <div class="row"><span>Last 12 months</span><strong id="saved-year">-</strong>${info("year-hint", "About the last 12 months")}</div>
+    <p id="year-hint" class="note hint" hidden></p>
     <a class="button" href="https://buymeacoffee.com/zygimantas_berziunas" target="_blank" rel="noopener">Buy the developer a coffee</a>
     <button id="reset-savings" class="danger">Reset savings</button>
   </section>
@@ -578,12 +578,16 @@ function renderSavings() {
   if (!currency) return;
   const [month, year] = periods.map((period) => period.split(",").map(Number));
   const money = (hundredths) => `${(hundredths / 100).toFixed(2)}\u00a0${currency}`; // one piece when it wraps
-  $("saved-month").textContent = money(month[2] - month[1]);
-  $("saved-year").textContent = money(year[2] - year[1]);
-  $("against-average").textContent =
-    `Compared with the day's average price: ${Math.round(month[0] / 1000)} kWh for ${money(month[1])} in the last 30 days`;
-  $("against-at-once").textContent =
-    `Compared with charging at once on plug-in: ${money(month[3] - month[1])} saved in the last 30 days`;
+  // each period's saving, and in its hint what it compares and with charging at once
+  for (const [id, period, span] of [
+    ["month", month, "30 days"],
+    ["year", year, "12 months"],
+  ]) {
+    $(`saved-${id}`).textContent = money(period[2] - period[1]);
+    $(`${id}-hint`).textContent =
+      `Compared with the day's average price: ${Math.round(period[0] / 1000)} kWh for ${money(period[1])} in the last ${span}. ` +
+      `Compared with charging at once on plug-in: ${money(period[3] - period[1])} saved.`;
+  }
 }
 
 // --- Settings --------------------------------------------------------------
