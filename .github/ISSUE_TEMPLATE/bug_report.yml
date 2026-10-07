@@ -7,7 +7,7 @@ body:
     validations:
       required: true
   - attributes:
-      description: The Version row in the Board section of the page, like 5.11.0.
+      description: The Version row in Settings on the page, like 5.11.0.
       label: Release
       placeholder: "5.11.0"
     id: release
