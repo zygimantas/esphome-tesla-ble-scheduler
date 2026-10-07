@@ -1072,11 +1072,12 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(no_tariff), "");
   const std::string no_prices = no_tariff.substr(no_tariff.find("ntfy_topic"));
   CHECK_STR(settings_error(no_prices), "");
+  for (const std::string &tariff : {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
+                                    no_tariff + "tariff:\n  plan:\n"})
+    CHECK_STR(settings_error(tariff), "tariff: there's no plan");
   for (const std::string &tariff :
-       {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
-        no_tariff + "tariff:\n  plan:\n", no_tariff + "tariff:\n  # My plan\n",
-        no_tariff + "tariff:\n  clock: winter\n", no_prices + "tariff:\n  rates:\n    flat: 0.24\n",
-        no_prices + "tariff:\n  exceptions:\n    12-25: flat\n"})
+       {no_tariff + "tariff:\n  # My plan\n", no_tariff + "tariff:\n  clock: winter\n",
+        no_prices + "tariff:\n  rates:\n    flat: 0.24\n", no_prices + "tariff:\n  exceptions:\n    12-25: flat\n"})
     CHECK_STR(settings_error(tariff), "custom plan: there's no calendar");
   CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");

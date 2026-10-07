@@ -829,7 +829,7 @@ async function loadSettings() {
 }
 
 // The form as the board's settings file, which the board checks before it takes it; without the car until the setup's
-// car step has its VIN, as the setup's first step saves the prices for a new board. A custom plan goes under tariff:
+// car step has its VIN, as the setup saves a new board's prices before it. A custom plan goes under tariff:
 // line for line, indented, so the board's errors in it count the plan's own lines.
 function formSettings() {
   const v = (id) => $(id).value.trim();

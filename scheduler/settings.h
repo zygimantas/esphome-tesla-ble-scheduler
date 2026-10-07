@@ -184,7 +184,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   TariffText custom_plan;
   if (read.plan_text.empty() && read_tariff(read.tariff, custom_plan).empty() && custom_plan.calendar.empty() &&
       std::find(seen.begin(), seen.end(), "tariff") != seen.end())
-    return "custom plan: there's no calendar";  // a custom plan that doesn't read gets make_tariff()'s error
+    // nothing under tariff: names no plan; a custom plan that doesn't read gets make_tariff()'s error
+    return read.tariff.empty() ? "tariff: there's no plan" : "custom plan: there's no calendar";
   Tariff tariff;
   if (const std::string error = make_tariff(custom ? read.tariff : std::string(read.plan_text), read.currency, tariff);
       !error.empty())
