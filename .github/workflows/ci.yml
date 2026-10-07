@@ -30,7 +30,7 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-      - run: uvx pre-commit run --all-files --show-diff-on-failure
+      - run: uvx --no-build pre-commit@4.6.2 run --all-files --show-diff-on-failure
       - name: The versions agree, in config.example.yaml, device.yaml, the workflows and CONTRIBUTING.md
         run: |
           version=$(yq '.esphome.project.version' device.yaml)
@@ -63,7 +63,7 @@ jobs:
         run: |
           sudo apt-get update -q && sudo apt-get install -q -y llvm
           mkdir ArduinoJson
-          curl -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+          curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
             tar xz --strip-components=1 -C ArduinoJson
           echo "-std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src" > flags
       - name: GCC
@@ -84,7 +84,7 @@ jobs:
           missed = {k: totals[k]["count"] - totals[k]["covered"] for k in ("lines", "functions", "regions", "branches")}
           sys.exit(f"Not covered: {missed}" if any(missed.values()) else 0)'
       - name: clang-tidy
-        run: uvx "clang-tidy==$CLANG_TIDY_VERSION" test/scheduler_test.cpp -- @flags
+        run: uvx --no-build "clang-tidy==$CLANG_TIDY_VERSION" test/scheduler_test.cpp -- @flags
 
   esphome:
     name: ESPHome builds and the simulation
