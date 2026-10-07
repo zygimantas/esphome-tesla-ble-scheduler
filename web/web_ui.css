@@ -142,10 +142,10 @@ html {
   margin-bottom: 0;
 }
 /* No cards until the settings are in, as they decide between the setup and the rest; only the one with Status while
-   the board restarts, until the page loads afresh; in the setup, only its card, with Update available above it; and
-   of a folded card, only its title. */
+   the board restarts or the page has no link to it, and until its status comes; in the setup, only its card, with
+   Update available above it; and of a folded card, only its title. */
 .loading .card,
-.restarting .card:not(#status-card),
+.alone .card:not(#status-card),
 .setup .card:not(.step, #update-card),
 .card:not(.open) > .body {
   display: none;
