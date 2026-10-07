@@ -319,11 +319,9 @@ function render() {
       ? "Settings: …"
       : `${said}:`;
   $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
-  // Only the card with Status while the board restarts, or once the page lost it before its settings came; until they
-  // come, no cards, as they decide between the setup and the rest.
-  const lost = settings.text === null && live === false;
-  document.body.classList.toggle("restarting", restarting > 0 || lost);
-  document.body.classList.toggle("loading", settings.text === null && !restarting && !lost);
+  // Only the card with Status (alone()); until the settings come, no cards, as they decide between the setup and the rest.
+  document.body.classList.toggle("alone", alone());
+  document.body.classList.toggle("loading", settings.text === null && !alone());
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
@@ -708,6 +706,11 @@ const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 // Whether the board turned away the settings it has, which then open to be fixed.
 const broken = () => text(E.status).startsWith("Settings: ");
 
+// Whether the page shows only the card with Status, by request: while the board restarts, while the page has no link
+// to it, and until its status comes after connecting, so the cards come together, and Settings isn't there to change
+// while nothing could save it.
+const alone = () => restarting > 0 || live === false || (settings.text !== null && !text(E.status));
+
 // The setup, for a new board, settings without prices or the car, and a key the car doesn't know: one card, Setup, with
 // the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at the
 // car, as its link ends in #car, and which a phone or a tablet skips, then the car, then its key, which ends the setup
@@ -723,7 +726,7 @@ function renderSetup() {
     setup.step = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
   // a phone or a tablet is already the one to take to the car, so it goes on without the QR code
   if (setup.step === 2 && matchMedia("(pointer: coarse)").matches) setup.step = 3;
-  document.body.classList.toggle("setup", setup.step > 0 && !restarting);
+  document.body.classList.toggle("setup", setup.step > 0 && !alone());
   const card = $("setup-card");
   card.hidden = !setup.step;
   card.querySelector(".title").textContent =
@@ -1011,6 +1014,7 @@ let checked = false;
 function setLive(on) {
   if (live === on) return;
   live = on;
+  if (!on) delete states[E.status]; // so a new link shows only Status until it brings the board's status (alone())
   if (on) void loadSettings(); // it catches its own errors
   if (on && !checked) {
     checked = true;
