@@ -181,7 +181,7 @@ void SchedulerComponent::apply_settings_() {
 #endif
   this->controller_.set_market_prices(this->file_.area != nullptr);
   // read_settings() made the same tariff
-  this->apply_tariff_(this->file_.plan.empty() ? this->file_.tariff : std::string(this->file_.plan_text));
+  this->apply_tariff_(this->file_.plan.empty() ? this->file_.custom_plan : std::string(this->file_.plan_text));
 }
 
 // A text sensor's new state, if it's new.
@@ -198,8 +198,23 @@ void SchedulerComponent::update() {
     return;
   }
   const ESPTime now = this->clock_->now();
+  const CarState car = this->read_car_(now.is_valid() ? now.timestamp : 0);
+  // The clock keeps running through a restart, so wait for the network too.
+  if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
+    this->fetch_prices_(car.now);
+  if (network::is_connected() && !this->file_.plan.empty() &&
+      plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
+    this->fetch_plan_(car.now);
+  const Decision d = this->controller_.tick(car, this->schedule_settings_());
+  this->persist_(d);
+  this->carry_out_(d, car.now);
+  this->publish_(d, car.now);
+}
+
+// The car as the Tesla's entities report it, at `now` (0 until the clock is set).
+CarState SchedulerComponent::read_car_(int64_t now) {
   CarState car;
-  car.now = now.is_valid() ? now.timestamp : 0;
+  car.now = now;
   if (this->plug_ != nullptr && this->plug_->has_state())
     car.plugged = this->plug_->state;
   if (this->charging_state_ != nullptr && this->charging_state_->has_state())
@@ -219,7 +234,11 @@ void SchedulerComponent::update() {
     global_preferences->sync();
   }
   car.paired = this->paired_vin_ == vin;
+  return car;
+}
 
+// What the schedule needs of the settings file, and Ready by and Ready by once.
+Settings SchedulerComponent::schedule_settings_() const {
   Settings settings;
   settings.currency = this->file_.currency.c_str();
   settings.battery_kwh = this->file_.battery_kwh;
@@ -230,15 +249,11 @@ void SchedulerComponent::update() {
   settings.ready_by_once = once.year >= 2020 ? local_to_utc(days_from_civil(once.year, once.month, once.day),
                                                             once.hour * 60 + once.minute, settings.standard_offset)
                                              : 0;
+  return settings;
+}
 
-  // The clock keeps running through a restart, so wait for the network too.
-  if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
-    this->fetch_prices_(car.now);
-  if (network::is_connected() && !this->file_.plan.empty() &&
-      plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
-    this->fetch_plan_(car.now);
-
-  Decision d = this->controller_.tick(car, settings);
+// Keeps in flash what a restart mustn't lose: what the buttons chose, and the savings when the controller says so.
+void SchedulerComponent::persist_(const Decision &d) {
   if (this->controller_.held_mode() != this->held_) {
     this->held_ = this->controller_.held_mode();
     this->held_pref_.save(&this->held_);
@@ -248,16 +263,20 @@ void SchedulerComponent::update() {
     this->savings_pref_.save(&this->controller_.savings);
     global_preferences->sync();
   }
+}
+
+// The decision's phone message, through ntfy, and its command to the car.
+void SchedulerComponent::carry_out_(const Decision &d, int64_t now) {
   if (d.notification && !this->file_.ntfy_topic.empty()) {  // a new message replaces an unsent older one
     this->unsent_ = *d.notification;
-    this->unsent_since_ = car.now;
+    this->unsent_since_ = now;
     this->message_tried_at_ = 0;
   }
   if (d.mode == "unplugged")  // whatever the message said is over
     this->unsent_.reset();
   // The message first: its POST blocks the loop, while the Tesla part sends the command only after update() returns
   // and fails it after 25 s in its queue.
-  this->send_unsent_(car.now);
+  this->send_unsent_(now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
     ESP_LOGI(TAG, "Start charging (%s)", d.status.c_str());
     this->charger_->turn_on();
@@ -268,14 +287,17 @@ void SchedulerComponent::update() {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
-  if (this->plug_ == nullptr || this->charging_state_ == nullptr || this->battery_ == nullptr ||
-      this->power_ == nullptr || this->charger_ == nullptr || this->wake_ == nullptr || this->limit_ == nullptr)
-    d.status = "Tesla entities not found";
+}
 
-  publish(this->status_, d.status);
+// The decision on the page's entities, with the status saying so when the Tesla's entities are missing.
+void SchedulerComponent::publish_(const Decision &d, int64_t now) {
+  const bool found = this->plug_ != nullptr && this->charging_state_ != nullptr && this->battery_ != nullptr &&
+                     this->power_ != nullptr && this->charger_ != nullptr && this->wake_ != nullptr &&
+                     this->limit_ != nullptr;
+  publish(this->status_, found ? d.status : "Tesla entities not found");
   publish(this->mode_, d.mode);
   publish(this->windows_, d.windows);
-  publish(this->prices_until_, std::to_string(this->controller_.prices.known_until(car.now)));
+  publish(this->prices_until_, std::to_string(this->controller_.prices.known_until(now)));
   publish(this->savings_, d.savings);
 }
 
@@ -287,7 +309,7 @@ void SchedulerComponent::dump_config() {
   }
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
-  const char *plan = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "custom plan";
+  const char *plan = !file.plan.empty() ? file.plan.c_str() : file.custom_plan.empty() ? "none" : "custom plan";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"

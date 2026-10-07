@@ -890,7 +890,7 @@ static void test_plans_in_the_repository() {
     CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_custom(plan), CAR, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
-    CHECK(settings.plan.empty() && !settings.tariff.empty());
+    CHECK(settings.plan.empty() && !settings.custom_plan.empty());
   }
   CHECK(repository_plans().size() >= 8);
 }
@@ -962,7 +962,7 @@ static void test_reads_the_settings_file() {
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
   CHECK(s.ntfy_topic == "my-topic_1");
   CHECK(s.plan == "lt/eso-standartinis-4-zones" &&
-        s.plan_text.find("\nname: ESO Standartinis, four zones\n") != std::string::npos && s.tariff.empty());
+        s.plan_text.find("\nname: ESO Standartinis, four zones\n") != std::string::npos && s.custom_plan.empty());
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
@@ -990,7 +990,7 @@ static void test_reads_the_settings_file() {
   CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan_text.empty());
   CHECK(s.ntfy_topic.empty() && s.standard_offset == 0);
   TariffText custom;
-  CHECK_STR(read_tariff(s.tariff, custom), "");
+  CHECK_STR(read_tariff(s.custom_plan, custom), "");
   CHECK(custom.calendar.size() == 1 && custom.calendar[0].second[0].second == "day 00:30 night 05:30 day");
   CHECK(custom.rates.size() == 2 && s.battery_kwh == 82.0f && near(s.charging_kw, 7.4f));
 
@@ -1086,7 +1086,7 @@ static void test_settings_that_delete_the_schedule() {
   CHECK(deletes([](SettingsFile &s) { s.vat = 0.5f; }));
   CHECK(deletes([](SettingsFile &s) { s.margin = 0.5f; }));
   CHECK(deletes([](SettingsFile &s) { s.plan = "lt/eso-efektyvus-2-zones"; }));
-  CHECK(deletes([](SettingsFile &s) { s.tariff = "name: Mine\n"; }));
+  CHECK(deletes([](SettingsFile &s) { s.custom_plan = "name: Mine\n"; }));
   CHECK(deletes([](SettingsFile &s) { s.battery_kwh = 61.0f; }));
   CHECK(deletes([](SettingsFile &s) { s.charging_kw = 7.4f; }));
   CHECK(deletes([](SettingsFile &s) { s.vin = "5YJ3E1EA2KF317000"; }));

@@ -304,32 +304,28 @@ function requestRender() {
 }
 
 function render() {
-  const charging = ["Charging", "Starting"].includes(text(E.charging));
-  // The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece).
-  const kw = value(E.power);
-  const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
-  const waiting = updating ? "Updating …" : "Restarting …";
-  const board = !restarting && live !== false; // the board's own status, rather than the page's
-  const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : "No connection";
-  $("status").textContent = board ? said + power : said;
-  // its "?": the status's own line in docs/status.md, which a text fragment scrolls to
-  const line = said.startsWith("Charges at")
-    ? "Charges at 01:30"
-    : said.startsWith("Settings: ")
-      ? "Settings: …"
-      : `${said}:`;
-  $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
   // Only the card with Status (alone()); until the settings come, no cards, as they decide between the setup and the rest.
   document.body.classList.toggle("alone", alone());
   document.body.classList.toggle("loading", settings.text === null && !alone());
-  renderSchedule(); // first: it drops the draft when the dropdowns can't change
+  renderHeader();
+  renderStatus();
+  renderUpdate();
+  renderSchedule(); // before the dropdowns: it drops the draft when they can't change
   renderLimit();
   renderReady();
   renderSavings();
+  renderSetup();
+  renderSettings(); // after the setup, which moves fields between its steps and Settings
+  // a hint shows while its "?" is open and its field is shown
+  for (const button of document.querySelectorAll(".info[data-hint]"))
+    $(button.dataset.hint).hidden =
+      button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
+}
 
-  // the header, while the page has the board: the board's signals, a weak one in orange, the moon while the car
-  // sleeps, and the car's battery, in orange too below 20%, with a plug while the car is plugged in; a pill without data
-  // in red, once the page is loaded
+// The header, while the page has the board: the board's signals, a weak one in orange, the moon while the car sleeps,
+// and the car's battery, in orange too below 20%, with a plug while the car is plugged in; a pill without data in red,
+// once the page is loaded.
+function renderHeader() {
   const loaded = settings.text !== null || live === false;
   for (const [id, entity, weak] of [
     ["wifi", E.wifi, -75],
@@ -347,53 +343,32 @@ function render() {
   $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
   $("soc").parentElement.classList.toggle("warn", soc != null && Math.round(soc) < 20);
   $("soc").parentElement.classList.toggle("none", loaded && soc == null);
-  $("uptime").textContent = duration(value(E.uptime));
-  $("version").textContent = text(E.version) || "-";
-  renderSetup();
-  // A release the board found, which installs only from here, beside the one it runs; what's new opens GitHub's
-  // releases, the newest first, each with its notes.
+}
+
+// The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece), and its
+// "?": the status's own line in docs/status.md, which a text fragment scrolls to.
+function renderStatus() {
+  const charging = ["Charging", "Starting"].includes(text(E.charging));
+  const kw = value(E.power);
+  const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
+  const waiting = updating ? "Updating …" : "Restarting …";
+  const board = !restarting && live !== false; // the board's own status, rather than the page's
+  const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : "No connection";
+  $("status").textContent = board ? said + power : said;
+  const line = said.startsWith("Charges at")
+    ? "Charges at 01:30"
+    : said.startsWith("Settings: ")
+      ? "Settings: …"
+      : `${said}:`;
+  $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
+}
+
+// A release the board found, which installs only from here, beside the one it runs; what's new opens GitHub's
+// releases, the newest first, each with its notes.
+function renderUpdate() {
   $("update-card").hidden = later || text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = states[E.firmware]?.value ?? "";
   $("update-current").textContent = text(E.version) || "an older one";
-  // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
-  $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
-  $("plan-why").textContent = /^market:/m.test(settings.text)
-    ? "Without it, the board picks the hours by the market price alone, without your grid fees."
-    : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
-  // Settings the board turned away open at once, without Cancel.
-  $("settings-card").classList.toggle("open", broken() || settings.open);
-  $("cancel-settings").hidden = broken();
-  const fixed = $("set-price").value === "fixed";
-  $("margin-row").hidden = fixed;
-  $("fixed-row").hidden = !fixed;
-  // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
-  // in place of the box, the notes and Upload custom plan
-  const listed = $("set-plan").options.length > 2;
-  const custom = customPlan !== "";
-  const unlisted = $("set-unlisted").checked && !custom;
-  const notListed = $("set-plan").options[1]; // none until the settings load
-  if (notListed) notListed.text = custom ? customPlanLabel() : "Not listed";
-  $("plan-row").hidden = !listed && !custom;
-  $("unlisted-row").hidden = !listed || custom;
-  $("set-plan").disabled = unlisted || !listed || custom;
-  $("plans-note").hidden = listed || custom || !$("set-area").value;
-  $("unlisted-note").hidden = !unlisted;
-  // Upload custom plan under either note
-  $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
-  $("reset-plan").hidden = !custom;
-  // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
-  // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
-  const country = $("set-area").value.slice(0, 2);
-  const currency = CURRENCIES[country] ?? "EUR";
-  const unit = `${currency} with VAT per kWh`;
-  $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
-  $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
-  $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
-  for (const id of ["set-margin", "set-fixed"]) checkRange($(id)); // the range, and its unit, of the country now
-  // a hint shows while its "?" is open and its field is shown
-  for (const button of document.querySelectorAll(".info[data-hint]"))
-    $(button.dataset.hint).hidden =
-      button.getAttribute("aria-expanded") !== "true" || Boolean(button.closest("[hidden]"));
 }
 
 // Replaces a dropdown's options, in `groups` if it has them, only when their values or greying changed, as render()
@@ -763,6 +738,48 @@ function renderSetup() {
     const before = setup.step ? $(step).querySelector(".error") : $(next);
     if ($(fields).parentElement !== before.parentElement) before.before($(fields));
   }
+}
+
+// The cards with the settings: No grid plan selected, and Settings, with the board's uptime and version and the fields
+// that the choices above them show.
+function renderSettings() {
+  // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
+  $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
+  $("plan-why").textContent = /^market:/m.test(settings.text)
+    ? "Without it, the board picks the hours by the market price alone, without your grid fees."
+    : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
+  // Settings the board turned away open at once, without Cancel.
+  $("settings-card").classList.toggle("open", broken() || settings.open);
+  $("cancel-settings").hidden = broken();
+  const fixed = $("set-price").value === "fixed";
+  $("margin-row").hidden = fixed;
+  $("fixed-row").hidden = !fixed;
+  // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
+  // in place of the box, the notes and Upload custom plan
+  const listed = $("set-plan").options.length > 2;
+  const custom = customPlan !== "";
+  const unlisted = $("set-unlisted").checked && !custom;
+  const notListed = $("set-plan").options[1]; // none until the settings load
+  if (notListed) notListed.text = custom ? customPlanLabel() : "Not listed";
+  $("plan-row").hidden = !listed && !custom;
+  $("unlisted-row").hidden = !listed || custom;
+  $("set-plan").disabled = unlisted || !listed || custom;
+  $("plans-note").hidden = listed || custom || !$("set-area").value;
+  $("unlisted-note").hidden = !unlisted;
+  // Upload custom plan under either note
+  $("upload-plan").hidden = $("plans-note").hidden && !unlisted;
+  $("reset-plan").hidden = !custom;
+  // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
+  // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
+  const country = $("set-area").value.slice(0, 2);
+  const currency = CURRENCIES[country] ?? "EUR";
+  const unit = `${currency} with VAT per kWh`;
+  $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
+  $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
+  $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
+  for (const id of ["set-margin", "set-fixed"]) checkRange($(id)); // the range, and its unit, of the country now
+  $("uptime").textContent = duration(value(E.uptime));
+  $("version").textContent = text(E.version) || "-";
 }
 
 // Says what's wrong at the setup's step, else in Settings, in sight, or "" for nothing.
