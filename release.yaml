@@ -1,3 +1,10 @@
+button:
+  - entity_category: diagnostic
+    name: Check for update
+    on_press:
+      - component.update: firmware
+    platform: template
+
 esp32:
   framework:
     advanced:
@@ -22,17 +29,8 @@ packages:
   device: !include device.yaml
 
 update:
-  - name: Firmware
-    id: firmware
+  - id: firmware
+    name: Firmware
     platform: http_request
     source: https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/manifest.json
-    update_interval: never # with an interval, ESPHome also checks at every start
-
-# A check for a release, which the page presses as it opens, rather than one at the start or on a timer: the page's
-# Update card shows a release, and it installs only from there.
-button:
-  - platform: template
-    name: Check for update
-    entity_category: diagnostic
-    on_press:
-      - component.update: firmware
+    update_interval: never

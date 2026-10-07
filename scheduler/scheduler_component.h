@@ -99,8 +99,8 @@ class SchedulerComponent : public PollingComponent {
   void load_settings();
   // Takes a settings file before the web server starts, as the simulation does.
   void use_settings(const std::string &text);
-  // Saves a settings file that read_settings() took, from the web server's task: a board's first applies at once,
-  // later ones restart it.
+  // Saves a settings file that read_settings() took, from the web server's task: it applies at once while the board
+  // has no car, and restarts the board once it has one.
   void save_settings(const std::string &text);
   // The settings file saved, empty without one (for the web server's task), and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
@@ -121,21 +121,20 @@ class SchedulerComponent : public PollingComponent {
   void press(Action action);
 
  protected:
-  void tick_soon_();
   void apply_settings_();
+  void tick_soon_();
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body);
-  void fetch_prices_(int64_t now);
-  std::optional<float> fetch_rate_();
   std::string prices_url_(int64_t now, int day) const;
   int store_prices_(const std::string &body, float rate);
+  void fetch_prices_(int64_t now);
+  std::optional<float> fetch_rate_();
   void fetch_plan_(int64_t now);
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);
 
   Controller controller_;
-  Settings settings_;
   time::RealTimeClock *clock_{nullptr};
   http_request::HttpRequestComponent *http_{nullptr};
   Plans plans_;
@@ -166,9 +165,9 @@ class SchedulerComponent : public PollingComponent {
   text_sensor::TextSensor *charging_state_{nullptr};
   sensor::Sensor *battery_{nullptr};
   sensor::Sensor *power_{nullptr};
-  number::Number *limit_{nullptr};
   switch_::Switch *charger_{nullptr};
   button::Button *wake_{nullptr};
+  number::Number *limit_{nullptr};
   cover::Cover *port_{nullptr};
   bool port_reported_{false};  // the cover reads open until the car reports it
   bool turned_away_{false};    // the car turned the key away, and hasn't reported since

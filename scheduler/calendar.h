@@ -73,15 +73,6 @@ inline int64_t local_day_of(int64_t utc, int32_t standard_offset) {
   return floor_div(utc + eu_offset(utc, standard_offset), DAY_SECONDS);
 }
 
-inline std::string format_hhmm(int64_t utc, int32_t standard_offset) {
-  const int64_t local = utc + eu_offset(utc, standard_offset);
-  const int64_t minute_of_day = floor_div(local, 60) - floor_div(local, DAY_SECONDS) * 1440;
-  char buf[8];
-  std::snprintf(buf, sizeof(buf), "%02d:%02d", static_cast<int>(minute_of_day / 60),
-                static_cast<int>(minute_of_day % 60));
-  return buf;
-}
-
 // The moment (UTC) that is `minutes` after local midnight on local calendar day `local_day`. A time the clocks
 // skip in spring moves an hour on; one they repeat in autumn is the first.
 inline int64_t local_to_utc(int64_t local_day, int minutes, int32_t standard_offset) {
@@ -94,6 +85,15 @@ inline int64_t next_local_time(int64_t now, int minutes, int32_t standard_offset
   const int64_t today = local_day_of(now, standard_offset);
   const int64_t utc = local_to_utc(today, minutes, standard_offset);
   return utc > now ? utc : local_to_utc(today + 1, minutes, standard_offset);
+}
+
+inline std::string format_hhmm(int64_t utc, int32_t standard_offset) {
+  const int64_t local = utc + eu_offset(utc, standard_offset);
+  const int64_t minute_of_day = floor_div(local, 60) - floor_div(local, DAY_SECONDS) * 1440;
+  char buf[8];
+  std::snprintf(buf, sizeof(buf), "%02d:%02d", static_cast<int>(minute_of_day / 60),
+                static_cast<int>(minute_of_day % 60));
+  return buf;
 }
 
 // "Mon 00:00" in local time.

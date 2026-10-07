@@ -1,7 +1,7 @@
 #pragma once
-// The schedule: the cheapest quarter-hours before the deadline, priced at the market's price (market.h) plus VAT
-// and the tariff (tariff.h), that bring the battery to the car's charge limit, plus a buffer slot. Plain C++17, with
-// nothing from ESPHome, like charger.h.
+// The schedule: the cheapest quarter-hours before the deadline, at their total prices (total_price() in tariff.h: the
+// market's price with VAT, the supplier's margin and the plan's fee), that bring the battery to the car's charge
+// limit, plus a buffer slot. Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 #include "market.h"

@@ -1,5 +1,5 @@
 #pragma once
-// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, or your own in the same format
+// What the tariff adds to a kWh in each quarter-hour: a plan from plans/, or a custom plan in the same format
 // (plans/README.md). Plain C++17, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
@@ -17,8 +17,8 @@
 
 namespace esphome::scheduler {
 
-// A plan as written (format in plans/README.md): one from plans/, or your own. Keys and lines stay text, in the order
-// written.
+// A plan as written (format in plans/README.md): one from plans/, or a custom plan. Keys and lines stay text, in the
+// order written.
 struct TariffText {
   std::string name;  // for people, like "ESO Standartinis, four zones"
   std::string clock;
@@ -43,7 +43,7 @@ inline float number(const std::string &text) {
   return !text.empty() && end == text.c_str() + text.size() ? value : NAN;
 }
 
-// Reads a tariff in the YAML of plans: two-space indents, `key: value` or `key:` lines, and comments on
+// Reads a plan in the plans' YAML: two-space indents, `key: value` or `key:` lines, and comments on
 // lines of their own, without quotes, flow style or anchors, ending with a line break. Returns what's wrong, or "".
 inline std::string read_tariff(const std::string &text, TariffText &tariff) {
   if (!text.empty() && text.back() != '\n')

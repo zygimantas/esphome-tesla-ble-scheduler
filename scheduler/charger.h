@@ -47,11 +47,11 @@ struct Notification {
 struct Decision {
   Command command = Command::NONE;
   std::string status;
-  std::string windows;  // format_windows() while the schedule decides, else empty
   // "schedule", "now" (charging regardless of price), "none" (no schedule), "unplugged" (the board's plug state, which
   // ignores the Charger reading while the charging state is Unknown) or "wait" (no schedule possible yet: not paired,
   // or no clock, plug state, battery level or prices).
   std::string mode;
+  std::string windows;                       // format_windows() while the schedule decides, else empty
   std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, once more
                                              // when the board falls back to charging at any price or a
                                              // start from the car takes over, and when Ready by passes
@@ -68,10 +68,10 @@ class Controller {
 
   // The buttons on the web page. Each acts at once, free of command_()'s limits.
 
-  // Charge regardless of price until the car is unplugged.
-  void charge_now() { press_(Hold::NOW); }
   // Follow the schedule: cancels charge_now(), a start from the car or app, or stop_charging().
   void create_schedule() { press_(Hold::SCHEDULE); }
+  // Charge regardless of price until the car is unplugged.
+  void charge_now() { press_(Hold::NOW); }
   // No schedule and no charging until create_schedule(), charge_now(), a start from the car or app, or the car is
   // unplugged.
   void stop_charging() { press_(Hold::NONE); }
@@ -98,7 +98,7 @@ class Controller {
   // Whether prices come from the market; without market prices to download, every quarter-hour's spot price is 0: the
   // tariff is the whole price. Settings set it both ways, as they apply in place while the board has no car.
   void set_market_prices(bool market) { market_ = market; }
-  // The tariff and VAT, from the plan and the settings; until they're set, schedules use spot prices only.
+  // The plan's fees, VAT and the supplier's margin (see Tariff); until they're set, schedules use spot prices only.
   void set_tariff(const Tariff &tariff) {
     tariff_ = tariff;
     reschedule_ = true;
@@ -122,16 +122,15 @@ class Controller {
 
   Decision decide_(const CarState &car, const Settings &settings) {
     Decision d;
-    if (!car.paired) {  // the car tells a key it doesn't know nothing
-      d.status = "Not paired";
+    const auto waiting = [&d](const char *status) {  // no schedule possible yet
+      d.status = status;
       d.mode = "wait";
       return d;
-    }
-    if (car.now == 0) {
-      d.status = "Starting up";
-      d.mode = "wait";
-      return d;
-    }
+    };
+    if (!car.paired)  // the car tells a key it doesn't know nothing
+      return waiting("Not paired");
+    if (car.now == 0)
+      return waiting("Starting up");
     const int64_t now = car.now;
     if (first_tick_at_ == 0)
       first_tick_at_ = now;
@@ -150,15 +149,10 @@ class Controller {
       // out, every 10 minutes for half an hour.
       if (car.port_open && plug_unknown_since_ == 0)
         plug_unknown_since_ = now;
-      if (car.port_open && now - plug_unknown_since_ < WAKE_FOR) {
-        d.status = "Checking the car";
-        if (wake_due_(now))
-          d.command = Command::WAKE;
-      } else {
-        d.status = "Waiting for car";
-      }
-      d.mode = "wait";
-      return d;
+      const bool checking = car.port_open && now - plug_unknown_since_ < WAKE_FOR;
+      if (checking && wake_due_(now))
+        d.command = Command::WAKE;
+      return waiting(checking ? "Checking the car" : "Waiting for car");
     }
     if (!plugged_) {
       d.status = "Unplugged";
@@ -168,10 +162,8 @@ class Controller {
 
     bool want_charge = true;  // as usual, without a schedule
     bool fallback = false;    // at any price, for lack of prices or a battery level
-    bool starting = false;    // the status is about the start, until the car charges
     if (hold_ == Hold::NOW) {
       d.status = "Charging now";
-      starting = true;
     } else if (hold_ == Hold::NONE) {
       want_charge = false;
       d.status = "No schedule";
@@ -179,32 +171,26 @@ class Controller {
       if (battery_unknown_since_ == 0)
         battery_unknown_since_ = now;
       if (now - battery_unknown_since_ < WAKE_FOR) {
-        d.status = "Reading battery";
-        d.mode = "wait";
         if (!charging && wake_due_(now))
           d.command = Command::WAKE;
-        return d;
+        return waiting("Reading battery");
       }
       d.status = "Charging (battery unknown)";
       fallback = true;
     } else if (!schedule_.valid) {
-      if (getting_prices_(now)) {
-        d.status = "Getting prices";
-        d.mode = "wait";
-        return d;
-      }
+      if (getting_prices_(now))
+        return waiting("Getting prices");
       d.status = "Charging (no prices)";
       fallback = true;
     } else {
       want_charge = in_schedule_();
       // In a window's last 2 minutes, with the car not charging: not worth a start that the next quarter-hour's
-      // schedule stops, which the command gap delays into that quarter-hour. A full car takes no start anyway.
-      if (!charging && !full_() && !schedule_.contains(scheduled_slot_ + SLOT_SECONDS) &&
+      // schedule stops, which the command gap delays into that quarter-hour.
+      if (!charging && !schedule_.contains(scheduled_slot_ + SLOT_SECONDS) &&
           scheduled_slot_ + SLOT_SECONDS - now < COMMAND_GAP)
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(schedule_, settings.currency);
-      starting = want_charge;
     }
     if (want_charge && charged_()) {
       d.status = "Charged";
@@ -217,7 +203,7 @@ class Controller {
     // The charger withholds power (an OCPP box waiting for approval, its own schedule): one start, so the car
     // charges as soon as power comes, and another every 10 minutes in case its request lapsed. The board's
     // last start counts as that request too.
-    if (want_charge && !charging && car.charging_state == "No Power") {
+    if (want_charge && car.charging_state == "No Power") {
       d.status = "Charger has no power";
       if (now - asked_at_ >= 10 * 60) {
         asked_at_ = now;
@@ -226,7 +212,7 @@ class Controller {
       no_power_asked_ = true;
       return d;
     }
-    if (starting && !charging)
+    if (want_charge && !fallback && !charging)  // the status is about the board's start, until the car charges
       d.status = commands_this_schedule_ >= COMMANDS_PER_SCHEDULE && now - last_command_at_ >= COMMAND_GAP
                      ? "Can't start charging"
                      : "Starting";
@@ -249,8 +235,6 @@ class Controller {
         limit_raised_at_ = now;  // a finished charge resumes by itself
       limit_ = car.limit;
     }
-    if (battery_known_() != battery_was_known)
-      reschedule_ = true;
 
     // With "Unknown", esphome-tesla-ble also reports the charger as unplugged: that's no unplug.
     const std::optional<bool> plugged = car.charging_state == "Unknown" ? std::nullopt : car.plugged;
@@ -290,8 +274,8 @@ class Controller {
       charging_ = charging;
       complete_ = car.charging_state == "Complete";
     }
-    // A car charged, or no longer, schedules from another battery level.
-    if (charged_() != was_charged)
+    // A battery level at last, or a car charged or no longer, schedules from another battery level.
+    if (battery_known_() != battery_was_known || charged_() != was_charged)
       reschedule_ = true;
     return charging_;  // the last known state: "Unknown" says nothing about it
   }
@@ -327,13 +311,13 @@ class Controller {
     const bool needed = plugged_ && !full_();
     if (needed && !needed_) {
       at_once_prices_.assign(DAY_SECONDS / SLOT_SECONDS, NAN);
-      at_once_from_ = now;
-      at_once_charged_ = 0;
+      at_once_from_ = floor_to_slot(now);
+      at_once_charged_ = now - at_once_from_;
     }
     if (plug_state_seen_)
       needed_ = needed;
     for (size_t i = 0; i < at_once_prices_.size(); ++i) {  // as each price comes out, then kept
-      const int64_t slot = floor_to_slot(at_once_from_) + static_cast<int64_t>(i) * SLOT_SECONDS;
+      const int64_t slot = at_once_from_ + static_cast<int64_t>(i) * SLOT_SECONDS;
       const std::optional<float> spot = std::isnan(at_once_prices_[i]) ? prices.get(slot) : std::nullopt;
       if (spot)
         at_once_prices_[i] = total_price(*spot, slot, tariff_, settings.standard_offset);
@@ -345,8 +329,7 @@ class Controller {
       const int64_t to = std::min(now, slot + SLOT_SECONDS);
       const float kwh = car.power_kw * static_cast<float>(to - from) / 3600.0f;
       const float average = day_average_(slot, settings.standard_offset);
-      const auto replayed =
-          static_cast<size_t>((at_once_from_ - floor_to_slot(at_once_from_) + at_once_charged_) / SLOT_SECONDS);
+      const auto replayed = static_cast<size_t>(at_once_charged_ / SLOT_SECONDS);
       const float at_once = replayed < at_once_prices_.size() && !std::isnan(at_once_prices_[replayed])
                                 ? at_once_prices_[replayed]
                                 : average;
@@ -439,7 +422,7 @@ class Controller {
       return;
     }
     const bool settled = battery_known_() ? now - plugged_since_ >= 2 * 60 : now - battery_unknown_since_ >= WAKE_FOR;
-    const bool waiting_for_prices = schedule_.valid && schedule_.needed_slots > 0 && schedule_.unpriced_slots > 0;
+    const bool waiting_for_prices = schedule_.needed_slots > 0 && schedule_.unpriced_slots > 0;
     if (!settled || (!schedule_.valid && getting_prices_(now)) || (waiting_for_prices && hold_ != Hold::NOW))
       return;
     notify_pending_ = false;
@@ -569,8 +552,8 @@ class Controller {
   int64_t counted_day_ = -1;
   int64_t counted_until_ = 0;
   int64_t savings_saved_slot_ = 0;
-  // Charging at once: the total prices of a day of quarter-hours from at_once_from_, NaN until known, and how long the
-  // car has charged since.
+  // Charging at once: the total prices of a day of quarter-hours from at_once_from_, NaN until known, and how far into
+  // them it has got: the time into the first when it started, and how long the car has charged since.
   std::vector<float> at_once_prices_;
   int64_t at_once_from_ = 0;
   int64_t at_once_charged_ = 0;
