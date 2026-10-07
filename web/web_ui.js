@@ -12,7 +12,7 @@
 //   Settings       the setup's steps, the prices and settings cards, and the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
 //   Time and text  clock times, the board's dates and uptime as text
-//   QR code        the page's address as a QR code, at /#qr after ESPHome Web's Visit Device
+//   QR code        the page's address as a QR code, for the setup's phone step
 //   Start          wiring, then this page or ESPHome's (?full)
 
 // --- Page ------------------------------------------------------------------
@@ -361,10 +361,10 @@ function render() {
   // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
   // in place of the box, the notes and Upload custom plan
   const listed = $("set-plan").options.length > 2;
-  const custom = ownPlan !== "";
+  const custom = customPlan !== "";
   const unlisted = $("set-unlisted").checked && !custom;
   const notListed = $("set-plan").options[1]; // none until the settings load
-  if (notListed) notListed.text = custom ? ownPlanLabel() : "Not listed";
+  if (notListed) notListed.text = custom ? customPlanLabel() : "Not listed";
   $("plan-row").hidden = !listed && !custom;
   $("unlisted-row").hidden = !listed || custom;
   $("set-plan").disabled = unlisted || !listed || custom;
@@ -664,22 +664,22 @@ function vinProblem(vin) {
 // Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
 let batteryTyped = false;
 // A custom plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
-let ownPlan = "";
+let customPlan = "";
 // The custom plan as the page names it, from its name: line.
-const ownPlanLabel = () => {
-  const name = /^name: *(.*?) *$/m.exec(ownPlan)?.[1];
+const customPlanLabel = () => {
+  const name = /^name: *(.*?) *$/m.exec(customPlan)?.[1];
   return name ? `Custom: ${name}` : "Custom plan";
 };
 
-// Whether the settings still have no prices: a market's, a tariff or a fixed price, the same in every hour without a
-// grid plan.
+// Whether the settings still have no prices: a market, a plan (tariff:) or a fixed price, the same in every hour
+// without a grid plan.
 const unfinished = () => settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text);
-// Whether the settings name the car, which the setup's Car step adds after the prices.
+// Whether the settings name the car, which the setup's car step adds after the prices.
 const hasCar = () => /^tesla_vin:/m.test(settings.text ?? "");
 
-// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which the setup's first
-// step fills in as the VIN is typed, for the owner to check, as the VIN tells the battery itself only in codes that
-// differ by year and by source.
+// A battery's usable size by a Tesla's model, the VIN's 4th character: a new board's guess, which the setup's car step
+// fills in as the VIN is typed, for the owner to check, as the VIN tells the battery itself only in codes that differ
+// by year and by source.
 const BATTERIES = { S: 95, X: 95, 3: 75, Y: 75 };
 const batteryOf = (vin) => BATTERIES[vin[3]] ?? 75;
 
@@ -759,14 +759,14 @@ function fillPlans(plan) {
   for (const option of closed) option.disabled = option.hidden = true;
   $("set-plan").replaceChildren(...closed, ...plans.map(([name, title]) => new Option(title, name)));
   $("set-unlisted").checked = plan === "" && plans.length > 0;
-  const fallback = plan === "" || !plans.length || ownPlan ? "none" : plans.length === 1 ? plans[0][0] : "";
+  const fallback = plan === "" || !plans.length || customPlan ? "none" : plans.length === 1 ? plans[0][0] : "";
   $("set-plan").value = plans.some(([name]) => name === plan) ? plan : fallback;
 }
 
-// The form, from the board's settings file and what it offers. What the file doesn't have starts as a 75 kWh battery and
-// 11 kW, and on a new board, a dynamic price and the phone's
-// country, where it has only one market area. Without a market, the supplier's price is fixed, and the country the
-// grid plan's, the currency's or the time zone's, in the first of its market areas, as any of them does.
+// The form, from the board's settings file and what it offers. What the file doesn't have starts as a 75 kWh battery
+// and 11 kW, and on a new board, a dynamic price and the phone's country, where it has only one market area. Without a
+// market, the supplier's price is fixed, and the country the grid plan's, the currency's or the time zone's, in the
+// first of its market areas, as any of them does.
 function fillSettings() {
   const values = readSettings(settings.text);
   const { areas } = settings.options;
@@ -793,8 +793,8 @@ function fillSettings() {
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
   // a custom plan: the lines under tariff:, without their indent, unless they name a plan from the list
-  const [, own = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
-  ownPlan = plan ? "" : own.replace(/^ {2}/gm, "").trimEnd();
+  const [, under = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
+  customPlan = plan ? "" : under.replace(/^ {2}/gm, "").trimEnd();
   fillPlans(unfinished() ? undefined : plan);
   $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "0.00";
@@ -831,7 +831,7 @@ async function loadSettings() {
 }
 
 // The form as the board's settings file, which the board checks before it takes it; without the car until the setup's
-// Car step has its VIN, as the setup's first step saves the prices for a new board. A custom plan goes under tariff:
+// car step has its VIN, as the setup's first step saves the prices for a new board. A custom plan goes under tariff:
 // line for line, indented, so the board's errors in it count the plan's own lines.
 function formSettings() {
   const v = (id) => $(id).value.trim();
@@ -850,7 +850,7 @@ function formSettings() {
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
   if (gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
-  else if (ownPlan) lines.push("tariff:", ...ownPlan.split("\n").map((line) => line && `  ${line}`));
+  else if (customPlan) lines.push("tariff:", ...customPlan.split("\n").map((line) => line && `  ${line}`));
   if (v("set-vin"))
     lines.push(
       `tesla_battery_kwh: ${v("set-battery")}`,
@@ -1178,7 +1178,7 @@ function qrCode(text) {
 // --- Start -----------------------------------------------------------------
 
 function bind() {
-  // the QR code's link opens the setup on the phone at Car, past the steps the computer did
+  // the QR code's link opens the setup on the phone at the car's step, past the steps the computer did
   $("qr").innerHTML = qrCode(`${location.origin}/#car`);
   $("address").textContent = location.origin;
   $("limit-select").addEventListener("change", (e) => (draft.limit = Number(e.target.value)));
@@ -1225,7 +1225,7 @@ function bind() {
   });
   // Reset custom plan: back to the country's plans, to choose one or upload another
   $("reset-plan").addEventListener("click", () => {
-    ownPlan = "";
+    customPlan = "";
     fillPlans();
     requestRender();
   });
@@ -1236,10 +1236,10 @@ function bind() {
     const [file] = e.target.files;
     e.target.value = ""; // so the same file can go again
     if (!file) return;
-    const before = ownPlan;
-    ownPlan = (await file.text()).replace(/\r\n?/g, "\n").trimEnd();
+    const before = customPlan;
+    customPlan = (await file.text()).replace(/\r\n?/g, "\n").trimEnd();
     const long = new TextEncoder().encode(formSettings()).length > 4096;
-    if (long) ownPlan = before;
+    if (long) customPlan = before;
     const problem =
       "This plan is too long: with your settings, the board takes up to 4 kB. Leave out its comments and try again.";
     say(long ? problem : "");
