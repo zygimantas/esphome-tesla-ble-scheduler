@@ -75,6 +75,12 @@ class Controller {
   // No schedule and no charging until create_schedule(), charge_now(), a start from the car or app, or the car is
   // unplugged.
   void stop_charging() { press_(Hold::NONE); }
+  // Settings saved with other values (deletes_schedule() in settings.h): a schedule goes, as with stop_charging(),
+  // while charging now stays.
+  void delete_schedule() {
+    if (hold_ == Hold::SCHEDULE)
+      press_(Hold::NONE);
+  }
   // The page's Reset savings: the figures start afresh on the next tick.
   void reset_savings() { savings = Savings{}; }
   // What the buttons chose, for the board to keep across a restart (see Hold).

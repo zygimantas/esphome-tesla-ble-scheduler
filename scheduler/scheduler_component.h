@@ -101,7 +101,7 @@ class SchedulerComponent : public PollingComponent {
   void use_settings(const std::string &text);
   // Saves a settings file that read_settings() took, from the web server's task: it applies at once, or restarts the
   // board, as restarts() in settings.h says.
-  void save_settings(const std::string &text, bool restart);
+  void save_settings(const std::string &text, bool restart, bool deletes);
   // The settings file saved, empty without one (for the web server's task), and the car's VIN from it.
   const std::string &settings_text() const { return this->settings_text_; }
   const std::string &vin() const { return this->file_.vin; }
