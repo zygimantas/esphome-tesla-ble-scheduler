@@ -718,13 +718,12 @@ function renderSetup() {
   // The key's step: what to make sure of, with the board's reach to the car ticked by the board itself, as its key can't
   // be asked for without it; once asked, what to do in the car.
   if (setup.step !== 4) setup.asked = false;
-  const ble = live ? value(E.ble) : null;
-  $("key-reach").checked = ble != null;
-  $("key-reach-text").textContent =
-    ble == null
-      ? "Looking for the car: plug the board in near it"
-      : `The board reaches the car (Bluetooth\u00a0${ble.toFixed(0)})`;
-  $("pair-now").disabled = busy || ble == null || !$("key-card").checked;
+  const reach = live && value(E.ble) != null;
+  $("key-reach").checked = reach;
+  $("key-reach-text").textContent = reach
+    ? "The board reaches the car"
+    : "Looking for the car: plug the board in near it";
+  $("pair-now").disabled = busy || !reach || !$("key-card").checked;
   $("key-ask").hidden = setup.asked;
   $("key-wait").hidden = !setup.asked;
   // Continue in the setup; after it, Save, with Cancel
