@@ -206,15 +206,10 @@ const PAGE = `
         <button class="primary save">Continue</button>
       </div>
       <div id="key-step" hidden>
-        <p class="note">The car only takes orders from keys it knows, so the board makes a key of its own for the car to add, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>, and you can remove it in the car under Controls → Locks.</p>
-        <ol class="note">
-          <li>Make sure the board is plugged into a USB charger next to the car.</li>
-          <li>Sit in the car with your Tesla key card.</li>
-          <li>Press Continue below.</li>
-          <li>Tap the Tesla key card on the console.</li>
-          <li>Confirm on the car's screen.</li>
-        </ol>
-        <button id="pair-now" class="primary">Continue</button>
+        <p class="note ask">The board adds its own key to the car, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>.</p>
+        <label class="row check ask"><input id="key-card" type="checkbox"><span>I am in the car with my Tesla key card</span></label>
+        <p id="key-wait" class="note" hidden><strong>Tap your key card on the console</strong>, then confirm on the car's screen.</p>
+        <button id="pair-now" class="primary">Create key</button>
       </div>
       <div id="done-step" hidden>
         <p class="note">The setup is done: the board charges when it's cheapest. To open this page like an app, add it to your home screen: on an iPhone, Share → Add to Home Screen; on Android, the browser's menu → Add to Home screen.</p>
@@ -250,8 +245,11 @@ const PAGE = `
 // The board's settings file ("" without one, null until read), what the fields offer, from /settings/options, and
 // the card open after the setup, "prices" or "settings", or "".
 const settings = { text: null, options: null, open: "" };
-// The setup's step, 1 to 5 (the prices, the phone, the car, its key and done), or 0.
-const setup = { step: 0 };
+// The setup's step, 1 to 5 (the prices, the phone, the car, its key and done), or 0, and when the key's step asked the
+// car for the key, or 0.
+const setup = { step: 0, asked: 0 };
+// How long the car waits for the key card, about, after the board asks it for its key.
+const KEY_CARD_MS = 30000;
 
 const states = {}; // entity id -> latest state event
 // null until the first connection, then whether live updates from the board are coming in. The Status row says when
@@ -702,11 +700,33 @@ function renderSetup() {
   if (setup.step === 2 && matchMedia("(pointer: coarse)").matches) setup.step = 3;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
   const card = $("prices-card");
-  card.querySelector(".title").textContent = setup.step ? "Setup" : "Prices";
+  card.querySelector(".title").textContent =
+    { 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? (setup.step ? "Setup" : "Prices");
   card.classList.toggle("open", setup.step > 0 || broken() || settings.open === "prices");
   card.classList.toggle("fold", !setup.step);
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
+  // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for
+  // without it; once asked, what to do in the car while it waits for the key card, then Try again. Its one button says
+  // what it waits for.
+  if (setup.step !== 4) {
+    // asked anew, and the key card's box ticked anew, by whoever comes back to it, as when the car loses the key
+    setup.asked = 0;
+    $("key-card").checked = false;
+  }
+  const reach = live && value(E.ble) != null;
+  const asking = Date.now() - setup.asked < KEY_CARD_MS;
+  for (const element of $("key-step").querySelectorAll(".ask")) element.hidden = setup.asked > 0;
+  $("key-wait").hidden = !setup.asked;
+  const pair = $("pair-now");
+  pair.textContent = !reach
+    ? "Looking for the car …"
+    : asking
+      ? "Waiting for the car …"
+      : setup.asked
+        ? "Try again"
+        : "Create key";
+  pair.disabled = busy || !reach || asking || (!setup.asked && !$("key-card").checked);
   // Continue in the setup; after it, Save, with Cancel
   $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
   $("cancel-prices").hidden = setup.step > 0 || broken();
@@ -1257,9 +1277,13 @@ function bind() {
     requestRender();
   });
   press($("save-settings"), saveSettings);
+  // Create key in the key's step, and Try again: the board asks the car to add its key, which the key card confirms
   press($("pair-now"), async () => {
-    if (await post(E.pair, "press")) toast("Creating the key: tap your key card");
+    if (!(await post(E.pair, "press"))) return;
+    setup.asked = Date.now();
+    setTimeout(requestRender, KEY_CARD_MS); // then Try again
   });
+  $("key-card").addEventListener("change", requestRender);
   // OK, after the setup's word that it's done
   $("done").addEventListener("click", () => {
     setup.step = 0;

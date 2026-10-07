@@ -215,9 +215,11 @@ input.wide {
   flex: 0 1 60%;
   min-width: 0;
 }
+/* As big as a finger can tap at ease, with its words. */
 input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  flex: none;
+  width: 24px;
+  height: 24px;
   margin: 0;
   accent-color: var(--accent);
 }
@@ -369,12 +371,12 @@ ul.note {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* My plan isn't listed: its box before its words, as in a list of options. */
+/* My plan isn't listed and the key card's: a box before its words, as in a list of options. */
 .row.check {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 14px;
 }
 
 /* --- The setup's step for the phone: the page's address as a QR code, black on white in both themes, as cameras
