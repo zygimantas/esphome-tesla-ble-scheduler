@@ -43,7 +43,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's battery and charging power are under **Settings**; its VIN stays as you set it up, until you start over.
 
-When you open the page after a new release, it says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Board** on the page shows the version it runs.
+When you open the page after a new release, it says so at the top, with **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Board** on the page shows the version it runs.
 
 ## Using it
 
@@ -68,7 +68,7 @@ Phone messages are optional, through the ntfy app: install it, open **Settings**
 
 - **The Tesla app says "Charging equipment not ready"**, or the page says **Charger has no power**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
-- **The board can't reach the car**: the **Bluetooth** signal under **Board** is empty or very weak. Move the board closer to the car.
+- **The board can't reach the car**: the Bluetooth signal at the top of the page is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
 - **The schedule's times are an hour or two off**: check **Country / Area** under **Prices**, which sets the board's time zone.
 

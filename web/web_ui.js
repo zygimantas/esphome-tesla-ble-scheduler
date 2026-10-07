@@ -11,7 +11,7 @@
 //   Savings        the savings card
 //   Settings       the setup's steps, the prices and settings cards, and the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
-//   Time and text  clock times, the board's dates, dBm and uptime as text
+//   Time and text  clock times, the board's dates and uptime as text
 //   QR code        the page's address as a QR code, at /#qr after ESPHome Web's Visit Device
 //   Start          wiring, then this page or ESPHome's (?full)
 
@@ -20,6 +20,7 @@
 const $ = (id) => document.getElementById(id);
 
 const E = {
+  asleep: "binary_sensor/Asleep",
   battery: "sensor/Battery",
   ble: "sensor/BLE Signal",
   chargeNow: "button/Start charging now",
@@ -91,21 +92,38 @@ const PLAN_LINKS =
 const info = (hint, label) =>
   `<button type="button" class="info" data-hint="${hint}" aria-label="${label}" aria-expanded="false">?</button>`;
 
+// The header's icons, Material's, in its white: the board's Wi-Fi and Bluetooth, the moon of a car asleep, and the
+// car's battery.
+const WIFI = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Wi-Fi">
+  <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+</svg>`;
+const BLUETOOTH = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Bluetooth">
+  <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+</svg>`;
+
+const ASLEEP = `<svg id="asleep" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Car asleep" hidden>
+  <path d="M12.34 2.02C6.59 1.82 2 6.42 2 12c0 5.52 4.48 10 10 10 3.71 0 6.93-2.02 8.66-5.02-7.51-.25-12.09-8.43-8.32-14.96z"/>
+</svg>`;
+const BATTERY = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Battery">
+  <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/>
+</svg>`;
+
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <div><h1>ESPHome Tesla BLE Scheduler</h1><p>Charges when it's cheapest</p></div>
-  <span id="link" class="pill">Connecting …</span>
+  <span class="pill">${WIFI}<span id="wifi">-</span></span>
+  <span class="pill">${BLUETOOTH}<span id="ble">-</span>${ASLEEP}</span>
+  <span class="pill">${BATTERY}<span id="soc">-</span></span>
 </header>
 <main>
   <section id="update-card" class="card" hidden>
     <div class="title">Update available</div>
     <p class="note">Release <span id="update-version"></span> is out: <a id="update-notes" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
     <button id="update" class="primary">Update</button>
+    <button id="later">Later</button>
   </section>
 
   <section id="status-card" class="card">
-    <div class="row"><span>Current charge</span><strong id="soc">-</strong></div>
     <div class="row"><span>Status<a id="status-help" class="button info" target="_blank" rel="noopener" aria-label="What the status means">?</a></span><strong id="status">Connecting …</strong></div>
   </section>
 
@@ -219,8 +237,6 @@ const PAGE = `
 
   <details class="card">
     <summary>Board</summary>
-    <div class="row"><span>Bluetooth</span><strong id="ble">-</strong></div>
-    <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="restart" class="danger">Restart board</button>
@@ -246,6 +262,8 @@ let live = null;
 let restarting = 0;
 // Whether that was Update, which downloads the release before the board restarts, or says it couldn't.
 let updating = false;
+// Whether Later was pressed on Update available, which keeps the card away until the page loads afresh.
+let later = false;
 // Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
 // The mode a button should bring, and the limit and Ready by just sent, as { value, until }, shown until the board
@@ -281,9 +299,7 @@ function requestRender() {
 }
 
 function render() {
-  const soc = value(E.battery);
   const charging = ["Charging", "Starting"].includes(text(E.charging));
-  $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
   // The board's status, with the charging power while the car charges (non-breaking spaces keep it one piece).
   const kw = value(E.power);
   const power = charging && kw != null ? ` ·\u00a0${kw.toFixed(1)}\u00a0kW` : "";
@@ -292,7 +308,6 @@ function render() {
   const board = !restarting && live !== false; // the board's own status, rather than the page's
   const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : link;
   $("status").textContent = board ? said + power : said;
-  $("link").textContent = restarting ? waiting : link;
   // its "?": the status's own line in docs/status.md, which a text fragment scrolls to
   const line = said.startsWith("Charges at")
     ? "Charges at 01:30"
@@ -300,22 +315,36 @@ function render() {
       ? "Settings: …"
       : `${said}:`;
   $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
-  document.body.classList.toggle("restarting", restarting > 0);
-  // no cards until the settings are in, which decide between the setup and the rest
-  document.body.classList.toggle("loading", settings.text === null && !restarting);
+  // Only the card with Status while the board restarts, or once the page lost it before its settings came; until they
+  // come, no cards, as they decide between the setup and the rest.
+  const lost = settings.text === null && live === false;
+  document.body.classList.toggle("restarting", restarting > 0 || lost);
+  document.body.classList.toggle("loading", settings.text === null && !restarting && !lost);
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
   renderSavings();
 
-  $("ble").textContent = dbm(value(E.ble));
-  $("wifi").textContent = dbm(value(E.wifi));
+  // the header, while the page has the board: the board's signals, a weak one in orange, the moon while the car
+  // sleeps, and the car's battery, in orange too below 20%
+  for (const [id, entity, weak] of [
+    ["wifi", E.wifi, -75],
+    ["ble", E.ble, -85],
+  ]) {
+    const signal = live ? value(entity) : null;
+    $(id).textContent = signal == null ? "-" : signal.toFixed(0); // dBm, without the unit
+    $(id).parentElement.classList.toggle("warn", signal != null && signal < weak);
+  }
+  $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
+  const soc = live ? value(E.battery) : null;
+  $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
+  $("soc").parentElement.classList.toggle("warn", soc != null && Math.round(soc) < 20);
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
   // A release the board found, which installs only from here.
   const release = states[E.firmware]?.value ?? "";
-  $("update-card").hidden = text(E.firmware) !== "UPDATE AVAILABLE";
+  $("update-card").hidden = later || text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = release;
   $("update-notes").href = `${REPOSITORY}/releases/tag/v${release}`;
   // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
@@ -1023,8 +1052,6 @@ function boardTime(ms) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm(ms)}:00`;
 }
 
-const dbm = (v) => (v == null ? "-" : `${v.toFixed(0)} dBm`);
-
 function duration(seconds) {
   if (seconds == null || seconds <= 0) return "-";
   const minutes = Math.round(seconds / 60);
@@ -1258,6 +1285,11 @@ function bind() {
       updating = true;
       restarting = Date.now();
     }
+  });
+  // Later, on Update available: until the page loads afresh
+  $("later").addEventListener("click", () => {
+    later = true;
+    requestRender();
   });
   // Restart board, under Board: the page waits for the board, reconnecting soon rather than when the browser would.
   press($("restart"), async () => {
