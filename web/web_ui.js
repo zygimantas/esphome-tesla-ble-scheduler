@@ -712,7 +712,8 @@ function renderSetup() {
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
   const card = $("setup-card");
   card.hidden = !setup.step;
-  card.querySelector(".title").textContent = { 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? "Setup";
+  card.querySelector(".title").textContent =
+    { 1: "Setup: prices", 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? "Setup";
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
   // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for
