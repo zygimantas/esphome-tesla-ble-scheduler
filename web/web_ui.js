@@ -712,7 +712,11 @@ function renderSetup() {
   // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for
   // without it; once asked, what to do in the car while it waits for the key card, then Try again. Its one button says
   // what it waits for.
-  if (setup.step !== 4) setup.asked = 0;
+  if (setup.step !== 4) {
+    // asked anew, and the key card's box ticked anew, by whoever comes back to it, as when the car loses the key
+    setup.asked = 0;
+    $("key-card").checked = false;
+  }
   const reach = live && value(E.ble) != null;
   const asking = Date.now() - setup.asked < KEY_CARD_MS;
   for (const element of $("key-step").querySelectorAll(".ask")) element.hidden = setup.asked > 0;
