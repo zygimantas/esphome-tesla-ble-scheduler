@@ -102,8 +102,8 @@ jobs:
             'import os, pty, sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(sys.argv[1:])) != 124)' \
             timeout 50 test/.esphome/build/simulation/.pioenvs/simulation/program > simulation.log ||
             { cat simulation.log; exit 1; }
-          grep -F '][scheduler' simulation.log
-          grep -q -F 'Start charging (Starting)' simulation.log
+          grep -F -e '][scheduler' -e 'The car is charging' simulation.log
+          grep -q -F 'The car is charging' simulation.log
       - name: Firmware, as releases ship it, signed, for ESPHome Web and updates
         env:
           SIGNING_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SIGNING_KEY || '' }}

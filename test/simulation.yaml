@@ -76,6 +76,8 @@ sensor:
 switch:
   - lambda: return scheduler_test::tesla().charging;
     name: "Charger"
+    on_turn_on:  # from the car's own state, so only once it charges, which CI looks for
+      - logger.log: "The car is charging"
     platform: template
     restore_mode: DISABLED
     turn_off_action:
