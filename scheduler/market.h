@@ -7,6 +7,7 @@
 #include <ArduinoJson.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -188,10 +189,9 @@ class PriceTable {
     for (JsonObject entry : doc["multiAreaEntries"].as<JsonArray>()) {
       JsonVariant value = entry["entryPerArea"][area];
       const auto start = parse_iso8601(entry["deliveryStart"].as<const char *>());
-      if (value.isNull() || !start)
+      if (!value.is<float>() || !start)
         continue;
-      set(*start, value.as<float>() / 1000.0f);
-      ++stored;
+      stored += set(*start, value.as<float>() / 1000.0f);
     }
     return stored;
   }
@@ -209,8 +209,7 @@ class PriceTable {
     for (JsonArray point : doc["series"].as<JsonArray>()) {
       if (!point[0].is<int64_t>() || !point[1].is<float>())
         continue;
-      set(point[0].as<int64_t>() / 1000, point[1].as<float>() * rate / 1000.0f);
-      ++stored;
+      stored += set(point[0].as<int64_t>() / 1000, point[1].as<float>() * rate / 1000.0f);
     }
     return stored;
   }
@@ -230,18 +229,22 @@ class PriceTable {
       if (std::sscanf(file.c_str() + at + 1, "%d;%d;%d;%d;%f;%f;", &year, &month, &day, &quarter, &pt, &es) != 6)
         continue;
       const int64_t midnight = local_to_utc(days_from_civil(year, month, day), 0, CET_STANDARD_OFFSET);
-      set(midnight + (quarter - 1) * SLOT_SECONDS, (portugal ? pt : es) / 1000.0f);
-      ++stored;
+      stored += set(midnight + (quarter - 1) * SLOT_SECONDS, (portugal ? pt : es) / 1000.0f);
     }
     return stored;
   }
 
-  void set(int64_t slot_start, float price) {
+  // Stores a slot's price, or replaces the one it had, but not one that isn't a finite number, like OMIE's "inf" or an
+  // overflow, which would break the sorting and the averages. Returns whether it stored it.
+  bool set(int64_t slot_start, float price) {
+    if (!std::isfinite(price))
+      return false;
     auto it = find_(slots_, slot_start);
     if (it != slots_.end() && it->first == slot_start)
       it->second = price;
     else
       slots_.insert(it, {slot_start, price});
+    return true;
   }
 
   std::optional<float> get(int64_t slot_start) const {

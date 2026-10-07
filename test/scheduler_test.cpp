@@ -237,6 +237,9 @@ static void test_nord_pool_prices() {
   const auto negative = prices.get(t);
   CHECK(negative && near(*negative, -0.0125f));
   CHECK(!prices.get(t + SLOT_SECONDS));
+  const char *dash = R"({"multiAreaEntries":[{"deliveryStart":"2025-09-30T22:00:00Z","entryPerArea":{"LT":"-"}}]})";
+  CHECK(prices.add_nord_pool(dash, std::strlen(dash), "LT") == 0);  // not a price: the one before stays
+  CHECK(prices.get(t) == negative);
   CHECK(prices.add_nord_pool("{oops", 5, "LT") == -1);
   CHECK(prices.add_nord_pool("{}", 2, "LT") == 0);
 
@@ -314,6 +317,7 @@ static void test_omie_prices() {
       "MARGINALPDBC;\r\n"
       "2026;09;30;81;255;249.79;\r\n"
       "2026;09;30;82;bad;1;\r\n"
+      "2026;09;30;83;inf;nan;\r\n"
       "2025;10;26;100;-1.5;-2;\r\n"
       "*\r\n";
   PriceTable spain, portugal;
@@ -324,6 +328,7 @@ static void test_omie_prices() {
   CHECK(es && near(*es, 0.24979f));
   CHECK(pt && near(*pt, 0.255f));
   CHECK(!spain.get(quarter_81 + SLOT_SECONDS));
+  CHECK(!spain.get(quarter_81 + 2 * SLOT_SECONDS) && !portugal.get(quarter_81 + 2 * SLOT_SECONDS));  // not finite
   const auto last = spain.get(utc("2025-10-26T22:45:00Z"));  // 23:45 CET, after the clocks went back
   CHECK(last && near(*last, -0.002f));
   CHECK(spain.add_omie("<!DOCTYPE html>", 15, "ES") == -1);
