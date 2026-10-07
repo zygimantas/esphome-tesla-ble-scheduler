@@ -123,7 +123,7 @@ const PAGE = `
 <main>
   <section id="update-card" class="card" hidden>
     <div class="title">Update available</div>
-    <p class="note">Release <span id="update-version"></span> is out, and the board runs <span id="update-current"></span>: <a id="update-notes" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
+    <p class="note">Release <span id="update-version"></span> is out, and the board runs <span id="update-current"></span>: <a href="${REPOSITORY}/releases" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
     <button id="update" class="primary">Update</button>
     <button id="later">Later</button>
   </section>
@@ -344,16 +344,11 @@ function render() {
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
-  // A release the board found, which installs only from here, beside the one it runs, and what changed between them on
-  // GitHub (the release's own page while the board's is unknown).
-  const release = states[E.firmware]?.value ?? "";
-  const current = text(E.version);
+  // A release the board found, which installs only from here, beside the one it runs; what's new opens GitHub's
+  // releases, the newest first, each with its notes.
   $("update-card").hidden = later || text(E.firmware) !== "UPDATE AVAILABLE";
-  $("update-version").textContent = release;
-  $("update-current").textContent = current || "an older one";
-  $("update-notes").href = current
-    ? `${REPOSITORY}/compare/v${current}...v${release}`
-    : `${REPOSITORY}/releases/tag/v${release}`;
+  $("update-version").textContent = states[E.firmware]?.value ?? "";
+  $("update-current").textContent = text(E.version) || "an older one";
   // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
   $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
