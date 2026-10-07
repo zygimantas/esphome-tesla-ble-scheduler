@@ -770,6 +770,13 @@ function say(problem) {
   if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+// Keeps in a field only what `clean` lets through, as it's typed in or pasted into, with the caret where it was.
+function keepOnly(field, clean) {
+  const caret = clean(field.value.slice(0, field.selectionStart)).length;
+  field.value = clean(field.value);
+  field.setSelectionRange(caret, caret);
+}
+
 // Whether the shown fields pass their own checks; else the first that doesn't says why, by the field, and number fields
 // show their range under them. A hidden one can't, so it isn't checked.
 const valid = (fields) => {
@@ -1241,17 +1248,20 @@ function bind() {
   // and 0 they're taken for, as no VIN has them, and no more than 17. The caret stays where it was.
   $("set-vin").addEventListener("input", (e) => {
     const field = e.target;
-    const vin = (text) =>
+    keepOnly(field, (text) =>
       text
         .toUpperCase()
         .replace(/[IOQ]/g, (c) => (c === "I" ? "1" : "0"))
-        .replace(/[^A-Z0-9]/g, "");
-    const caret = vin(field.value.slice(0, field.selectionStart)).length;
-    field.value = vin(field.value).slice(0, 17);
-    field.setSelectionRange(caret, caret);
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 17),
+    );
     // the setup's guess of the battery, from the car's model, while the size is no one's own
     if (!batteryTyped && field.value.length === 17) $("set-battery").value = batteryOf(field.value);
   });
+  // the topic's field takes only what a topic can hold, as the VIN's does: letters, digits, - and _, at most 64
+  $("set-topic").addEventListener("input", (e) =>
+    keepOnly(e.target, (text) => text.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64)),
+  );
   $("set-battery").addEventListener("input", () => (batteryTyped = true));
   for (const id of ["set-margin", "set-fixed", "set-battery", "set-power"])
     $(id).addEventListener("input", (e) => checkRange(e.target));
