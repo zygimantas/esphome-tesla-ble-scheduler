@@ -41,7 +41,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - Then tick **I am in the car with my Tesla key card** and press **Create key**, which says Looking for the car … until the board finds the car over Bluetooth. Tap your key card on the console and confirm on the car's screen while the button says Waiting for the car …; if the car missed it, the button turns to **Try again**. Once the car answers, the page says the setup is done, and how to add it to your home screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-To change the country, the grid plan, the contract or the car's battery and charging power, open **Settings**, below **Savings** on the page: the country sets the VAT and the time zone too. Saving them deletes the schedule, as it was made with the old ones: press **Create schedule** for a new one. Saving only a new **ntfy topic** doesn't. The car's VIN stays as you set it up, until you start over.
+To change the country, the grid plan, the contract or the car's battery and charging power, open **Settings**, below **Savings** on the page: the country sets the VAT and the time zone too. Saving them deletes the schedule, as it was made with the old ones: press **Create schedule** for a new one. Saving only a new **Ntfy topic** doesn't. The car's VIN stays as you set it up, until you start over.
 
 When you open the page after a new release, it says so at the top, with the release the board runs and a link to what changed since, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Settings** on the page shows the version it runs.
 
