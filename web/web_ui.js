@@ -184,9 +184,9 @@ const PAGE = `
         <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
         <label class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
         <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-        <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"><span id="margin-range" class="note error" hidden></span></label>
         <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-        <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"><span id="fixed-range" class="note error" hidden></span></label>
         <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
         </div>
         <p class="note error" hidden></p>
@@ -202,9 +202,9 @@ const PAGE = `
         <label class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
         <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
         <div id="car-fields">
-        <label class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"></label>
+        <label class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"><span id="battery-range" class="note error" hidden></span></label>
         <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-        <label class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"></label>
+        <label class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"><span id="power-range" class="note error" hidden></span></label>
         <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
         </div>
         <p class="note error" hidden></p>
@@ -389,6 +389,7 @@ function render() {
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
   $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
+  for (const id of ["set-margin", "set-fixed"]) checkRange($(id)); // the range, and its unit, of the country now
   // a hint shows while its "?" is open and its field is shown
   for (const button of document.querySelectorAll(".info[data-hint]"))
     $(button.dataset.hint).hidden =
@@ -773,9 +774,28 @@ function say(problem) {
   if (problem) error.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// Whether the shown fields pass their own checks; else the first that doesn't says why, by the field. A hidden one
-// can't, so it isn't checked.
-const valid = (fields) => [...fields].every((field) => field.closest("[hidden]") || field.reportValidity());
+// Keeps in a field only what `clean` lets through, as it's typed in or pasted into, with the caret where it was.
+function keepOnly(field, clean) {
+  const caret = clean(field.value.slice(0, field.selectionStart)).length;
+  field.value = clean(field.value);
+  field.setSelectionRange(caret, caret);
+}
+
+// Whether the shown fields pass their own checks; else the first that doesn't says why, by the field, and number fields
+// show their range under them. A hidden one can't, so it isn't checked.
+const valid = (fields) => {
+  for (const field of fields) if (field.type === "number") checkRange(field);
+  return [...fields].every((field) => field.closest("[hidden]") || field.reportValidity());
+};
+
+// A number field's range under it, in red, while what it holds is outside it, as the browser says so only at Continue
+// or Save, and Safari on a phone not even then; the unit is the one its name ends in.
+function checkRange(field) {
+  const unit = /\(([^)]*)\)/.exec(field.closest(".row").firstElementChild.textContent)?.[1] ?? "";
+  const note = $(`${field.id.slice(4)}-range`);
+  note.textContent = `From ${field.min} to ${field.max} ${unit}`;
+  note.hidden = field.validity.valid;
+}
 
 // Continue, at the setup's prices and car: the step's checks, the car's VIN first, and its save, which the board takes
 // at once while it has no car, as in the setup, then on to the next step.
@@ -1233,18 +1253,23 @@ function bind() {
   // and 0 they're taken for, as no VIN has them, and no more than 17. The caret stays where it was.
   $("set-vin").addEventListener("input", (e) => {
     const field = e.target;
-    const vin = (text) =>
+    keepOnly(field, (text) =>
       text
         .toUpperCase()
         .replace(/[IOQ]/g, (c) => (c === "I" ? "1" : "0"))
-        .replace(/[^A-Z0-9]/g, "");
-    const caret = vin(field.value.slice(0, field.selectionStart)).length;
-    field.value = vin(field.value).slice(0, 17);
-    field.setSelectionRange(caret, caret);
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 17),
+    );
     // the setup's guess of the battery, from the car's model, while the size is no one's own
     if (!batteryTyped && field.value.length === 17) $("set-battery").value = batteryOf(field.value);
   });
+  // the topic's field takes only what a topic can hold, as the VIN's does: letters, digits, - and _, at most 64
+  $("set-topic").addEventListener("input", (e) =>
+    keepOnly(e.target, (text) => text.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64)),
+  );
   $("set-battery").addEventListener("input", () => (batteryTyped = true));
+  for (const id of ["set-margin", "set-fixed", "set-battery", "set-power"])
+    $(id).addEventListener("input", (e) => checkRange(e.target));
   for (const button of document.querySelectorAll(".info[data-hint]"))
     button.addEventListener("click", (e) => {
       e.preventDefault();
@@ -1377,6 +1402,31 @@ function bind() {
   $("cancel-settings").addEventListener("click", () => fold(false));
 }
 
+// The header's logo on its blue, as the page's icon in a browser tab and on a home screen, by request: a PNG drawn from
+// it, as an iPhone's home screen takes no SVG, in place of ESPHome's empty icon.
+async function addIcon() {
+  const blue = "#009ac7";
+  const logo = new Image();
+  logo.src = `data:image/svg+xml,${encodeURIComponent(
+    LOGO.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" ').replaceAll(
+      "currentColor",
+      blue,
+    ),
+  )}`;
+  await logo.decode();
+  const canvas = Object.assign(document.createElement("canvas"), { width: 180, height: 180 });
+  const draw = canvas.getContext("2d");
+  draw.fillStyle = blue;
+  draw.fillRect(0, 0, 180, 180);
+  draw.drawImage(logo, 33, 33, 116, 116);
+  const icon = canvas.toDataURL();
+  document.querySelector('link[rel="icon"]')?.remove();
+  document.head.insertAdjacentHTML(
+    "beforeend",
+    `<link rel="icon" href="${icon}"><link rel="apple-touch-icon" href="${icon}">`,
+  );
+}
+
 // Last, so every declaration above is initialised before the page starts.
 if (new URLSearchParams(location.search).has("full")) {
   document.querySelector('link[href="/0.css"]')?.remove();
@@ -1387,6 +1437,11 @@ if (new URLSearchParams(location.search).has("full")) {
   document.title = "ESPHome Tesla BLE Scheduler";
   document.body.classList.add("loading"); // before the first paint
   document.body.insertAdjacentHTML("afterbegin", PAGE);
+  // The page at its own size, like an app, by request, while ESPHome's at ?full zooms as usual: no zooming in or out,
+  // which Safari on an iPhone allows despite user-scalable=no, so a pinch is stopped there too.
+  document.querySelector('meta[name="viewport"]').content += ", maximum-scale=1, user-scalable=no";
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
   bind();
   connect();
+  void addIcon();
 }

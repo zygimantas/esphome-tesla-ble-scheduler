@@ -42,6 +42,7 @@ body {
     sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y; /* scrolls up and down only: no pinch or double-tap zoom, no sideways pan */
 }
 [hidden] {
   /* biome-ignore lint/complexity/noImportantStyles: the hidden attribute must win over every display rule */
@@ -345,6 +346,10 @@ button:disabled {
 }
 .error {
   color: var(--red);
+}
+/* A field's range, right under it in its row, as the row's gap already parts them. */
+.row > .error {
+  margin-top: 0;
 }
 .note a {
   color: var(--accent);
