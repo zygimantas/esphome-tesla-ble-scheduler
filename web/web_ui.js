@@ -883,9 +883,8 @@ async function sendSettings(file) {
 
 // Save, in Prices and Settings: the fields' own checks first, as the browser shows them by the field.
 async function saveSettings() {
-  // a closed card's fields go as the board has them, and those a choice hides not at all
-  if (valid(document.querySelectorAll("#settings-card :is(input, select), .step.open :is(input, select)")))
-    await sendSettings(formSettings());
+  // the open cards' shown fields only: a closed card's go as the board has them, and those a choice hides not at all
+  if (valid(document.querySelectorAll(".open :is(input, select)"))) await sendSettings(formSettings());
 }
 
 // --- Board link ------------------------------------------------------------
