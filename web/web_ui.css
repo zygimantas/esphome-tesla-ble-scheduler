@@ -347,10 +347,19 @@ button:disabled {
   color: var(--accent);
 }
 
+/* --- No grid plan selected: in amber, as a warning --- */
+#plan-card {
+  border-color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 12%, var(--card));
+}
+
 /* --- Schedule card --- */
-#create-schedule,
-#stop-charging {
-  margin-top: 0;
+/* Charge limit and Ready by as one group, without a line between them, and the windows a gap below it. */
+#ready-row {
+  border-top: 0;
+}
+#windows {
+  margin-top: 16px;
 }
 .or {
   display: flex;

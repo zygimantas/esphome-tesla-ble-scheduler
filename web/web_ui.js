@@ -123,7 +123,7 @@ const PAGE = `
 <main>
   <section id="update-card" class="card" hidden>
     <div class="title">Update available</div>
-    <p class="note">Release <span id="update-version"></span> is out, and the board runs <span id="update-current"></span>: <a id="update-notes" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
+    <p class="note">Release <span id="update-version"></span> is out, and the board runs <span id="update-current"></span>: <a href="${REPOSITORY}/releases" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
     <button id="update" class="primary">Update</button>
     <button id="later">Later</button>
   </section>
@@ -137,13 +137,10 @@ const PAGE = `
     <p class="note"><span id="plan-why"></span> You can select one in Settings, below.</p>
   </section>
 
-  <section id="target-card" class="card">
-    <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
-    <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
-  </section>
-
   <section id="schedule-card" class="card" hidden>
     <div class="title">Schedule</div>
+    <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
+    <label id="ready-row" class="row"><span>Ready by</span><span class="dropdown"><select id="ready-select" aria-label="Ready by"></select></span></label>
     <div id="schedule-start">
       <button id="create-schedule" class="primary">Create schedule</button>
       <div class="or">or</div>
@@ -345,16 +342,11 @@ function render() {
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
-  // A release the board found, which installs only from here, beside the one it runs, and what changed between them on
-  // GitHub (the release's own page while the board's is unknown).
-  const release = states[E.firmware]?.value ?? "";
-  const current = text(E.version);
+  // A release the board found, which installs only from here, beside the one it runs; what's new opens GitHub's
+  // releases, the newest first, each with its notes.
   $("update-card").hidden = later || text(E.firmware) !== "UPDATE AVAILABLE";
-  $("update-version").textContent = release;
-  $("update-current").textContent = current || "an older one";
-  $("update-notes").href = current
-    ? `${REPOSITORY}/compare/v${current}...v${release}`
-    : `${REPOSITORY}/releases/tag/v${release}`;
+  $("update-version").textContent = states[E.firmware]?.value ?? "";
+  $("update-current").textContent = text(E.version) || "an older one";
   // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
   $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
@@ -504,8 +496,9 @@ function expectMode(mode) {
 // a new schedule or charge, so only then can they change.
 function renderSchedule() {
   const mode = shownMode();
-  $("target-card").hidden = mode === "wait"; // nothing to set or show until the board can schedule
-  $("schedule-card").hidden = mode === "unplugged" || mode === "wait";
+  // Charge limit and Ready by at the top, always, and below them what the mode offers: nothing while unplugged, and no
+  // card until the board can schedule
+  $("schedule-card").hidden = mode === "wait";
   $("schedule-start").hidden = mode !== "none";
   $("schedule-rows").hidden = mode !== "schedule";
   $("stop-charging").hidden = mode !== "now";
