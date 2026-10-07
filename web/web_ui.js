@@ -192,7 +192,7 @@ const PAGE = `
         <button class="primary save">Continue</button>
       </div>
       <div id="phone-step" hidden>
-        <p class="note">The next steps are easier in the car. Scan this code with your phone, then <strong>take your Tesla key card</strong> to the car and plug the board into a socket near it with a USB charger.</p>
+        <p class="note">The next steps are easier in the car. Scan this code with your phone, then unplug the board from the computer and take it to the car with <strong>your Tesla key card</strong>. Plug it into a socket there with a USB charger.</p>
         <div id="qr" class="qr"></div>
         <p class="note">Or open <span id="address"></span> on your phone.</p>
         <button id="here">Continue here</button>
