@@ -43,7 +43,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 To change the country, the grid plan, the contract or the car's battery and charging power, open **Settings**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's VIN stays as you set it up, until you start over.
 
-When you open the page after a new release, it says so at the top, with the release the board runs and a link to what changed since, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Board** on the page shows the version it runs.
+When you open the page after a new release, it says so at the top, with the release the board runs and a link to what changed since, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Settings** on the page shows the version it runs.
 
 ## Using it
 

@@ -232,18 +232,15 @@ const PAGE = `
       <hr id="prices-line">
       <label id="topic-row" class="row"><span>ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
+      <hr>
+      <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
+      <div class="row"><span>Version</span><strong id="version">-</strong></div>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
       <button id="cancel-settings">Cancel</button>
+      <button id="restart" class="danger">Restart board</button>
     </div>
   </section>
-
-  <details class="card">
-    <summary>Board</summary>
-    <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
-    <div class="row"><span>Version</span><strong id="version">-</strong></div>
-    <button id="restart" class="danger">Restart board</button>
-  </details>
 
   <div id="toast" class="toast" role="status"></div>
 </main>`;
@@ -1317,7 +1314,7 @@ function bind() {
     later = true;
     requestRender();
   });
-  // Restart board, under Board: the page waits for the board, reconnecting soon rather than when the browser would.
+  // Restart board, the last in Settings: the page waits for the board, reconnecting soon rather than when the browser would.
   press($("restart"), async () => {
     if (!confirm("Restart the board?")) return;
     if (await post(E.restart, "press")) {

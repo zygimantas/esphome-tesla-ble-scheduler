@@ -106,7 +106,7 @@ html {
   background: #c0392b;
 }
 
-/* --- Cards, with a title; Board and Settings fold open --- */
+/* --- Cards, with a title; Settings folds open --- */
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -114,23 +114,19 @@ html {
   padding: 16px;
   margin: 0 0 16px;
 }
-summary,
 .title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: 28px;
+  margin-bottom: 4px;
   font-weight: 600;
 }
-summary {
-  list-style: none;
+/* Settings folds: the title opens the card, and its arrow turns. */
+.fold > .title {
   cursor: pointer;
 }
-summary::-webkit-details-marker {
-  display: none;
-}
-summary::after,
 .fold > .title::after {
   content: "›";
   color: var(--muted);
@@ -138,17 +134,8 @@ summary::after,
   line-height: 1;
   transition: transform 0.2s;
 }
-details[open] > summary,
-.title {
-  margin-bottom: 4px;
-}
-details[open] > summary::after,
 .fold.open > .title::after {
   transform: rotate(90deg);
-}
-/* Settings folds like Board: the title opens the card. */
-.fold > .title {
-  cursor: pointer;
 }
 .fold:not(.open) > .title {
   margin-bottom: 0;
@@ -173,8 +160,8 @@ details[open] > summary::after,
   border-top: 1px solid var(--line);
 }
 .row:first-child,
-summary + .row,
-.title + .row {
+.title + .row,
+hr + .row {
   border-top: 0;
 }
 .row strong {
@@ -387,9 +374,9 @@ ul.note {
 }
 
 /* --- The setup and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
-/* Settings by its id without the id's weight, so these rules weigh what .step's did and a box's row (.row.check) keeps
-   its words beside it. */
-:is(.step, :where(#settings-card)) .row {
+/* Settings by its id without the id's weight, and a field's row by its label without the label's, so these rules weigh
+   what .step's did and a box's row (.row.check) keeps its words beside it; Uptime and Version keep theirs on the right. */
+:is(.step, :where(#settings-card)) :where(label).row {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
@@ -397,7 +384,7 @@ ul.note {
   margin-top: 16px;
   border-top: 0;
 }
-:is(.step, :where(#settings-card)) .row > span:first-child {
+:is(.step, :where(#settings-card)) :where(label).row > span:first-child {
   color: var(--muted);
   font-size: 13px;
 }
@@ -415,7 +402,7 @@ ul.note {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Settings' line below the prices, as far from the fields on either side. */
+/* Settings' lines below the prices and above Uptime, as far from the fields on either side. */
 hr {
   margin: 24px 0 8px;
   border: 0;
