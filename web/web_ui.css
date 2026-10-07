@@ -223,21 +223,19 @@ select:disabled {
 /* A box before its words, as in a list of options, in the setup too. */
 .row.check {
   justify-content: flex-start;
-  gap: 10px;
+  gap: 14px;
 }
+/* As big as a finger can tap at ease, with its words. */
 input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  flex: none;
+  width: 24px;
+  height: 24px;
   margin: 0;
   accent-color: var(--accent);
 }
 .step .row.check {
   flex-direction: row;
   align-items: center;
-}
-/* The key's step's reach to the car, which the board ticks, not a finger, in the colour of a ticked box. */
-#key-reach {
-  pointer-events: none;
 }
 
 /* --- The settings form: fields like the dropdowns, and room for names --- */
