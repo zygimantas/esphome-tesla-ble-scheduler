@@ -266,6 +266,9 @@ let restarting = 0;
 let updating = false;
 // Whether Later was pressed on Update available, which keeps the card away until the page loads afresh.
 let later = false;
+// Whether the car is plugged in, as the Charger last said outside a charging state of Unknown, when it reads OFF though
+// the car may be plugged in, as Controller::observe_() in charger.h knows.
+let plugged = false;
 // Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
 // The mode a button should bring, and the limit and Ready by just sent, as { value, until }, shown until the board
@@ -340,7 +343,8 @@ function render() {
     $(id).parentElement.classList.toggle("none", loaded && signal == null);
   }
   $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
-  $("plugged").toggleAttribute("hidden", !live || text(E.plug) !== "ON");
+  if (text(E.charging) !== "Unknown") plugged = text(E.plug) === "ON";
+  $("plugged").toggleAttribute("hidden", !live || !plugged);
   const soc = live ? value(E.battery) : null;
   $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
   $("soc").parentElement.classList.toggle("warn", soc != null && Math.round(soc) < 20);
