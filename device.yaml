@@ -33,7 +33,7 @@ esphome:
       - lambda: id(tesla_ble_vehicle_id).set_vin(id(scheduler_id).vin().c_str());
   project:
     name: zygimantas.esphome-tesla-ble-scheduler
-    version: 5.9.0
+    version: 5.10.0
 
 http_request:
   timeout: 15s
