@@ -68,7 +68,7 @@ Phone messages are optional, through the ntfy app: install it, open **Settings**
 
 - **The Tesla app says "Charging equipment not ready"**, or the page says **Charger has no power**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
-- **The board can't reach the car**: **BT**, the board's Bluetooth signal at the top of the page, is empty or very weak. Move the board closer to the car.
+- **The board can't reach the car**: the Bluetooth signal at the top of the page is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
 - **The schedule's times are an hour or two off**: check **Country / Area** under **Prices**, which sets the board's time zone.
 

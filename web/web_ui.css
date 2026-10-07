@@ -63,7 +63,7 @@ main {
   background: var(--accent);
   color: #fff;
 }
-.bar svg {
+.bar > svg {
   flex: none;
   width: 24px;
   height: 24px; /* as tall as the pills */
@@ -71,12 +71,19 @@ main {
   color: var(--accent);
 }
 .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+.pill svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* --- Cards, with a title; Board, Prices and Settings fold open --- */

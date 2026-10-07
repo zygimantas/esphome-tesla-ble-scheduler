@@ -91,11 +91,19 @@ const PLAN_LINKS =
 const info = (hint, label) =>
   `<button type="button" class="info" data-hint="${hint}" aria-label="${label}" aria-expanded="false">?</button>`;
 
+// The board's signals' icons, Material's Wi-Fi and Bluetooth, in the header's white.
+const WIFI = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Wi-Fi">
+  <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+</svg>`;
+const BLUETOOTH = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Bluetooth">
+  <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+</svg>`;
+
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <span id="wifi" class="pill">Wi-Fi -</span>
-  <span id="ble" class="pill">BT -</span>
+  <span class="pill">${WIFI}<span id="wifi">-</span></span>
+  <span class="pill">${BLUETOOTH}<span id="ble">-</span></span>
 </header>
 <main>
   <section id="update-card" class="card" hidden>
@@ -306,8 +314,8 @@ function render() {
   renderSavings();
 
   // the board's signals, in the header, while the page has the board
-  $("wifi").textContent = `Wi-Fi ${live ? dbm(value(E.wifi)) : "-"}`;
-  $("ble").textContent = `BT ${live ? dbm(value(E.ble)) : "-"}`;
+  $("wifi").textContent = live ? dbm(value(E.wifi)) : "-";
+  $("ble").textContent = live ? dbm(value(E.ble)) : "-";
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
