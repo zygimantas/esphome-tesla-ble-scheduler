@@ -519,7 +519,8 @@ function renderSchedule() {
 }
 
 // "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in schedule.h: the windows in UTC
-// seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded.
+// seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded. A window past
+// midnight has its day after each time, as "23:15 +1 - 01:00 +2", or the +1 would read as its end's day.
 function renderWindows() {
   const [currency, ...entries] = text(E.windows).split(";");
   const rows = entries.filter(Boolean).map((entry) => {
@@ -527,7 +528,8 @@ function renderWindows() {
     const row = document.createElement("div");
     row.className = spare ? "row spare" : "row";
     const when = document.createElement("span");
-    when.textContent = `${hhmm(start * 1000)} - ${hhmm(end * 1000)}${plus(start * 1000)}`;
+    const [from, to] = [plus(start * 1000), plus(end * 1000)];
+    when.textContent = `${hhmm(start * 1000)}${from === to ? "" : from} - ${hhmm(end * 1000)}${to}`;
     const price = document.createElement("strong");
     price.textContent = `${amount} ${currency}/kWh`;
     row.append(when, price);
