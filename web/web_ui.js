@@ -233,6 +233,7 @@ const PAGE = `
       <div class="row"><span>Version</span><strong id="version">-</strong></div>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
+      <button id="test-topic">Send test message</button>
       <button id="pair-key" class="danger">Pair key</button>
       <button id="restart" class="danger">Restart board</button>
       <button id="cancel-settings">Cancel</button>
@@ -1281,6 +1282,27 @@ function bind() {
     toast(copied ? "New topic copied: paste it in the ntfy app" : "New topic: copy it, then paste it in the ntfy app");
   });
   press($("save-settings"), saveSettings);
+  // Send test message, under Save: one to the field's topic, saved or not, from here straight to ntfy, as the board's
+  // messages look, so the app can be checked before saving
+  press($("test-topic"), async () => {
+    const topic = $("set-topic");
+    if (!topic.value.trim()) {
+      toast("Make or type a topic first");
+      return;
+    }
+    if (!topic.reportValidity()) return;
+    const body = JSON.stringify({
+      topic: topic.value.trim(),
+      title: "Test message",
+      message: "Phone messages from the board come here.",
+      tags: ["electric_plug"],
+      click: location.origin,
+    });
+    await send("https://ntfy.sh", { body }, async (response) => {
+      toast(response.ok ? "Test message sent" : `ntfy didn't take it (HTTP ${response.status})`);
+      return response.ok;
+    });
+  });
   // Create key in the key's step, and Try again: the board asks the car to add its key, which the key card confirms
   press($("pair-now"), async () => {
     if (!(await post(E.pair, "press"))) return;
