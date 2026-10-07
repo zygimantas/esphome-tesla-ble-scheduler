@@ -506,7 +506,8 @@ async function createSchedule() {
   const current = readyBy();
   let deadline = draft.deadline ?? current.deadline;
   if (deadline == null) return;
-  const time = hhmm(deadline);
+  // The daily time as it is when the deadline is its next one: a time the clocks skip in spring comes an hour later.
+  const time = deadline === nextAt(current.daily) ? current.daily : hhmm(deadline);
   if (deadline <= Date.now()) deadline = nextAt(time);
   const once = deadline === nextAt(time) ? null : deadline;
   pending.deadline = { value: deadline, until: Date.now() + 20000 };
