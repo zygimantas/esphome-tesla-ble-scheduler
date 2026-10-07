@@ -237,8 +237,8 @@ const PAGE = `
       <div class="row"><span>Version</span><strong id="version">-</strong></div>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
-      <button id="cancel-settings">Cancel</button>
       <button id="restart" class="danger">Restart board</button>
+      <button id="cancel-settings">Cancel</button>
     </div>
   </section>
 
@@ -1314,7 +1314,7 @@ function bind() {
     later = true;
     requestRender();
   });
-  // Restart board, the last in Settings: the page waits for the board, reconnecting soon rather than when the browser would.
+  // Restart board, in Settings: the page waits for the board, reconnecting soon rather than when the browser would.
   press($("restart"), async () => {
     if (!confirm("Restart the board?")) return;
     if (await post(E.restart, "press")) {
