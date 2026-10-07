@@ -233,6 +233,7 @@ const PAGE = `
       <div class="row"><span>Version</span><strong id="version">-</strong></div>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
+      <button id="pair-key" class="danger">Pair key</button>
       <button id="restart" class="danger">Restart board</button>
       <button id="cancel-settings">Cancel</button>
     </div>
@@ -1310,6 +1311,13 @@ function bind() {
   $("later").addEventListener("click", () => {
     later = true;
     requestRender();
+  });
+  // Pair key, in Settings, for a key the car lost or never got: what to do in the car first, as the key card confirms it
+  press($("pair-key"), async () => {
+    const steps =
+      "Sit in the car with your Tesla key card. After OK, tap the card on the console and confirm on the car's screen.";
+    if (!confirm(steps)) return;
+    if (await post(E.pair, "press")) toast("Tap your key card on the console");
   });
   // Restart board, in Settings: the page waits for the board, reconnecting soon rather than when the browser would.
   press($("restart"), async () => {
