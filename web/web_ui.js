@@ -120,6 +120,7 @@ const PAGE = `
     <div class="title">Update available</div>
     <p class="note">Release <span id="update-version"></span> is out: <a id="update-notes" target="_blank" rel="noopener">what's new</a>. The board downloads it and restarts, in about a minute.</p>
     <button id="update" class="primary">Update</button>
+    <button id="later">Later</button>
   </section>
 
   <section id="status-card" class="card">
@@ -261,6 +262,8 @@ let live = null;
 let restarting = 0;
 // Whether that was Update, which downloads the release before the board restarts, or says it couldn't.
 let updating = false;
+// Whether Later was pressed on Update available, which keeps the card away until the page loads afresh.
+let later = false;
 // Charge limit and Ready by picked here but not sent yet: the schedule buttons send them.
 const draft = { limit: null, deadline: null };
 // The mode a button should bring, and the limit and Ready by just sent, as { value, until }, shown until the board
@@ -312,9 +315,11 @@ function render() {
       ? "Settings: …"
       : `${said}:`;
   $("status-help").href = `${REPOSITORY}/blob/main/docs/status.md#:~:text=${encodeURIComponent(line)}`;
-  document.body.classList.toggle("restarting", restarting > 0);
-  // no cards until the settings are in, which decide between the setup and the rest
-  document.body.classList.toggle("loading", settings.text === null && !restarting);
+  // Only the card with Status while the board restarts, or once the page lost it before its settings came; until they
+  // come, no cards, as they decide between the setup and the rest.
+  const lost = settings.text === null && live === false;
+  document.body.classList.toggle("restarting", restarting > 0 || lost);
+  document.body.classList.toggle("loading", settings.text === null && !restarting && !lost);
   renderSchedule(); // first: it drops the draft when the dropdowns can't change
   renderLimit();
   renderReady();
@@ -339,7 +344,7 @@ function render() {
   renderSetup();
   // A release the board found, which installs only from here.
   const release = states[E.firmware]?.value ?? "";
-  $("update-card").hidden = text(E.firmware) !== "UPDATE AVAILABLE";
+  $("update-card").hidden = later || text(E.firmware) !== "UPDATE AVAILABLE";
   $("update-version").textContent = release;
   $("update-notes").href = `${REPOSITORY}/releases/tag/v${release}`;
   // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
@@ -1280,6 +1285,11 @@ function bind() {
       updating = true;
       restarting = Date.now();
     }
+  });
+  // Later, on Update available: until the page loads afresh
+  $("later").addEventListener("click", () => {
+    later = true;
+    requestRender();
   });
   // Restart board, under Board: the page waits for the board, reconnecting soon rather than when the browser would.
   press($("restart"), async () => {
