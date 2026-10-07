@@ -372,6 +372,11 @@ button:disabled {
   opacity: 0.5;
 }
 
+/* --- Savings card: its rows without lines between them --- */
+#savings-card .row {
+  border-top: 0;
+}
+
 /* --- The setup and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
 /* Settings by its id without the id's weight, and a field's row by its label without the label's, so these rules weigh
    no more than .row.check, which comes after them and keeps a box's words beside it; Uptime and Version keep their
