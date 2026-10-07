@@ -11,7 +11,7 @@
 //   Savings        the savings card
 //   Settings       the setup's steps, the prices and settings cards, and the settings file, sent to the board and back
 //   Board link     /events, POST and toasts
-//   Time and text  clock times, the board's dates, dBm and uptime as text
+//   Time and text  clock times, the board's dates and uptime as text
 //   QR code        the page's address as a QR code, at /#qr after ESPHome Web's Visit Device
 //   Start          wiring, then this page or ESPHome's (?full)
 
@@ -329,7 +329,7 @@ function render() {
     ["ble", E.ble, -85],
   ]) {
     const signal = live ? value(entity) : null;
-    $(id).textContent = dbm(signal);
+    $(id).textContent = signal == null ? "-" : signal.toFixed(0); // dBm, without the unit
     $(id).parentElement.classList.toggle("weak", signal != null && signal < weak);
   }
   $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
@@ -1045,8 +1045,6 @@ function boardTime(ms) {
   const d = new Date(ms);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm(ms)}:00`;
 }
-
-const dbm = (v) => (v == null ? "-" : `${v.toFixed(0)} dBm`);
 
 function duration(seconds) {
   if (seconds == null || seconds <= 0) return "-";
