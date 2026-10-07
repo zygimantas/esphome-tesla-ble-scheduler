@@ -92,6 +92,11 @@ const PLAN_LINKS =
 const info = (hint, label) =>
   `<button type="button" class="info" data-hint="${hint}" aria-label="${label}" aria-expanded="false">?</button>`;
 
+// The ntfy topic's button, Material's renew: a new topic.
+const RENEW = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+  <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+</svg>`;
+
 // The header's icons, Material's, in its white: the board's Wi-Fi and Bluetooth, the moon of a car asleep, and the
 // car's battery.
 const WIFI = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Wi-Fi">
@@ -221,9 +226,8 @@ const PAGE = `
   <section id="settings-card" class="card fold">
     <div class="title">Settings</div>
     <div class="body">
-      <label class="row"><span>ntfy topic</span><input id="set-topic" class="wide" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"></label>
-      <p class="note">Phone messages come through the ntfy app: create a topic here, subscribe to it in the app, and press Save.</p>
-      <button id="topic">Create topic</button>
+      <label class="row"><span>ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
+      <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
       <button id="cancel-settings">Cancel</button>
@@ -364,7 +368,6 @@ function render() {
   const fixed = $("set-price").value === "fixed";
   $("margin-row").hidden = fixed;
   $("fixed-row").hidden = !fixed;
-  $("topic").textContent = $("set-topic").value.trim() ? "Copy topic" : "Create topic";
   // the country's plans, or a custom plan by its name in their place, where there are none too, with Reset custom plan
   // in place of the box, the notes and Upload custom plan
   const listed = $("set-plan").options.length > 2;
@@ -1267,23 +1270,19 @@ function bind() {
     say(long ? problem : "");
     requestRender();
   });
-  // Create topic, then Copy topic: a long random ntfy topic, copied to paste in the ntfy app on the same phone. The
-  // page is plain HTTP, without the clipboard API, so it copies the field's selected text. 32 letters and digits, so
-  // each byte picks one evenly: 20 of them make 100 random bits.
-  $("set-topic").addEventListener("input", requestRender); // the button's name follows the field
+  // The topic's button: a new long random ntfy topic at each press, copied to paste in the ntfy app on the same phone.
+  // The page is plain HTTP, without the clipboard API, so it copies the field's selected text. 32 letters and digits,
+  // so each byte picks one evenly: 20 of them make 100 random bits.
   $("topic").addEventListener("click", () => {
     const field = $("set-topic");
-    if (!field.value.trim()) {
-      const letters = "abcdefghijklmnopqrstuvwxyz234567";
-      const random = crypto.getRandomValues(new Uint8Array(20));
-      field.value = `tesla-${[...random].map((byte) => letters[byte & 31]).join("")}`;
-    }
+    const letters = "abcdefghijklmnopqrstuvwxyz234567";
+    const random = crypto.getRandomValues(new Uint8Array(20));
+    field.value = `tesla-${[...random].map((byte) => letters[byte & 31]).join("")}`;
     field.select();
     field.setSelectionRange(0, field.value.length);
     const copied = document.execCommand("copy");
     field.blur();
-    toast(copied ? "Topic copied: paste it in the ntfy app" : "Copy the topic, then paste it in the ntfy app");
-    requestRender();
+    toast(copied ? "New topic copied: paste it in the ntfy app" : "New topic: copy it, then paste it in the ntfy app");
   });
   press($("save-settings"), saveSettings);
   // Create key in the key's step, and Try again: the board asks the car to add its key, which the key card confirms

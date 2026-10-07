@@ -227,9 +227,35 @@ select:disabled {
 input:not([type="checkbox"]) {
   text-align: right;
 }
-input.wide {
-  flex: 0 1 60%;
+/* The ntfy topic's field, with its button inside at the end, always there: a new topic, copied. */
+.inline-field {
+  position: relative;
+  display: flex;
+}
+.inline-field input {
+  flex: 1;
   min-width: 0;
+  padding-right: 44px;
+}
+.inline-field button {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 0;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translateY(-50%);
+}
+.inline-field svg {
+  width: 22px;
+  height: 22px;
 }
 /* As big as a finger can tap at ease, with its words. */
 input[type="checkbox"] {
