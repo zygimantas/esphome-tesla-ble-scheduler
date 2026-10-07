@@ -209,7 +209,6 @@ const PAGE = `
         <div id="key-ask">
           <p class="note">The board adds its own key to the car, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>.</p>
           <label class="row check"><input id="key-card" type="checkbox"><span>I am in the car with my Tesla key card</span></label>
-          <p id="key-reach" class="note"></p>
           <button id="pair-now" class="primary">Continue</button>
         </div>
         <div id="key-wait" hidden>
@@ -714,10 +713,10 @@ function renderSetup() {
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
   // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for
-  // without it; once asked, what to do in the car.
+  // without it, which Continue waits for; once asked, what to do in the car.
   if (setup.step !== 4) setup.asked = false;
   const reach = live && value(E.ble) != null;
-  $("key-reach").textContent = reach ? "The board found the car" : "Looking for the car: plug the board in near it";
+  $("pair-now").textContent = reach ? "Continue" : "Looking for the car …";
   $("pair-now").disabled = busy || !reach || !$("key-card").checked;
   $("key-ask").hidden = setup.asked;
   $("key-wait").hidden = !setup.asked;

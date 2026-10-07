@@ -348,8 +348,10 @@ ol.note,
 ul.note {
   padding-left: 20px;
 }
-/* As far below the text as a button below a row, in every card. */
-.note + :is(button, .button) {
+/* As far below the text as a button below a row, in every card, and below the setup's rows, which have no room of
+   their own. */
+.note + :is(button, .button),
+.step .row + button {
   margin-top: 22px;
 }
 /* A field's hint: a small "?" by its name, which opens the words under the field, with room around it for a finger. */
