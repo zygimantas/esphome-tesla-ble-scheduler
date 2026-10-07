@@ -347,6 +347,12 @@ button:disabled {
   color: var(--accent);
 }
 
+/* --- No grid plan selected: in amber, as a warning --- */
+#plan-card {
+  border-color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 12%, var(--card));
+}
+
 /* --- Schedule card --- */
 #create-schedule,
 #stop-charging {
