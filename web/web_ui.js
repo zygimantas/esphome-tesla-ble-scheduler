@@ -1398,6 +1398,31 @@ function bind() {
   $("cancel-settings").addEventListener("click", () => fold(false));
 }
 
+// The header's logo on its blue, as the page's icon in a browser tab and on a home screen, by request: a PNG drawn from
+// it, as an iPhone's home screen takes no SVG, in place of ESPHome's empty icon.
+async function addIcon() {
+  const blue = "#009ac7";
+  const logo = new Image();
+  logo.src = `data:image/svg+xml,${encodeURIComponent(
+    LOGO.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" ').replaceAll(
+      "currentColor",
+      blue,
+    ),
+  )}`;
+  await logo.decode();
+  const canvas = Object.assign(document.createElement("canvas"), { width: 180, height: 180 });
+  const draw = canvas.getContext("2d");
+  draw.fillStyle = blue;
+  draw.fillRect(0, 0, 180, 180);
+  draw.drawImage(logo, 33, 33, 116, 116);
+  const icon = canvas.toDataURL();
+  document.querySelector('link[rel="icon"]')?.remove();
+  document.head.insertAdjacentHTML(
+    "beforeend",
+    `<link rel="icon" href="${icon}"><link rel="apple-touch-icon" href="${icon}">`,
+  );
+}
+
 // Last, so every declaration above is initialised before the page starts.
 if (new URLSearchParams(location.search).has("full")) {
   document.querySelector('link[href="/0.css"]')?.remove();
@@ -1410,4 +1435,5 @@ if (new URLSearchParams(location.search).has("full")) {
   document.body.insertAdjacentHTML("afterbegin", PAGE);
   bind();
   connect();
+  void addIcon();
 }
