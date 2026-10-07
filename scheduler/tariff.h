@@ -55,15 +55,18 @@ inline std::string next_line(const std::string &text, size_t &start) {
   return line;
 }
 
-// The key and the value of a `key: value` or `key:` line indented by `indent`; false when it isn't one.
-inline bool key_value(const std::string &line, size_t indent, std::string &key, std::string &value) {
+// The key and the value of a `key: value` or `key:` line indented by `indent`. A comment after them, which YAML would
+// leave out, is turned away rather than read as part of the value. Returns what's wrong, or "".
+inline std::string key_value(const std::string &line, size_t indent, std::string &key, std::string &value) {
   const size_t colon = line.find(':');
   if (colon == std::string::npos || colon == indent || (colon + 1 < line.size() && line[colon + 1] != ' '))
-    return false;
+    return "isn't a key and a value";
+  if (line.find(" #") != std::string::npos)
+    return "has a comment that isn't on a line of its own";
   key = line.substr(indent, colon - indent);
   value = line.substr(colon + 1);
   value.erase(0, value.find_first_not_of(' '));
-  return true;
+  return "";
 }
 
 // Reads a plan, ending with a line break. Returns what's wrong, or "".
@@ -78,8 +81,8 @@ inline std::string read_tariff(const std::string &text, TariffText &tariff) {
     if (indent == std::string::npos || line[indent] == '#')
       continue;
     std::string key, value;
-    if (!key_value(line, indent, key, value))
-      return concat({"line ", std::to_string(number), " isn't a key and a value"});
+    if (const std::string error = key_value(line, indent, key, value); !error.empty())
+      return concat({"line ", std::to_string(number), " ", error});
     if (indent == 0 && value.empty() && (key == "calendar" || key == "exceptions" || key == "rates")) {
       section = key;
     } else if (indent == 0 && !value.empty() && (key == "name" || key == "clock" || key == "currency")) {

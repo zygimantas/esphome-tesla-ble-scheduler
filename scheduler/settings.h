@@ -60,8 +60,8 @@ inline std::string upper(std::string text) {
 // Reads and checks the settings file, in the plans' YAML (tariff.h) as the page writes it, the last line break left out
 // or not. tariff: has a plan built in, or a custom plan: a plan's file (plans/README.md), each line indented by two
 // spaces, whose line numbers count from the line after tariff:, as in the file. Returns what's wrong, or "".
-// Hand-written files from before 5.0.0 with quotes or comments after a value don't read: the page then saves them
-// anew.
+// Quotes and comments after a value don't read: in hand-written files from before 5.0.0, which the page then saves
+// anew, and in custom plans uploaded since, which need uploading again without them.
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
@@ -101,8 +101,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       continue;
     }
     std::string key, value;
-    if (!key_value(line, indent, key, value))
-      return at("isn't a key and a value");
+    if (const std::string error = key_value(line, indent, key, value); !error.empty())
+      return at(error);
     const bool heading = value.empty();  // a key with lines of its own below
     std::string place;
     if (indent == 0) {

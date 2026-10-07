@@ -603,6 +603,8 @@ static void test_reads_a_plan() {
            Case{"clock: local\nclock: winter\n", "line 2 has clock again"},
            Case{"currency: EUR\n\ncurrency: NOK\n", "line 3 has currency again"},
            Case{"name: One\nname: Two\n", "line 2 has name again"},
+           Case{"name: Home # night rate\n", "line 1 has a comment that isn't on a line of its own"},
+           Case{"rates: # with VAT\n", "line 1 has a comment that isn't on a line of its own"},
        }) {
     TariffText ignored;
     CHECK_STR(read_tariff(c.text, ignored), c.error);
@@ -1210,18 +1212,19 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(without(SETTINGS, {"tesla_battery_kwh", "tesla_charging_kw"})),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   // No quotes, and no comment after a value, which the page doesn't write: a hand-written file from before 5.0.0 with
-  // them doesn't read, and the page saves it anew.
+  // them doesn't read, and the page saves it anew. A custom plan with such a comment, which YAML would leave out of
+  // the value, doesn't either.
   CHECK_STR(settings_error(settings_set("tesla_battery_kwh", "\"75\"")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   CHECK_STR(settings_error(settings_set("tesla_vin", "'5YJ3E1EA0KF000000'")),
             "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
             "screen under Controls, Software");
   CHECK_STR(settings_error(settings_set("  area", "LT # Lithuania")),
-            "market: area must be one the board knows, like LT or SE3: see Countries and plans");
-  CHECK_STR(
-      settings_error(custom(calendar_of("    mon-sun: flat # all day"))),
-      "custom plan: calendar: jan-dec: mon-sun: \"flat # all day\" isn't rates and times by turns, like night 07:00 "
-      "day");
+            "line 3 has a comment that isn't on a line of its own");
+  CHECK_STR(settings_error(custom("name: Home # night rate\n" + calendar_of("    mon-sun: flat"))),
+            "custom plan: line 1 has a comment that isn't on a line of its own");
+  CHECK_STR(settings_error(custom(calendar_of("    mon-sun: flat # all day"))),
+            "custom plan: line 3 has a comment that isn't on a line of its own");
 }
 
 // ---------------------------------------------------------------------------
