@@ -92,11 +92,8 @@ const PLAN_LINKS =
 const info = (hint, label) =>
   `<button type="button" class="info" data-hint="${hint}" aria-label="${label}" aria-expanded="false">?</button>`;
 
-// The header's icons, Material's, in its white: the car's battery, the board's Wi-Fi and Bluetooth, and the moon of
-// a car asleep.
-const BATTERY = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Battery">
-  <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/>
-</svg>`;
+// The header's icons, Material's, in its white: the board's Wi-Fi and Bluetooth, the moon of a car asleep, and the
+// car's battery.
 const WIFI = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Wi-Fi">
   <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
 </svg>`;
@@ -107,13 +104,16 @@ const BLUETOOTH = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-
 const ASLEEP = `<svg id="asleep" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Car asleep" hidden>
   <path d="M12.34 2.02C6.59 1.82 2 6.42 2 12c0 5.52 4.48 10 10 10 3.71 0 6.93-2.02 8.66-5.02-7.51-.25-12.09-8.43-8.32-14.96z"/>
 </svg>`;
+const BATTERY = `<svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Battery">
+  <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/>
+</svg>`;
 
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <span class="pill">${BATTERY}<span id="soc">-</span></span>
   <span class="pill">${WIFI}<span id="wifi">-</span></span>
   <span class="pill">${BLUETOOTH}<span id="ble">-</span>${ASLEEP}</span>
+  <span class="pill">${BATTERY}<span id="soc">-</span></span>
 </header>
 <main>
   <section id="update-card" class="card" hidden>
@@ -320,10 +320,8 @@ function render() {
   renderReady();
   renderSavings();
 
-  // the header, while the page has the board: the car's battery, the board's signals, a weak one in amber, and the
-  // moon while the car sleeps
-  const soc = live ? value(E.battery) : null;
-  $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
+  // the header, while the page has the board: the board's signals, a weak one in orange, the moon while the car
+  // sleeps, and the car's battery
   for (const [id, entity, weak] of [
     ["wifi", E.wifi, -75],
     ["ble", E.ble, -85],
@@ -333,6 +331,8 @@ function render() {
     $(id).parentElement.classList.toggle("weak", signal != null && signal < weak);
   }
   $("asleep").toggleAttribute("hidden", !live || text(E.asleep) !== "ON");
+  const soc = live ? value(E.battery) : null;
+  $("soc").textContent = soc == null ? "-" : `${Math.round(soc)}%`;
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
