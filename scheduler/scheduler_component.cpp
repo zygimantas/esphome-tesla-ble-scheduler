@@ -443,12 +443,12 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
         ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
         this->controller_.reschedule();
       } else if (stored == 0 && day == 0) {
-        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Prices", source, area.name);
+        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Settings", source, area.name);
       }
     } else if (*status != not_yet) {
       ESP_LOGW(TAG, "%s answered HTTP %d", source, *status);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "%s has no prices for %s today: check Country / Area under Prices", source, area.name);
+      ESP_LOGW(TAG, "%s has no prices for %s today: check Country / Area under Settings", source, area.name);
     }
   }
 }

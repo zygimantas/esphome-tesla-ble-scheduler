@@ -41,9 +41,9 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
    - Then tick **I am in the car with my Tesla key card** and press **Create key**, which says Looking for the car … until the board finds the car over Bluetooth. Tap your key card on the console and confirm on the car's screen while the button says Waiting for the car …; if the car missed it, the button turns to **Try again**. Once the car answers, the page says the setup is done, and how to add it to your home screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's battery and charging power are under **Settings**; its VIN stays as you set it up, until you start over.
+To change the country, the grid plan, the contract or the car's battery and charging power, open **Settings**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's VIN stays as you set it up, until you start over.
 
-When you open the page after a new release, it says so at the top, with the release the board runs and a link to what changed since, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Board** on the page shows the version it runs.
+When you open the page after a new release, it says so at the top, with the release the board runs and a link to what changed since, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Settings** on the page shows the version it runs.
 
 ## Using it
 
@@ -70,7 +70,7 @@ Phone messages are optional, through the ntfy app: install it, open **Settings**
 - **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
 - **The board can't reach the car**: the Bluetooth signal at the top of the page is empty or very weak. Move the board closer to the car.
 - **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The schedule's times are an hour or two off**: check **Country / Area** under **Prices**, which sets the board's time zone.
+- **The schedule's times are an hour or two off**: check **Country / Area** under **Settings**, which sets the board's time zone.
 
 ## Development
 
