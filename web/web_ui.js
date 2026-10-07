@@ -659,10 +659,11 @@ const broken = () => text(E.status).startsWith("Settings: ");
 
 // The setup, for a new board, settings without prices or the car, and a key the car doesn't know: one card, Setup, with
 // the step it's at and no way back, by request: the prices, then the phone, whose QR code opens the page there at the
-// car, as its link ends in #car, then the car, then its key, which ends the setup once the car answers, with a word
-// that it's done and how to add the page to the home screen, until OK. After it, the card is Prices, below Savings,
-// folded like Settings, which opens from its title, or for settings the board turned away; the VIN stays as the setup
-// saved it, as only a new install changes it, while the battery and the power move to Settings.
+// car, as its link ends in #car, and which a phone or a tablet skips, then the car, then its key, which ends the setup
+// once the car answers, with a word that it's done and how to add the page to the home screen, until OK. After it, the
+// card is Prices, below Savings, folded like Settings, which opens from its title, or for settings the board turned
+// away; the VIN stays as the setup saved it, as only a new install changes it, while the battery and the power move to
+// Settings.
 function renderSetup() {
   const status = text(E.status);
   // at the key, the setup waits for the car's answer, past the board's No car yet from before the car's save
@@ -670,6 +671,8 @@ function renderSetup() {
   if (settings.text === null || !(unfinished() || !hasCar() || waiting)) setup.step = setup.step > 0 ? 5 : 0;
   else if (!setup.step || setup.step === 5)
     setup.step = unfinished() ? 1 : hasCar() ? 4 : location.hash === "#car" ? 3 : 2;
+  // a phone or a tablet is already the one to take to the car, so it goes on without the QR code
+  if (setup.step === 2 && matchMedia("(pointer: coarse)").matches) setup.step = 3;
   document.body.classList.toggle("setup", setup.step > 0 && !restarting);
   const card = $("prices-card");
   card.hidden = false;
