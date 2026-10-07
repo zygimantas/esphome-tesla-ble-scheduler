@@ -209,7 +209,7 @@ const PAGE = `
         <p class="note ask">The board adds its own key to the car, like a phone key. It can only charge: it <strong>can't unlock or drive the car</strong>.</p>
         <label class="row check ask"><input id="key-card" type="checkbox"><span>I am in the car with my Tesla key card</span></label>
         <p id="key-wait" class="note" hidden><strong>Tap your key card on the console</strong>, then confirm on the car's screen.</p>
-        <button id="pair-now" class="primary">Continue</button>
+        <button id="pair-now" class="primary">Create key</button>
       </div>
       <div id="done-step" hidden>
         <p class="note">The setup is done: the board charges when it's cheapest. To open this page like an app, add it to your home screen: on an iPhone, Share → Add to Home Screen; on Android, the browser's menu → Add to Home screen.</p>
@@ -724,7 +724,7 @@ function renderSetup() {
       ? "Waiting for the car …"
       : setup.asked
         ? "Try again"
-        : "Continue";
+        : "Create key";
   pair.disabled = busy || !reach || asking || (!setup.asked && !$("key-card").checked);
   // Continue in the setup; after it, Save, with Cancel
   $("prices-step").querySelector(".save").textContent = setup.step ? "Continue" : "Save";
@@ -1280,7 +1280,7 @@ function bind() {
     requestRender();
   });
   press($("save-settings"), saveSettings);
-  // Continue in the key's step, and Try again: the board asks the car to add its key, which the key card confirms
+  // Create key in the key's step, and Try again: the board asks the car to add its key, which the key card confirms
   press($("pair-now"), async () => {
     if (!(await post(E.pair, "press"))) return;
     setup.asked = Date.now();
