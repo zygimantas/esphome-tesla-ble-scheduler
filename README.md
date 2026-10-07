@@ -36,9 +36,9 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 4. **Choose your prices**: press **Visit Device**, which opens the setup on the board's page. Check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Continue**.
 5. **Continue on your phone**: scan the QR code the page shows with your phone's camera, which opens the setup there. It also lists what to take to the car. To go on on the computer instead, press **Continue here**.
 6. **Put the board next to the car**: unplug it from the computer, plug it into the USB charger near the car, and give it a minute to join your Wi-Fi.
-7. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If it isn't, open http://tesla.local (type the `http://`: browsers try https on their own, which the board doesn't speak).
+7. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If you closed it, open it again from the browser's history, or at http://tesla.local, which some Android phones don't find (type the `http://`: browsers try https on their own, which the board doesn't speak).
    - Enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Check the battery's size, guessed from your car's model, and the charging power the Tesla app shows while the car charges at home. Press **Continue**: the page checks the VIN, and says what's wrong if anything is.
-   - Then press **Continue**, tap your key card on the console and confirm on the car's screen: once the car answers, the setup is done.
+   - Then press **Continue**, tap your key card on the console and confirm on the car's screen: once the car answers, the page says the setup is done, and how to add it to your home screen.
 8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
 To change the country, the grid plan or the contract, open **Prices**, below **Savings** on the page: the country sets the VAT and the time zone too. The car's battery and charging power are under **Settings**; its VIN stays as you set it up, until you start over.
@@ -47,7 +47,7 @@ When you open the page after a new release, it says so at the top, with **Update
 
 ## Using it
 
-Open http://tesla.local on your phone. On an iPhone, **Share** → **Add to Home Screen** turns it into an app. There's no password: anyone on your Wi-Fi can use it and see your settings.
+Open the page on your phone, from the home screen once you've added it there, as the end of the setup says. It's at the board's address on your Wi-Fi, like http://192.168.1.23, which the QR code opened. If the router gives the board a new one, open http://tesla.local, which some Android phones don't find, or tap a phone message, which has the new one. There's no password: anyone on your Wi-Fi can use it and see your settings.
 
 - **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `02:00 - 02:45 +1` at `0.196 EUR/kWh`, where `+1` means tomorrow. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the board waits for them, and charges now only what the hours after them can't fit.
 - **To change the schedule**, press **Delete schedule**, pick **Charge limit** and **Ready by**, then **Create schedule**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
