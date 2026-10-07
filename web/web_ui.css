@@ -348,6 +348,10 @@ button:disabled {
 }
 
 /* --- Schedule card --- */
+/* Charge limit and Ready by as one group, without a line between them. */
+#ready-row {
+  border-top: 0;
+}
 .or {
   display: flex;
   align-items: center;
