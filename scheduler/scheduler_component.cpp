@@ -85,14 +85,20 @@ void SchedulerComponent::use_settings(const std::string &text) {
 }
 
 // On the web server's task, the only one that uses settings_text_ once the board runs, so the next request sees the
-// new file; the rest on the next loop: the settings apply at once, with a new schedule, or restart the board, which
-// starts the schedule, the prices and the car's connection afresh (restarts() in settings.h).
-void SchedulerComponent::save_settings(const std::string &text, bool restart) {
+// new file; the rest on the next loop: the settings apply at once, or restart the board, which starts the prices and
+// the car's connection afresh (restarts() in settings.h), and other values than the topic's delete the schedule
+// (deletes_schedule()).
+void SchedulerComponent::save_settings(const std::string &text, bool restart, bool deletes) {
   this->settings_text_ = text;
-  this->defer([this, text, restart]() {
+  this->defer([this, text, restart, deletes]() {
     auto saved = std::make_unique<SavedSettings>();
     std::snprintf(saved->text, sizeof(saved->text), "%s", text.c_str());
     this->settings_pref_.save(saved.get());
+    if (deletes) {  // saved now, as the board may restart
+      this->controller_.delete_schedule();
+      this->held_ = this->controller_.held_mode();
+      this->held_pref_.save(&this->held_);
+    }
     global_preferences->sync();
     if (restart) {
       App.safe_reboot();
@@ -583,7 +589,7 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
     read_settings(this->parent_->settings_text(), this->parent_->plans(), was);
     const bool restart = restarts(was, file);
     request->send(200, TEXT, restart ? "Saved: the board restarts" : "Saved");
-    this->parent_->save_settings(this->body_, restart);
+    this->parent_->save_settings(this->body_, restart, deletes_schedule(was, file));
   } else {
     request->send(400, TEXT, error.c_str());
   }

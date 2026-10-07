@@ -1069,6 +1069,30 @@ static void test_settings_that_restart() {
   CHECK(restarts(was, now));
 }
 
+// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's.
+static void test_settings_that_delete_the_schedule() {
+  SettingsFile was;
+  CHECK_STR(read_settings(SETTINGS, repository_plans(), was), "");
+  CHECK(!deletes_schedule(SettingsFile(), was));  // the setup's car, on a board without one
+  CHECK(!deletes_schedule(was, was));
+  const auto deletes = [&was](auto change) {
+    SettingsFile now = was;
+    change(now);
+    return deletes_schedule(was, now);
+  };
+  CHECK(!deletes([](SettingsFile &s) { s.ntfy_topic = "another-topic"; }));
+  CHECK(deletes([](SettingsFile &s) { s.currency = "SEK"; }));
+  CHECK(deletes([](SettingsFile &s) { s.area = nullptr; }));
+  CHECK(deletes([](SettingsFile &s) { s.vat = 0.5f; }));
+  CHECK(deletes([](SettingsFile &s) { s.margin = 0.5f; }));
+  CHECK(deletes([](SettingsFile &s) { s.plan = "lt/eso-efektyvus-2-zones"; }));
+  CHECK(deletes([](SettingsFile &s) { s.tariff = "name: Mine\n"; }));
+  CHECK(deletes([](SettingsFile &s) { s.battery_kwh = 61.0f; }));
+  CHECK(deletes([](SettingsFile &s) { s.charging_kw = 7.4f; }));
+  CHECK(deletes([](SettingsFile &s) { s.vin = "5YJ3E1EA2KF317000"; }));
+  CHECK(deletes([](SettingsFile &s) { s.standard_offset = 12345; }));
+}
+
 static void test_settings_file_errors() {
   CHECK_STR(settings_error(SETTINGS + std::string(MAX_SETTINGS_BYTES, '#')), "the file is longer than 4 kB");
   // Lines
@@ -1996,6 +2020,18 @@ static void test_windows_while_the_schedule_decides() {
 // The page's buttons
 // ---------------------------------------------------------------------------
 
+// Settings saved with other values delete a schedule, as Delete schedule does, while charging now stays.
+static void test_delete_schedule_for_new_settings() {
+  FakeTesla car = plugged_in();
+  Controller controller = with_prices();
+  CHECK_STR(controller.tick(car.state(TROUGH), Settings()).mode, "schedule");
+  controller.delete_schedule();
+  CHECK_STR(controller.tick(car.state(TROUGH + 30), Settings()).mode, "none");
+  controller.charge_now();
+  controller.delete_schedule();
+  CHECK_STR(controller.tick(car.state(TROUGH + 60), Settings()).mode, "now");
+}
+
 static void test_stop_charging_until_a_button_or_plug_in() {
   // Delete the schedule while it charges in a cheap slot: it stops at once and stays stopped.
   FakeTesla car = plugged_in();
@@ -2805,6 +2841,7 @@ int main() {
   test_reads_the_settings_file();
   test_settings_form_options();
   test_settings_that_restart();
+  test_settings_that_delete_the_schedule();
   test_settings_file_errors();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();
@@ -2829,6 +2866,7 @@ int main() {
   test_one_off_ready_by();
   test_schedules_with_the_grid_fees();
   test_windows_while_the_schedule_decides();
+  test_delete_schedule_for_new_settings();
   test_stop_charging_until_a_button_or_plug_in();
   test_buttons_skip_the_command_limits();
   test_buttons_hold_across_a_restart();

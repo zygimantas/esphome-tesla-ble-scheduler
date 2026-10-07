@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -220,6 +221,16 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
 // rest applies at once, as all of it does while the board has no car.
 inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
   return !was.vin.empty() && (now.vin != was.vin || now.area != was.area || now.currency != was.currency);
+}
+
+// Whether saving `now` over `was` deletes the schedule on a board that has a car, as Delete schedule does: for any
+// change but the ntfy topic's, as the schedule was made with the rest, and the topic only says where its message goes.
+inline bool deletes_schedule(const SettingsFile &was, const SettingsFile &now) {
+  const auto rest = [](const SettingsFile &s) {
+    return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.tariff, s.battery_kwh, s.charging_kw, s.vin,
+                    s.standard_offset);
+  };
+  return !was.vin.empty() && rest(was) != rest(now);
 }
 
 // `text` as a JSON string.
