@@ -151,8 +151,10 @@ jobs:
           else
             # What boards check when their page opens, at releases/latest/download/manifest.json.
             release="https://github.com/$GITHUB_REPOSITORY/releases"
-            jq -n --arg version "$version" --arg release "$release" \
-              --arg md5 "$(md5sum esphome-tesla-ble-scheduler.ota.bin | cut -d ' ' -f 1)" \
+            # ESPHome's update requires an MD5, which only checks for a damaged download: the signature protects the firmware.
+            md5=$(python3 -c 'import hashlib, sys; print(hashlib.md5(open(sys.argv[1], "rb").read(), usedforsecurity=False).hexdigest())' \
+              esphome-tesla-ble-scheduler.ota.bin)
+            jq -n --arg version "$version" --arg release "$release" --arg md5 "$md5" \
               '{name: "ESPHome Tesla BLE Scheduler", version: $version, builds: [{chipFamily: "ESP32-S3", ota: {
                 path: "\($release)/download/v\($version)/esphome-tesla-ble-scheduler.ota.bin", md5: $md5,
                 release_url: "\($release)/tag/v\($version)"}}]}' > manifest.json
