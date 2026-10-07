@@ -43,7 +43,7 @@ struct SettingsFile {
   std::string ntfy_topic;      // empty: no phone messages
   std::string plan;            // the plan's name, empty without one
   std::string_view plan_text;  // the plan as built in
-  std::string tariff;          // a custom plan instead, as read_tariff() reads it: its lines count from 1
+  std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
   float charging_kw = 0.0f;
   std::string vin;
@@ -93,12 +93,12 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     const auto at = [&](std::string_view what) { return concat({"line ", std::to_string(number), " ", what}); };
     if (indent == std::string::npos || line[indent] == '#') {
       if (section == "tariff")
-        read.tariff += "\n";
+        read.custom_plan += "\n";
       continue;
     }
     // A custom plan's lines, which read_tariff() checks with the plan file's own line numbers.
     if (section == "tariff" && indent >= 2 && line.compare(2, 5, "plan:") != 0) {
-      read.tariff += line.substr(2) + "\n";
+      read.custom_plan += line.substr(2) + "\n";
       custom = true;
       continue;
     }
@@ -182,13 +182,14 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   }
   // Without market: and tariff:, the board has no prices, and the car charges as usual. A tariff: with neither a plan
   // nor a calendar under it, like one with the plan's name on its own line, would add nothing.
-  TariffText custom_plan;
-  if (read.plan_text.empty() && read_tariff(read.tariff, custom_plan).empty() && custom_plan.calendar.empty() &&
+  TariffText custom_text;
+  if (read.plan_text.empty() && read_tariff(read.custom_plan, custom_text).empty() && custom_text.calendar.empty() &&
       std::find(seen.begin(), seen.end(), "tariff") != seen.end())
     // nothing under tariff: names no plan; a custom plan that doesn't read gets make_tariff()'s error
-    return read.tariff.empty() ? "tariff: there's no plan" : "custom plan: there's no calendar";
+    return read.custom_plan.empty() ? "tariff: there's no plan" : "custom plan: there's no calendar";
   Tariff tariff;
-  if (const std::string error = make_tariff(custom ? read.tariff : std::string(read.plan_text), read.currency, tariff);
+  if (const std::string error =
+          make_tariff(custom ? read.custom_plan : std::string(read.plan_text), read.currency, tariff);
       !error.empty())
     return concat({custom ? "custom plan: " : "tariff: ", error});
 
@@ -227,7 +228,7 @@ inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
 // change but the ntfy topic's, as the schedule was made with the rest, and the topic only says where its message goes.
 inline bool deletes_schedule(const SettingsFile &was, const SettingsFile &now) {
   const auto rest = [](const SettingsFile &s) {
-    return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.tariff, s.battery_kwh, s.charging_kw, s.vin,
+    return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.custom_plan, s.battery_kwh, s.charging_kw, s.vin,
                     s.standard_offset);
   };
   return !was.vin.empty() && rest(was) != rest(now);
