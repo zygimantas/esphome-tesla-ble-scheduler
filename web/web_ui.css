@@ -12,6 +12,7 @@
   --control: #ececec;
   --accent: #009ac7;
   --red: #e74c3c;
+  --orange: #f39c12;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -87,10 +88,9 @@ main {
   width: 14px;
   height: 14px;
 }
-/* A weak signal: amber, with dark words to stay readable. */
+/* A weak signal, in ESPHome Web's warning orange. */
 .pill.weak {
-  background: #ffb300;
-  color: #1a1a1a;
+  background: var(--orange);
 }
 
 /* --- Cards, with a title; Board, Prices and Settings fold open --- */
