@@ -44,7 +44,7 @@ jobs:
         if: matrix.build-mode == 'manual'
         run: |
           mkdir ArduinoJson
-          curl -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+          curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
             tar xz --strip-components=1 -C ArduinoJson
           g++ -std=c++17 -I . -isystem ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
           uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml

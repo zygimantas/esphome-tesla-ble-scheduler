@@ -634,9 +634,10 @@ function readSettings(file) {
   const values = {};
   let section = "";
   for (const line of file.split("\n")) {
-    const m = /^( *)([^\s#:][^:]*):(?: +(.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
+    const m = /^( *)([^\s#:][^:]*):(?: (.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
     if (!m || m[1].length > 2) continue;
-    const [, indent, key, raw = ""] = m;
+    const [, indent, key] = m;
+    const raw = (m[3] ?? "").trimStart();
     if (!indent) section = raw ? "" : key;
     values[indent ? `${section}: ${key}` : key] = raw.replace(/^(["'])(.*)\1$/, "$2");
   }
@@ -662,7 +663,7 @@ let batteryTyped = false;
 let customPlan = "";
 // The custom plan as the page names it, from its name: line.
 const customPlanLabel = () => {
-  const name = /^name: *(.*?) *$/m.exec(customPlan)?.[1];
+  const name = /^name:(.*)$/m.exec(customPlan)?.[1].trim();
   return name ? `Custom: ${name}` : "Custom plan";
 };
 
@@ -808,7 +809,8 @@ const valid = (fields) => {
 // A number field's range under it, in red, while what it holds is outside it, as the browser says so only at Continue
 // or Save, and Safari on a phone not even then; the unit is the one its name ends in.
 function checkRange(field) {
-  const unit = /\(([^)]*)\)/.exec(field.closest(".row").firstElementChild.textContent)?.[1] ?? "";
+  const name = field.closest(".row").firstElementChild.textContent;
+  const unit = name.includes("(") ? name.slice(name.indexOf("(") + 1, name.indexOf(")")) : "";
   const note = $(`${field.id.slice(4)}-range`);
   note.textContent = `From ${field.min} to ${field.max} ${unit}`;
   note.hidden = field.validity.valid;
