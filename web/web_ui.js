@@ -634,12 +634,12 @@ function readSettings(file) {
   const values = {};
   let section = "";
   for (const line of file.split("\n")) {
-    const m = /^( *)([^\s#:][^:]*):(?: (.*))?$/.exec(line.replace(/ #.*/, "").trimEnd());
+    const m = /^( *)([^\s#:][^:]*):(?: (.*))?$/.exec(line.trimEnd());
     if (!m || m[1].length > 2) continue;
     const [, indent, key] = m;
-    const raw = (m[3] ?? "").trimStart();
-    if (!indent) section = raw ? "" : key;
-    values[indent ? `${section}: ${key}` : key] = raw.replace(/^(["'])(.*)\1$/, "$2");
+    const value = (m[3] ?? "").trimStart();
+    if (!indent) section = value ? "" : key;
+    values[indent ? `${section}: ${key}` : key] = value;
   }
   return values;
 }
