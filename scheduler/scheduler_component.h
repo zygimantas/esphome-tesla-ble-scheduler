@@ -116,7 +116,7 @@ class SchedulerComponent : public PollingComponent {
   // For the simulation, which loads made-up prices.
   Controller &controller() { return this->controller_; }
 
-  // A new Ready by or a button: reschedule or act, then tick at once.
+  // A new Ready by, a button or settings saved: reschedule or act, then tick at once.
   void reschedule();
   void press(Action action);
 

@@ -2592,6 +2592,25 @@ static void test_savings_at_once_with_prices_out_later() {
   CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,270,270,630"));
 }
 
+static void test_savings_at_once_with_new_fees() {
+  // Plugged in at 20:00 Thursday, at 0.20 EUR/kWh, then a margin of 0.10 saved, as the board takes it without a
+  // restart, before 45 minutes at 36 kW from 03:00 Friday, at 0.10. Charging at once, from 20:00, counts the new margin
+  // too.
+  const int64_t eight = SEP24_1700Z, three = SEP24_1700Z + 7 * HOUR;
+  Controller controller = with_prices(
+      prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [](int64_t after) { return after < DAY_SECONDS ? 0.2f : 0.1f; }));
+  plug_in(controller, drawing(eight, 0, "Stopped"));
+  controller.tick(drawing(eight + 60, 0, "Stopped"), Settings());
+  Tariff margin;
+  margin.margin = 0.1f;
+  controller.set_tariff(margin);
+  controller.tick(drawing(three, 0, "Stopped"), Settings());
+  for (int64_t t = three + 30; t <= three + 45 * 60; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  // 27 kWh at 0.20 for 5.40, also at Friday's average; at once 27 * 0.30 = 8.10.
+  CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,540,540,810"));
+}
+
 static void test_savings_at_once_for_a_day_at_most() {
   // Plugged in at the start of Thursday's delivery day, at 1.00 EUR/kWh, then charged at 2 kW for a day and half an
   // hour from the start of Friday's, at 0.10, into Saturday's, at 0.30. At once covers a day of charging; the rest
@@ -2836,6 +2855,7 @@ int main() {
   test_savings_average_of_the_delivery_day();
   test_savings_after_a_night();
   test_savings_at_once_with_prices_out_later();
+  test_savings_at_once_with_new_fees();
   test_savings_at_once_for_a_day_at_most();
   test_savings_at_once_after_a_restart();
   test_savings_at_once_starts_when_charging_is_needed();

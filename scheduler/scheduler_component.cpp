@@ -101,7 +101,7 @@ void SchedulerComponent::save_settings(const std::string &text, bool restart) {
     read_settings(text, this->plans_, this->file_);  // the web server checked it
     this->settings_error_.clear();
     this->apply_settings_();
-    this->tick_soon_();
+    this->reschedule();  // a message not sent yet is about the old schedule
   });
 }
 
