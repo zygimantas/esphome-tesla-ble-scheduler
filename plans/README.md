@@ -77,9 +77,9 @@ rates:
 
 To upload it, open the board's page: where it lists plans for your country, tick **My plan isn't listed** under **Grid plan**. Press **Upload custom plan**, choose the file, a `.yaml`, `.yml` or `.txt` one, and press **Continue** in the setup or **Save** under **Prices**. **Grid plan** then shows it as **Custom:** and its `name`, and **Reset custom plan** drops it, to choose a plan from the list or upload another.
 
-Your plan stays as you uploaded it, while the board downloads a plan from the list every day: change yours when your prices change, and holidays that move, like Easter Monday, every year.
+A custom plan stays as you uploaded it, while the board downloads a plan from the list every day: change it when your prices change, and holidays that move, like Easter Monday, every year.
 
-The board turns away a plan without a calendar, a rate without a price, a rate no day uses, a rate, a date, a month, a day or the clock named twice, a month or a day not named at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a `currency` other than your country's, and keeps the settings it has. The page says what's wrong, with the line's number in your file where there is one, like `your plan: line 3 isn't a key and a value`. Your plan and your other settings can have 4 kB together: if yours is longer, the page says so, and leaving out its comments helps.
+The board turns away a plan without a calendar, a rate without a price, a rate no day uses, a rate, a date, a month, a day or the clock named twice, a month or a day not named at all, a time that isn't a later quarter-hour, a date that doesn't exist, more than 26 rates, or a `currency` other than your country's, and keeps the settings it has. The page says what's wrong, with the line's number in your file where there is one, like `custom plan: line 3 isn't a key and a value`. A custom plan and your other settings can have 4 kB together: if the plan is too long, the page says so, and leaving out its comments helps.
 
 ## A fixed price
 
