@@ -1717,6 +1717,7 @@ static void test_charge_now_ignores_the_schedule() {
   REQUIRE(run.commands.size() == 2);
   CHECK(run.commands[0].second == Command::STOP_CHARGING && run.commands[1].second == Command::START_CHARGING &&
         run.commands[1].first == SEP24_1700Z + 10 * 60);
+  CHECK(contains(run.statuses, "Starting"));  // until the car reports charging
   REQUIRE(!run.charging_at.empty());
   CHECK(run.charging_at.back() == SEP24_1700Z + HOUR - 30);
 }
