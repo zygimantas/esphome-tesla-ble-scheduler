@@ -453,7 +453,7 @@ function readyBy() {
   return { daily, once: null, deadline: /^\d\d:\d\d$/.test(daily) ? nextAt(daily) : null };
 }
 
-// Fills the dropdown with each half-hour that can be picked, "23:30" or "07:00 +1", and the deadline
+// Fills the dropdown with each half-hour that can be picked, like "Thu 07:00", and the deadline
 // shown, greyed out when it can't be (a daily time whose prices aren't out yet). The hour repeated when the clocks
 // go back is offered once, as the board takes a time in it as the first.
 function fillReady(deadline) {
@@ -464,7 +464,7 @@ function fillReady(deadline) {
   if (!times.includes(deadline)) times.push(deadline);
   times.sort((a, b) => a - b);
   const options = times
-    .map((t) => Object.assign(new Option(`${hhmm(t)}${plus(t)}`, t), { disabled: t <= now || t > until }))
+    .map((t) => Object.assign(new Option(dayTime(t), t), { disabled: t <= now || t > until }))
     .filter((o, i, all) => all.findIndex((p) => p.text === o.text) === i);
   setOptions($("ready-select"), options, deadline);
 }
@@ -519,8 +519,8 @@ function renderSchedule() {
 }
 
 // "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in schedule.h: the windows in UTC
-// seconds with their price per kWh, shown as "00:00 - 01:00 +1" and "0.076 EUR/kWh", spare ones faded. A window past
-// midnight has its day after each time, as "23:15 +1 - 01:00 +2", or the +1 would read as its end's day.
+// seconds with their price per kWh, shown as "Thu 00:00 - 01:00" and "0.076 EUR/kWh", spare ones faded, and one
+// past midnight as "Thu 23:15 - Fri 01:00".
 function renderWindows() {
   const [currency, ...entries] = text(E.windows).split(";");
   const rows = entries.filter(Boolean).map((entry) => {
@@ -528,8 +528,8 @@ function renderWindows() {
     const row = document.createElement("div");
     row.className = spare ? "row spare" : "row";
     const when = document.createElement("span");
-    const [from, to] = [plus(start * 1000), plus(end * 1000)];
-    when.textContent = `${hhmm(start * 1000)}${from === to ? "" : from} - ${hhmm(end * 1000)}${to}`;
+    const sameDay = midnight(start * 1000) === midnight(end * 1000);
+    when.textContent = `${dayTime(start * 1000)} - ${sameDay ? hhmm(end * 1000) : dayTime(end * 1000)}`;
     const price = document.createElement("strong");
     price.textContent = `${amount} ${currency}/kWh`;
     row.append(when, price);
@@ -551,7 +551,7 @@ async function createSchedule() {
   const ok = (await sendLimit()) && (await sendReadyBy(time, once, current)) && (await post(E.createSchedule, "press"));
   if (ok) {
     expectMode("schedule");
-    toast(`Schedule: ${shownLimit()}% by ${hhmm(deadline)}${plus(deadline)}`);
+    toast(`Schedule: ${shownLimit()}% by ${dayTime(deadline)}`);
   } else {
     pending.deadline = null;
   }
@@ -1039,18 +1039,14 @@ function toast(message) {
 
 // --- Time and text ---------------------------------------------------------
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const pad = (n) => String(n).padStart(2, "0");
 function hhmm(ms) {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 const midnight = (ms) => new Date(ms).setHours(0, 0, 0, 0);
-// " +1" after a time tomorrow, " +2" the day after, like a flight's arrival; nothing today.
-function plus(ms) {
-  const days = Math.round((midnight(ms) - midnight(Date.now())) / DAY_MS);
-  return days ? ` +${days}` : "";
-}
+// "Thu 07:00": a time with its day, today's too, by request.
+const dayTime = (ms) => `${new Date(ms).toLocaleDateString("en", { weekday: "short" })} ${hhmm(ms)}`;
 
 // The next time the clock shows "HH:MM": today if it's still ahead, else tomorrow.
 function nextAt(time) {
