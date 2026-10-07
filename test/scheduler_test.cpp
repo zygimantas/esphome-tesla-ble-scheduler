@@ -476,7 +476,7 @@ static void test_schedule_windows_and_prices() {
 }
 
 // ---------------------------------------------------------------------------
-// Tariff: VAT, and the rates of a plan from plans/ or your own
+// Tariff: VAT, and the rates of a plan from plans/ or a custom one
 // ---------------------------------------------------------------------------
 
 // ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
@@ -555,21 +555,21 @@ static std::string calendar_of(const char *week, const char *rates = "flat: 0.1"
 
 using Entries = std::vector<std::pair<std::string, std::string>>;
 
-static void test_reads_tariff_settings() {
-  TariffText settings;
+static void test_reads_a_plan() {
+  TariffText plan;
   CHECK_STR(read_tariff("# a comment\r\n\nname: A plan, two rates\ncurrency: EUR  \nclock: winter\ncalendar:\n"
                         "  jan-dec:\n    # the days\n"
                         "    mon-sun:   flat 07:00 day\nexceptions:\n  12-25: flat\nrates:\n  flat: 0.1\n  day: 0.2\n",
-                        settings),
+                        plan),
             "");
-  CHECK_STR(settings.name, "A plan, two rates");
-  CHECK_STR(settings.currency, "EUR");
-  CHECK_STR(settings.clock, "winter");
-  REQUIRE(settings.calendar.size() == 1);
-  CHECK_STR(settings.calendar[0].first, "jan-dec");
-  CHECK((settings.calendar[0].second == Entries{{"mon-sun", "flat 07:00 day"}}));
-  CHECK((settings.exceptions == Entries{{"12-25", "flat"}}));
-  CHECK((settings.rates == Entries{{"flat", "0.1"}, {"day", "0.2"}}));
+  CHECK_STR(plan.name, "A plan, two rates");
+  CHECK_STR(plan.currency, "EUR");
+  CHECK_STR(plan.clock, "winter");
+  REQUIRE(plan.calendar.size() == 1);
+  CHECK_STR(plan.calendar[0].first, "jan-dec");
+  CHECK((plan.calendar[0].second == Entries{{"mon-sun", "flat 07:00 day"}}));
+  CHECK((plan.exceptions == Entries{{"12-25", "flat"}}));
+  CHECK((plan.rates == Entries{{"flat", "0.1"}, {"day", "0.2"}}));
   TariffText none;
   CHECK_STR(read_tariff("", none) + read_tariff("\n  \n# only a comment\n", none), "");
   CHECK(none.calendar.empty() && none.rates.empty() && none.clock.empty() && none.name.empty());
@@ -626,7 +626,7 @@ static void test_plan_downloads() {
 }
 
 static void test_makes_tariffs() {
-  // A plan's prices are in its currency, and one without a currency, as your own may be, is in the settings'.
+  // A plan's prices are in its currency, and one without a currency, as a custom one may be, is in the settings'.
   CHECK(
       near(fee_at(tariff_of(calendar_of("    mon-sun: night  07:00   day", "night: 0.1\n  day: 0.2")), 2026, 9, 24, 8),
            0.2f));
@@ -657,7 +657,7 @@ static void test_makes_tariffs() {
 
   CHECK_STR(tariff_error(""), "");  // no plan and no calendar: no grid fees
   struct Case {
-    std::string own;
+    std::string plan;
     const char *error;
   };
   for (const Case &c : {
@@ -698,7 +698,7 @@ static void test_makes_tariffs() {
                 "exceptions: 12-25: rate dark has no price"},
            Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
        }) {
-    CHECK_STR(tariff_error(c.own), c.error);
+    CHECK_STR(tariff_error(c.plan), c.error);
   }
   for (const char *time : {"7:00", "07:10", "07:60", "07-00", "0x:00", "07:x0", "00:00", "24:00", "0::00", "1/:00",
                            "07:0?", "07:000", "07x00", "25:00"})
@@ -856,8 +856,8 @@ static const Plans &repository_plans() {
   return plans;
 }
 
-// `plan` as the page writes your own plan under tariff:, each line indented by two spaces.
-static std::string as_yours(const std::string &plan) {
+// `plan` as the page writes a custom plan under tariff:, each line indented by two spaces.
+static std::string as_custom(const std::string &plan) {
   std::string lines;
   for (size_t start = 0, end; start < plan.size(); start = end + 1) {
     end = plan.find('\n', start);
@@ -868,7 +868,7 @@ static std::string as_yours(const std::string &plan) {
 
 static void test_plans_in_the_repository() {
   // Each plan reads on the board in its own currency, three capital letters, and uses all its rates. Settings can name
-  // it, and it fits in them as your own plan too, as when you upload an edited copy.
+  // it, and it fits in them as a custom plan too, as when you upload an edited copy.
   for (const auto &[name, text] : repository_plans()) {
     const std::string plan(text), label = std::string(name) + ": ";
     TariffText read;
@@ -885,7 +885,7 @@ static void test_plans_in_the_repository() {
         label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", car, "timezone: Europe/Vilnius\n"}),
                               repository_plans(), settings),
         label);
-    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_yours(plan), car, "timezone: Europe/Vilnius\n"}),
+    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_custom(plan), car, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
     CHECK(settings.plan.empty() && !settings.tariff.empty());
@@ -941,7 +941,7 @@ static void test_reads_the_settings_file() {
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
 
-  // A fixed price: no market, your own plan, any currency; quotes, comments after values and Windows line endings; the
+  // A fixed price: no market, a custom plan, any currency; quotes, comments after values and Windows line endings; the
   // last line without a line break.
   const std::string fixed =
       "currency: gbp\r\n"
@@ -964,10 +964,10 @@ static void test_reads_the_settings_file() {
   CHECK_STR(read_settings(fixed, repository_plans(), s), "");
   CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan_text.empty());
   CHECK(s.ntfy_topic.empty() && s.standard_offset == 0);
-  TariffText own;
-  CHECK_STR(read_tariff(s.tariff, own), "");
-  CHECK(own.calendar.size() == 1 && own.calendar[0].second[0].second == "day 00:30 night 05:30 day");
-  CHECK(own.rates.size() == 2 && s.battery_kwh == 82.0f && near(s.charging_kw, 7.4f));
+  TariffText custom;
+  CHECK_STR(read_tariff(s.tariff, custom), "");
+  CHECK(custom.calendar.size() == 1 && custom.calendar[0].second[0].second == "day 00:30 night 05:30 day");
+  CHECK(custom.rates.size() == 2 && s.battery_kwh == 82.0f && near(s.charging_kw, 7.4f));
 
   // A fixed price with a plan, which the board adds to every quarter-hour as it does a margin.
   const std::string fixed_with_plan =
@@ -979,7 +979,7 @@ static void test_reads_the_settings_file() {
 
   // A market area in small letters, its own currency, and a margin left out.
   CHECK_STR(read_settings(settings_set("  area", "no1"), repository_plans(), s),
-            "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
+            "tariff: the plan's prices are in EUR, not NOK");
   CHECK(s.area == nullptr);  // unchanged after an error
   const std::string norway =
       "market:\n  area: no1\n  vat: 0.25\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
@@ -999,7 +999,7 @@ static void test_reads_the_settings_file() {
   CHECK_STR(read_settings(czech, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
-            "tariff: the plan lt/eso-standartinis-4-zones is in EUR: set currency: EUR");
+            "tariff: the plan's prices are in EUR, not CHF");
   for (const char *currency : {"CZK", "SEK"})  // before and after HUF
     CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: " + currency + "\n"),
               "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
@@ -1049,10 +1049,12 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(no_tariff), "");
   const std::string no_prices = no_tariff.substr(no_tariff.find("ntfy_topic"));
   CHECK_STR(settings_error(no_prices), "");
-  for (const std::string &tariff : {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
-                                    no_tariff + "tariff:\n  plan:\n", no_tariff + "tariff:\n  clock: winter\n",
-                                    no_prices + "tariff:\n  rates:\n    flat: 0.24\n"})
-    CHECK_STR(settings_error(tariff), "tariff needs a plan or a calendar of its own, on the lines under it");
+  for (const std::string &tariff :
+       {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
+        no_tariff + "tariff:\n  plan:\n", no_tariff + "tariff:\n  # My plan\n",
+        no_tariff + "tariff:\n  clock: winter\n", no_prices + "tariff:\n  rates:\n    flat: 0.24\n",
+        no_prices + "tariff:\n  exceptions:\n    12-25: flat\n"})
+    CHECK_STR(settings_error(tariff), "custom plan: there's no calendar");
   CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   CHECK_STR(settings_error(settings_with("  vat", "")), "market: vat must be the VAT as a fraction, like 0.21 for 21%");
@@ -1083,29 +1085,21 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
-  const std::string no_plan = settings_error(settings_set("  plan", "lt/nope"));
-  CHECK(no_plan.rfind("tariff: there's no plan lt/nope; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
-  const std::string last = ", lt/eso-standartinis-2-zones, lt/eso-standartinis-4-zones";
-  CHECK(no_plan.size() > last.size() && no_plan.compare(no_plan.size() - last.size(), last.size(), last) == 0);
-  CHECK(no_plan.find("pl/") == std::string::npos);
-  CHECK_STR(settings_error(settings_set("  plan", "xx/nope")), "tariff: there's no plan xx/nope");
-  CHECK_STR(settings_error(settings_set("  plan", "nope")), "tariff: there's no plan nope");
-  CHECK(settings_error(settings_set("  plan", "lt"))
-            .rfind("tariff: there's no plan lt; there are lt/eso-efektyvus-1-zone, ", 0) == 0);
-  // Your own plan: alone under tariff:, in the settings' currency where it names one, and with its errors counted in
+  CHECK_STR(settings_error(settings_set("  plan", "lt/nope")), "tariff: there's no plan lt/nope");
+  // A custom plan: alone under tariff:, in the settings' currency where it names one, and with its errors counted in
   // its own lines, from the line after tariff:, as in the file uploaded.
-  const auto yours = [](const std::string &plan) { return settings_with("  plan", as_yours(plan)); };
-  CHECK_STR(settings_error(yours(ONE_ZONE)), "");
-  CHECK_STR(settings_error(yours("currency: NOK\n" + calendar_of("    mon-sun: flat"))),
-            "your plan: the plan's prices are in NOK, not EUR");
-  CHECK_STR(settings_error(yours("# My plan\n\nclock: local\nclock: winter\n" + calendar_of("    mon-sun: flat"))),
-            "your plan: line 4 has clock again");
-  CHECK_STR(settings_error(yours(calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"))),
-            "your plan: rate spare isn't used on any day");
-  CHECK_STR(settings_error(yours("# My plan\ncalendar:\n  jan-dec\n")), "your plan: line 3 isn't a key and a value");
+  const auto custom = [](const std::string &plan) { return settings_with("  plan", as_custom(plan)); };
+  CHECK_STR(settings_error(custom(ONE_ZONE)), "");
+  CHECK_STR(settings_error(custom("currency: NOK\n" + calendar_of("    mon-sun: flat"))),
+            "custom plan: the plan's prices are in NOK, not EUR");
+  CHECK_STR(settings_error(custom("# My plan\n\nclock: local\nclock: winter\n" + calendar_of("    mon-sun: flat"))),
+            "custom plan: line 4 has clock again");
+  CHECK_STR(settings_error(custom(calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"))),
+            "custom plan: rate spare isn't used on any day");
+  CHECK_STR(settings_error(custom("# My plan\ncalendar:\n  jan-dec\n")), "custom plan: line 3 isn't a key and a value");
   for (const char *both : {"  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n",
                            "  currency: EUR\n  plan: lt/eso-standartinis-4-zones\n"})
-    CHECK_STR(settings_error(settings_with("  plan", both)), "tariff: a plan, or your own plan, not both");
+    CHECK_STR(settings_error(settings_with("  plan", both)), "tariff: a plan or a custom plan, not both");
   // A plan built in that the board can't use, as from a broken release.
   SettingsFile ignored;
   CHECK_STR(
@@ -1129,7 +1123,7 @@ static void test_settings_file_errors() {
               "screen under Controls, Software");
   CHECK_STR(settings_error(settings_set("timezone", "America/New_York")),
             "timezone must be one the board knows, like Europe/Vilnius");
-  // The car comes whole, or not yet, as the setup saves the prices before its Car step names the car
+  // The car comes whole, or not yet, as the setup saves the prices before the car's step names the car
   const auto without = [](std::string text, std::initializer_list<const char *> keys) {
     for (const char *key : keys) {
       const size_t at = text.find(key);
@@ -1574,7 +1568,7 @@ static void test_grid_fees_alone() {
   controller.set_market_prices(false);
   controller.set_tariff(two_zones());
   CHECK(!controller.fetch_prices_due(SEP24_1700Z));  // nothing to download, even before the first tick
-  // and again, once settings with a market apply in place, as before the setup's Car step
+  // and again, once settings with a market apply in place, as before the car's step in the setup
   Controller changed;
   changed.set_market_prices(false);
   changed.set_market_prices(true);
@@ -2758,7 +2752,7 @@ int main() {
   test_schedule_picks_the_night_trough();
   test_schedule_waits_for_prices_not_out_yet();
   test_schedule_windows_and_prices();
-  test_reads_tariff_settings();
+  test_reads_a_plan();
   test_plan_downloads();
   test_makes_tariffs();
   test_eso_plans();

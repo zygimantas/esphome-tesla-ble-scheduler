@@ -42,7 +42,7 @@ struct SettingsFile {
   std::string ntfy_topic;      // empty: no phone messages
   std::string plan;            // the plan's name, empty without one
   std::string_view plan_text;  // the plan as built in
-  std::string tariff;          // your own plan instead, as read_tariff() reads it: its lines count from 1
+  std::string tariff;          // a custom plan instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
   float charging_kw = 0.0f;
   std::string vin;
@@ -57,7 +57,7 @@ inline std::string upper(std::string text) {
 }
 
 // Reads and checks the settings file: two-space indents, `key: value` or `key:` lines, comments, and values in quotes
-// or not. tariff: has a plan built in, or your own plan: a plan's file (plans/README.md), each line indented by two
+// or not. tariff: has a plan built in, or a custom plan: a plan's file (plans/README.md), each line indented by two
 // spaces, whose line numbers count from the line after tariff:, as in the file. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
@@ -80,7 +80,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
                                                            {"timezone", &zone}};
   std::vector<std::string> seen;
   std::string section;
-  bool yours = false;  // lines of your own plan under tariff:
+  bool custom = false;  // a custom plan's lines under tariff:
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
     const size_t end = std::min(text.find('\n', start), text.size());
@@ -95,10 +95,10 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         read.tariff += "\n";
       continue;
     }
-    // Your own plan's lines, which read_tariff() checks with the plan file's own line numbers.
+    // A custom plan's lines, which read_tariff() checks with the plan file's own line numbers.
     if (section == "tariff" && indent >= 2 && line.compare(2, 5, "plan:") != 0) {
       read.tariff += line.substr(2) + "\n";
-      yours = true;
+      custom = true;
       continue;
     }
     const size_t colon = line.find(':');
@@ -116,7 +116,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       place = key;
     } else if (indent == 2 && section == "market" && !heading) {
       place = "market: " + key;
-    } else if (indent == 2 && section == "tariff") {  // plan:, as your own plan's lines are read above
+    } else if (indent == 2 && section == "tariff") {  // plan:, as a custom plan's lines are read above
       place = "tariff: plan";
     } else {
       return at(concat({"doesn't belong there: ", key}));
@@ -170,42 +170,28 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       }))
     return "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _";
 
-  if (!read.plan.empty() && yours)
-    return "tariff: a plan, or your own plan, not both";
+  if (!read.plan.empty() && custom)
+    return "tariff: a plan or a custom plan, not both";
   if (!read.plan.empty()) {
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
-    if (found == plans.end()) {
-      // the plans of the same country's folder, as all of them make too long a list; a name without one is taken as
-      // a country's, like lt
-      const size_t slash = read.plan.find('/');
-      const std::string folder = slash == std::string::npos ? read.plan + "/" : read.plan.substr(0, slash + 1);
-      std::string names;
-      for (const auto &known : plans)
-        if (known.first.compare(0, folder.size(), folder) == 0)
-          names += concat({names.empty() ? "; there are " : ", ", known.first});
-      return concat({"tariff: there's no plan ", read.plan, names});
-    }
+    if (found == plans.end())
+      return concat({"tariff: there's no plan ", read.plan});
     read.plan_text = found->second;
   }
-  const std::string plan_text(read.plan_text);
-  TariffText plan_tariff, own;
-  read_tariff(plan_text, plan_tariff);
-  if (!plan_text.empty() && plan_tariff.currency != read.currency)
-    return concat(
-        {"tariff: the plan ", read.plan, " is in ", plan_tariff.currency, ": set currency: ", plan_tariff.currency});
-  if (const std::string error = read_tariff(read.tariff, own); !error.empty())
-    return concat({"your plan: ", error});
   // Without market: and tariff:, the board has no prices, and the car charges as usual. A tariff: with neither a plan
   // nor a calendar under it, like one with the plan's name on its own line, would add nothing.
-  if (plan_text.empty() && own.calendar.empty() && std::find(seen.begin(), seen.end(), "tariff") != seen.end())
-    return "tariff needs a plan or a calendar of its own, on the lines under it";
+  TariffText custom_plan;
+  if (read.plan_text.empty() && read_tariff(read.tariff, custom_plan).empty() && custom_plan.calendar.empty() &&
+      std::find(seen.begin(), seen.end(), "tariff") != seen.end())
+    return "custom plan: there's no calendar";  // a custom plan that doesn't read gets make_tariff()'s error
   Tariff tariff;
-  if (const std::string error = make_tariff(yours ? read.tariff : plan_text, read.currency, tariff); !error.empty())
-    return concat({yours ? "your plan: " : "tariff: ", error});
+  if (const std::string error = make_tariff(custom ? read.tariff : std::string(read.plan_text), read.currency, tariff);
+      !error.empty())
+    return concat({custom ? "custom plan: " : "tariff: ", error});
 
-  // The car, all three or none yet, as the setup's Car step comes after its prices. Wider than the page's 20 to 200 kWh
-  // and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
+  // The car, all three or none yet, as the setup saves the prices before the car's step. Wider than the page's 20 to
+  // 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
   if (!battery.empty() || !charging.empty() || !read.vin.empty()) {
     read.battery_kwh = number(battery);
     if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
