@@ -52,7 +52,7 @@ main {
     calc(env(safe-area-inset-left) + 16px);
 }
 
-/* --- The header bar, as ESPHome Web's: the logo, the page's name and the link to the board --- */
+/* --- The header bar, as ESPHome Web's: the logo, and the board's Wi-Fi and Bluetooth signals on the right --- */
 .bar {
   display: flex;
   align-items: center;
@@ -67,27 +67,10 @@ main {
   flex: none;
   width: 40px;
   height: 40px;
+  margin-right: auto;
   color: var(--accent);
 }
-.bar div {
-  min-width: 0;
-}
-/* The name wraps rather than shorten, as it must show in full; the subtitle stays one line. */
-.bar h1 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.3;
-}
-.bar p {
-  margin: 0;
-  font-size: 12px;
-  opacity: 0.75;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .pill {
-  margin-left: auto;
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);

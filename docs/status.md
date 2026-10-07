@@ -8,7 +8,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 - **No car yet**: the board has your prices, but not the car, as in the middle of the setup. Go on with the setup on the page, which asks for the car next, as the README's [Setup](../README.md#setup) says.
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
-- **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal under Board. If the board's key was removed in the car, the status turns to **Not paired** once the car turns away one of the board's commands, like a scheduled start.
+- **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check **BT**, the board's Bluetooth signal, at the top of the page. If the board's key was removed in the car, the status turns to **Not paired** once the car turns away one of the board's commands, like a scheduled start.
 - **Reading battery**: the car is plugged in but hasn't reported its battery level. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Getting prices**: the board downloads the prices, for up to 10 minutes after a start. Wait.
 
@@ -28,7 +28,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 - **Charging now**: you pressed Start charging now, or charging was started from the car or the Tesla app. The car charges at any price until you unplug.
 - **No schedule**: you pressed Stop charging or Delete schedule. Press Create schedule or Start charging now, or plug in again.
 - **Charging (no prices)**: the board has no price for this quarter-hour, because the download failed for the 10 minutes after a start or the prices ran out later, so the car charges as usual. Check that the board has internet, and **Country / Area** under **Prices**.
-- **Charging (battery unknown)**: the car didn't report its battery level in half an hour, so it charges as usual. Check the Bluetooth signal under Board.
+- **Charging (battery unknown)**: the car didn't report its battery level in half an hour, so it charges as usual. Check **BT**, the board's Bluetooth signal, at the top of the page.
 
 ## The board and the page
 

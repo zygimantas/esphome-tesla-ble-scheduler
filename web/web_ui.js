@@ -94,8 +94,8 @@ const info = (hint, label) =>
 const PAGE = `
 <header class="bar">
   ${LOGO}
-  <div><h1>ESPHome Tesla BLE Scheduler</h1><p>Charges when it's cheapest</p></div>
-  <span id="link" class="pill">Connecting …</span>
+  <span id="wifi" class="pill">Wi-Fi -</span>
+  <span id="ble" class="pill">BT -</span>
 </header>
 <main>
   <section id="update-card" class="card" hidden>
@@ -219,8 +219,6 @@ const PAGE = `
 
   <details class="card">
     <summary>Board</summary>
-    <div class="row"><span>Bluetooth</span><strong id="ble">-</strong></div>
-    <div class="row"><span>Wi-Fi</span><strong id="wifi">-</strong></div>
     <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
     <div class="row"><span>Version</span><strong id="version">-</strong></div>
     <button id="restart" class="danger">Restart board</button>
@@ -292,7 +290,6 @@ function render() {
   const board = !restarting && live !== false; // the board's own status, rather than the page's
   const said = board ? text(E.status) || "Connecting …" : restarting ? waiting : link;
   $("status").textContent = board ? said + power : said;
-  $("link").textContent = restarting ? waiting : link;
   // its "?": the status's own line in docs/status.md, which a text fragment scrolls to
   const line = said.startsWith("Charges at")
     ? "Charges at 01:30"
@@ -308,8 +305,9 @@ function render() {
   renderReady();
   renderSavings();
 
-  $("ble").textContent = dbm(value(E.ble));
-  $("wifi").textContent = dbm(value(E.wifi));
+  // the board's signals, in the header, while the page has the board
+  $("wifi").textContent = `Wi-Fi ${live ? dbm(value(E.wifi)) : "-"}`;
+  $("ble").textContent = `BT ${live ? dbm(value(E.ble)) : "-"}`;
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
   renderSetup();
