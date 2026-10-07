@@ -47,14 +47,17 @@ const E = {
   windows: "text_sensor/Charge windows",
 };
 
+// The page at its own size, like an app, by request: no zooming in or out, which Safari on an iPhone allows despite
+// user-scalable=no, so a pinch is stopped there too.
 document.head.insertAdjacentHTML(
   "beforeend",
-  '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">' +
     '<meta name="apple-mobile-web-app-capable" content="yes">' +
     '<meta name="apple-mobile-web-app-title" content="ETBS">' +
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' +
     '<meta name="theme-color" content="#009ac7">',
 );
+document.addEventListener("gesturestart", (e) => e.preventDefault()); // Safari's pinch
 
 // The logo: a calendar with a plug, white with its details in the header's blue, as ESPHome's logo is.
 const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true">
