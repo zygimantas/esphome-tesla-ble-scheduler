@@ -215,6 +215,13 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   return "";
 }
 
+// Whether saving `now` over `was` restarts a board that has a car: for another car, whose Bluetooth link and key are
+// its own, or prices of another market area or in another currency, as those downloaded already are the old ones. The
+// rest applies at once, as all of it does while the board has no car.
+inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
+  return !was.vin.empty() && (now.vin != was.vin || now.area != was.area || now.currency != was.currency);
+}
+
 // `text` as a JSON string.
 inline std::string json_string(std::string_view text) {
   std::string json = "\"";

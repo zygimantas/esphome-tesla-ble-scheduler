@@ -1044,6 +1044,31 @@ static void test_settings_form_options() {
   CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);
 }
 
+// Which saves restart a board: once it has a car, another car, market area or currency; the rest applies at once.
+static void test_settings_that_restart() {
+  const auto read = [](const std::string &text) {
+    SettingsFile settings;
+    CHECK_STR(read_settings(text, repository_plans(), settings), "");
+    return settings;
+  };
+  const SettingsFile was = read(SETTINGS);
+  CHECK(!restarts(SettingsFile(), was));  // the setup's car, on a board without one
+  CHECK(!restarts(was, was));
+  for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("tesla_battery_kwh", "60"),
+                                  settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
+                                  settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
+    CHECK(!restarts(was, read(text)));
+  SettingsFile now = was;
+  now.vin = "5YJ3E1EA2KF317000";
+  CHECK(restarts(was, now));
+  now = was;
+  now.area = nullptr;  // a fixed price
+  CHECK(restarts(was, now));
+  now = was;
+  now.currency = "SEK";
+  CHECK(restarts(was, now));
+}
+
 static void test_settings_file_errors() {
   CHECK_STR(settings_error(SETTINGS + std::string(MAX_SETTINGS_BYTES, '#')), "the file is longer than 4 kB");
   // Lines
@@ -2567,6 +2592,25 @@ static void test_savings_at_once_with_prices_out_later() {
   CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,270,270,630"));
 }
 
+static void test_savings_at_once_with_new_fees() {
+  // Plugged in at 20:00 Thursday, at 0.20 EUR/kWh, then a margin of 0.10 saved, as the board takes it without a
+  // restart, before 45 minutes at 36 kW from 03:00 Friday, at 0.10. Charging at once, from 20:00, counts the new margin
+  // too.
+  const int64_t eight = SEP24_1700Z, three = SEP24_1700Z + 7 * HOUR;
+  Controller controller = with_prices(
+      prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [](int64_t after) { return after < DAY_SECONDS ? 0.2f : 0.1f; }));
+  plug_in(controller, drawing(eight, 0, "Stopped"));
+  controller.tick(drawing(eight + 60, 0, "Stopped"), Settings());
+  Tariff margin;
+  margin.margin = 0.1f;
+  controller.set_tariff(margin);
+  controller.tick(drawing(three, 0, "Stopped"), Settings());
+  for (int64_t t = three + 30; t <= three + 45 * 60; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  // 27 kWh at 0.20 for 5.40, also at Friday's average; at once 27 * 0.30 = 8.10.
+  CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,540,540,810"));
+}
+
 static void test_savings_at_once_for_a_day_at_most() {
   // Plugged in at the start of Thursday's delivery day, at 1.00 EUR/kWh, then charged at 2 kW for a day and half an
   // hour from the start of Friday's, at 0.10, into Saturday's, at 0.30. At once covers a day of charging; the rest
@@ -2760,6 +2804,7 @@ int main() {
   test_schedule_counts_the_tariff_fee();
   test_reads_the_settings_file();
   test_settings_form_options();
+  test_settings_that_restart();
   test_settings_file_errors();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();
@@ -2810,6 +2855,7 @@ int main() {
   test_savings_average_of_the_delivery_day();
   test_savings_after_a_night();
   test_savings_at_once_with_prices_out_later();
+  test_savings_at_once_with_new_fees();
   test_savings_at_once_for_a_day_at_most();
   test_savings_at_once_after_a_restart();
   test_savings_at_once_starts_when_charging_is_needed();

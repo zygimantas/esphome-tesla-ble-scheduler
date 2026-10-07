@@ -84,16 +84,10 @@ void SchedulerComponent::use_settings(const std::string &text) {
   this->settings_error_ = error.empty() ? "" : "Settings: " + error;
 }
 
-// Whether a settings file names the car, on a line of its own.
-static bool names_car(const std::string &text) {
-  return text.rfind("tesla_vin:", 0) == 0 || text.find("\ntesla_vin:") != std::string::npos;
-}
-
 // On the web server's task, the only one that uses settings_text_ once the board runs, so the next request sees the
-// new file; the rest on the next loop. Settings apply at once while the board has no car yet, as nothing runs, as in
-// the setup; once it has one, they restart it, which starts the schedule, the prices and the car's connection afresh.
-void SchedulerComponent::save_settings(const std::string &text) {
-  const bool restart = names_car(this->settings_text_);
+// new file; the rest on the next loop: the settings apply at once, with a new schedule, or restart the board, which
+// starts the schedule, the prices and the car's connection afresh (restarts() in settings.h).
+void SchedulerComponent::save_settings(const std::string &text, bool restart) {
   this->settings_text_ = text;
   this->defer([this, text, restart]() {
     auto saved = std::make_unique<SavedSettings>();
@@ -107,7 +101,7 @@ void SchedulerComponent::save_settings(const std::string &text) {
     read_settings(text, this->plans_, this->file_);  // the web server checked it
     this->settings_error_.clear();
     this->apply_settings_();
-    this->tick_soon_();
+    this->reschedule();  // a message not sent yet is about the old schedule
   });
 }
 
@@ -586,11 +580,14 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
     request->send(200, TEXT, this->parent_->settings_text().c_str());
     return;
   }
-  SettingsFile file;
+  SettingsFile file, was;
   const std::string error = read_settings(this->body_, this->parent_->plans(), file);
   if (error.empty()) {
-    request->send(200, TEXT, names_car(this->parent_->settings_text()) ? "Saved: the board restarts" : "Saved");
-    this->parent_->save_settings(this->body_);
+    // the settings the board runs on, none if they don't read; the answer goes out before a restart
+    read_settings(this->parent_->settings_text(), this->parent_->plans(), was);
+    const bool restart = restarts(was, file);
+    request->send(200, TEXT, restart ? "Saved: the board restarts" : "Saved");
+    this->parent_->save_settings(this->body_, restart);
   } else {
     request->send(400, TEXT, error.c_str());
   }

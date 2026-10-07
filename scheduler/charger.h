@@ -320,7 +320,7 @@ class Controller {
       const int64_t slot = at_once_from_ + static_cast<int64_t>(i) * SLOT_SECONDS;
       const std::optional<float> spot = std::isnan(at_once_prices_[i]) ? prices.get(slot) : std::nullopt;
       if (spot)
-        at_once_prices_[i] = total_price(*spot, slot, tariff_, settings.standard_offset);
+        at_once_prices_[i] = *spot;
     }
 
     const bool charging = car.charging_state == "Charging";
@@ -330,9 +330,11 @@ class Controller {
       const float kwh = car.power_kw * static_cast<float>(to - from) / 3600.0f;
       const float average = day_average_(slot, settings.standard_offset);
       const auto replayed = static_cast<size_t>(at_once_charged_ / SLOT_SECONDS);
-      const float at_once = replayed < at_once_prices_.size() && !std::isnan(at_once_prices_[replayed])
-                                ? at_once_prices_[replayed]
-                                : average;
+      const float at_once =
+          replayed < at_once_prices_.size() && !std::isnan(at_once_prices_[replayed])
+              ? total_price(at_once_prices_[replayed], at_once_from_ + static_cast<int64_t>(replayed) * SLOT_SECONDS,
+                            tariff_, settings.standard_offset)
+              : average;
       at_once_charged_ += to - from;
       const int64_t day = local_day_of(slot, settings.standard_offset);
       if (const std::optional<float> spot = prices.get(slot)) {
@@ -552,8 +554,9 @@ class Controller {
   int64_t counted_day_ = -1;
   int64_t counted_until_ = 0;
   int64_t savings_saved_slot_ = 0;
-  // Charging at once: the total prices of a day of quarter-hours from at_once_from_, NaN until known, and how far into
-  // them it has got: the time into the first when it started, and how long the car has charged since.
+  // Charging at once: the market prices of a day of quarter-hours from at_once_from_, NaN until known, with the tariff
+  // added as the car charges, as for its own charging, so new fees count on both sides; and how far into them it has
+  // got: the time into the first when it started, and how long the car has charged since.
   std::vector<float> at_once_prices_;
   int64_t at_once_from_ = 0;
   int64_t at_once_charged_ = 0;
