@@ -338,10 +338,6 @@ button:disabled {
   padding-left: 10px;
   background: linear-gradient(var(--field), var(--field)) left 3px / 1px calc(100% - 6px) no-repeat;
 }
-/* A row after a hint, as Savings' second, as far below it as the hint is below its own row. */
-.hint + .row {
-  margin-top: 8px;
-}
 .error {
   color: var(--red);
 }
@@ -372,9 +368,13 @@ button:disabled {
   opacity: 0.5;
 }
 
-/* --- Savings card: its rows without lines between them --- */
+/* --- Savings card: its rows without lines between them, and one below an open hint as far below it as the hint is
+   below its own row --- */
 #savings-card .row {
   border-top: 0;
+}
+#savings-card .hint:not([hidden]) + .row {
+  margin-top: 8px;
 }
 
 /* --- The setup and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
