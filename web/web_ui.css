@@ -346,6 +346,10 @@ button:disabled {
 .error {
   color: var(--red);
 }
+/* A field's range, right under it in its row, as the row's gap already parts them. */
+.row > .error {
+  margin-top: 0;
+}
 .note a {
   color: var(--accent);
 }
