@@ -229,9 +229,9 @@ const PAGE = `
   <section id="settings-card" class="card fold">
     <div class="title">Settings</div>
     <div class="body">
+      <hr id="prices-line">
       <label id="topic-row" class="row"><span>ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
-      <hr>
       <p id="settings-error" class="note error" hidden></p>
       <button id="save-settings" class="primary">Save</button>
       <button id="cancel-settings">Cancel</button>
@@ -739,13 +739,13 @@ function renderSetup() {
         ? "Try again"
         : "Create key";
   pair.disabled = busy || !reach || asking || (!setup.asked && !$("key-card").checked);
-  // the car's battery and power and the prices, at their steps in the setup and after it in Settings, by request: the
-  // battery and the power above the topic, and the prices below it and a line
-  for (const [fields, step, after] of [
+  // the prices and the car's battery and power, at their steps in the setup and after it in Settings, by request: the
+  // prices above a line, and the battery and the power below it, above the topic
+  for (const [fields, step, next] of [
+    ["price-fields", "prices-step", "prices-line"],
     ["car-fields", "car-step", "topic-row"],
-    ["price-fields", "prices-step", "settings-error"],
   ]) {
-    const before = setup.step ? $(step).querySelector(".error") : $(after);
+    const before = setup.step ? $(step).querySelector(".error") : $(next);
     if ($(fields).parentElement !== before.parentElement) before.before($(fields));
   }
 }

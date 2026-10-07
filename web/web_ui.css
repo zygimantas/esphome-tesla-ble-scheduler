@@ -415,7 +415,7 @@ ul.note {
   background: var(--control);
   -webkit-text-fill-color: var(--muted);
 }
-/* Settings' line above the prices, as far from the fields on either side. */
+/* Settings' line below the prices, as far from the fields on either side. */
 hr {
   margin: 24px 0 8px;
   border: 0;
