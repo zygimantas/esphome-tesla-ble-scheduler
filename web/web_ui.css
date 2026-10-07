@@ -421,6 +421,10 @@ hr {
   margin: 16px auto 0;
   border-radius: 8px;
 }
+/* The address in words, under the code and centred like it. */
+.qr + .note {
+  text-align: center;
+}
 
 /* --- Toast --- */
 .toast {
