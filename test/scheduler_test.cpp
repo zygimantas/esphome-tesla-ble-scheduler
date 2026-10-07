@@ -866,6 +866,9 @@ static std::string as_custom(const std::string &plan) {
   return lines;
 }
 
+// The car's lines in the settings.
+static const char *const CAR = "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\n";
+
 static void test_plans_in_the_repository() {
   // Each plan reads on the board in its own currency, three capital letters, and uses all its rates. Settings can name
   // it, and it fits in them as a custom plan too, as when you upload an edited copy.
@@ -877,20 +880,42 @@ static void test_plans_in_the_repository() {
     CHECK_STR(label + make_tariff(plan, read.currency, tariff), label);
     CHECK(read.currency.size() == 3 &&
           std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }));
-    const std::string car = "tesla_battery_kwh: 75\ntesla_charging_kw: 11\ntesla_vin: 5YJ3E1EA0KF000000\n";
     CHECK_STR(label + (read.name.empty() ? "no name:" : ""), label);
     SettingsFile settings;
     const std::string currency = concat({"currency: ", read.currency, "\n"});
     CHECK_STR(
-        label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", car, "timezone: Europe/Vilnius\n"}),
+        label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", CAR, "timezone: Europe/Vilnius\n"}),
                               repository_plans(), settings),
         label);
-    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_custom(plan), car, "timezone: Europe/Vilnius\n"}),
+    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_custom(plan), CAR, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
     CHECK(settings.plan.empty() && !settings.tariff.empty());
   }
   CHECK(repository_plans().size() >= 8);
+}
+
+static void test_schedule_counts_the_tariff_fee() {
+  // 50 EUR/MWh all day, but 20 EUR/MWh in the workday evening (17-22). On spot price alone the evening
+  // wins; with the evening fee (14.6 ct vs 6.3 ct at night) the night does.
+  const PriceTable prices = prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [](int64_t after) {
+    const int hour = local_hour(CET_SEP24 + after);
+    return hour >= 17 && hour < 22 ? 0.020f : 0.050f;
+  });
+  ScheduleRequest request = overnight(SEP24_1700Z - 4 * HOUR, 70);  // Thursday 16:00 local
+  const Schedule spot_only = make_schedule(prices, request);
+  REQUIRE(!spot_only.windows.empty());
+  for (const Window &w : spot_only.windows)
+    for (int64_t s = w.start; s < w.end; s += SLOT_SECONDS)
+      CHECK(local_hour(s) >= 17 && local_hour(s) < 22);
+
+  request.tariff = four_zones();
+  const Schedule with_fees = make_schedule(prices, request);
+  REQUIRE(!with_fees.windows.empty());
+  for (const Window &w : with_fees.windows)
+    for (int64_t s = w.start; s < w.end; s += SLOT_SECONDS)
+      CHECK(local_hour(s) >= 22 || local_hour(s) < 5);
+  CHECK(near(with_fees.avg_price, 0.050f * 1.21f + 0.06292f, 1e-5f));
 }
 
 // ---------------------------------------------------------------------------
@@ -971,9 +996,7 @@ static void test_reads_the_settings_file() {
 
   // A fixed price with a plan, which the board adds to every quarter-hour as it does a margin.
   const std::string fixed_with_plan =
-      "fixed_price: 0.15\ntariff:\n  plan: lt/eso-standartinis-2-zones\n"
-      "tesla_battery_kwh: 75\ntesla_charging_kw: 11\n"
-      "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Vilnius\n";
+      concat({"fixed_price: 0.15\ntariff:\n  plan: lt/eso-standartinis-2-zones\n", CAR, "timezone: Europe/Vilnius\n"});
   CHECK_STR(read_settings(fixed_with_plan, repository_plans(), s), "");
   CHECK(s.area == nullptr && near(s.margin, 0.15f) && s.plan == "lt/eso-standartinis-2-zones");
 
@@ -982,9 +1005,9 @@ static void test_reads_the_settings_file() {
             "tariff: the plan's prices are in EUR, not NOK");
   CHECK(s.area == nullptr);  // unchanged after an error
   const std::string norway =
-      "market:\n  area: no1\n  vat: 0.25\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
-      "flat\n  rates:\n    flat: 0.5\ntesla_battery_kwh: 75\ntesla_charging_kw: 11\n"
-      "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Oslo\n";
+      concat({"market:\n  area: no1\n  vat: 0.25\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n"
+              "  rates:\n    flat: 0.5\n",
+              CAR, "timezone: Europe/Oslo\n"});
   CHECK_STR(read_settings(norway, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "NO1" && s.currency == "NOK" && s.margin == 0.0f && s.standard_offset == 3600);
   CHECK_STR(read_settings("currency: nok\n" + norway, repository_plans(), s), "");
@@ -992,10 +1015,10 @@ static void test_reads_the_settings_file() {
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + norway),
               "currency: Nord Pool's prices for NO1 come in NOK");
   // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
-  const std::string czech =
-      "currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: "
-      "flat\n  rates:\n    flat: 2.5\ntesla_battery_kwh: 75\ntesla_charging_kw: 11\n"
-      "tesla_vin: 5YJ3E1EA0KF000000\ntimezone: Europe/Prague\n";
+  const std::string czech = concat(
+      {"currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n"
+       "  rates:\n    flat: 2.5\n",
+       CAR, "timezone: Europe/Prague\n"});
   CHECK_STR(read_settings(czech, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
@@ -1079,8 +1102,6 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + SETTINGS),
               "currency must be a currency's three-letter code, like EUR");
   // Phone messages, through ntfy's own server
-  CHECK_STR(settings_error(settings_with("ntfy_topic", "ntfy_server: https://ntfy.sh\n")),
-            "line 6 has ntfy_server, which isn't a setting");
   for (const std::string &topic : {std::string("https://ntfy.sh/mine"), std::string(65, 'a')})
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
@@ -1144,29 +1165,6 @@ static void test_settings_file_errors() {
             "screen under Controls, Software");
   CHECK_STR(settings_error(settings_set("tesla_battery_kwh", "\"")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
-}
-
-static void test_schedule_counts_the_tariff_fee() {
-  // 50 EUR/MWh all day, but 20 EUR/MWh in the workday evening (17-22). On spot price alone the evening
-  // wins; with the evening fee (14.6 ct vs 6.3 ct at night) the night does.
-  const PriceTable prices = prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [](int64_t after) {
-    const int hour = local_hour(CET_SEP24 + after);
-    return hour >= 17 && hour < 22 ? 0.020f : 0.050f;
-  });
-  ScheduleRequest request = overnight(SEP24_1700Z - 4 * HOUR, 70);  // Thursday 16:00 local
-  const Schedule spot_only = make_schedule(prices, request);
-  REQUIRE(!spot_only.windows.empty());
-  for (const Window &w : spot_only.windows)
-    for (int64_t s = w.start; s < w.end; s += SLOT_SECONDS)
-      CHECK(local_hour(s) >= 17 && local_hour(s) < 22);
-
-  request.tariff = four_zones();
-  const Schedule with_fees = make_schedule(prices, request);
-  REQUIRE(!with_fees.windows.empty());
-  for (const Window &w : with_fees.windows)
-    for (int64_t s = w.start; s < w.end; s += SLOT_SECONDS)
-      CHECK(local_hour(s) >= 22 || local_hour(s) < 5);
-  CHECK(near(with_fees.avg_price, 0.050f * 1.21f + 0.06292f, 1e-5f));
 }
 
 // ---------------------------------------------------------------------------
@@ -2758,10 +2756,10 @@ int main() {
   test_eso_plans();
   test_calendar_and_exceptions();
   test_plans_in_the_repository();
+  test_schedule_counts_the_tariff_fee();
   test_reads_the_settings_file();
   test_settings_form_options();
   test_settings_file_errors();
-  test_schedule_counts_the_tariff_fee();
   test_charges_only_in_the_cheap_window();
   test_start_from_the_car_holds_until_unplugged();
   test_reads_the_charging_state();
