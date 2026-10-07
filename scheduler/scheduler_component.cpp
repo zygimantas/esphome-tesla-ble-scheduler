@@ -141,18 +141,17 @@ void SchedulerComponent::setup() {
   this->port_ = find(App.get_covers(), "Charge Port Door");
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
-  if (this->plug_ != nullptr)
-    this->plug_->add_on_state_callback([this](bool) { this->turned_away_ = false; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
-  // forgets the pairing, and the setup's key step comes back, until the car reports again. esphome-tesla-ble says so
-  // only for its commands, in Last Command; its polls just go unanswered.
+  // forgets the pairing and the plug state, and the setup's key step comes back, until the car reports the plug again.
+  // esphome-tesla-ble says so only for its commands, in Last Command; its polls just go unanswered.
   text_sensor::TextSensor *last_command = find(App.get_text_sensors(), "Last Command");
   if (last_command != nullptr)
     last_command->add_on_state_callback([this](const std::string &result) {
       if (result.find("key not on whitelist") == std::string::npos || this->paired_vin_ == 0)
         return;
       ESP_LOGW(TAG, "The car doesn't know the board's key: %s", result.c_str());
-      this->turned_away_ = true;
+      if (this->plug_ != nullptr)
+        this->plug_->invalidate_state();  // else the same plug state again would publish nothing
       this->paired_vin_ = 0;
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
@@ -208,7 +207,7 @@ void SchedulerComponent::update() {
   // settings name, which erasing the board, another VIN or the car turning the key away undoes. The charge port flap
   // shows nothing, as the car reports it to any key.
   const uint32_t vin = fnv1_hash(this->file_.vin);
-  if (!this->turned_away_ && car.plugged.has_value() && this->paired_vin_ != vin) {
+  if (car.plugged.has_value() && this->paired_vin_ != vin) {
     this->paired_vin_ = vin;
     this->paired_pref_.save(&this->paired_vin_);
     global_preferences->sync();
