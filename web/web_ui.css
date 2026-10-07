@@ -361,7 +361,9 @@ ul.note {
 }
 
 /* --- The setup, Prices and Settings: each field under its name and the card's width, so its choices fit on a phone --- */
-:is(.step, #settings-card) .row {
+/* Settings by its id without the id's weight, so these rules weigh what .step's did and a box's row (.row.check) keeps
+   its words beside it. */
+:is(.step, :where(#settings-card)) .row {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
@@ -369,16 +371,16 @@ ul.note {
   margin-top: 16px;
   border-top: 0;
 }
-:is(.step, #settings-card) .row > span:first-child {
+:is(.step, :where(#settings-card)) .row > span:first-child {
   color: var(--muted);
   font-size: 13px;
 }
-:is(.step, #settings-card) select {
+:is(.step, :where(#settings-card)) select {
   width: 100%;
   text-overflow: ellipsis;
 }
 /* A field takes the width too, but a checkbox keeps its own size. */
-:is(.step, #settings-card) .row input:not([type="checkbox"]) {
+:is(.step, :where(#settings-card)) .row input:not([type="checkbox"]) {
   width: auto;
   text-align: left;
 }
