@@ -54,8 +54,12 @@ jobs:
   unit-tests:
     name: Unit tests, coverage and clang-tidy
     runs-on: ubuntu-24.04
+    env:
+      SONARCLOUD: ${{ secrets.SONAR_TOKEN != '' }} # false in pull requests from forks and Dependabot, which get no secrets
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # SonarCloud tells new code by the history
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: false
@@ -83,8 +87,14 @@ jobs:
           totals = json.load(sys.stdin)["data"][0]["totals"]
           missed = {k: totals[k]["count"] - totals[k]["covered"] for k in ("lines", "functions", "regions", "branches")}
           sys.exit(f"Not covered: {missed}" if any(missed.values()) else 0)'
+          llvm-cov show scheduler_test -instr-profile=scheduler_test.profdata -show-branches=count scheduler/*.h > coverage.txt
       - name: clang-tidy
         run: uvx --no-build "clang-tidy==$CLANG_TIDY_VERSION" test/scheduler_test.cpp -- @flags
+      - name: SonarCloud, with the coverage (sonar-project.properties)
+        if: env.SONARCLOUD == 'true'
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   esphome:
     name: ESPHome builds and the simulation
