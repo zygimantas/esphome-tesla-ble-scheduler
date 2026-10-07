@@ -573,6 +573,15 @@ void SettingsPage::handleBody(AsyncWebServerRequest *request, uint8_t *data, siz
 
 void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
   static const char *const TEXT = "text/plain; charset=utf-8";
+  // Only the board's own page, as with ESPHome's own routes, or another site's could read the VIN or replace the
+  // settings. The board's page sends no Origin or one that is the Host it asked after the scheme; curl sends none. 400,
+  // as this web server sends a 403 as 500.
+  const std::optional<std::string> origin = request->get_header("Origin");
+  if (origin.has_value() && !origin->ends_with("://" + request->get_header("Host").value_or(""))) {
+    request->send(400, TEXT, "Only the board's own page can read or change the settings");
+    this->body_.clear();
+    return;
+  }
   char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
   if (request->url_to(buffer) == "/settings/options") {
     request->send(200, "application/json", settings_options(this->parent_->plans()).c_str());
