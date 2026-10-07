@@ -55,8 +55,10 @@ main {
 /* --- The header bar, as ESPHome Web's: the logo, and the board's Wi-Fi and Bluetooth signals on the right --- */
 .bar {
   display: flex;
+  flex-wrap: wrap; /* a pill goes on below, on the right, where a phone is too narrow for them all */
+  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-height: calc(env(safe-area-inset-top) + 56px);
   padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 16px) 8px
     calc(env(safe-area-inset-left) + 16px);
@@ -84,6 +86,11 @@ main {
 .pill svg {
   width: 14px;
   height: 14px;
+}
+/* A weak signal: amber, with dark words to stay readable. */
+.pill.weak {
+  background: #ffb300;
+  color: #1a1a1a;
 }
 
 /* --- Cards, with a title; Board, Prices and Settings fold open --- */
