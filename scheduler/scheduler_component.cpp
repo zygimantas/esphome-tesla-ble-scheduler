@@ -153,7 +153,7 @@ void SchedulerComponent::setup() {
   if (this->plug_ != nullptr)
     this->plug_->add_on_state_callback([this](bool) { this->turned_away_ = false; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
-  // forgets the pairing, and the setup's Key step comes back, until the car reports again. esphome-tesla-ble says so
+  // forgets the pairing, and the setup's key step comes back, until the car reports again. esphome-tesla-ble says so
   // only for its commands, in Last Command; its polls just go unanswered.
   text_sensor::TextSensor *last_command = find(App.get_text_sensors(), "Last Command");
   if (last_command != nullptr)
@@ -291,15 +291,15 @@ void SchedulerComponent::dump_config() {
   }
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
-  const char *tariff = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "your own plan";
+  const char *plan = !file.plan.empty() ? file.plan.c_str() : file.tariff.empty() ? "none" : "custom plan";
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
-                "  Tariff: %s\n"
+                "  Plan: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
                 "  Phone messages: %s",
-                market.c_str(), file.currency.c_str(), tariff, file.battery_kwh, file.charging_kw,
+                market.c_str(), file.currency.c_str(), plan, file.battery_kwh, file.charging_kw,
                 file.ntfy_topic.empty() ? "off" : "on");
   LOG_UPDATE_INTERVAL(this);
 }
@@ -336,7 +336,7 @@ void SchedulerComponent::tick_soon_() {
   this->defer("tick", [this]() { this->update(); });
 }
 
-// Uses `text`, a plan's text, built in, downloaded or your own. Returns what's wrong, or "".
+// Uses `text`, a plan's text, built in, downloaded or custom. Returns what's wrong, or "".
 std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   Tariff tariff;
   const std::string error = make_tariff(text, this->file_.currency, tariff);
@@ -449,12 +449,12 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
         ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
         this->controller_.reschedule();
       } else if (stored == 0 && day == 0) {
-        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check market: area", source, area.name);
+        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Prices", source, area.name);
       }
     } else if (*status != not_yet) {
       ESP_LOGW(TAG, "%s answered HTTP %d", source, *status);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
-      ESP_LOGW(TAG, "%s has no prices for %s today: check market: area", source, area.name);
+      ESP_LOGW(TAG, "%s has no prices for %s today: check Country / Area under Prices", source, area.name);
     }
   }
 }
