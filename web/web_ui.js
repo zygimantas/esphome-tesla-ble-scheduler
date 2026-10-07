@@ -192,13 +192,9 @@ const PAGE = `
         <button class="primary save">Continue</button>
       </div>
       <div id="phone-step" hidden>
+        <p class="note">The next steps are easier in the car. <strong>Take your Tesla key card</strong> and the board, with a USB charger for it, to the car, and scan this code with your phone.</p>
         <div id="qr" class="qr"></div>
-        <p class="note">Scan the code with your phone's camera to go on there, or open <span id="address"></span> on it, and finish the setup in the car, with these:</p>
-        <ul class="note">
-          <li>The board</li>
-          <li>A USB charger and cable for it</li>
-          <li>Your Tesla key card</li>
-        </ul>
+        <p class="note">Or open <span id="address"></span> on your phone.</p>
         <button id="here">Continue here</button>
       </div>
       <div id="car-step" hidden>
@@ -713,7 +709,7 @@ function renderSetup() {
   const card = $("setup-card");
   card.hidden = !setup.step;
   card.querySelector(".title").textContent =
-    { 1: "Setup: prices", 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? "Setup";
+    { 1: "Setup: prices", 2: "Setup: your car", 3: "Setup: your car", 4: "Setup: charging key" }[setup.step] ?? "Setup";
   for (const [i, id] of ["prices-step", "phone-step", "car-step", "key-step", "done-step"].entries())
     $(id).hidden = i + 1 !== Math.max(setup.step, 1);
   // The key's step: the key card in the car, and the board's Bluetooth signal from the car, as its key can't be asked for

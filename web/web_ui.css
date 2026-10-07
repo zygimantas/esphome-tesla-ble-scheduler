@@ -300,10 +300,6 @@ button:disabled {
   color: var(--muted);
   font-size: 13px;
 }
-ol.note,
-ul.note {
-  padding-left: 20px;
-}
 /* As far below the text as a button below a row, in every card. */
 .note + :is(button, .button) {
   margin-top: 22px;
