@@ -264,6 +264,8 @@ void SchedulerComponent::update() {
   }
   if (d.mode == "unplugged")  // whatever the message said is over
     this->unsent_.reset();
+  // The message first: its POST blocks the loop, while the Tesla part sends the command only after update() returns
+  // and fails it after 25 s in its queue.
   this->send_unsent_(car.now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
     ESP_LOGI(TAG, "Start charging (%s)", d.status.c_str());
