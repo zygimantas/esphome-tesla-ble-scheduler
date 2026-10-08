@@ -643,7 +643,21 @@ void SettingsPage::handleRequest(AsyncWebServerRequest *request) {
   }
   char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
   if (request->url_to(buffer) == "/settings/options") {
-    request->send(200, "application/json", settings_options(this->parent_->plans()).c_str());
+    // In chunks of about 1 kB: all 11 kB in one string, which doubles as it grows, took more memory than the board had
+    // left while it fetched over HTTPS, and it restarted.
+    httpd_req_t *req = *request;
+    httpd_resp_set_type(req, "application/json");
+    std::string chunk;
+    settings_options(this->parent_->plans(), [req, &chunk](const std::string &piece) {
+      chunk += piece;
+      if (chunk.size() >= 1024) {
+        httpd_resp_send_chunk(req, chunk.data(), chunk.size());
+        chunk.clear();
+      }
+    });
+    if (!chunk.empty())  // an empty chunk would end the answer
+      httpd_resp_send_chunk(req, chunk.data(), chunk.size());
+    httpd_resp_send_chunk(req, nullptr, 0);
     return;
   }
   if (request->method() == HTTP_GET) {

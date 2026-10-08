@@ -1099,7 +1099,8 @@ static void test_settings_form_options() {
   CHECK_STR(json_string("a \"b\" \\ c"), "\"a \\\"b\\\" \\\\ c\"");
   const Plans plans = {{"lt/one", "# Prices with VAT: https://example.com\nname: One plan\n"},
                        {"lt/two", "currency: EUR\n"}};
-  const std::string options = settings_options(plans);
+  std::string options;
+  settings_options(plans, [&options](const std::string &piece) { options += piece; });
   CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
   const std::string end = R"("SI"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
   CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);

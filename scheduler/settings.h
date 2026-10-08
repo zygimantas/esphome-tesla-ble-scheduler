@@ -234,18 +234,24 @@ inline std::string json_string(std::string_view text) {
 }
 
 // What the page offers for the settings, as JSON: the market areas, and the plans built in by name and name for people.
-inline std::string settings_options(const Plans &plans) {
-  std::string json = "{\"areas\":[";
-  for (const Area &area : AREAS)
-    json += concat({json.back() == '[' ? "" : ",", json_string(area.name)});
-  json += "],\"plans\":[";
+// Calls f() with each piece in turn, as the board sends them without holding all of them.
+template <typename F>
+void settings_options(const Plans &plans, F f) {
+  f("{\"areas\":[");
+  const char *comma = "";
+  for (const Area &area : AREAS) {
+    f(concat({comma, json_string(area.name)}));
+    comma = ",";
+  }
+  f("],\"plans\":[");
+  comma = "";
   for (const auto &plan : plans) {
     TariffText text;
     read_tariff(std::string(plan.second), text);  // the plans built in read, as the tests check
-    json += concat({json.back() == '[' ? "" : ",", "[", json_string(plan.first), ",",
-                    json_string(text.name.empty() ? plan.first : text.name), "]"});
+    f(concat({comma, "[", json_string(plan.first), ",", json_string(text.name.empty() ? plan.first : text.name), "]"}));
+    comma = ",";
   }
-  return json + "]}";
+  f("]}");
 }
 
 }  // namespace esphome::scheduler
