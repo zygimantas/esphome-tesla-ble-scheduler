@@ -30,14 +30,13 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 
 ## Setup
 
-1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
-
+1. **Connect the board**: connect the board's USB-C port labelled **COM** to the computer.
+2. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
+3. **Install the firmware**: Open [ESPHome Web](https://web.esphome.io) in Chrome or Edge and follow steps from this video:
+   
 https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 
-2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
-3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
-4. **Choose your prices**: press **Visit Device**, which opens the setup on the board's page. Check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Continue**.
-5. **Continue on your phone**: scan the QR code the page shows with your phone's camera, which opens the setup there. To go on on the computer instead, press **Continue here**.
+4. **Scan QR code with phone**: scan the QR code the page shows with your phone's camera, which opens the final setup steps.
 6. **Put the board next to the car**: unplug it from the computer, plug it into the USB charger near the car, and give it a minute to join your Wi-Fi.
 7. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If you closed it, open it again from the browser's history, or at http://tesla.local, which some Android phones don't find (type the `http://`: browsers try https on their own, which the board doesn't speak).
    - Enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Check the battery's size, guessed from your car's model, and the charging power the Tesla app shows while the car charges at home. Press **Continue**: the page checks the VIN, and says what's wrong if anything is.
