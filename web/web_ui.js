@@ -38,6 +38,7 @@ const E = {
   readyByOnce: "datetime/Ready by once",
   resetSavings: "button/Reset savings",
   restart: "button/Restart",
+  restartSetup: "button/Restart setup",
   savings: "text_sensor/Savings",
   status: "text_sensor/Charging status",
   stopCharging: "button/Stop charging",
@@ -237,6 +238,7 @@ const PAGE = `
       <button id="test-topic">Send test message</button>
       <button id="pair-key" class="danger">Pair key</button>
       <button id="restart" class="danger">Restart board</button>
+      <button id="restart-setup" class="danger">Restart setup</button>
       <button id="cancel-settings">Cancel</button>
     </div>
   </section>
@@ -1404,6 +1406,17 @@ function bind() {
   press($("restart"), async () => {
     if (!confirm("Restart the board?")) return;
     if (await post(E.restart, "press")) {
+      restarting = Date.now();
+      setTimeout(reconnect, 3000);
+    }
+  });
+  // Restart setup, in Settings: the board forgets its settings, key, savings and Ready by, keeps its Wi-Fi, and
+  // restarts into the setup, which the page then shows. It waits for the board as for Restart board.
+  press($("restart-setup"), async () => {
+    const what =
+      "Restart the setup? The board forgets its settings, its key, Ready by and the savings, and keeps its Wi-Fi.";
+    if (!confirm(what)) return;
+    if (await post(E.restartSetup, "press")) {
       restarting = Date.now();
       setTimeout(reconnect, 3000);
     }

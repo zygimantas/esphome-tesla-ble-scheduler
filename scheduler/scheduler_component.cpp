@@ -71,7 +71,8 @@ static auto find(const List &entities, const char *name) {
 void SchedulerComponent::load_settings() {
   this->settings_pref_ = global_preferences->make_preference<SavedSettings>(fnv1_hash("scheduler_settings"));
   auto saved = std::make_unique<SavedSettings>();  // 4 kB is a lot for the stack
-  if (this->settings_pref_.load(saved.get()))
+  // An empty file, as Restart setup saves, is none.
+  if (this->settings_pref_.load(saved.get()) && saved->text[0] != '\0')
     this->use_settings(std::string(saved->text, strnlen(saved->text, sizeof(saved->text))));
   else
     this->settings_error_ = "No settings yet";
@@ -162,6 +163,28 @@ void SchedulerComponent::setup() {
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
     });
+  // Pairing only asks the car, and esphome-tesla-ble reads the plug state, which shows the key is paired, at its next
+  // poll, up to 11 minutes away on a board that has waited idle. So after a pairing request, from this page or any
+  // other, the board asks for a read every 15 s, for 3 minutes or until the car reports the plug, which moves it on at
+  // once.
+  button::Button *pair = find(App.get_buttons(), "Pair BLE Key");
+  button::Button *read = find(App.get_buttons(), "Force data update");
+  if (pair != nullptr && read != nullptr && this->plug_ != nullptr) {
+    pair->add_on_press_callback([this, read]() {
+      const uint32_t asked = millis();
+      this->set_interval("pairing", 15 * 1000, [this, read, asked]() {
+        if (this->plug_->has_state() || millis() - asked > 3 * 60 * 1000)
+          this->cancel_interval("pairing");
+        else
+          read->press();
+      });
+    });
+    // Every change, as on_state callbacks skip the first state, which is the one here.
+    this->plug_->add_full_state_callback([this](optional<bool>, optional<bool> now) {
+      if (now.has_value() && this->paired_vin_ != fnv1_hash(this->file_.vin))
+        this->tick_soon_();
+    });
+  }
 
   if (this->settings_error_.empty())
     this->apply_settings_();
@@ -345,8 +368,31 @@ void SchedulerComponent::press(Action action) {
     case Action::RESET_SAVINGS:
       this->controller_.reset_savings();
       break;
+    case Action::RESTART_SETUP:
+      this->restart_setup_();
+      return;
   }
   this->tick_soon_();
+}
+
+// Restart setup: forgets what the board keeps of its own, the settings, the savings, the buttons' hold, the pairing and
+// Ready by, makes a new key, which the car doesn't know, and restarts into the setup. ESPHome's Wi-Fi stays.
+void SchedulerComponent::restart_setup_() {
+  ESP_LOGW(TAG, "Restart setup");
+  this->settings_pref_.save(std::make_unique<SavedSettings>().get());
+  this->controller_.reset_savings();
+  this->savings_pref_.save(&this->controller_.savings);
+  this->held_ = 0;
+  this->held_pref_.save(&this->held_);
+  this->paired_vin_ = 0;
+  this->paired_pref_.save(&this->paired_vin_);
+  this->ready_by_->make_call().set_time(7, 0, 0).perform();
+  this->ready_by_once_->make_call().set_datetime(2000, 1, 1, 0, 0, 0).perform();
+  button::Button *new_key = find(App.get_buttons(), "Regenerate key");
+  if (new_key != nullptr)
+    new_key->press();
+  global_preferences->sync();
+  App.safe_reboot();
 }
 
 // On the next loop, so a tick never runs inside another entity's callback.

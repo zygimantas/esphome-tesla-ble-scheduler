@@ -33,7 +33,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 1. **Connect the board**: connect the board's USB-C port labelled **COM** to the computer.
 2. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 3. **Install the firmware**: Open [ESPHome Web](https://web.esphome.io) in Chrome or Edge and follow steps from this video:
-   
+
 https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 
 4. **Scan QR code with phone**: scan the QR code the page shows with your phone's camera, which opens the final setup steps.
@@ -58,7 +58,7 @@ Open the page on your phone, from the home screen once you've added it there, as
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
 - **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months. The **?** after each shows the energy and what it cost, and the saving against plugging in and charging at once. Prices count VAT, grid fees and the supplier's margin or part per kWh, not monthly fees. **Reset savings** starts again from zero.
-- **To start over**, as for another car, install the firmware again with steps 1 to 3 of [Setup](#setup), and let ESPHome Web erase the board when it asks: it forgets its settings, Wi-Fi, the car's key and savings. Then set it up again, and remove its old key in the car under **Controls** → **Locks**.
+- **To start over**, as for another car, press **Restart setup** under **Settings**: the board forgets its settings, its key, Ready by and the savings, keeps its Wi-Fi, and starts the setup again. Remove its old key in the car under **Controls** → **Locks**.
 
 ### Phone messages
 

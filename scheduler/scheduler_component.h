@@ -48,9 +48,9 @@ class ReadyByOnce : public datetime::DateTimeEntity, public Parented<SchedulerCo
   ESPPreferenceObject pref_;
 };
 
-enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS };
+enum class Action { CREATE_SCHEDULE, CHARGE_NOW, STOP_CHARGING, RESET_SAVINGS, RESTART_SETUP };
 
-// The page's Create schedule, Start charging now, Stop charging and Reset savings.
+// The page's Create schedule, Start charging now, Stop charging, Reset savings and Restart setup.
 class ActionButton : public button::Button, public Parented<SchedulerComponent> {
  public:
   void set_action(Action action) { this->action_ = action; }
@@ -129,6 +129,7 @@ class SchedulerComponent : public PollingComponent {
   void carry_out_(const Decision &d, int64_t now);
   void publish_(const Decision &d, int64_t now);
   void tick_soon_();
+  void restart_setup_();
   std::string apply_tariff_(const std::string &text);
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body);
