@@ -2,6 +2,12 @@ api:
   encryption:
   reboot_timeout: 0s
 
+esp32:
+  framework:
+    advanced:
+      # The Tesla library's replies and log lines run deep in the main loop, which ran out of ESPHome's 8 kB stack once.
+      loop_task_stack_size: 12288
+
 esp32_ble_tracker:
   on_ble_advertise:
     - then:
