@@ -71,7 +71,8 @@ static auto find(const List &entities, const char *name) {
 void SchedulerComponent::load_settings() {
   this->settings_pref_ = global_preferences->make_preference<SavedSettings>(fnv1_hash("scheduler_settings"));
   auto saved = std::make_unique<SavedSettings>();  // 4 kB is a lot for the stack
-  if (this->settings_pref_.load(saved.get()))
+  // An empty file, as Restart setup saves, is none.
+  if (this->settings_pref_.load(saved.get()) && saved->text[0] != '\0')
     this->use_settings(std::string(saved->text, strnlen(saved->text, sizeof(saved->text))));
   else
     this->settings_error_ = "No settings yet";
@@ -367,8 +368,31 @@ void SchedulerComponent::press(Action action) {
     case Action::RESET_SAVINGS:
       this->controller_.reset_savings();
       break;
+    case Action::RESTART_SETUP:
+      this->restart_setup_();
+      return;
   }
   this->tick_soon_();
+}
+
+// Restart setup: forgets what the board keeps of its own, the settings, the savings, the buttons' hold, the pairing and
+// Ready by, makes a new key, which the car doesn't know, and restarts into the setup. ESPHome's Wi-Fi stays.
+void SchedulerComponent::restart_setup_() {
+  ESP_LOGW(TAG, "Restart setup");
+  this->settings_pref_.save(std::make_unique<SavedSettings>().get());
+  this->controller_.reset_savings();
+  this->savings_pref_.save(&this->controller_.savings);
+  this->held_ = 0;
+  this->held_pref_.save(&this->held_);
+  this->paired_vin_ = 0;
+  this->paired_pref_.save(&this->paired_vin_);
+  this->ready_by_->make_call().set_time(7, 0, 0).perform();
+  this->ready_by_once_->make_call().set_datetime(2000, 1, 1, 0, 0, 0).perform();
+  button::Button *new_key = find(App.get_buttons(), "Regenerate key");
+  if (new_key != nullptr)
+    new_key->press();
+  global_preferences->sync();
+  App.safe_reboot();
 }
 
 // On the next loop, so a tick never runs inside another entity's callback.

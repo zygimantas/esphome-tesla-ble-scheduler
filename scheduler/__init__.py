@@ -61,6 +61,7 @@ async def to_code(config):
         ("charge_now", "Start charging now", Action.CHARGE_NOW),
         ("stop_charging", "Stop charging", Action.STOP_CHARGING),
         ("reset_savings", "Reset savings", Action.RESET_SAVINGS),
+        ("restart_setup", "Restart setup", Action.RESTART_SETUP),
     ):
         action_button = await button.new_button(_entity(ActionButton, key, name))
         await cg.register_parented(action_button, var)
