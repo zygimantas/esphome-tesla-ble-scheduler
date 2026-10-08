@@ -95,7 +95,7 @@ class SchedulerComponent : public PollingComponent {
   // A plan of this release's plans/, which the settings can name; the board downloads it anew every day.
   void add_plan(const char *name, const char *text) { this->plans_.emplace_back(name, text); }
   const Plans &plans() const { return this->plans_; }
-  // The settings saved on the board, read once the plans are added and before setup().
+  // The settings saved on the board, read once the plans are added and before setup(), and the settings page's handler.
   void load_settings();
   // Takes a settings file before the web server starts, as the simulation does.
   void use_settings(const std::string &text);

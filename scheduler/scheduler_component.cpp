@@ -5,8 +5,12 @@
 #include "esphome/core/application.h"
 #include "esphome/core/log.h"
 
+#include <array>
 #include <cstring>
 #include <memory>
+#ifdef USE_WEBSERVER
+#include <sys/select.h>
+#endif
 
 namespace esphome::scheduler {
 
@@ -69,6 +73,11 @@ static auto find(const List &entities, const char *name) {
 }
 
 void SchedulerComponent::load_settings() {
+#ifdef USE_WEBSERVER
+  // Before setup(), so that the settings page's handler goes ahead of the one ESPHome's web server adds in its own
+  // setup(): its canHandle() then sees every request (keep_streams()).
+  web_server_base::global_web_server_base->add_handler(&this->settings_page_);
+#endif
   this->settings_pref_ = global_preferences->make_preference<SavedSettings>(fnv1_hash("scheduler_settings"));
   auto saved = std::make_unique<SavedSettings>();  // 4 kB is a lot for the stack
   // An empty file, as Restart setup saves, is none.
@@ -113,9 +122,6 @@ void SchedulerComponent::save_settings(const std::string &text, bool restart, bo
 }
 
 void SchedulerComponent::setup() {
-#ifdef USE_WEBSERVER
-  web_server_base::global_web_server_base->add_handler(&this->settings_page_);
-#endif
   this->ready_by_->restore();
   this->ready_by_once_->restore();
   this->held_pref_ = global_preferences->make_preference<int32_t>(fnv1_hash("scheduler_held_mode"));
@@ -616,7 +622,31 @@ bool SchedulerComponent::send_message_(const Notification &message) {
 }
 
 #ifdef USE_WEBSERVER
+// ESP-IDF's web server keeps 7 connections and, for another, closes the one whose last request is the oldest: a page's
+// live stream (/events), as its only request was its first. Pages open on two or three phones and computers then closed
+// each other's streams in turn, and kept reconnecting. So each request marks the streams as just used, and a browser's
+// idle connection goes instead. Not a stream that takes no more, from a page that stopped reading: ESPHome gives up on
+// it but leaves it open, and it may still go.
+static void keep_streams(httpd_handle_t server) {
+  std::array<int, CONFIG_LWIP_MAX_SOCKETS> fds{};
+  size_t count = fds.size();
+  if (httpd_get_client_list(server, &count, fds.data()) != ESP_OK)
+    return;
+  for (size_t i = 0; i < count; i++) {
+    if (httpd_sess_get_ctx(server, fds[i]) == nullptr)  // of ESPHome's connections, only a stream has a context
+      continue;
+    fd_set writable;
+    FD_ZERO(&writable);
+    FD_SET(fds[i], &writable);
+    timeval now{};
+    if (select(fds[i] + 1, nullptr, &writable, nullptr, &now) == 1)
+      httpd_sess_update_lru_counter(server, fds[i]);
+  }
+}
+
 bool SettingsPage::canHandle(AsyncWebServerRequest *request) const {
+  const httpd_req_t *req = *request;
+  keep_streams(req->handle);  // every request passes here first (load_settings())
   char buffer[AsyncWebServerRequest::URL_BUF_SIZE];
   const StringRef url = request->url_to(buffer);
   return (url == "/settings" && (request->method() == HTTP_GET || request->method() == HTTP_POST)) ||
