@@ -31,6 +31,9 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 ## Setup
 
 1. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
+
+https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
+
 2. **Install it on the board**: connect the board's USB-C port labelled **COM** (**UART** on some boards) to the computer, open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, press **Connect**, choose the port with **USB** in its name, like **USB Single Serial** on a Mac, and press **Connect** again. If you're not sure which it is, it's the one that goes away when you unplug the board. Then press **Install** and choose the file. If it can't connect, hold **BOOT**, press and release **RESET**, release **BOOT**, and try again.
 3. **Connect it to your Wi-Fi**: once it's installed, press **Configure Wi-Fi**, choose your network and enter its password.
 4. **Choose your prices**: press **Visit Device**, which opens the setup on the board's page. Check **Country / Area**, pick your **Grid plan** where the page lists them, or tick **My plan isn't listed** and upload a custom plan (see [Custom plan](plans/README.md#custom-plan)), choose your **Contract type**, dynamic or fixed, as your contract says, with the supplier's margin or part per kWh if you like, and press **Continue**.
