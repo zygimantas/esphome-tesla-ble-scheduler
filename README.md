@@ -33,7 +33,7 @@ The board picks the quarter-hours by price, grid fee included, so it finds the c
 1. **Connect the board**: connect the board's USB-C port labelled **COM** to the computer.
 2. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
 3. **Install the firmware**: Open [ESPHome Web](https://web.esphome.io) in Chrome or Edge and follow steps from this video:
-   
+
 https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 
 4. **Scan QR code with phone**: scan the QR code the page shows with your phone's camera, which opens the final setup steps.
