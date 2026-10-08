@@ -8,9 +8,10 @@ from pathlib import Path
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import button, datetime, text_sensor, time
+from esphome.components import button, datetime, psram, text_sensor, time
 from esphome.components.http_request import CONF_HTTP_REQUEST_ID, HttpRequestComponent
 from esphome.const import CONF_DISABLED_BY_DEFAULT, CONF_ID, CONF_NAME, CONF_TIME_ID
+from esphome.core import CORE
 
 DEPENDENCIES = ["http_request", "network", "time"]
 AUTO_LOAD = ["button", "datetime", "json", "text_sensor"]
@@ -45,6 +46,8 @@ async def to_code(config):
     await cg.register_component(var, config)
     cg.add(var.set_clock(await cg.get_variable(config[CONF_TIME_ID])))
     cg.add(var.set_http(await cg.get_variable(config[CONF_HTTP_REQUEST_ID])))
+    if CORE.is_esp32:  # for the downloads task's stack (scheduler_component.cpp)
+        psram.request_external_task_stack()
     for path in sorted(PLANS.glob("*/*.yaml")):
         cg.add(var.add_plan(str(path.relative_to(PLANS).with_suffix("")), path.read_text(encoding="utf-8")))
     cg.add(var.load_settings())

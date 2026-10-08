@@ -19,6 +19,9 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
 #include "settings.h"
+#ifdef USE_ESP32
+#include "esphome/core/static_task.h"
+#endif
 #ifdef USE_WEBSERVER
 #include "esphome/components/web_server_base/web_server_base.h"
 #endif
@@ -81,6 +84,16 @@ struct SavedSettings {
   char text[MAX_SETTINGS_BYTES + 1];
 };
 
+// What a batch of downloads fetches (SchedulerComponent::start_downloads_()), with what it needs of the settings,
+// copied, as a save may change them while it runs.
+struct Downloads {
+  int64_t now{0};
+  const Area *area{nullptr};  // with prices due: from the CET delivery day `first_day` days after `now`
+  int first_day{0};
+  std::string currency;
+  std::string plan;  // with the plan due
+};
+
 class SchedulerComponent : public PollingComponent {
  public:
   void setup() override;
@@ -131,13 +144,16 @@ class SchedulerComponent : public PollingComponent {
   void tick_soon_();
   void restart_setup_();
   std::string apply_tariff_(const std::string &text);
+  void start_downloads_(int64_t now);
+  // In the downloads task, or on the loop without it, as in the simulation.
+  void download_();
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body);
-  std::string prices_url_(int64_t now, int day) const;
+  std::string prices_url_(int day) const;
   int store_prices_(const std::string &body, float rate);
-  void fetch_prices_(int64_t now);
+  void fetch_prices_();
   std::optional<float> fetch_rate_();
-  void fetch_plan_(int64_t now);
+  void fetch_plan_();
   void send_unsent_(int64_t now);
   bool send_message_(const Notification &message);
 
@@ -154,7 +170,12 @@ class SchedulerComponent : public PollingComponent {
 #endif
   std::string plan_text_;  // the plan in use: the copy built in until a download brings another
   int64_t plan_tried_at_{0};
-  bool plan_usable_{false};             // whether the latest download brought a plan the board can use
+  bool plan_usable_{false};  // whether the latest download brought a plan the board can use
+  Downloads downloads_;      // the loop sets it only while no batch runs
+  bool downloading_{false};  // from a batch's start until the loop has its last answer
+#ifdef USE_ESP32
+  StaticTask downloads_task_;
+#endif
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it
   int64_t unsent_since_{0};
   int64_t message_tried_at_{0};
