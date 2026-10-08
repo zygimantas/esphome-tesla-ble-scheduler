@@ -169,15 +169,24 @@ void SchedulerComponent::setup() {
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
     });
-  // Pairing only asks the car, and esphome-tesla-ble reads the plug state, which shows the key is paired, at its next
-  // poll, up to 11 minutes away on a board that has waited idle. So after a pairing request, from this page or any
-  // other, the board asks for a read every 15 s, for 3 minutes or until the car reports the plug, which moves it on at
-  // once.
+  // Pairing sends the car a request, which the key card confirms in the car. esphome-tesla-ble then waits for an answer
+  // that never comes: it sends the request again every 30 s, 6 times, and runs no other command meanwhile, so for 3
+  // minutes the board can't read the car, and another request waits its turn or is turned away. A Bluetooth reconnect
+  // drops it, and the car keeps the request until the key card, as Tesla's own tool sends it and disconnects. So 10 s
+  // after a pairing request, from this page or any other, the board reconnects, and asks for a read every 15 s, for 3
+  // minutes or until the car reports the plug state, which shows the key is paired and moves it on at once.
   button::Button *pair = find(App.get_buttons(), "Pair BLE Key");
   button::Button *read = find(App.get_buttons(), "Force data update");
+  switch_::Switch *link = find(App.get_switches(), "BLE Connection");
   if (pair != nullptr && read != nullptr && this->plug_ != nullptr) {
-    pair->add_on_press_callback([this, read]() {
+    pair->add_on_press_callback([this, read, link]() {
       const uint32_t asked = millis();
+      this->set_timeout("pairing link", 10 * 1000, [this, link]() {
+        if (link == nullptr || !link->state)
+          return;  // none, or turned off by hand
+        link->turn_off();
+        this->set_timeout("pairing link", 2 * 1000, [link]() { link->turn_on(); });
+      });
       this->set_interval("pairing", 15 * 1000, [this, read, asked]() {
         if (this->plug_->has_state() || millis() - asked > 3 * 60 * 1000)
           this->cancel_interval("pairing");
