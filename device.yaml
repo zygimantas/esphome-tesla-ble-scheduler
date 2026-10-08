@@ -85,7 +85,7 @@ time:
 web_server:
   css_include: web/web_ui.css
   js_include: web/web_ui.js
-  js_url: ""
+  js_url: "data:text/javascript,addEventListener('error',e=>{if(e.target.src?.endsWith('/0.js'))setTimeout(()=>location.reload(),1e3)},true);setTimeout(()=>{if(!document.title)location.reload()},9e3)"
   log: false
   ota: false
 

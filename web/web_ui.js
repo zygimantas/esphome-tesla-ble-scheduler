@@ -1446,14 +1446,15 @@ async function addIcon() {
   );
 }
 
-// Last, so every declaration above is initialised before the page starts.
+// Last, so every declaration above is initialised before the page starts. The title first: until there's one, js_url
+// in device.yaml loads the page again, as when Safari never ran this script. ESPHome's page at ?full sets its own.
+document.title = "ESPHome Tesla BLE Scheduler";
 if (new URLSearchParams(location.search).has("full")) {
   document.querySelector('link[href="/0.css"]')?.remove();
   const script = document.createElement("script");
   script.src = "https://oi.esphome.io/v2/www.js";
   document.body.append(script);
 } else {
-  document.title = "ESPHome Tesla BLE Scheduler";
   document.body.classList.add("loading"); // before the first paint
   document.body.insertAdjacentHTML("afterbegin", PAGE);
   // The page at its own size, like an app, by request, while ESPHome's at ?full zooms as usual: no zooming in or out,
