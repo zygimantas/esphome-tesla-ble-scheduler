@@ -162,6 +162,28 @@ void SchedulerComponent::setup() {
       this->paired_pref_.save(&this->paired_vin_);
       global_preferences->sync();
     });
+  // Pairing only asks the car, and esphome-tesla-ble reads the plug state, which shows the key is paired, at its next
+  // poll, up to 11 minutes away on a board that has waited idle. So after a pairing request, from this page or any
+  // other, the board asks for a read every 15 s, for 3 minutes or until the car reports the plug, which moves it on at
+  // once.
+  button::Button *pair = find(App.get_buttons(), "Pair BLE Key");
+  button::Button *read = find(App.get_buttons(), "Force data update");
+  if (pair != nullptr && read != nullptr && this->plug_ != nullptr) {
+    pair->add_on_press_callback([this, read]() {
+      const uint32_t asked = millis();
+      this->set_interval("pairing", 15 * 1000, [this, read, asked]() {
+        if (this->plug_->has_state() || millis() - asked > 3 * 60 * 1000)
+          this->cancel_interval("pairing");
+        else
+          read->press();
+      });
+    });
+    // Every change, as on_state callbacks skip the first state, which is the one here.
+    this->plug_->add_full_state_callback([this](optional<bool>, optional<bool> now) {
+      if (now.has_value() && this->paired_vin_ != fnv1_hash(this->file_.vin))
+        this->tick_soon_();
+    });
+  }
 
   if (this->settings_error_.empty())
     this->apply_settings_();
