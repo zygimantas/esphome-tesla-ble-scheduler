@@ -201,6 +201,19 @@ void SchedulerComponent::setup() {
     });
   }
 
+#ifdef USE_ESP32
+  // The downloads' task (start_downloads_()), its stack in PSRAM, as internal RAM is short while HTTPS runs. Without
+  // it, they run on the loop.
+  this->downloads_task_.create(
+      [](void *self) {
+        for (;;) {
+          ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+          static_cast<SchedulerComponent *>(self)->download_();
+        }
+      },
+      "downloads", 8192, this, 1, true);
+#endif
+
   if (this->settings_error_.empty())
     this->apply_settings_();
 }
@@ -238,11 +251,8 @@ void SchedulerComponent::update() {
   const ESPTime now = this->clock_->now();
   const CarState car = this->read_car_(now.is_valid() ? now.timestamp : 0);
   // The clock keeps running through a restart, so wait for the network too.
-  if (network::is_connected() && this->controller_.fetch_prices_due(car.now))
-    this->fetch_prices_(car.now);
-  if (network::is_connected() && !this->file_.plan.empty() &&
-      plan_due(car.now, this->plan_tried_at_, this->plan_usable_))
-    this->fetch_plan_(car.now);
+  if (network::is_connected() && !this->downloading_)
+    this->start_downloads_(car.now);
   const Decision d = this->controller_.tick(car, this->schedule_settings_());
   this->persist_(d);
   this->carry_out_(d, car.now);
@@ -428,15 +438,52 @@ std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   return "";
 }
 
+// The downloads due at `now`, the market's prices and the plan, in a task of their own (setup()), one batch at a time.
+// Each takes the board a second or two, a new TLS connection every time, which the loop can't spare: the Bluetooth
+// events wait for it, the car's among them, and drop once ESPHome's queue for them is full.
+void SchedulerComponent::start_downloads_(int64_t now) {
+  Downloads &batch = this->downloads_;
+  batch.now = now;
+  batch.area = this->controller_.fetch_prices_due(now) ? this->file_.area : nullptr;
+  // today's only while some of it is missing
+  batch.first_day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0;
+  batch.currency = this->file_.currency;
+  batch.plan.clear();
+  if (!this->file_.plan.empty() && plan_due(now, this->plan_tried_at_, this->plan_usable_)) {
+    this->plan_tried_at_ = now;
+    this->plan_usable_ = false;
+    batch.plan = this->file_.plan;
+  }
+  if (batch.area == nullptr && batch.plan.empty())
+    return;
+  this->downloading_ = true;
+#ifdef USE_ESP32
+  if (this->downloads_task_.is_created()) {
+    xTaskNotifyGive(this->downloads_task_.get_handle());
+    return;
+  }
+#endif
+  this->download_();
+}
+
+// A batch. Each answer goes to the loop, which uses the prices and the plan meanwhile, and so does the batch's end,
+// after the answers.
+void SchedulerComponent::download_() {
+  if (this->downloads_.area != nullptr)
+    this->fetch_prices_();
+  if (!this->downloads_.plan.empty())
+    this->fetch_plan_();
+  this->defer([this]() { this->downloading_ = false; });
+}
+
 // A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
+// Without App.feed_wdt(): the watchdog doesn't watch the downloads task, and on the loop the read feeds it.
 std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response) {
   std::string body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
   while (body.size() <= MAX_BODY_BYTES) {  // a byte past it tells a longer body from one of exactly MAX_BODY_BYTES
     const int read = response.read(chunk, std::min(sizeof(chunk), MAX_BODY_BYTES + 1 - body.size()));
-    App.feed_wdt();
-    yield();
     const auto result =
         http_request::http_read_loop_result(read, last_data, this->http_->get_timeout(), response.is_read_complete());
     if (result == http_request::HttpReadLoopResult::COMPLETE)
@@ -462,20 +509,20 @@ std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optio
   return status;
 }
 
-// Where the prices of the CET delivery day `day` days after `now` are.
-std::string SchedulerComponent::prices_url_(int64_t now, int day) const {
-  const Area &area = *this->file_.area;
-  switch (area.market) {
+// Where the prices of the CET delivery day `day` days after the batch's time are.
+std::string SchedulerComponent::prices_url_(int day) const {
+  const Downloads &batch = this->downloads_;
+  switch (batch.area->market) {
     case Market::SMARD:
-      return smard_url(area.smard_filter, now, day);
+      return smard_url(batch.area->smard_filter, batch.now, day);
     case Market::OMIE:
-      return omie_url(now, day);
+      return omie_url(batch.now, day);
     default:
-      return nord_pool_url(area.source_name, this->file_.currency.c_str(), now, day);
+      return nord_pool_url(batch.area->source_name, batch.currency.c_str(), batch.now, day);
   }
 }
 
-// Stores an answer's prices, SMARD's times `rate`: how many, or -1 if it can't be read.
+// On the loop: stores an answer's prices, SMARD's times `rate`: how many, or -1 if it can't be read.
 int SchedulerComponent::store_prices_(const std::string &body, float rate) {
   PriceTable &prices = this->controller_.prices;
   const Area &area = *this->file_.area;
@@ -489,14 +536,15 @@ int SchedulerComponent::store_prices_(const std::string &body, float rate) {
   }
 }
 
-// Today's and tomorrow's CET delivery days, today's only while some of it is missing. A failed request ends the
-// try: the next one would fail the same way and block the loop again.
-void SchedulerComponent::fetch_prices_(int64_t now) {
-  const Area &area = *this->file_.area;
+// Today's and tomorrow's CET delivery days, from the batch's first. A failed request ends the try: the next one would
+// fail the same way.
+void SchedulerComponent::fetch_prices_() {
+  const int64_t now = this->downloads_.now;
+  const Area &area = *this->downloads_.area;
   const char *source = market_name(area.market);
   // SMARD's prices are in euros: in the country's own currency, where the settings ask for it, at the ECB's latest rate
   float rate = 1.0f;
-  if (area.market == Market::SMARD && this->file_.currency != "EUR") {
+  if (area.market == Market::SMARD && this->downloads_.currency != "EUR") {
     const std::optional<float> ecb = this->fetch_rate_();
     if (!ecb)
       return;
@@ -507,8 +555,8 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
   const int not_yet =
       area.market == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
-  for (int day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0; day < 2; day++) {
-    const std::string url = this->prices_url_(now, day);
+  for (int day = this->downloads_.first_day; day < 2; day++) {
+    const std::string url = this->prices_url_(day);
     if (url == fetched)
       continue;
     fetched = url;
@@ -519,17 +567,19 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
       break;
     }
     if (*status == http_request::HTTP_STATUS_OK) {
-      PriceTable &prices = this->controller_.prices;
-      const int64_t until = prices.known_until(now);
-      const int stored = body ? this->store_prices_(*body, rate) : -1;
-      if (stored < 0) {
-        ESP_LOGW(TAG, "%s: %s", source, body ? "could not parse the answer" : "the answer was cut off");
-      } else if (prices.known_until(now) > until) {  // not just the week's earlier prices again, as SMARD sends
-        ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
-        this->controller_.reschedule();
-      } else if (stored == 0 && day == 0) {
-        ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Settings", source, area.name);
-      }
+      this->defer([this, now, day, rate, source, name = area.name, body = std::move(body)]() {
+        PriceTable &prices = this->controller_.prices;
+        const int64_t until = prices.known_until(now);
+        const int stored = body ? this->store_prices_(*body, rate) : -1;
+        if (stored < 0) {
+          ESP_LOGW(TAG, "%s: %s", source, body ? "could not parse the answer" : "the answer was cut off");
+        } else if (prices.known_until(now) > until) {  // not just the week's earlier prices again, as SMARD sends
+          ESP_LOGI(TAG, "%s: stored %d quarter-hours", source, stored);
+          this->controller_.reschedule();
+        } else if (stored == 0 && day == 0) {
+          ESP_LOGW(TAG, "%s: no prices for %s in the answer: check Country / Area under Settings", source, name);
+        }
+      });
     } else if (*status != not_yet) {
       ESP_LOGW(TAG, "%s answered HTTP %d", source, *status);
     } else if (day == 0) {  // today's prices are always out: tomorrow's may not be yet
@@ -541,7 +591,7 @@ void SchedulerComponent::fetch_prices_(int64_t now) {
 // What a euro is worth in the settings' currency, from the ECB's latest reference rates, or nothing when the request
 // fails: then the prices wait for the next try.
 std::optional<float> SchedulerComponent::fetch_rate_() {
-  const char *currency = this->file_.currency.c_str();
+  const char *currency = this->downloads_.currency.c_str();
   std::optional<std::string> body;
   const std::optional<int> status = this->fetch_(ECB_RATES_URL, body);
   const std::optional<float> rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
@@ -557,11 +607,9 @@ std::optional<float> SchedulerComponent::fetch_rate_() {
 }
 
 // The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use, leaves
-// the one in use, and the board tries again in an hour.
-void SchedulerComponent::fetch_plan_(int64_t now) {
-  this->plan_tried_at_ = now;
-  this->plan_usable_ = false;
-  const char *plan = this->file_.plan.c_str();
+// the one in use, and the board tries again in an hour. So does a save that names another plan meanwhile.
+void SchedulerComponent::fetch_plan_() {
+  const char *plan = this->downloads_.plan.c_str();
   std::optional<std::string> text;
   const std::optional<int> status = this->fetch_(std::string(PLANS) + plan + ".yaml", text);
   if (!status) {
@@ -570,15 +618,21 @@ void SchedulerComponent::fetch_plan_(int64_t now) {
     ESP_LOGW(TAG, "Plan %s: GitHub answered HTTP %d", plan, *status);
   } else if (!text) {
     ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", plan);
-  } else if (*text == this->plan_text_) {
-    this->plan_usable_ = true;
   } else {
-    const std::string error = this->apply_tariff_(*text);
-    this->plan_usable_ = error.empty();
-    if (error.empty())
-      ESP_LOGI(TAG, "Plan %s: new prices", plan);
-    else
-      ESP_LOGW(TAG, "Plan %s: %s, so the one in use stays", plan, error.c_str());
+    this->defer([this, plan = std::string(plan), text = std::move(*text)]() {
+      if (this->file_.plan != plan)
+        return;
+      if (text == this->plan_text_) {
+        this->plan_usable_ = true;
+        return;
+      }
+      const std::string error = this->apply_tariff_(text);
+      this->plan_usable_ = error.empty();
+      if (error.empty())
+        ESP_LOGI(TAG, "Plan %s: new prices", plan.c_str());
+      else
+        ESP_LOGW(TAG, "Plan %s: %s, so the one in use stays", plan.c_str(), error.c_str());
+    });
   }
 }
 
@@ -592,7 +646,7 @@ void SchedulerComponent::send_unsent_(int64_t now) {
     this->unsent_.reset();
     return;
   }
-  if (!network::is_connected())
+  if (!network::is_connected() || this->downloading_)  // one HTTPS at a time, for internal RAM
     return;
   this->message_tried_at_ = now;
   if (this->send_message_(*this->unsent_))
