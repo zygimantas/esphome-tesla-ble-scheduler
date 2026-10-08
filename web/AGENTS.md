@@ -1,6 +1,6 @@
 # web/
 
-- The page is built into the firmware (`js_include` and `css_include` in device.yaml), so a change needs a build and a flash. The board serves it as /0.js and /0.css.
+- The page is built into the firmware (`js_include` and `css_include` in device.yaml), so a change needs a build and a flash. The board serves it as /0.js and /0.css. device.yaml's `js_url`, a script of one line in ESPHome's index itself, loads the page again when /0.js fails, or when nothing has set the title after 9 s, as Safari on an iPhone, back on the page, sometimes never got /0.js and stayed white: the title is set before anything that could fail, here and at ?full, and no other script should set it later.
 - It shows and picks times in the phone's time zone, assuming the board's is the same.
 - render() runs from requestAnimationFrame, which hidden and background browser tabs don't fire. When you test in a headless or hidden browser, replace requestAnimationFrame with a direct call, or the page stays empty.
 - To try it without the board, serve a page that loads web_ui.css and web_ui.js as /0.css and /0.js, a fake /events (Server-Sent Events with `state` events like `{"id":"text_sensor/Charging status","value":"Charging","state":"Charging"}`, and `ping` events with the board's uptime in seconds, like `{"uptime":12}`), GET /settings and /settings/options, without which the page shows no cards, and a handler that accepts the POSTs; one that never answers them tries the 8 s timeout.
