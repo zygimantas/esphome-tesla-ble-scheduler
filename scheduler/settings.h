@@ -41,7 +41,7 @@ struct SettingsFile {
   float vat = 0.0f;            // on the market prices
   float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed part
   std::string ntfy_topic;      // empty: no phone messages
-  std::string plan;            // the plan's name, empty without one
+  std::string plan;            // a plan from the list, by its path; empty for a custom plan or none
   std::string_view plan_text;  // the plan as built in
   std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
@@ -58,46 +58,44 @@ inline std::string upper(std::string text) {
 }
 
 // Reads and checks the settings file, in the plans' YAML (tariff.h) as the page writes it, the last line break left out
-// or not. tariff: has a plan built in, or a custom plan: a plan's file (plans/README.md), each line indented by two
-// spaces, whose line numbers count from the line after tariff:, as in the file. Returns what's wrong, or "".
-// Quotes and comments after a value don't read: in hand-written files from before 5.0.0, which the page then saves
-// anew, and in custom plans uploaded since, which need uploading again without them.
+// or not, without quotes or comments after a value. grid: plan: names a plan built in, or holds a custom plan: a
+// plan's file (plans/README.md), each line indented by four spaces, whose line numbers count from the line after
+// plan:, as in the file. Returns what's wrong, or "".
 inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
   SettingsFile read;
   std::string area, battery, charging, currency, fixed, margin, vat, zone;
-  // Each setting by its place in the file, and where its value goes; market: and tariff: head lines of their own.
+  // Each setting by its place in the file, and where its value goes; grid: and market: head lines of their own.
   const std::pair<const char *, std::string *> places[] = {{"currency", &currency},
                                                            {"fixed_price", &fixed},
+                                                           {"grid", nullptr},
+                                                           {"grid: plan", &read.plan},
                                                            {"market", nullptr},
                                                            {"market: area", &area},
                                                            {"market: margin", &margin},
                                                            {"market: vat", &vat},
                                                            {"ntfy_topic", &read.ntfy_topic},
-                                                           {"tariff", nullptr},
-                                                           {"tariff: plan", &read.plan},
                                                            {"tesla_battery_kwh", &battery},
                                                            {"tesla_charging_kw", &charging},
                                                            {"tesla_vin", &read.vin},
                                                            {"timezone", &zone}};
   std::vector<std::string> seen;
   std::string section;
-  bool custom = false;  // a custom plan's lines under tariff:
+  bool custom = false;  // in a custom plan's lines, under grid: plan:
   size_t start = 0;
   for (int number = 1; start < text.size(); number++) {
     const std::string line = next_line(text, start);
     const size_t indent = line.find_first_not_of(' ');
     const auto at = [&](std::string_view what) { return concat({"line ", std::to_string(number), " ", what}); };
     if (indent == std::string::npos || line[indent] == '#') {
-      if (section == "tariff")
+      if (custom)
         read.custom_plan += "\n";
       continue;
     }
     // A custom plan's lines, which read_tariff() checks with the plan file's own line numbers.
-    if (section == "tariff" && indent >= 2 && line.compare(2, 5, "plan:") != 0) {
-      read.custom_plan += line.substr(2) + "\n";
-      custom = true;
+    if (custom && indent >= 4) {
+      read.custom_plan += line.substr(4) + "\n";
       continue;
     }
     std::string key, value;
@@ -108,10 +106,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     if (indent == 0) {
       section = heading ? key : "";
       place = key;
-    } else if (indent == 2 && section == "market" && !heading) {
-      place = "market: " + key;
-    } else if (indent == 2 && section == "tariff") {  // plan:, as a custom plan's lines are read above
-      place = "tariff: plan";
+    } else if (indent == 2 && ((section == "market" && !heading) || section == "grid")) {
+      place = concat({section, ": ", key});
     } else {
       return at(concat({"doesn't belong there: ", key}));
     }
@@ -124,6 +120,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     seen.push_back(place);
     if (found->second != nullptr)
       *found->second = value;
+    custom = place == "grid: plan" && heading;
   }
 
   if (std::find(seen.begin(), seen.end(), "market") != seen.end()) {
@@ -164,27 +161,25 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       }))
     return "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _";
 
-  if (!read.plan.empty() && custom)
-    return "tariff: a plan or a custom plan, not both";
   if (!read.plan.empty()) {
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
     if (found == plans.end())
-      return concat({"tariff: there's no plan ", read.plan});
+      return concat({"grid: there's no plan ", read.plan});
     read.plan_text = found->second;
   }
-  // Without market: and tariff:, the board has no prices, and the car charges as usual. A tariff: with neither a plan
-  // nor a calendar under it, like one with the plan's name on its own line, would add nothing.
+  // Without market: and grid:, the board has no prices, and the car charges as usual. A grid: with neither a plan nor
+  // a calendar under it, like one with the plan's name on its own line, would add nothing.
   TariffText custom_text;
   if (read.plan_text.empty() && read_tariff(read.custom_plan, custom_text).empty() && custom_text.calendar.empty() &&
-      std::find(seen.begin(), seen.end(), "tariff") != seen.end())
-    // nothing under tariff: names no plan; a custom plan that doesn't read gets make_tariff()'s error
-    return read.custom_plan.empty() ? "tariff: there's no plan" : "custom plan: there's no calendar";
+      std::find(seen.begin(), seen.end(), "grid") != seen.end())
+    // nothing under grid: names no plan; a custom plan that doesn't read gets make_tariff()'s error
+    return read.custom_plan.empty() ? "grid: there's no plan" : "custom plan: there's no calendar";
   Tariff tariff;
   if (const std::string error =
-          make_tariff(custom ? read.custom_plan : std::string(read.plan_text), read.currency, tariff);
+          make_tariff(read.plan.empty() ? read.custom_plan : std::string(read.plan_text), read.currency, tariff);
       !error.empty())
-    return concat({custom ? "custom plan: " : "tariff: ", error});
+    return concat({read.plan.empty() ? "custom plan: " : "grid: ", error});
 
   // The car, all three or none yet, as the setup saves the prices before the car's step. Wider than the page's 20 to
   // 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
