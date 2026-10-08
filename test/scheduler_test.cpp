@@ -209,9 +209,9 @@ static void test_nord_pool_prices() {
   CHECK(parse_iso8601("2025-10-01T22:00:00") == 1759356000);  // no offset: UTC
   CHECK(parse_iso8601("2025-10-01T22:00:30Z") == 1759356030);
   CHECK(parse_iso8601("2026-01-01T00:00:00Z") == 1767225600);
-  for (const char *bad :
-       {"not a date", "2025-10-01T22:00:00+02", "2025-10-01T22:00:00x", "2025-10-01T22:00:00.5x",
-        "2025-00-01T22:00:00Z", "2025-13-01T22:00:00Z", "2025-10-00T22:00:00Z", "2025-10-32T22:00:00Z"})
+  for (const char *bad : {"not a date", "2025-10-01T22:00:00+02", "2025-10-01T22:00:00x", "2025-10-01T22:00:00.5x",
+                          "2025-00-01T22:00:00Z", "2025-13-01T22:00:00Z", "2025-10-00T22:00:00Z",
+                          "2025-10-32T22:00:00Z", "2025-10-01T22:00:00\xC3\xA9"})
     CHECK(!parse_iso8601(bad));
   CHECK(!parse_iso8601(nullptr));
 
@@ -224,6 +224,7 @@ static void test_nord_pool_prices() {
   CHECK(nord_pool_url("SE3", "SEK", SEP24_1700Z, 0).find("deliveryArea=SE3&currency=SEK") != std::string::npos);
   CHECK(end_of_delivery_day(SEP24_1700Z) == CET_SEP25);
   CHECK(end_of_next_delivery_day(SEP24_1700Z) == CET_SEP25 + DAY_SECONDS);
+  CHECK(end_of_next_delivery_day(CET_SEP25 + 30 * 60) == CET_SEP25 + 2 * DAY_SECONDS);  // in a day's first hour too
 
   PriceTable prices;
   const char *json =
@@ -294,13 +295,17 @@ static void test_smard_prices() {
 static void test_ecb_rates() {
   const std::string xml =
       "<gesmes:Envelope><Cube><Cube time='2026-10-05'><Cube currency='USD' rate='1.1652'/>"
-      "<Cube currency='CZK' rate='24.335'/><Cube currency='HUF' rate='0'/>"
-      "<Cube currency='CHF' rate='soon'/></Cube></Cube></gesmes:Envelope>";
+      "<Cube currency='CZK' rate='24.335'/><Cube currency='SEK' rate='soon'/><Cube currency='CHF' rate='0.9365'/>"
+      "<Cube currency='HUF' rate='0'/><Cube currency='NOK' rate='-11.6'/><Cube currency='DKK' rate='nan'/>"
+      "</Cube></Cube></gesmes:Envelope>";
   const auto czk = ecb_rate(xml.data(), xml.size(), "CZK");
   CHECK(czk && near(*czk, 24.335f));
-  CHECK(!ecb_rate(xml.data(), xml.size(), "PLN"));  // not in the file
-  CHECK(!ecb_rate(xml.data(), xml.size(), "HUF"));  // not a rate
-  CHECK(!ecb_rate(xml.data(), xml.size(), "CHF"));
+  CHECK(!ecb_rate(xml.data(), xml.size(), "SEK"));           // not a rate, right after one
+  const auto chf = ecb_rate(xml.data(), xml.size(), "CHF");  // under 1, as a franc is worth more than a euro
+  CHECK(chf && near(*chf, 0.9365f));
+  CHECK(!ecb_rate(xml.data(), xml.size(), "PLN"));    // not in the file
+  for (const char *currency : {"HUF", "NOK", "DKK"})  // not rates
+    CHECK(!ecb_rate(xml.data(), xml.size(), currency));
   CHECK(std::string(ECB_RATES_URL) == "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml");
 }
 
@@ -331,6 +336,11 @@ static void test_omie_prices() {
   CHECK(!spain.get(quarter_81 + 2 * SLOT_SECONDS) && !portugal.get(quarter_81 + 2 * SLOT_SECONDS));  // not finite
   const auto last = spain.get(utc("2025-10-26T22:45:00Z"));  // 23:45 CET, after the clocks went back
   CHECK(last && near(*last, -0.002f));
+  const char *unix_ends = "MARGINALPDBC;\n2026;09;30;81;255;249.79;\n2026;09;30;82;256;250;\n*\n";  // no \r
+  PriceTable lines;
+  CHECK(lines.add_omie(unix_ends, std::strlen(unix_ends), "ES") == 2);
+  const auto first = lines.get(quarter_81);
+  CHECK(first && near(*first, 0.24979f));
   CHECK(spain.add_omie("<!DOCTYPE html>", 15, "ES") == -1);
 }
 
@@ -373,6 +383,13 @@ static void test_schedule_picks_the_night_trough() {
   CHECK(schedule.valid && schedule.needed_slots == 14 && schedule.unpriced_slots == 0);
   CHECK_STR(only_window(schedule), "01:30-05:00");
   CHECK(make_schedule(prices, overnight(SEP24_1700Z, 47)).needed_slots == 11);  // 24.75 kWh: exactly 10 quarter-hours
+  ScheduleRequest sizes = overnight(SEP24_1700Z, 15);  // 82 kWh at 7.4 kW from 15%: 32.01 quarter-hours
+  sizes.settings.battery_kwh = 82;
+  sizes.settings.charging_kw = 7.4f;
+  CHECK(make_schedule(prices, sizes).needed_slots == 34);
+  sizes = overnight(SEP24_1700Z, 11);  // 75 kWh at 2.3 kW from 11%: exactly 100
+  sizes.settings.charging_kw = 2.3f;
+  CHECK(make_schedule(prices, sizes).needed_slots == 101);
   ScheduleRequest slow = request;
   slow.settings.charging_kw = 2.3f;  // 30 kWh takes 58 quarter-hours: all 44 to 07:00
   CHECK_STR(only_window(make_schedule(prices, slow)), "20:00-07:00");
@@ -470,6 +487,33 @@ static void test_schedule_windows_and_prices() {
   REQUIRE(nearly.windows.size() == 3);
   CHECK(!nearly.windows[0].spare() && nearly.windows[1].spare() && nearly.windows[2].spare());
   CHECK(near(nearly.soc_at_end, 79.7f, 1e-3f));
+  // Exactly half a percent short counts as full, as the board's own check does: the window is spare, whole, at its
+  // quarter-hours' price.
+  const Schedule edge = make_schedule(two_cheap_spells(), overnight(SEP24_1700Z, 79.5f));
+  REQUIRE(edge.windows.size() == 1);
+  CHECK_STR(format_windows(edge, "EUR"),
+            concat({"EUR;", std::to_string(SEP24_1700Z + 5 * HOUR), ",",
+                    std::to_string(SEP24_1700Z + 5 * HOUR + 2 * SLOT_SECONDS), ",0.100,spare"}));
+  // Within a window the car charges on to its limit: seven quarter-hours from 60%, and 05:00 spare.
+  const PriceTable seven = prices_from(SEP24_1700Z, SEP24_1700Z + 11 * HOUR, [](int64_t after) {
+    return after >= 5 * HOUR && after < 5 * HOUR + 7 * SLOT_SECONDS ? 0.10f : after == 9 * HOUR ? 0.11f : 0.50f;
+  });
+  const Schedule on = make_schedule(seven, overnight(SEP24_1700Z, 60));
+  CHECK(on.windows.size() == 2 && near(on.soc_at_end, 80, 1e-3f));
+  // The current quarter-hour's window isn't spare however close the car is to its limit: it finishes there, also
+  // halfway through it.
+  const PriceTable cheap_now = prices_from(SEP24_1700Z, SEP24_1700Z + 11 * HOUR,
+                                           [](int64_t after) { return after < SLOT_SECONDS ? 0.10f : 0.50f; });
+  for (const int64_t now : {SEP24_1700Z, SEP24_1700Z + 10 * 60}) {
+    const Schedule finishing = make_schedule(cheap_now, overnight(now, 79.6f));
+    CHECK(finishing.windows.size() == 1 && !finishing.windows[0].spare() && near(finishing.soc_at_end, 80, 1e-3f));
+  }
+  // In a quarter-hour's last 20 s, 0.06 kWh still makes a window, not a spare one.
+  const PriceTable now_and_one = prices_from(SEP24_1700Z, SEP24_1700Z + 11 * HOUR, [](int64_t after) {
+    return after < SLOT_SECONDS ? 0.10f : after == 5 * HOUR ? 0.11f : 0.50f;
+  });
+  const Schedule last_seconds = make_schedule(now_and_one, overnight(SEP24_1700Z + SLOT_SECONDS - 20, 79));
+  CHECK(last_seconds.windows.size() == 2 && !last_seconds.windows[0].spare() && !last_seconds.windows[1].spare());
 
   request.soc = 80;
   CHECK_STR(format_windows(make_schedule(two_cheap_spells(), request), "EUR"), "EUR");  // nothing to charge
@@ -614,6 +658,8 @@ static void test_reads_a_plan() {
   const std::string whole = FOUR_ZONES;
   TariffText cut;
   CHECK_STR(read_tariff(whole.substr(0, whole.find("4641\n")), cut), "the text ends inside a line, as if cut off");
+  for (const char *text : {"name: Netz Nieder\xC3", "name: A\t"})  // inside a letter, or after a tab
+    CHECK_STR(read_tariff(text, cut), "the text ends inside a line, as if cut off");
 }
 
 static void test_plan_downloads() {
@@ -699,14 +745,15 @@ static void test_makes_tariffs() {
            Case{calendar_of("    mon-sun: flat") + "exceptions:\n  12-25: dark\n",
                 "exceptions: 12-25: rate dark has no price"},
            Case{calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"), "rate spare isn't used on any day"},
+           Case{calendar_of("    mon-sun: flat", "spare: 0.2\n  flat: 0.1"), "rate spare isn't used on any day"},
        }) {
     CHECK_STR(tariff_error(c.plan), c.error);
   }
-  for (const char *time : {"7:00", "07:10", "07:60", "07-00", "0x:00", "07:x0", "00:00", "24:00", "0::00", "1/:00",
+  for (const char *time : {"7", "7:00", "07:10", "07:60", "07-00", "0x:00", "07:x0", "00:00", "24:00", "0::00", "1/:00",
                            "07:0?", "07:000", "07x00", "25:00"})
     CHECK_STR(tariff_error(calendar_of(("    mon-sun: flat " + std::string(time) + " flat").c_str())),
               std::string("calendar: jan-dec: mon-sun: ") + time + " isn't a later quarter-hour, like 07:00 or 22:15");
-  for (const char *date : {"01+01", "13-01", "00-10", "01-00", "1-01", "01/01", "01-011"})
+  for (const char *date : {"1", "01+01", "13-01", "00-10", "01-00", "1-01", "01/01", "01-011"})
     CHECK_STR(tariff_error(calendar_of("    mon-sun: flat") + "exceptions:\n  " + date + ": flat\n"),
               std::string("exceptions: ") + date + " isn't a date like 12-25, or it's there twice");
   CHECK_STR(tariff_error(calendar_of("    mon-sun: flat 23:45 flat")), "");
@@ -1016,6 +1063,16 @@ static void test_reads_the_settings_file() {
   for (const char *currency : {"EUR", "GBP"})  // the area's own only, as the page writes it
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + norway),
               "currency: Nord Pool's prices for NO1 come in NOK");
+  // The other areas with a currency of their own, without a plan.
+  struct Own {
+    const char *area, *currency;
+  };
+  for (const Own own : {Own{"dk1", "DKK"}, Own{"pl", "PLN"}, Own{"ro", "RON"}, Own{"se3", "SEK"}}) {
+    const std::string text = concat({"market:\n  area: ", own.area, "\n  vat: 0.25\n", CAR, "timezone: Europe/Oslo\n"});
+    CHECK_STR(read_settings(text, repository_plans(), s), "");
+    CHECK(s.currency == own.currency);
+    CHECK_STR(read_settings(concat({"currency: ", own.currency, "\n", text}), repository_plans(), s), "");
+  }
   // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
   const std::string czech = concat(
       {"currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n"
@@ -1060,15 +1117,17 @@ static void test_settings_that_restart() {
                                   settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
                                   settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
     CHECK(!restarts(was, read(text)));
-  SettingsFile now = was;
+  SettingsFile now = was;  // another car, area or currency, either way
   now.vin = "5YJ3E1EA2KF317000";
-  CHECK(restarts(was, now));
+  CHECK(restarts(was, now) && restarts(now, was));
   now = was;
   now.area = nullptr;  // a fixed price
   CHECK(restarts(was, now));
+  now = read(settings_set("  area", "LV"));
+  CHECK(restarts(was, now) && restarts(now, was));
   now = was;
   now.currency = "SEK";
-  CHECK(restarts(was, now));
+  CHECK(restarts(was, now) && restarts(now, was));
 }
 
 // Which saves delete the schedule: once the board has a car, any change but the ntfy topic's.
@@ -1096,7 +1155,9 @@ static void test_settings_that_delete_the_schedule() {
 }
 
 static void test_settings_file_errors() {
-  CHECK_STR(settings_error(SETTINGS + std::string(MAX_SETTINGS_BYTES, '#')), "the file is longer than 4 kB");
+  // The page sends up to 4096 bytes, and the board takes them all.
+  CHECK_STR(settings_error(SETTINGS + std::string(4096 - std::strlen(SETTINGS), '#')), "");
+  CHECK_STR(settings_error(SETTINGS + std::string(4097 - std::strlen(SETTINGS), '#')), "the file is longer than 4 kB");
   // Lines
   CHECK_STR(settings_error(settings_with("tesla_vin", "tesla_vin 5YJ3E1EA0KF000000\n")),
             "line 11 isn't a key and a value");
@@ -1107,6 +1168,9 @@ static void test_settings_file_errors() {
             "line 12 doesn't belong there: x");
   CHECK_STR(settings_error(settings_with("  vat", "  vat:\n")), "line 5 doesn't belong there: vat");
   CHECK_STR(settings_error(settings_with("  vat", "    vat: 0.21\n")), "line 5 doesn't belong there: vat");
+  CHECK_STR(settings_error(settings_with("  vat", " vat: 0.21\n")), "line 5 doesn't belong there: vat");
+  CHECK_STR(settings_error(settings_with("timezone", "\"timezone\": Europe/Vilnius\n")),
+            "line 12 has \"timezone\", which isn't a setting");
   CHECK_STR(settings_error("  tesla_vin: 5YJ3E1EA0KF000000\n"), "line 1 doesn't belong there: tesla_vin");
   CHECK_STR(settings_error(settings_with("  plan", " plan: lt/eso-standartinis-4-zones\n")),
             "line 8 doesn't belong there: plan");
@@ -1126,6 +1190,7 @@ static void test_settings_file_errors() {
   for (const std::string &tariff : {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
                                     no_tariff + "tariff:\n  plan:\n"})
     CHECK_STR(settings_error(tariff), "tariff: there's no plan");
+  CHECK_STR(settings_error("tariff:\ntesla_vin:\n# none yet\n"), "tariff: there's no plan");  // none under tariff:
   for (const std::string &tariff :
        {no_tariff + "tariff:\n  # My plan\n", no_tariff + "tariff:\n  clock: winter\n",
         no_prices + "tariff:\n  rates:\n    flat: 0.24\n", no_prices + "tariff:\n  exceptions:\n    12-25: flat\n"})
@@ -1137,24 +1202,30 @@ static void test_settings_file_errors() {
   for (const char *area : {"  area: GB\n", ""})
     CHECK_STR(settings_error(settings_with("  area", area)),
               "market: area must be one the board knows, like LT or SE3: see Countries and plans");
-  for (const char *vat : {"-0.1", "1", "\"\""})
+  CHECK_STR(settings_error(settings_set("  vat", "0")), "");  // as the page writes Norway's NO4
+  for (const char *vat : {"-0.1", "1", "21", "\"\""})
     CHECK_STR(settings_error(settings_set("  vat", vat)),
               "market: vat must be the VAT as a fraction, like 0.21 for 21%");
-  for (const char *margin : {"1.6 ct", "1e7"})
+  for (const char *margin : {"1.6 ct", "-0.1", "1e6", "1e7"})
     CHECK_STR(settings_error(settings_set("  margin", margin)), "market: margin must be a price per kWh, like 0.012");
   // Fixed price: without a market, and a price
   CHECK_STR(settings_error("fixed_price: 0.15\n" + std::string(SETTINGS)),
             "fixed_price goes without market:; on top of a market price, use market: margin");
-  for (const char *price : {"15 ct", "-0.1", "1e7"})
+  CHECK_STR(settings_error("fixed_price: 0\n" + no_prices + "tariff:\n  plan: lt/eso-standartinis-2-zones\n"),
+            "");  // as the page writes a supplier's part left at 0.00
+  for (const char *price : {"15 ct", "-0.1", "1e6", "1e7"})
     CHECK_STR(settings_error(std::string("fixed_price: ") + price + "\n" + no_prices +
                              "tariff:\n  plan: lt/eso-standartinis-2-zones\n"),
               "fixed_price must be a price per kWh, like 0.15");
   // Currency
-  for (const char *currency : {"EURO", "E1R", "E[R"})
+  for (const char *currency : {"EU", "EURO", "E1R", "E[R"})
     CHECK_STR(settings_error(std::string("currency: ") + currency + "\n" + SETTINGS),
               "currency must be a currency's three-letter code, like EUR");
+  CHECK_STR(settings_error("currency: CAD\n" + no_prices), "");
   // Phone messages, through ntfy's own server
-  for (const std::string &topic : {std::string("https://ntfy.sh/mine"), std::string(65, 'a')})
+  CHECK_STR(settings_error(settings_set("ntfy_topic", std::string(64, 'a'))), "");
+  for (const std::string &topic :
+       {std::string("https://ntfy.sh/mine"), std::string(65, 'a'), std::string("my topic"), std::string("my~topic")})
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
@@ -1181,16 +1252,17 @@ static void test_settings_file_errors() {
   // The car, with sizes and powers wider than the page's, and closed, and the time zone
   for (const char *kwh : {"10", "1000"})
     CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)), "");
-  for (const char *kwh : {"0", "-75", "9.9", "1001", "1e30", "inf", "75 kWh"})
+  for (const char *kwh : {"0", "-75", "9.9", "1000.1", "1001", "1e30", "inf", "75 kWh"})
     CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)),
               "tesla_battery_kwh must be the battery's size in kWh, like 75");
   for (const char *kw : {"0.5", "100"})
     CHECK_STR(settings_error(settings_set("tesla_charging_kw", kw)), "");
-  for (const char *kw : {"0", "1e-30", "0.49", "101", "inf"})
+  for (const char *kw : {"0", "1e-30", "0.49", "100.1", "101", "inf"})
     CHECK_STR(settings_error(settings_set("tesla_charging_kw", kw)),
               "tesla_charging_kw must be the charging power in kW, like 11");
-  for (const char *vin : {"5YJ3E1EA0KF00000", "5YJ3E1EA0KF00000-", "5YJ3E1EA0KF00000:", "5yj3e1ea0kf000000",
-                          "5YJ3E1EA0KF00000I", "5YJ3E1EA0KF00000O", "5YJ3E1EA0KF00000Q"})
+  CHECK_STR(settings_error(settings_set("tesla_vin", "5YJ3E1EA9KF00000Z")), "");
+  for (const char *vin : {"5YJ3E1EA0KF00000", "5YJ3E1EA0KF0000000", "5YJ3E1EA0KF00000-", "5YJ3E1EA0KF00000:",
+                          "5yj3e1ea0kf000000", "5YJ3E1EA0KF00000I", "5YJ3E1EA0KF00000O", "5YJ3E1EA0KF00000Q"})
     CHECK_STR(settings_error(settings_set("tesla_vin", vin)),
               "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
               "screen under Controls, Software");
@@ -1210,6 +1282,8 @@ static void test_settings_file_errors() {
             "");
   CHECK(no_car.vin.empty() && no_car.battery_kwh == 0.0f && no_car.charging_kw == 0.0f && no_car.area != nullptr);
   CHECK_STR(settings_error(without(SETTINGS, {"tesla_battery_kwh", "tesla_charging_kw"})),
+            "tesla_battery_kwh must be the battery's size in kWh, like 75");
+  CHECK_STR(settings_error(without(SETTINGS, {"tesla_battery_kwh", "tesla_vin"})),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   // No quotes, and no comment after a value, which the page doesn't write: a hand-written file from before 5.0.0 with
   // them doesn't read, and the page saves it anew. A custom plan with such a comment, which YAML would leave out of
@@ -1532,6 +1606,18 @@ static void test_reschedules_when_no_longer_complete() {
   const Decision resumed = controller.tick(car, Settings());
   CHECK(resumed.command == Command::NONE);
   CHECK_STR(resumed.status, "Charging");
+
+  // A lower limit doesn't: a start then is the car's own.
+  Controller lowered = with_prices();
+  FakeTesla complete = plugged_in(false);
+  complete.soc = 70;
+  complete.complete = true;
+  complete.limit = 90;
+  lowered.tick(complete.state(SEP24_1700Z - HOUR), Settings());
+  complete.limit = 80;
+  lowered.tick(complete.state(SEP24_1700Z), Settings());
+  complete.charging = true;
+  CHECK_STR(lowered.tick(complete.state(SEP24_1700Z + 60), Settings()).mode, "now");
 }
 
 static void test_reschedules_when_charging_runs_slow() {
@@ -1545,6 +1631,14 @@ static void test_reschedules_when_charging_runs_slow() {
   CHECK(run.commands.size() <= 3);
 }
 
+static void test_reschedules_when_the_clock_goes_back() {
+  // A clock set back to an earlier quarter-hour makes the schedule again for then.
+  Controller controller = with_prices();
+  const FakeTesla car = plugged_in(false);
+  controller.tick(car.state(TROUGH + 30 * 60), Settings());
+  CHECK_STR(controller.tick(car.state(TROUGH - 30 * 60), Settings()).status, "Charges at 01:30");
+}
+
 static void test_no_start_for_a_windows_last_minutes() {
   // 20:00 is cheap and 20:15 dear: a schedule made at 20:14:30 sends no start that the next quarter-hour's
   // schedule would stop, and names its next window; a car already charging is left alone.
@@ -1555,6 +1649,12 @@ static void test_no_start_for_a_windows_last_minutes() {
   const Decision late = stopped.tick(car.state(SEP24_1700Z + 14 * 60 + 30), Settings());
   CHECK(late.command == Command::NONE);
   CHECK_STR(late.status, "Charges at 01:00");
+  Controller at_two = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));  // 2 minutes: still
+  CHECK(at_two.tick(car.state(SEP24_1700Z + 13 * 60), Settings()).command == Command::START_CHARGING);
+  Controller past_two = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
+  CHECK(past_two.tick(car.state(SEP24_1700Z + 13 * 60 + 1), Settings()).command == Command::NONE);
+  Controller goes_on = with_prices();  // in a window that goes on past the quarter-hour, a start at once
+  CHECK(goes_on.tick(plugged_in(false).state(TROUGH + 13 * 60 + 30), Settings()).command == Command::START_CHARGING);
   car.charging = true;
   Controller charging = with_prices(prices_from(SEP24_1700Z, SEP24_1700Z + 12 * HOUR, price_at));
   CHECK(charging.tick(car.state(SEP24_1700Z + 13 * 60 + 30), Settings()).command == Command::NONE);
@@ -1590,6 +1690,12 @@ static void test_waits_for_tomorrows_prices() {
   CHECK(contains(run.statuses, "Waiting for prices") && contains(run.statuses, "Charges at 01:30"));
   REQUIRE(run.messages.size() == 1);
   CHECK(run.messages[0].first == published);  // the message waits for the schedule
+
+  Controller one_left;  // also for the last quarter-hour before Ready by alone
+  add_day(one_left.prices, CET_SEP24);
+  Settings once;
+  once.ready_by_once = CET_SEP25 + SLOT_SECONDS;
+  CHECK_STR(one_left.tick(plugged_in(false).state(CET_SEP25 - 90), once).status, "Waiting for prices");
 }
 
 static void test_fetch_prices_due() {
@@ -1599,8 +1705,12 @@ static void test_fetch_prices_due() {
   CHECK(!controller.fetch_prices_due(NOON + 5 * 60 - 1));  // then every 5 minutes
   CHECK(controller.fetch_prices_due(NOON + 5 * 60));
   CHECK(controller.fetch_prices_due(NOON + 15 * 60));
-  add_day(controller.prices, CET_SEP24);                         // today's, to 01:00
-  CHECK(!controller.fetch_prices_due(NOON + 15 * 60 + HOUR));    // tomorrow's: not before 12:45 CET
+  add_day(controller.prices, CET_SEP24);                       // today's, to 01:00
+  CHECK(!controller.fetch_prices_due(NOON + 15 * 60 + HOUR));  // tomorrow's: not before 12:45 CET
+  Controller partly;                                           // also with some of tomorrow's in
+  add_day(partly.prices, CET_SEP24);
+  partly.prices.set(CET_SEP25, 0.1f);
+  CHECK(!partly.fetch_prices_due(NOON));
   const int64_t publication = SEP24_1700Z - 6 * HOUR - 15 * 60;  // 12:45 CET: every 5 minutes
   CHECK(controller.fetch_prices_due(publication));
   CHECK(!controller.fetch_prices_due(publication + 4 * 60));
@@ -1879,11 +1989,9 @@ static void test_retries_are_rate_limited() {
   Controller stuck = with_prices();
   CHECK_STR(stuck.tick(car.state(TROUGH), Settings()).status, "Starting");
   for (int64_t now = TROUGH + 30; now < TROUGH + 6 * 60; now += 30)
-    stuck.tick(car.state(now), Settings());
-  CHECK_STR(stuck.tick(car.state(TROUGH + 6 * 60 - 30), Settings()).status, "Starting");
-  CHECK_STR(stuck.tick(car.state(TROUGH + 6 * 60), Settings()).status, "Can't start charging");
-  for (int64_t now = TROUGH + 6 * 60 + 30; now < TROUGH + 15 * 60; now += 30)
-    stuck.tick(car.state(now), Settings());
+    CHECK_STR(stuck.tick(car.state(now), Settings()).status, "Starting");
+  for (int64_t now = TROUGH + 6 * 60; now < TROUGH + 15 * 60; now += 30)
+    CHECK_STR(stuck.tick(car.state(now), Settings()).status, "Can't start charging");
   CHECK_STR(stuck.tick(car.state(TROUGH + 15 * 60), Settings()).status, "Starting");
 }
 
@@ -1899,11 +2007,15 @@ static void test_charger_without_power() {
   car.set_charging(true);  // the car keeps the request
   for (int64_t now = TROUGH + 30; now < TROUGH + 10 * 60; now += 30)
     CHECK(controller.tick(car.state(now), Settings()).command == Command::NONE);
+  CHECK(controller.tick(car.state(TROUGH + 10 * 60 - 1), Settings()).command == Command::NONE);
   CHECK(controller.tick(car.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
   car.power_back();  // the charger supplies power: the car charges as asked
   const Decision charging = controller.tick(car.state(TROUGH + 11 * 60), Settings());
   CHECK(charging.command == Command::NONE);
   CHECK_STR(charging.status, "Charging");
+  car.soc = 80;  // and completes at its limit: no stop for the request it had held
+  car.charging = false;
+  CHECK(controller.tick(car.state(TROUGH + 12 * 60), Settings()).command == Command::NONE);
 
   // A regular start, then the car reports No Power: it holds that request, so no second start for 10 minutes.
   FakeTesla late = plugged_in(false);
@@ -1946,7 +2058,9 @@ static void test_charger_without_power() {
   unknown_reading.charging_state = "Unknown";
   unknown_reading.plugged = false;
   CHECK(flicker.tick(unknown_reading, Settings()).command == Command::NONE);
-  for (int64_t now = TROUGH + 60; now < TROUGH + 10 * 60; now += 30)
+  unknown_reading.now = TROUGH + 60;  // twice
+  CHECK(flicker.tick(unknown_reading, Settings()).command == Command::NONE);
+  for (int64_t now = TROUGH + 90; now < TROUGH + 10 * 60; now += 30)
     CHECK(flicker.tick(powerless.state(now), Settings()).command == Command::NONE);
   CHECK(flicker.tick(powerless.state(TROUGH + 10 * 60), Settings()).command == Command::START_CHARGING);
 
@@ -1956,6 +2070,7 @@ static void test_charger_without_power() {
   ended.tick(powerless.state(TROUGH), Settings());
   CHECK(ended.tick(powerless.state(TROUGH + 6 * HOUR), Settings()).command == Command::STOP_CHARGING);
   CHECK(ended.tick(powerless.state(TROUGH + 6 * HOUR + 30), Settings()).command == Command::NONE);
+  CHECK(ended.tick(powerless.state(TROUGH + 6 * HOUR + 2 * 60), Settings()).command == Command::NONE);  // only once
 }
 
 static void test_new_limit_reschedules_at_once() {
@@ -2075,6 +2190,7 @@ static void test_stop_charging_until_a_button_or_plug_in() {
   controller.tick(car.state(TROUGH + 18 * 60), Settings());
   car.unplug();
   CHECK_STR(controller.tick(car.state(TROUGH + 19 * 60), Settings()).mode, "unplugged");
+  CHECK(controller.held_mode() == 0);  // the hold a restart reads too
   car.plug_in();
   CHECK_STR(controller.tick(car.state(TROUGH + 20 * 60), Settings()).mode, "schedule");
 
@@ -2086,6 +2202,13 @@ static void test_stop_charging_until_a_button_or_plug_in() {
   waiting.charging = true;
   quick.stop_charging();
   CHECK(quick.tick(waiting.state(SEP24_1700Z + 30), Settings()).command == Command::STOP_CHARGING);
+
+  // Stop charging with a full car: No schedule, not Charged.
+  FakeTesla full = plugged_in(false);
+  full.soc = 80;
+  Controller stopped_full = with_prices();
+  stopped_full.stop_charging();
+  CHECK_STR(stopped_full.tick(full.state(SEP24_1700Z), Settings()).status, "No schedule");
 }
 
 static void test_buttons_skip_the_command_limits() {
@@ -2231,6 +2354,16 @@ static void test_plug_in_message_when_time_is_short() {
   const Run enough = plug_in_at_8pm(soon);
   REQUIRE(enough.messages.size() == 1);
   CHECK(enough.messages[0].second.message.find("Not enough") == std::string::npos);
+
+  Settings big;  // 115.2 kWh at 4 kW from 67% ends at 79.5% by 00:00: exactly half a percent short is enough
+  big.battery_kwh = 115.2f;
+  big.charging_kw = 4;
+  big.ready_by_once = SEP24_1700Z + 4 * HOUR;
+  FakeTesla from_67;
+  from_67.soc = 67;
+  const Run exact = plug_in_at_8pm(big, from_67);
+  REQUIRE(exact.messages.size() == 1);
+  CHECK_STR(exact.messages[0].second.message, "67 to 80% by Fri 00:00; avg 0.143 EUR/kWh over 1 window(s)");
 
   soon.ready_by_once = SEP24_1700Z + 10 * 60;  // 20:10, within the quarter-hour of the plug-in
   const Run no_time = plug_in_at_8pm(soon);
@@ -2384,6 +2517,27 @@ static void test_fallback_message_mid_stay() {
   CHECK(fallback_night(true).size() == 2);
 }
 
+static void test_fallback_message_once_a_plug_in() {
+  // Without prices, the message that the board charges at any price comes once a plug-in, not once a boot.
+  Controller controller;
+  FakeTesla car = plugged_in(false);
+  car.soc = 80;
+  for (int64_t now = SEP24_1700Z; now < SEP24_1700Z + 11 * 60; now += 30)
+    controller.tick(car.state(now), Settings());
+  car.limit = 90;
+  CHECK(controller.tick(car.state(SEP24_1700Z + 11 * 60), Settings()).notification.has_value());
+  car.limit = 80;
+  car.unplug();
+  controller.tick(car.state(SEP24_1700Z + 12 * 60), Settings());
+  car.plug_in();
+  controller.tick(car.state(SEP24_1700Z + 13 * 60), Settings());
+  const Decision charged = controller.tick(car.state(SEP24_1700Z + 15 * 60), Settings());
+  CHECK_STR(charged.notification ? charged.notification->message : "", "Charged");
+  car.limit = 90;
+  const Decision again = controller.tick(car.state(SEP24_1700Z + 16 * 60), Settings());
+  CHECK_STR(again.notification ? again.notification->message : "", "Charging (no prices)");
+}
+
 static void test_message_when_ready_by_passes_short() {
   // The charger gives no power all night: at 07:00, Ready by, the phone hears it, and only then.
   const int64_t ready_by = SEP24_1700Z + 11 * HOUR;
@@ -2430,7 +2584,7 @@ static void test_message_when_ready_by_passes_short() {
   settings.ready_by_minutes = 8 * 60;
   CHECK(!moved.tick(waiting.state(ready_by - 30), settings).notification);
   CHECK(!moved.tick(waiting.state(ready_by + 30), settings).notification);
-  CHECK(moved.tick(waiting.state(ready_by + HOUR), settings).notification.has_value());
+  CHECK(moved.tick(waiting.state(ready_by + HOUR + 10), settings).notification.has_value());  // between ticks too
 
   // Nor does a start before the clock is set: the first deadline the board knows is still ahead.
   Controller booting = with_prices();
@@ -2657,6 +2811,24 @@ static void test_savings_at_once_with_new_fees() {
   CHECK_STR(controller.tick(drawing(three + 46 * 60, 0, "Stopped"), Settings()).savings, twice("27000,540,540,810"));
 }
 
+// At once, each quarter-hour's energy costs that quarter-hour's fee: plugged in at 20:00 Thursday, at 0.10 EUR/kWh all
+// along with a fee of 0.20 from 20:15 to 20:30, and charging for 30 minutes at 36 kW from 03:00 Friday. At once would
+// have charged from 20:00 to 20:30, the second quarter-hour with the fee.
+static void test_savings_at_once_across_a_fee_change() {
+  const int64_t eight = SEP24_1700Z, three = SEP24_1700Z + 7 * HOUR;
+  Controller controller = with_prices(prices_from(CET_SEP24, CET_SEP25 + DAY_SECONDS, [](int64_t) { return 0.1f; }));
+  Tariff fees;
+  CHECK_STR(make_tariff(calendar_of("    mon-sun: low 20:15 high 20:30 low", "low: 0\n  high: 0.2"), "EUR", fees), "");
+  controller.set_tariff(fees);
+  plug_in(controller, drawing(eight, 0, "Stopped"));
+  controller.tick(drawing(three, 0, "Stopped"), Settings());
+  for (int64_t t = three + 30; t <= three + 30 * 60; t += 30)
+    controller.tick(drawing(t, 36), Settings());
+  // 18 kWh for 1.80 EUR; at once 9 * 0.10 + 9 * 0.30 = 3.60.
+  const SavingsDay &friday = savings_on(controller, 2026, 9, 25);
+  CHECK(friday.wh == 18000 && friday.paid == 180 && friday.at_once == 360);
+}
+
 static void test_savings_at_once_for_a_day_at_most() {
   // Plugged in at the start of Thursday's delivery day, at 1.00 EUR/kWh, then charged at 2 kW for a day and half an
   // hour from the start of Friday's, at 0.10, into Saturday's, at 0.30. At once covers a day of charging; the rest
@@ -2860,6 +3032,7 @@ int main() {
   test_complete_under_the_limit_is_charged();
   test_reschedules_when_no_longer_complete();
   test_reschedules_when_charging_runs_slow();
+  test_reschedules_when_the_clock_goes_back();
   test_no_start_for_a_windows_last_minutes();
   test_charges_as_usual_without_prices();
   test_waits_for_tomorrows_prices();
@@ -2893,6 +3066,7 @@ int main() {
   test_one_plug_in_message_per_plug_in();
   test_fallback_message_after_a_restart();
   test_fallback_message_mid_stay();
+  test_fallback_message_once_a_plug_in();
   test_message_when_ready_by_passes_short();
   test_plug_in_message_without_prices();
   test_plug_in_message_when_the_battery_level_stays_unknown();
@@ -2904,6 +3078,7 @@ int main() {
   test_savings_after_a_night();
   test_savings_at_once_with_prices_out_later();
   test_savings_at_once_with_new_fees();
+  test_savings_at_once_across_a_fee_change();
   test_savings_at_once_for_a_day_at_most();
   test_savings_at_once_after_a_restart();
   test_savings_at_once_starts_when_charging_is_needed();
