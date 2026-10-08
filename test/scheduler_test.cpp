@@ -905,12 +905,12 @@ static const Plans &repository_plans() {
   return plans;
 }
 
-// `plan` as the page writes a custom plan under tariff:, each line indented by two spaces.
+// `plan` as the page writes a custom plan: plan:, and the plan's lines under it, each indented by four spaces.
 static std::string as_custom(const std::string &plan) {
-  std::string lines;
+  std::string lines = "  plan:\n";
   for (size_t start = 0, end; start < plan.size(); start = end + 1) {
     end = plan.find('\n', start);
-    lines += concat({end > start ? "  " : "", plan.substr(start, end - start), "\n"});
+    lines += concat({end > start ? "    " : "", plan.substr(start, end - start), "\n"});
   }
   return lines;
 }
@@ -933,10 +933,10 @@ static void test_plans_in_the_repository() {
     SettingsFile settings;
     const std::string currency = concat({"currency: ", read.currency, "\n"});
     CHECK_STR(
-        label + read_settings(concat({currency, "tariff:\n  plan: ", name, "\n", CAR, "timezone: Europe/Vilnius\n"}),
+        label + read_settings(concat({currency, "grid:\n  plan: ", name, "\n", CAR, "timezone: Europe/Vilnius\n"}),
                               repository_plans(), settings),
         label);
-    CHECK_STR(label + read_settings(concat({currency, "tariff:\n", as_custom(plan), CAR, "timezone: Europe/Vilnius\n"}),
+    CHECK_STR(label + read_settings(concat({currency, "grid:\n", as_custom(plan), CAR, "timezone: Europe/Vilnius\n"}),
                                     repository_plans(), settings),
               label);
     CHECK(settings.plan.empty() && !settings.custom_plan.empty());
@@ -979,7 +979,7 @@ static const char *const SETTINGS =
     "  margin: 0.016\n"
     "  vat: 0.21\n"
     "ntfy_topic: my-topic_1\n"
-    "tariff:\n"
+    "grid:\n"
     "  plan: lt/eso-standartinis-4-zones\n"
     "tesla_battery_kwh: 75\n"
     "tesla_charging_kw: 11\n"
@@ -1020,15 +1020,16 @@ static void test_reads_the_settings_file() {
   const std::string fixed =
       "currency: gbp\r\n"
       "ntfy_topic:\n"
-      "tariff:\n"
-      "  calendar:\n"
-      "    # all year\n"
-      "    jan-dec:\n"
-      "      mon-sun: day 00:30 night 05:30 day  \n"
+      "grid:\n"
+      "  plan:\n"
+      "    calendar:\n"
+      "      # all year\n"
+      "      jan-dec:\n"
+      "        mon-sun: day 00:30 night 05:30 day  \n"
       "\n"
-      "  rates:\n"
-      "    day: 0.245\n"
-      "    night: 0.085\n"
+      "    rates:\n"
+      "      day: 0.245\n"
+      "      night: 0.085\n"
       "tesla_battery_kwh: 82\n"
       "tesla_charging_kw: 7.4\n"
       "tesla_vin: 5YJ3E1EA0KF000000\n"
@@ -1045,18 +1046,18 @@ static void test_reads_the_settings_file() {
 
   // A fixed price with a plan, which the board adds to every quarter-hour as it does a margin.
   const std::string fixed_with_plan =
-      concat({"fixed_price: 0.15\ntariff:\n  plan: lt/eso-standartinis-2-zones\n", CAR, "timezone: Europe/Vilnius\n"});
+      concat({"fixed_price: 0.15\ngrid:\n  plan: lt/eso-standartinis-2-zones\n", CAR, "timezone: Europe/Vilnius\n"});
   CHECK_STR(read_settings(fixed_with_plan, repository_plans(), s), "");
   CHECK(s.area == nullptr && near(s.margin, 0.15f) && s.plan == "lt/eso-standartinis-2-zones");
 
   // A market area in small letters, its own currency, and a margin left out.
   CHECK_STR(read_settings(settings_set("  area", "no1"), repository_plans(), s),
-            "tariff: the plan's prices are in EUR, not NOK");
+            "grid: the plan's prices are in EUR, not NOK");
   CHECK(s.area == nullptr);  // unchanged after an error
-  const std::string norway =
-      concat({"market:\n  area: no1\n  vat: 0.25\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n"
-              "  rates:\n    flat: 0.5\n",
-              CAR, "timezone: Europe/Oslo\n"});
+  const std::string norway = concat(
+      {"market:\n  area: no1\n  vat: 0.25\ngrid:\n  plan:\n    calendar:\n      jan-dec:\n        mon-sun: flat\n"
+       "    rates:\n      flat: 0.5\n",
+       CAR, "timezone: Europe/Oslo\n"});
   CHECK_STR(read_settings(norway, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "NO1" && s.currency == "NOK" && s.margin == 0.0f && s.standard_offset == 3600);
   CHECK_STR(read_settings("currency: nok\n" + norway, repository_plans(), s), "");
@@ -1074,14 +1075,15 @@ static void test_reads_the_settings_file() {
     CHECK_STR(read_settings(concat({"currency: ", own.currency, "\n", text}), repository_plans(), s), "");
   }
   // SMARD's prices in euros, or in Czechia, Hungary and Switzerland converted into their own currency
-  const std::string czech = concat(
-      {"currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ntariff:\n  calendar:\n    jan-dec:\n      mon-sun: flat\n"
-       "  rates:\n    flat: 2.5\n",
-       CAR, "timezone: Europe/Prague\n"});
+  const std::string czech =
+      concat({"currency: czk\nmarket:\n  area: CZ\n  vat: 0.21\ngrid:\n  plan:\n    calendar:\n      jan-dec:\n        "
+              "mon-sun: flat\n"
+              "    rates:\n      flat: 2.5\n",
+              CAR, "timezone: Europe/Prague\n"});
   CHECK_STR(read_settings(czech, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
-            "tariff: the plan's prices are in EUR, not CHF");
+            "grid: the plan's prices are in EUR, not CHF");
   for (const char *currency : {"CZK", "SEK"})  // before and after HUF
     CHECK_STR(settings_error(settings_set("  area", "HU") + "currency: " + currency + "\n"),
               "currency: SMARD's prices for HU come in EUR, or HUF at the ECB's daily rate");
@@ -1178,23 +1180,24 @@ static void test_settings_file_errors() {
             "line 13 has timezone again");
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 0.21\n  colour: red\n")),
             "line 6 has market: colour, which isn't a setting");
-  CHECK_STR(settings_error(settings_set("tariff", "none")), "line 8 doesn't belong there: plan");
+  CHECK_STR(settings_error(settings_set("grid", "none")), "line 8 doesn't belong there: plan");
   CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 13 has colour, which isn't a setting");
-  // Missing: with a market, the tariff can go; without one, it's the whole price; without either, there are no
-  // prices yet. A tariff: has a plan or a calendar of its own, also with a market.
-  std::string no_tariff = SETTINGS;
-  no_tariff.erase(no_tariff.find("tariff:"), std::strlen("tariff:\n  plan: lt/eso-standartinis-4-zones\n"));
-  CHECK_STR(settings_error(no_tariff), "");
-  const std::string no_prices = no_tariff.substr(no_tariff.find("ntfy_topic"));
+  // Missing: with a market, the grid plan can go; without one, it's the whole price; without either, there are no
+  // prices yet. A grid: has a plan, from the list or with a calendar of its own, also with a market.
+  std::string no_grid = SETTINGS;
+  no_grid.erase(no_grid.find("grid:"), std::strlen("grid:\n  plan: lt/eso-standartinis-4-zones\n"));
+  CHECK_STR(settings_error(no_grid), "");
+  const std::string no_prices = no_grid.substr(no_grid.find("ntfy_topic"));
   CHECK_STR(settings_error(no_prices), "");
-  for (const std::string &tariff : {settings_with("  plan", ""), no_tariff + "tariff: lt/eso-standartinis-4-zones\n",
-                                    no_tariff + "tariff:\n  plan:\n"})
-    CHECK_STR(settings_error(tariff), "tariff: there's no plan");
-  CHECK_STR(settings_error("tariff:\ntesla_vin:\n# none yet\n"), "tariff: there's no plan");  // none under tariff:
-  for (const std::string &tariff :
-       {no_tariff + "tariff:\n  # My plan\n", no_tariff + "tariff:\n  clock: winter\n",
-        no_prices + "tariff:\n  rates:\n    flat: 0.24\n", no_prices + "tariff:\n  exceptions:\n    12-25: flat\n"})
-    CHECK_STR(settings_error(tariff), "custom plan: there's no calendar");
+  for (const std::string &grid :
+       {settings_with("  plan", ""), no_grid + "grid: lt/eso-standartinis-4-zones\n", no_grid + "grid:\n  plan:\n"})
+    CHECK_STR(settings_error(grid), "grid: there's no plan");
+  CHECK_STR(settings_error("grid:\ntesla_vin:\n# none yet\n"), "grid: there's no plan");  // none under grid:
+  for (const std::string &grid :
+       {no_grid + "grid:\n  plan:\n    # My plan\n", no_grid + "grid:\n  plan:\n    clock: winter\n",
+        no_prices + "grid:\n  plan:\n    rates:\n      flat: 0.24\n",
+        no_prices + "grid:\n  plan:\n    exceptions:\n      12-25: flat\n"})
+    CHECK_STR(settings_error(grid), "custom plan: there's no calendar");
   CHECK_STR(settings_error(settings_with("tesla_battery_kwh", "")),
             "tesla_battery_kwh must be the battery's size in kWh, like 75");
   CHECK_STR(settings_error(settings_with("  vat", "")), "market: vat must be the VAT as a fraction, like 0.21 for 21%");
@@ -1211,11 +1214,11 @@ static void test_settings_file_errors() {
   // Fixed price: without a market, and a price
   CHECK_STR(settings_error("fixed_price: 0.15\n" + std::string(SETTINGS)),
             "fixed_price goes without market:; on top of a market price, use market: margin");
-  CHECK_STR(settings_error("fixed_price: 0\n" + no_prices + "tariff:\n  plan: lt/eso-standartinis-2-zones\n"),
+  CHECK_STR(settings_error("fixed_price: 0\n" + no_prices + "grid:\n  plan: lt/eso-standartinis-2-zones\n"),
             "");  // as the page writes a supplier's part left at 0.00
   for (const char *price : {"15 ct", "-0.1", "1e6", "1e7"})
     CHECK_STR(settings_error(std::string("fixed_price: ") + price + "\n" + no_prices +
-                             "tariff:\n  plan: lt/eso-standartinis-2-zones\n"),
+                             "grid:\n  plan: lt/eso-standartinis-2-zones\n"),
               "fixed_price must be a price per kWh, like 0.15");
   // Currency
   for (const char *currency : {"EU", "EURO", "E1R", "E[R"})
@@ -1229,9 +1232,9 @@ static void test_settings_file_errors() {
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
   // Tariff
-  CHECK_STR(settings_error(settings_set("  plan", "lt/nope")), "tariff: there's no plan lt/nope");
-  // A custom plan: alone under tariff:, in the settings' currency where it names one, and with its errors counted in
-  // its own lines, from the line after tariff:, as in the file uploaded.
+  CHECK_STR(settings_error(settings_set("  plan", "lt/nope")), "grid: there's no plan lt/nope");
+  // A custom plan: under grid: plan:, in the settings' currency where it names one, and with its errors counted in its
+  // own lines, from the line after plan:, as in the file uploaded.
   const auto custom = [](const std::string &plan) { return settings_with("  plan", as_custom(plan)); };
   CHECK_STR(settings_error(custom(ONE_ZONE)), "");
   CHECK_STR(settings_error(custom("currency: NOK\n" + calendar_of("    mon-sun: flat"))),
@@ -1241,14 +1244,17 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(custom(calendar_of("    mon-sun: flat", "flat: 0.1\n  spare: 0.2"))),
             "custom plan: rate spare isn't used on any day");
   CHECK_STR(settings_error(custom("# My plan\ncalendar:\n  jan-dec\n")), "custom plan: line 3 isn't a key and a value");
-  for (const char *both : {"  plan: lt/eso-standartinis-4-zones\n  rates:\n    nope: 1\n",
-                           "  currency: EUR\n  plan: lt/eso-standartinis-4-zones\n"})
-    CHECK_STR(settings_error(settings_with("  plan", both)), "tariff: a plan or a custom plan, not both");
+  // A plan from the list has no lines under it, and grid: one plan.
+  CHECK_STR(settings_error(settings_with("  plan", "  plan: lt/eso-standartinis-4-zones\n    rates:\n      nope: 1\n")),
+            "line 9 doesn't belong there: rates");
+  CHECK_STR(
+      settings_error(settings_with("  plan", "  plan:\n    currency: EUR\n  plan: lt/eso-standartinis-4-zones\n")),
+      "line 10 has grid: plan again");
   // A plan built in that the board can't use, as from a broken release.
   SettingsFile ignored;
   CHECK_STR(
       read_settings(settings_set("  plan", "xx/broken"), Plans{{"xx/broken", "currency: EUR\ncalendar\n"}}, ignored),
-      "tariff: line 2 isn't a key and a value");
+      "grid: line 2 isn't a key and a value");
   // The car, with sizes and powers wider than the page's, and closed, and the time zone
   for (const char *kwh : {"10", "1000"})
     CHECK_STR(settings_error(settings_set("tesla_battery_kwh", kwh)), "");

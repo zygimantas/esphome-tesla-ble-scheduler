@@ -659,7 +659,7 @@ function vinProblem(vin) {
 
 // Whether the battery's size is the owner's, typed or saved, rather than a guess the VIN may change.
 let batteryTyped = false;
-// A custom plan, uploaded or saved: a plan's file, which the settings hold under tariff:, or "".
+// A custom plan, uploaded or saved: a plan's file, which the settings hold under grid: plan:, or "".
 let customPlan = "";
 // The custom plan as the page names it, from its name: line.
 const customPlanLabel = () => {
@@ -667,9 +667,9 @@ const customPlanLabel = () => {
   return name ? `Custom: ${name}` : "Custom plan";
 };
 
-// Whether the settings still have no prices: a market, a plan (tariff:) or a fixed price, the same in every hour
-// without a grid plan.
-const unfinished = () => settings.text !== null && !/^(fixed_price|market|tariff):/m.test(settings.text);
+// Whether the settings still have no prices: a market, a grid plan or a fixed price, the same in every hour without
+// a grid plan.
+const unfinished = () => settings.text !== null && !/^(fixed_price|grid|market):/m.test(settings.text);
 // Whether the settings name the car, which the setup's car step adds after the prices.
 const hasCar = () => /^tesla_vin:/m.test(settings.text ?? "");
 
@@ -745,7 +745,7 @@ function renderSetup() {
 // that the choices above them show.
 function renderSettings() {
   // Without a grid plan or a custom plan: what the board leaves out, and where a plan goes in.
-  $("plan-card").hidden = !settings.text || unfinished() || /^tariff:/m.test(settings.text);
+  $("plan-card").hidden = !settings.text || unfinished() || /^grid:/m.test(settings.text);
   $("plan-why").textContent = /^market:/m.test(settings.text)
     ? "Without it, the board picks the hours by the market price alone, without your grid fees."
     : "Without it, a fixed price costs the same in every hour, so the board charges at once.";
@@ -865,7 +865,7 @@ function fillSettings() {
   };
   const areaOptions = areas.map((area) => new Option(areaName(area), area));
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
-  const plan = values["tariff: plan"] ?? "";
+  const plan = values["grid: plan"] ?? "";
   const ofCurrency = Object.keys(CURRENCIES).find((code) => CURRENCIES[code] === values.currency?.toUpperCase());
   const country = unfinished()
     ? countryOf(PHONE_ZONE)
@@ -877,9 +877,9 @@ function fillSettings() {
   $("set-area").replaceChildren(...(areas.includes(area) ? [] : [new Option("Choose", "")]), ...areaOptions);
   $("set-area").value = areas.includes(area) ? area : "";
   $("set-price").value = values["market: area"] || unfinished() ? "market" : "fixed";
-  // a custom plan: the lines under tariff:, without their indent, unless they name a plan from the list
-  const [, under = ""] = /^tariff:\n((?:(?: {2}.*)?\n)*)/m.exec(settings.text) ?? [];
-  customPlan = plan ? "" : under.replace(/^ {2}/gm, "").trimEnd();
+  // a custom plan: the lines under grid: plan:, without their indent, where it names no plan from the list
+  const [, under = ""] = /^ {2}plan:\n((?:(?: {4}.*)?\n)*)/m.exec(settings.text) ?? [];
+  customPlan = plan ? "" : under.replace(/^ {4}/gm, "").trimEnd();
   fillPlans(unfinished() ? undefined : plan);
   $("set-margin").value = values["market: margin"] ?? "0.00";
   $("set-fixed").value = values.fixed_price ?? "0.00";
@@ -916,8 +916,8 @@ async function loadSettings() {
 }
 
 // The form as the board's settings file, which the board checks before it takes it; without the car until the setup's
-// car step has its VIN, as the setup saves a new board's prices before it. A custom plan goes under tariff:
-// line for line, indented, so the board's errors in it count the plan's own lines.
+// car step has its VIN, as the setup saves a new board's prices before it. A custom plan goes under grid: plan: line
+// for line, indented, so the board's errors in it count the plan's own lines.
 function formSettings() {
   const v = (id) => $(id).value.trim();
   const lines = [];
@@ -934,8 +934,8 @@ function formSettings() {
     lines.push(`  vat: ${vatOf(v("set-area")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (gridPlan()) lines.push("tariff:", `  plan: ${gridPlan()}`);
-  else if (customPlan) lines.push("tariff:", ...customPlan.split("\n").map((line) => line && `  ${line}`));
+  if (gridPlan()) lines.push("grid:", `  plan: ${gridPlan()}`);
+  else if (customPlan) lines.push("grid:", "  plan:", ...customPlan.split("\n").map((line) => line && `    ${line}`));
   if (v("set-vin"))
     lines.push(
       `tesla_battery_kwh: ${v("set-battery")}`,
