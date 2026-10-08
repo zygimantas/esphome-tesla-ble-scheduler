@@ -84,14 +84,16 @@ struct SavedSettings {
   char text[MAX_SETTINGS_BYTES + 1];
 };
 
-// What a batch of downloads fetches (SchedulerComponent::start_downloads_()), with what it needs of the settings,
-// copied, as a save may change them while it runs.
-struct Downloads {
+// What a batch of the requests task does (SchedulerComponent::start_downloads_() and send_unsent_()): the downloads
+// due, or the phone message, with what they need of the settings, copied, as a save may change them while it runs.
+struct Requests {
   int64_t now{0};
   const Area *area{nullptr};  // with prices due: from the CET delivery day `first_day` days after `now`
   int first_day{0};
   std::string currency;
-  std::string plan;  // with the plan due
+  std::string plan;                     // with the plan due
+  std::optional<Notification> message;  // with a message to send, and its JSON for ntfy
+  std::string message_json;
 };
 
 class SchedulerComponent : public PollingComponent {
@@ -145,8 +147,9 @@ class SchedulerComponent : public PollingComponent {
   void restart_setup_();
   std::string apply_tariff_(const std::string &text);
   void start_downloads_(int64_t now);
-  // In the downloads task, or on the loop without it, as in the simulation.
-  void download_();
+  void start_requests_();
+  // In the requests task, or on the loop without it, as in the simulation.
+  void run_requests_();
   std::optional<std::string> read_body_(http_request::HttpContainer &response);
   std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body);
   std::string prices_url_(int day) const;
@@ -155,7 +158,8 @@ class SchedulerComponent : public PollingComponent {
   std::optional<float> fetch_rate_();
   void fetch_plan_();
   void send_unsent_(int64_t now);
-  bool send_message_(const Notification &message);
+  std::string message_json_(const Notification &message) const;
+  void send_message_();
 
   Controller controller_;
   time::RealTimeClock *clock_{nullptr};
@@ -171,10 +175,10 @@ class SchedulerComponent : public PollingComponent {
   std::string plan_text_;  // the plan in use: the copy built in until a download brings another
   int64_t plan_tried_at_{0};
   bool plan_usable_{false};  // whether the latest download brought a plan the board can use
-  Downloads downloads_;      // the loop sets it only while no batch runs
-  bool downloading_{false};  // from a batch's start until the loop has its last answer
+  Requests requests_;        // the loop sets it only while no batch runs
+  bool requesting_{false};   // from a batch's start until the loop has its last answer
 #ifdef USE_ESP32
-  StaticTask downloads_task_;
+  StaticTask requests_task_;
 #endif
   std::optional<Notification> unsent_;  // the last message until ntfy has taken it
   int64_t unsent_since_{0};

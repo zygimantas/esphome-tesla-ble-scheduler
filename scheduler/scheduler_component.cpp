@@ -202,16 +202,16 @@ void SchedulerComponent::setup() {
   }
 
 #ifdef USE_ESP32
-  // The downloads' task (start_downloads_()), its stack in PSRAM, as internal RAM is short while HTTPS runs. Without
-  // it, they run on the loop.
-  this->downloads_task_.create(
+  // The task for the board's HTTPS requests (start_requests_()), its stack in PSRAM, as internal RAM is short while
+  // HTTPS runs. Without it, they run on the loop.
+  this->requests_task_.create(
       [](void *self) {
         for (;;) {
           ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-          static_cast<SchedulerComponent *>(self)->download_();
+          static_cast<SchedulerComponent *>(self)->run_requests_();
         }
       },
-      "downloads", 8192, this, 1, true);
+      "requests", 8192, this, 1, true);
 #endif
 
   if (this->settings_error_.empty())
@@ -251,7 +251,7 @@ void SchedulerComponent::update() {
   const ESPTime now = this->clock_->now();
   const CarState car = this->read_car_(now.is_valid() ? now.timestamp : 0);
   // The clock keeps running through a restart, so wait for the network too.
-  if (network::is_connected() && !this->downloading_)
+  if (network::is_connected() && !this->requesting_)
     this->start_downloads_(car.now);
   const Decision d = this->controller_.tick(car, this->schedule_settings_());
   this->persist_(d);
@@ -322,8 +322,6 @@ void SchedulerComponent::carry_out_(const Decision &d, int64_t now) {
   }
   if (d.mode == "unplugged")  // whatever the message said is over
     this->unsent_.reset();
-  // The message first: its POST blocks the loop, while the Tesla part sends the command only after update() returns
-  // and fails it after 25 s in its queue.
   this->send_unsent_(now);
   if (d.command == Command::START_CHARGING && this->charger_ != nullptr) {
     ESP_LOGI(TAG, "Start charging (%s)", d.status.c_str());
@@ -438,46 +436,55 @@ std::string SchedulerComponent::apply_tariff_(const std::string &text) {
   return "";
 }
 
-// The downloads due at `now`, the market's prices and the plan, in a task of their own (setup()), one batch at a time.
-// Each takes the board a second or two, a new TLS connection every time, which the loop can't spare: the Bluetooth
-// events wait for it, the car's among them, and drop once ESPHome's queue for them is full.
+// The downloads due at `now`, the market's prices and the plan, as a batch of the requests task.
 void SchedulerComponent::start_downloads_(int64_t now) {
-  Downloads &batch = this->downloads_;
+  this->requests_ = Requests{};
+  Requests &batch = this->requests_;
   batch.now = now;
   batch.area = this->controller_.fetch_prices_due(now) ? this->file_.area : nullptr;
   // today's only while some of it is missing
   batch.first_day = this->controller_.prices.known_until(now) >= end_of_delivery_day(now) ? 1 : 0;
   batch.currency = this->file_.currency;
-  batch.plan.clear();
   if (!this->file_.plan.empty() && plan_due(now, this->plan_tried_at_, this->plan_usable_)) {
     this->plan_tried_at_ = now;
     this->plan_usable_ = false;
     batch.plan = this->file_.plan;
   }
-  if (batch.area == nullptr && batch.plan.empty())
-    return;
-  this->downloading_ = true;
+  if (batch.area != nullptr || !batch.plan.empty())
+    this->start_requests_();
+}
+
+// Runs the batch in the requests task (setup()), one at a time. Each request takes the board a second or two, a new TLS
+// connection every time, which the loop can't spare: the Bluetooth events wait for it, the car's among them, and drop
+// once ESPHome's queue for them is full.
+void SchedulerComponent::start_requests_() {
+  this->requesting_ = true;
 #ifdef USE_ESP32
-  if (this->downloads_task_.is_created()) {
-    xTaskNotifyGive(this->downloads_task_.get_handle());
+  if (this->requests_task_.is_created()) {
+    xTaskNotifyGive(this->requests_task_.get_handle());
     return;
   }
 #endif
-  this->download_();
+  this->run_requests_();
 }
 
-// A batch. Each answer goes to the loop, which uses the prices and the plan meanwhile, and so does the batch's end,
-// after the answers.
-void SchedulerComponent::download_() {
-  if (this->downloads_.area != nullptr)
+// A batch. Each answer goes to the loop, which uses the prices, the plan and the message meanwhile, and so does the
+// batch's end, after the answers, with a tick at once, as new prices or a new plan change the schedule.
+void SchedulerComponent::run_requests_() {
+  if (this->requests_.area != nullptr)
     this->fetch_prices_();
-  if (!this->downloads_.plan.empty())
+  if (!this->requests_.plan.empty())
     this->fetch_plan_();
-  this->defer([this]() { this->downloading_ = false; });
+  if (this->requests_.message)
+    this->send_message_();
+  this->defer([this]() {
+    this->requesting_ = false;
+    this->tick_soon_();
+  });
 }
 
 // A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
-// Without App.feed_wdt(): the watchdog doesn't watch the downloads task, and on the loop the read feeds it.
+// Without App.feed_wdt(): the watchdog doesn't watch the requests task, and on the loop the read feeds it.
 std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response) {
   std::string body;
   uint8_t chunk[512];
@@ -511,7 +518,7 @@ std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optio
 
 // Where the prices of the CET delivery day `day` days after the batch's time are.
 std::string SchedulerComponent::prices_url_(int day) const {
-  const Downloads &batch = this->downloads_;
+  const Requests &batch = this->requests_;
   switch (batch.area->market) {
     case Market::SMARD:
       return smard_url(batch.area->smard_filter, batch.now, day);
@@ -539,12 +546,12 @@ int SchedulerComponent::store_prices_(const std::string &body, float rate) {
 // Today's and tomorrow's CET delivery days, from the batch's first. A failed request ends the try: the next one would
 // fail the same way.
 void SchedulerComponent::fetch_prices_() {
-  const int64_t now = this->downloads_.now;
-  const Area &area = *this->downloads_.area;
+  const int64_t now = this->requests_.now;
+  const Area &area = *this->requests_.area;
   const char *source = market_name(area.market);
   // SMARD's prices are in euros: in the country's own currency, where the settings ask for it, at the ECB's latest rate
   float rate = 1.0f;
-  if (area.market == Market::SMARD && this->downloads_.currency != "EUR") {
+  if (area.market == Market::SMARD && this->requests_.currency != "EUR") {
     const std::optional<float> ecb = this->fetch_rate_();
     if (!ecb)
       return;
@@ -555,7 +562,7 @@ void SchedulerComponent::fetch_prices_() {
   const int not_yet =
       area.market == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
-  for (int day = this->downloads_.first_day; day < 2; day++) {
+  for (int day = this->requests_.first_day; day < 2; day++) {
     const std::string url = this->prices_url_(day);
     if (url == fetched)
       continue;
@@ -591,7 +598,7 @@ void SchedulerComponent::fetch_prices_() {
 // What a euro is worth in the settings' currency, from the ECB's latest reference rates, or nothing when the request
 // fails: then the prices wait for the next try.
 std::optional<float> SchedulerComponent::fetch_rate_() {
-  const char *currency = this->downloads_.currency.c_str();
+  const char *currency = this->requests_.currency.c_str();
   std::optional<std::string> body;
   const std::optional<int> status = this->fetch_(ECB_RATES_URL, body);
   const std::optional<float> rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
@@ -609,7 +616,7 @@ std::optional<float> SchedulerComponent::fetch_rate_() {
 // The plan as its maintainer keeps it, from GitHub. A failed or cut-off download, or a plan the board can't use, leaves
 // the one in use, and the board tries again in an hour. So does a save that names another plan meanwhile.
 void SchedulerComponent::fetch_plan_() {
-  const char *plan = this->downloads_.plan.c_str();
+  const char *plan = this->requests_.plan.c_str();
   std::optional<std::string> text;
   const std::optional<int> status = this->fetch_(std::string(PLANS) + plan + ".yaml", text);
   if (!status) {
@@ -636,8 +643,8 @@ void SchedulerComponent::fetch_plan_() {
   }
 }
 
-// Sends the message that hasn't gone out, once a minute while the network is up, and drops it after half an
-// hour: a schedule from then is still worth reading, an older one isn't.
+// Sends the message that hasn't gone out, as a batch of the requests task, once a minute while the network is up, and
+// drops it after half an hour: a schedule from then is still worth reading, an older one isn't.
 void SchedulerComponent::send_unsent_(int64_t now) {
   if (!this->unsent_ || now - this->message_tried_at_ < 60)
     return;
@@ -646,17 +653,18 @@ void SchedulerComponent::send_unsent_(int64_t now) {
     this->unsent_.reset();
     return;
   }
-  if (!network::is_connected() || this->downloading_)  // one HTTPS at a time, for internal RAM
+  if (!network::is_connected() || this->requesting_)
     return;
   this->message_tried_at_ = now;
-  if (this->send_message_(*this->unsent_))
-    this->unsent_.reset();
+  this->requests_ = Requests{};
+  this->requests_.message = this->unsent_;
+  this->requests_.message_json = this->message_json_(*this->unsent_);
+  this->start_requests_();
 }
 
-// Whether ntfy took the message.
-bool SchedulerComponent::send_message_(const Notification &message) {
-  // A tap opens the page, on the home Wi-Fi, at the board's address now, which every phone opens, as some Android
-  // phones don't find tesla.local. An unset address reads 0.0.0.0.
+// A message as ntfy takes it. A tap opens the page, on the home Wi-Fi, at the board's address now, which every phone
+// opens, as some Android phones don't find tesla.local. An unset address reads 0.0.0.0.
+std::string SchedulerComponent::message_json_(const Notification &message) const {
   std::string host = App.get_name() + ".local";
   for (const auto &ip : network::get_ip_addresses()) {
     char address[network::IP_ADDRESS_BUFFER_SIZE];
@@ -665,23 +673,31 @@ bool SchedulerComponent::send_message_(const Notification &message) {
       break;
     }
   }
-  const std::string body = json::build_json([this, &message, &host](JsonObject root) {
+  return json::build_json([this, &message, &host](JsonObject root) {
     root["topic"] = this->file_.ntfy_topic;
     root["title"] = message.title;
     root["message"] = message.message;
     root["tags"].to<JsonArray>().add("electric_plug");
     root["click"] = "http://" + host;
   });
-  auto response = this->http_->post(NTFY, body);
+}
+
+// Sends the batch's message through ntfy. Once ntfy has it, the loop drops it, unless a newer one has replaced it.
+void SchedulerComponent::send_message_() {
+  auto response = this->http_->post(NTFY, this->requests_.message_json);
   if (response == nullptr) {
     ESP_LOGW(TAG, "ntfy message failed; it's tried again in a minute");
-    return false;
+    return;
   }
   const bool taken = response->status_code == http_request::HTTP_STATUS_OK;
   if (!taken)
     ESP_LOGW(TAG, "ntfy answered HTTP %d; the message is tried again in a minute", response->status_code);
   response->end();
-  return taken;
+  if (taken)
+    this->defer([this, sent = *this->requests_.message]() {
+      if (this->unsent_ && this->unsent_->title == sent.title && this->unsent_->message == sent.message)
+        this->unsent_.reset();
+    });
 }
 
 #ifdef USE_WEBSERVER
