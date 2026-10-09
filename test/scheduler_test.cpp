@@ -1228,6 +1228,7 @@ static void test_settings_that_restart() {
   const SettingsFile was = read(SETTINGS);
   CHECK(!restarts(SettingsFile(), was));  // the setup's car, on a board without one
   CHECK(!restarts(was, was));
+  CHECK(!restarts(was, read(std::string(SETTINGS) + "tesla_unlock_when_charged: true\n")));
   for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("tesla_battery_kwh", "60"),
                                   settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
                                   settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
@@ -1245,7 +1246,7 @@ static void test_settings_that_restart() {
   CHECK(restarts(was, now) && restarts(now, was));
 }
 
-// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's.
+// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's or the unlock box's.
 static void test_settings_that_delete_the_schedule() {
   SettingsFile was;
   CHECK_STR(read_settings(SETTINGS, repository_plans(), was), "");
@@ -1257,6 +1258,7 @@ static void test_settings_that_delete_the_schedule() {
     return deletes_schedule(was, now);
   };
   CHECK(!deletes([](SettingsFile &s) { s.ntfy_topic = "another-topic"; }));
+  CHECK(!deletes([](SettingsFile &s) { s.unlock_when_charged = true; }));  // it changes what follows the charge only
   CHECK(deletes([](SettingsFile &s) { s.currency = "SEK"; }));
   CHECK(deletes([](SettingsFile &s) { s.area = nullptr; }));
   CHECK(deletes([](SettingsFile &s) { s.vat = 0.5f; }));

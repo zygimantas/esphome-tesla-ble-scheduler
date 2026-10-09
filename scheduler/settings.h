@@ -218,7 +218,8 @@ inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
 }
 
 // Whether saving `now` over `was` deletes the schedule on a board that has a car, as Delete schedule does: for any
-// change but the ntfy topic's, as the schedule was made with the rest, and the topic only says where its message goes.
+// change but the ntfy topic's or the unlock box's, as the schedule was made with the rest, while the topic only says
+// where its message goes and the box what follows the charge.
 inline bool deletes_schedule(const SettingsFile &was, const SettingsFile &now) {
   const auto rest = [](const SettingsFile &s) {
     return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.custom_plan, s.battery_kwh, s.charging_kw, s.vin,
