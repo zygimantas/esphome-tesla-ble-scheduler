@@ -25,14 +25,14 @@ using Plans = std::vector<std::pair<std::string_view, std::string_view>>;
 // The time zones of the market countries, which the page writes, with their offset from UTC in winter, in hours: their
 // clocks all change on the EU's dates, as calendar.h has them.
 constexpr std::pair<const char *, int> TIME_ZONES[] = {
-    {"Africa/Ceuta", 1},     {"Atlantic/Canary", 0},   {"Atlantic/Madeira", 0}, {"Europe/Amsterdam", 1},
-    {"Europe/Berlin", 1},    {"Europe/Brussels", 1},   {"Europe/Bucharest", 2}, {"Europe/Budapest", 1},
-    {"Europe/Busingen", 1},  {"Europe/Copenhagen", 1}, {"Europe/Helsinki", 2},  {"Europe/Lisbon", 0},
-    {"Europe/Ljubljana", 1}, {"Europe/Luxembourg", 1}, {"Europe/Madrid", 1},    {"Europe/Mariehamn", 2},
-    {"Europe/Oslo", 1},      {"Europe/Paris", 1},      {"Europe/Prague", 1},    {"Europe/Riga", 2},
-    {"Europe/Rome", 1},      {"Europe/Sofia", 2},      {"Europe/Stockholm", 1}, {"Europe/Tallinn", 2},
-    {"Europe/Vienna", 1},    {"Europe/Vilnius", 2},    {"Europe/Warsaw", 1},    {"Europe/Zagreb", 1},
-    {"Europe/Zurich", 1},
+    {"Africa/Ceuta", 1},     {"Atlantic/Canary", 0},   {"Atlantic/Madeira", 0},  {"Europe/Amsterdam", 1},
+    {"Europe/Berlin", 1},    {"Europe/Bratislava", 1}, {"Europe/Brussels", 1},   {"Europe/Bucharest", 2},
+    {"Europe/Budapest", 1},  {"Europe/Busingen", 1},   {"Europe/Copenhagen", 1}, {"Europe/Helsinki", 2},
+    {"Europe/Lisbon", 0},    {"Europe/Ljubljana", 1},  {"Europe/Luxembourg", 1}, {"Europe/Madrid", 1},
+    {"Europe/Mariehamn", 2}, {"Europe/Oslo", 1},       {"Europe/Paris", 1},      {"Europe/Prague", 1},
+    {"Europe/Riga", 2},      {"Europe/Rome", 1},       {"Europe/Sofia", 2},      {"Europe/Stockholm", 1},
+    {"Europe/Tallinn", 2},   {"Europe/Vienna", 1},     {"Europe/Vilnius", 2},    {"Europe/Warsaw", 1},
+    {"Europe/Zagreb", 1},    {"Europe/Zurich", 1},
 };
 
 struct SettingsFile {

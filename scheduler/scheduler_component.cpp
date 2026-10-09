@@ -17,7 +17,7 @@ namespace esphome::scheduler {
 static const char *const TAG = "scheduler";
 
 // The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan up to
-// about 2 kB.
+// about 2 kB. OKTE's day, 67 kB, goes through okte_filter() as it comes instead (read_body_()).
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
@@ -483,9 +483,68 @@ void SchedulerComponent::run_requests_() {
   });
 }
 
+// ArduinoJson's reader of a response, a chunk at a time as it comes: -1 once it fails, times out or ends.
+class ResponseReader {
+ public:
+  ResponseReader(http_request::HttpContainer &response, uint32_t timeout) : response_(response), timeout_(timeout) {}
+  int read() {
+    if (this->at_ == this->size_ && !this->fill_())
+      return -1;
+    return this->chunk_[this->at_++];
+  }
+  size_t readBytes(char *buffer, size_t length) {
+    size_t count = 0;
+    for (int c; count < length && (c = this->read()) >= 0; count++)
+      buffer[count] = static_cast<char>(c);
+    return count;
+  }
+
+ protected:
+  // The next chunk, waiting for it up to the timeout: false, then and after, once the read fails, times out or ends.
+  bool fill_() {
+    uint32_t last_data = millis();
+    while (!this->ended_) {
+      const int read = this->response_.read(this->chunk_, sizeof(this->chunk_));
+      const auto result =
+          http_request::http_read_loop_result(read, last_data, this->timeout_, this->response_.is_read_complete());
+      if (result == http_request::HttpReadLoopResult::DATA) {
+        this->at_ = 0;
+        this->size_ = read;
+        return true;
+      }
+      this->ended_ = result != http_request::HttpReadLoopResult::RETRY;
+    }
+    return false;
+  }
+
+  http_request::HttpContainer &response_;
+  uint32_t timeout_;
+  uint8_t chunk_[512];
+  size_t at_ = 0, size_ = 0;
+  bool ended_ = false;
+};
+
 // A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
-// Without App.feed_wdt(): the watchdog doesn't watch the requests task, and on the loop the read feeds it.
-std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response) {
+// With a `filter`, what it keeps of the JSON, as JSON, read as it comes, so the whole answer needn't fit: nothing when
+// it can't be read. Without App.feed_wdt(): the watchdog doesn't watch the requests task, and on the loop the read
+// feeds it.
+std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response,
+                                                          const JsonDocument *filter) {
+  if (filter != nullptr) {
+    ResponseReader reader(response, this->http_->get_timeout());
+#ifdef USE_PSRAM
+    json::SpiRamAllocator allocator;  // the kept part of a day of OKTE's is about 9 kB
+    JsonDocument doc(&allocator);
+#else
+    JsonDocument doc;
+#endif
+    if (deserializeJson(doc, reader, DeserializationOption::Filter(*filter)) != DeserializationError::Ok)
+      return std::nullopt;
+    std::string kept;
+    kept.reserve(measureJson(doc));
+    serializeJson(doc, kept);
+    return kept;
+  }
   std::string body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
@@ -504,14 +563,16 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 }
 
 // GETs `url`: the answer's HTTP status, or nothing when the request fails, and with 200 its body, or nothing when it's
-// cut off (read_body_()). The response ends before the body is parsed: the connection's memory isn't needed any more.
-std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<std::string> &body) {
+// cut off, through `filter` if any (read_body_()). The response ends before the body is parsed: the connection's memory
+// isn't needed any more.
+std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<std::string> &body,
+                                              const JsonDocument *filter) {
   auto response = this->http_->get(url);
   if (response == nullptr)
     return std::nullopt;
   const int status = response->status_code;
   if (status == http_request::HTTP_STATUS_OK)
-    body = this->read_body_(*response);
+    body = this->read_body_(*response, filter);
   response->end();
   return status;
 }
@@ -524,6 +585,8 @@ std::string SchedulerComponent::prices_url_(int day) const {
       return smard_url(batch.area->smard_filter, batch.now, day);
     case Market::OMIE:
       return omie_url(batch.now, day);
+    case Market::OKTE:
+      return okte_url(batch.now, day);
     default:
       return nord_pool_url(batch.area->source_name, batch.currency.c_str(), batch.now, day);
   }
@@ -538,6 +601,8 @@ int SchedulerComponent::store_prices_(const std::string &body, float rate) {
       return prices.add_smard(body.data(), body.size(), rate);
     case Market::OMIE:
       return prices.add_omie(body.data(), body.size(), area.source_name);
+    case Market::OKTE:
+      return prices.add_okte(body.data(), body.size());
     default:
       return prices.add_nord_pool(body.data(), body.size(), area.source_name);
   }
@@ -558,9 +623,10 @@ void SchedulerComponent::fetch_prices_() {
     rate = *ecb;
   }
   // Not out yet: Nord Pool has no content for tomorrow, SMARD no file for a week that hasn't begun, OMIE none for the
-  // day.
+  // day, and OKTE an empty list, which stores none.
   const int not_yet =
       area.market == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
+  const JsonDocument okte = okte_filter();
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
   for (int day = this->requests_.first_day; day < 2; day++) {
     const std::string url = this->prices_url_(day);
@@ -568,7 +634,7 @@ void SchedulerComponent::fetch_prices_() {
       continue;
     fetched = url;
     std::optional<std::string> body;
-    const std::optional<int> status = this->fetch_(url, body);
+    const std::optional<int> status = this->fetch_(url, body, area.market == Market::OKTE ? &okte : nullptr);
     if (!status) {
       ESP_LOGW(TAG, "%s request failed", source);
       break;

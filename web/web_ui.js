@@ -613,6 +613,7 @@ const COUNTRIES = {
   RO: [21, "Europe/Bucharest"],
   SE: [25, "Europe/Stockholm"],
   SI: [22, "Europe/Ljubljana"],
+  SK: [19, "Europe/Bratislava"],
 };
 const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? 0));
 const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));

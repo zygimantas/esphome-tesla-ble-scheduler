@@ -150,8 +150,9 @@ class SchedulerComponent : public PollingComponent {
   void start_requests_();
   // In the requests task, or on the loop without it, as in the simulation.
   void run_requests_();
-  std::optional<std::string> read_body_(http_request::HttpContainer &response);
-  std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body);
+  std::optional<std::string> read_body_(http_request::HttpContainer &response, const JsonDocument *filter);
+  std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body,
+                            const JsonDocument *filter = nullptr);
   std::string prices_url_(int day) const;
   int store_prices_(const std::string &body, float rate);
   void fetch_prices_();
