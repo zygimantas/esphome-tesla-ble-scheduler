@@ -58,10 +58,10 @@ inline std::string upper(std::string text) {
   return text;
 }
 
-// The settings file as written, before the checks: each setting by its place, the places the file has, grid: and
-// market: too, and a custom plan's lines under grid: plan: as a plan's text.
+// The settings the checks still have to read, as written, by their place, and the places the file has, grid: and
+// market: too; the rest go straight into the SettingsFile.
 struct SettingsText {
-  std::string area, battery, charging, currency, fixed, margin, ntfy_topic, plan, unlock, vat, vin, zone, custom_plan;
+  std::string area, battery, charging, currency, fixed, margin, unlock, vat, zone;
   std::vector<std::string> seen;
 };
 
@@ -70,23 +70,23 @@ inline bool has(const SettingsText &written, std::string_view place) {
   return std::find(written.seen.begin(), written.seen.end(), place) != written.seen.end();
 }
 
-// Reads the file's lines into `written`: each setting at its place, once, and a custom plan's lines, indented by four
-// spaces under grid: plan:, as a plan's text. Returns what's wrong, or "".
-inline std::string read_lines(const std::string &text, SettingsText &written) {
+// Reads the file's lines: each setting at its place, once, into `written` or `read`, and a custom plan's lines,
+// indented by four spaces under grid: plan:, as a plan's text. Returns what's wrong, or "".
+inline std::string read_lines(const std::string &text, SettingsText &written, SettingsFile &read) {
   // Each setting by its place in the file, and where its value goes; grid: and market: head lines of their own.
   const std::pair<const char *, std::string *> places[] = {{"currency", &written.currency},
                                                            {"fixed_price", &written.fixed},
                                                            {"grid", nullptr},
-                                                           {"grid: plan", &written.plan},
+                                                           {"grid: plan", &read.plan},
                                                            {"market", nullptr},
                                                            {"market: area", &written.area},
                                                            {"market: margin", &written.margin},
                                                            {"market: vat", &written.vat},
-                                                           {"ntfy_topic", &written.ntfy_topic},
+                                                           {"ntfy_topic", &read.ntfy_topic},
                                                            {"tesla_battery_kwh", &written.battery},
                                                            {"tesla_charging_kw", &written.charging},
                                                            {"tesla_unlock_when_charged", &written.unlock},
-                                                           {"tesla_vin", &written.vin},
+                                                           {"tesla_vin", &read.vin},
                                                            {"timezone", &written.zone}};
   std::string section;
   bool custom = false;  // in a custom plan's lines, under grid: plan:
@@ -97,12 +97,12 @@ inline std::string read_lines(const std::string &text, SettingsText &written) {
     const auto at = [&](std::string_view what) { return concat({"line ", std::to_string(number), " ", what}); };
     if (indent == std::string::npos || line[indent] == '#') {
       if (custom)
-        written.custom_plan += "\n";
+        read.custom_plan += "\n";
       continue;
     }
     // A custom plan's lines, which read_tariff() checks with the plan file's own line numbers.
     if (custom && indent >= 4) {
-      written.custom_plan += line.substr(4) + "\n";
+      read.custom_plan += line.substr(4) + "\n";
       continue;
     }
     std::string key, value;
@@ -132,8 +132,10 @@ inline std::string read_lines(const std::string &text, SettingsText &written) {
   return "";
 }
 
+// The checks, in the order read_settings() runs them, each on what the ones before it read, filling its part of the
+// SettingsFile: what's wrong, or "".
+
 // The market prices, where market: is there: their area, the VAT on them, and the supplier's margin, 0 when left out.
-// Returns what's wrong, or "".
 inline std::string check_market(const SettingsText &written, SettingsFile &read) {
   if (!has(written, "market"))
     return "";
@@ -152,7 +154,6 @@ inline std::string check_market(const SettingsText &written, SettingsFile &read)
 }
 
 // A fixed price's supplier part, without the grid fees, which the board adds to every quarter-hour like a margin.
-// Returns what's wrong, or "".
 inline std::string check_fixed_price(const SettingsText &written, SettingsFile &read) {
   if (written.fixed.empty())
     return "";
@@ -164,8 +165,7 @@ inline std::string check_fixed_price(const SettingsText &written, SettingsFile &
   return "";
 }
 
-// The currency: the file's, else the market's own, else euros; with a market, one its prices come in. Returns what's
-// wrong, or "".
+// The currency: the file's, else the market's own, else euros; with a market, one its prices come in.
 inline std::string check_currency(const SettingsText &written, SettingsFile &read) {
   const char *own = read.area != nullptr ? own_currency(*read.area) : "EUR";
   read.currency = upper(written.currency.empty() ? own : written.currency);
@@ -181,9 +181,8 @@ inline std::string check_currency(const SettingsText &written, SettingsFile &rea
   return "";
 }
 
-// The ntfy topic the phone messages go to, where the file has one. Returns what's wrong, or "".
-inline std::string check_topic(const SettingsText &written, SettingsFile &read) {
-  read.ntfy_topic = written.ntfy_topic;
+// The ntfy topic the phone messages go to, where the file has one.
+inline std::string check_topic(const SettingsFile &read) {
   if (read.ntfy_topic.size() > 64 || !std::all_of(read.ntfy_topic.begin(), read.ntfy_topic.end(), [](char c) {
         return std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_';
       }))
@@ -193,11 +192,8 @@ inline std::string check_topic(const SettingsText &written, SettingsFile &read) 
 
 // The grid plan under grid: plan:, one built in, by name, or a custom plan's lines, as a tariff in the settings'
 // currency. Without market: and grid:, the board has no prices, and the car charges as usual. A grid: with neither a
-// plan nor a calendar under it, like one with the plan's name on its own line, would add nothing. Returns what's wrong,
-// or "".
+// plan nor a calendar under it, like one with the plan's name on its own line, would add nothing.
 inline std::string check_plan(const SettingsText &written, const Plans &plans, SettingsFile &read) {
-  read.plan = written.plan;
-  read.custom_plan = written.custom_plan;
   if (!read.plan.empty()) {
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
@@ -220,9 +216,8 @@ inline std::string check_plan(const SettingsText &written, const Plans &plans, S
 
 // The car, all three or none yet, as the setup saves the prices before the car's step, and whether to unlock the charge
 // port once it's charged. Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay
-// in range. Returns what's wrong, or "".
+// in range.
 inline std::string check_car(const SettingsText &written, SettingsFile &read) {
-  read.vin = written.vin;
   if (!written.battery.empty() || !written.charging.empty() || !read.vin.empty()) {
     read.battery_kwh = number(written.battery);
     if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
@@ -242,7 +237,7 @@ inline std::string check_car(const SettingsText &written, SettingsFile &read) {
   return "";
 }
 
-// The time zone, one of TIME_ZONES, for its offset. Returns what's wrong, or "".
+// The time zone, one of TIME_ZONES, for its offset.
 inline std::string check_time_zone(const SettingsText &written, SettingsFile &read) {
   const auto *found = std::find_if(std::begin(TIME_ZONES), std::end(TIME_ZONES),
                                    [&](const auto &known) { return written.zone == known.first; });
@@ -261,7 +256,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
     return "the file is longer than 4 kB";
   SettingsText written;
   SettingsFile read;
-  std::string error = read_lines(text, written);
+  std::string error = read_lines(text, written, read);
   if (error.empty())
     error = check_market(written, read);
   if (error.empty())
@@ -269,7 +264,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (error.empty())
     error = check_currency(written, read);
   if (error.empty())
-    error = check_topic(written, read);
+    error = check_topic(read);
   if (error.empty())
     error = check_plan(written, plans, read);
   if (error.empty())
