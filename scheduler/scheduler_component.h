@@ -71,6 +71,7 @@ class ActionButton : public button::Button, public Parented<SchedulerComponent> 
 #ifdef USE_WEBSERVER
 // /settings: GET answers the settings file saved, and POST takes a new one, which the board checks and saves
 // (save_settings()), or answers what's wrong with it. GET /settings/options answers what the page's form offers.
+// In settings_page.cpp.
 class SettingsPage : public AsyncWebHandler {
  public:
   explicit SettingsPage(SchedulerComponent *parent) : parent_(parent) {}
@@ -152,6 +153,7 @@ class SchedulerComponent : public PollingComponent {
   void tick_soon_();
   void restart_setup_();
   std::string apply_tariff_(const std::string &text);
+  // The downloads and the phone message, in requests.cpp.
   void start_downloads_(int64_t now);
   void start_requests_();
   // In the requests task, or on the loop without it, as in the simulation.
