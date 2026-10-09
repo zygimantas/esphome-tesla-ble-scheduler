@@ -26,6 +26,8 @@
 #include "esphome/components/web_server_base/web_server_base.h"
 #endif
 
+#include <functional>
+
 namespace esphome::scheduler {
 
 class SchedulerComponent;
@@ -91,6 +93,7 @@ struct Requests {
   const Area *area{nullptr};  // with prices due: from the CET delivery day `first_day` days after `now`
   int first_day{0};
   std::string currency;
+  std::string semopx_list;              // SEMOpx's newest results, with each day's id
   std::string plan;                     // with the plan due
   std::optional<Notification> message;  // with a message to send, and its JSON for ntfy
   std::string message_json;
@@ -150,9 +153,12 @@ class SchedulerComponent : public PollingComponent {
   void start_requests_();
   // In the requests task, or on the loop without it, as in the simulation.
   void run_requests_();
-  std::optional<std::string> read_body_(http_request::HttpContainer &response, const JsonDocument *filter);
+  // What the requests task makes of an answer read through a filter, to pass on to the loop: JSON, as a rule.
+  using Keep = std::function<std::string(const JsonDocument &)>;
+  std::optional<std::string> read_body_(http_request::HttpContainer &response, const JsonDocument *filter,
+                                        const Keep &keep);
   std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body,
-                            const JsonDocument *filter = nullptr);
+                            const JsonDocument *filter = nullptr, const Keep &keep = {});
   std::string prices_url_(int day) const;
   int store_prices_(const std::string &body, float rate);
   void fetch_prices_();
