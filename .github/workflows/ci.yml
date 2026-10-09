@@ -112,7 +112,7 @@ jobs:
             tar xz --strip-components=1 -C ArduinoJson
           g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/settings_tool.cpp -o test/settings_tool
       - name: The page in the runner's Chrome, on the fake board
-        run: uv run --no-project --no-build --with "playwright==$PLAYWRIGHT_VERSION" test/page_test.py
+        run: uvx --no-build --from "playwright==$PLAYWRIGHT_VERSION" python test/page_test.py
 
   esphome:
     name: ESPHome builds and the simulation

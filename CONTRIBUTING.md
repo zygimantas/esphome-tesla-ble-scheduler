@@ -31,7 +31,7 @@ g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test
 # The page in a headless Chrome, the one installed, on a fake board (test/fake_board.py) with the board's own settings
 # checks, built like the unit tests; Playwright's version is PLAYWRIGHT_VERSION in ci.yml
 g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/settings_tool.cpp -o test/settings_tool
-uv run --no-project --with "playwright==1.63.0" test/page_test.py
+uvx --from "playwright==1.63.0" python test/page_test.py
 # Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
 # -isysroot $(xcrun --show-sdk-path)
 uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src

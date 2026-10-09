@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The page in a headless browser, on the fake board (fake_board.py), from the repository root:
-    uv run --no-project --with "playwright==1.63.0" test/page_test.py
+    uvx --from "playwright==1.63.0" python test/page_test.py
 It drives Google Chrome, which GitHub's runners and a Mac have, through Playwright, so nothing is downloaded, and needs
 test/settings_tool built like the unit tests (CONTRIBUTING.md's Checks). Each scenario starts the board afresh through
 its POST /fake, and asserts on the page's text and on the POSTs the board received.
