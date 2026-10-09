@@ -1,5 +1,5 @@
 #pragma once
-// The market: the day-ahead prices from Nord Pool, SMARD, OMIE or OKTE, where to download them, and the
+// The market: the day-ahead prices from Nord Pool, SMARD, OMIE, OKTE or SEMOpx, where to download them, and the
 // quarter-hours' prices. Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
@@ -7,6 +7,7 @@
 #include <ArduinoJson.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -22,7 +23,7 @@ namespace esphome::scheduler {
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
 
 // Where the board downloads the market prices.
-enum class Market { NORD_POOL, SMARD, OMIE, OKTE };
+enum class Market { NORD_POOL, SMARD, OMIE, OKTE, SEMOPX };
 
 // The source of the market prices, as the log and the settings' messages name it.
 inline const char *market_name(Market market) {
@@ -33,6 +34,8 @@ inline const char *market_name(Market market) {
       return "OMIE";
     case Market::OKTE:
       return "OKTE";
+    case Market::SEMOPX:
+      return "SEMOpx";
     default:
       return "Nord Pool";
   }
@@ -40,7 +43,8 @@ inline const char *market_name(Market market) {
 
 // Where electricity is bought, as market: area names it: a country's code, or the price area where a country has
 // several. DE and LU are the area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, OMIE, the
-// Iberian market, and OKTE, Slovakia's market operator, have their areas' prices in euros only.
+// Iberian market, OKTE, Slovakia's market operator, and SEMOpx, the Irish one, have their areas' prices in euros only,
+// SEMOpx's for the Republic of Ireland.
 struct Area {
   const char *name;
   const char *source_name;  // the area as its market names it
@@ -49,39 +53,23 @@ struct Area {
 };
 
 constexpr Area AREAS[] = {
-    {"AT", "AT", Market::NORD_POOL, 0},
-    {"BE", "BE", Market::NORD_POOL, 0},
-    {"BG", "BG", Market::NORD_POOL, 0},
-    {"CH", "CH", Market::SMARD, 259},
-    {"CZ", "CZ", Market::SMARD, 261},
-    {"DE", "GER", Market::NORD_POOL, 0},
-    {"DK1", "DK1", Market::NORD_POOL, 0},
-    {"DK2", "DK2", Market::NORD_POOL, 0},
-    {"EE", "EE", Market::NORD_POOL, 0},
-    {"ES", "ES", Market::OMIE, 0},
-    {"FI", "FI", Market::NORD_POOL, 0},
-    {"FR", "FR", Market::NORD_POOL, 0},
-    {"HR", "HR", Market::NORD_POOL, 0},
-    {"HU", "HU", Market::SMARD, 262},
-    {"IT-NORTH", "IT-NORTH", Market::SMARD, 255},
-    {"LT", "LT", Market::NORD_POOL, 0},
-    {"LU", "GER", Market::NORD_POOL, 0},
-    {"LV", "LV", Market::NORD_POOL, 0},
-    {"NL", "NL", Market::NORD_POOL, 0},
-    {"NO1", "NO1", Market::NORD_POOL, 0},
-    {"NO2", "NO2", Market::NORD_POOL, 0},
-    {"NO3", "NO3", Market::NORD_POOL, 0},
-    {"NO4", "NO4", Market::NORD_POOL, 0},
-    {"NO5", "NO5", Market::NORD_POOL, 0},
-    {"PL", "PL", Market::NORD_POOL, 0},
-    {"PT", "PT", Market::OMIE, 0},
-    {"RO", "TEL", Market::NORD_POOL, 0},
-    {"SE1", "SE1", Market::NORD_POOL, 0},
-    {"SE2", "SE2", Market::NORD_POOL, 0},
-    {"SE3", "SE3", Market::NORD_POOL, 0},
-    {"SE4", "SE4", Market::NORD_POOL, 0},
-    {"SI", "SI", Market::SMARD, 260},
-    {"SK", "SK", Market::OKTE, 0},
+    {"AT", "AT", Market::NORD_POOL, 0},   {"BE", "BE", Market::NORD_POOL, 0},
+    {"BG", "BG", Market::NORD_POOL, 0},   {"CH", "CH", Market::SMARD, 259},
+    {"CZ", "CZ", Market::SMARD, 261},     {"DE", "GER", Market::NORD_POOL, 0},
+    {"DK1", "DK1", Market::NORD_POOL, 0}, {"DK2", "DK2", Market::NORD_POOL, 0},
+    {"EE", "EE", Market::NORD_POOL, 0},   {"ES", "ES", Market::OMIE, 0},
+    {"FI", "FI", Market::NORD_POOL, 0},   {"FR", "FR", Market::NORD_POOL, 0},
+    {"HR", "HR", Market::NORD_POOL, 0},   {"HU", "HU", Market::SMARD, 262},
+    {"IE", "ROI-DA", Market::SEMOPX, 0},  {"IT-NORTH", "IT-NORTH", Market::SMARD, 255},
+    {"LT", "LT", Market::NORD_POOL, 0},   {"LU", "GER", Market::NORD_POOL, 0},
+    {"LV", "LV", Market::NORD_POOL, 0},   {"NL", "NL", Market::NORD_POOL, 0},
+    {"NO1", "NO1", Market::NORD_POOL, 0}, {"NO2", "NO2", Market::NORD_POOL, 0},
+    {"NO3", "NO3", Market::NORD_POOL, 0}, {"NO4", "NO4", Market::NORD_POOL, 0},
+    {"NO5", "NO5", Market::NORD_POOL, 0}, {"PL", "PL", Market::NORD_POOL, 0},
+    {"PT", "PT", Market::OMIE, 0},        {"RO", "TEL", Market::NORD_POOL, 0},
+    {"SE1", "SE1", Market::NORD_POOL, 0}, {"SE2", "SE2", Market::NORD_POOL, 0},
+    {"SE3", "SE3", Market::NORD_POOL, 0}, {"SE4", "SE4", Market::NORD_POOL, 0},
+    {"SI", "SI", Market::SMARD, 260},     {"SK", "SK", Market::OKTE, 0},
 };
 
 // The currency of an area's market prices: the country's own where Nord Pool has it, otherwise euros.
@@ -165,6 +153,59 @@ inline JsonDocument okte_filter() {
   filter[0]["price"] = true;
   filter[0]["publicationStatus"] = true;
   return filter;
+}
+
+// SEMOpx's newest day-ahead results, one for each CET delivery day, which its API serves as JSON at once by the id this
+// list gives it, with ExcludeDelayedPublication=0, while their files come out later.
+constexpr const char *SEMOPX_LIST_URL =
+    "https://reports.semopx.com/api/v1/documents/static-reports?DPuG_ID=EA-001&ExcludeDelayedPublication=0"
+    "&ResourceName=MarketResult_SEM-DA_PWR-MRC-D%2B1&sort_by=Date&order_by=DESC&page_size=3";
+
+// The address of the results of the CET delivery day `day_offset` days after `now`, by their id in SEMOpx's list, or ""
+// while they aren't out or the list can't be read. An id that isn't hexadecimal is none.
+inline std::string semopx_url(const char *json, size_t length, int64_t now, int day_offset) {
+  JsonDocument filter;
+  filter["items"][0]["Date"] = true;
+  filter["items"][0]["_id"] = true;
+  JsonDocument doc;
+  deserializeJson(doc, json, length, DeserializationOption::Filter(filter));
+  const CivilDate date = civil_from_days(local_day_of(now, CET_STANDARD_OFFSET) + day_offset);
+  char day[16];
+  std::snprintf(day, sizeof(day), "%04d-%02u-%02u", static_cast<int>(date.year), date.month, date.day);
+  for (JsonObject item : doc["items"].as<JsonArray>()) {
+    const std::string id = item["_id"] | "";
+    const bool hex = !id.empty() && std::all_of(id.begin(), id.end(), [](char c) {
+      return std::isxdigit(static_cast<unsigned char>(c)) != 0;
+    });
+    if (hex && std::strncmp(item["Date"] | "", day, 10) == 0)
+      return "https://reports.semopx.com/api/v1/documents/" + id;
+  }
+  return "";
+}
+
+// What the board reads of SEMOpx's results of a day, about 20 kB: their rows, a market each with its prices, volumes
+// and blocks.
+inline JsonDocument semopx_filter() {
+  JsonDocument filter;
+  filter["rows"] = true;
+  return filter;
+}
+
+// The part of SEMOpx's results that the board passes on, in their own form, about 2 kB: `market`'s row, like ROI-DA's,
+// to its index prices in euros, the half-hours' starts and their prices.
+inline std::string semopx_kept(const JsonDocument &doc, const char *market) {
+  JsonDocument kept;
+  JsonArray rows = kept["rows"].to<JsonArray>();
+  for (JsonArrayConst row : doc["rows"].as<JsonArrayConst>()) {
+    if (row[0][1] != market)
+      continue;
+    auto mine = rows.add<JsonArray>();
+    for (size_t i = 0; i < 4; i++)
+      mine.add(row[i]);
+  }
+  std::string json;
+  serializeJson(kept, json);
+  return json;
 }
 
 // The ECB's euro reference rates of the last working day, out around 16:00 CET.
@@ -253,6 +294,33 @@ class PriceTable {
       stored += set(*start, entry["price"].as<float>() / 1000.0f);
     }
     return stored;
+  }
+
+  // Stores the quarter-hour prices (per kWh) from SEMOpx's results of a day, each half-hour's price in both of its
+  // quarter-hours: `market`'s, like ROI-DA, a row of its name, its index prices' heading, ["Index prices",30,"EUR"],
+  // the half-hours' starts (UTC) and their prices per MWh. Returns how many were stored, or -1 if the market's prices
+  // aren't there.
+  int add_semopx(const char *json, size_t length, const char *market) {
+    const JsonDocument filter = semopx_filter();
+    JsonDocument doc;
+    if (deserializeJson(doc, json, length, DeserializationOption::Filter(filter)) != DeserializationError::Ok)
+      return -1;
+    for (JsonArray row : doc["rows"].as<JsonArray>()) {
+      JsonArray heading = row[1];
+      if (row[0][1] != market || heading[0] != "Index prices" || heading[1] != 30 || heading[2] != "EUR")
+        continue;
+      JsonArray starts = row[2], prices = row[3];
+      int stored = 0;
+      for (size_t i = 0; i < std::min(starts.size(), prices.size()); i++) {
+        const auto start = parse_iso8601(starts[i].as<const char *>());
+        if (!prices[i].is<float>() || !start)
+          continue;
+        stored += set(*start, prices[i].as<float>() / 1000.0f);
+        stored += set(*start + SLOT_SECONDS, prices[i].as<float>() / 1000.0f);
+      }
+      return stored;
+    }
+    return -1;
   }
 
   // Stores the quarter-hour prices (per kWh) from OMIE's file of a day: a line per quarter-hour of the CET day,

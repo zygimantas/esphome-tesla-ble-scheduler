@@ -17,7 +17,7 @@ namespace esphome::scheduler {
 static const char *const TAG = "scheduler";
 
 // The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan up to
-// about 2 kB. OKTE's day, 67 kB, goes through okte_filter() as it comes instead (read_body_()).
+// about 2 kB. OKTE's day, 67 kB, and SEMOpx's, 20 kB, go through a filter as they come instead (read_body_()).
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
@@ -525,11 +525,11 @@ class ResponseReader {
 };
 
 // A response's whole body, or nothing when the read fails, times out or passes MAX_BODY_BYTES before it's complete.
-// With a `filter`, what it keeps of the JSON, as JSON, read as it comes, so the whole answer needn't fit: nothing when
-// it can't be read. Without App.feed_wdt(): the watchdog doesn't watch the requests task, and on the loop the read
-// feeds it.
+// With a `filter`, what it keeps of the JSON, read as it comes, so the whole answer needn't fit: as JSON, or what
+// `keep` makes of it; nothing when it can't be read. Without App.feed_wdt(): the watchdog doesn't watch the requests
+// task, and on the loop the read feeds it.
 std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response,
-                                                          const JsonDocument *filter) {
+                                                          const JsonDocument *filter, const Keep &keep) {
   if (filter != nullptr) {
     ResponseReader reader(response, this->http_->get_timeout());
 #ifdef USE_PSRAM
@@ -540,6 +540,8 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 #endif
     if (deserializeJson(doc, reader, DeserializationOption::Filter(*filter)) != DeserializationError::Ok)
       return std::nullopt;
+    if (keep)
+      return keep(doc);
     std::string kept;
     kept.reserve(measureJson(doc));
     serializeJson(doc, kept);
@@ -563,16 +565,16 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 }
 
 // GETs `url`: the answer's HTTP status, or nothing when the request fails, and with 200 its body, or nothing when it's
-// cut off, through `filter` if any (read_body_()). The response ends before the body is parsed: the connection's memory
-// isn't needed any more.
+// cut off, through `filter` and `keep` if any (read_body_()). The response ends before the body is parsed: the
+// connection's memory isn't needed any more.
 std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<std::string> &body,
-                                              const JsonDocument *filter) {
+                                              const JsonDocument *filter, const Keep &keep) {
   auto response = this->http_->get(url);
   if (response == nullptr)
     return std::nullopt;
   const int status = response->status_code;
   if (status == http_request::HTTP_STATUS_OK)
-    body = this->read_body_(*response, filter);
+    body = this->read_body_(*response, filter, keep);
   response->end();
   return status;
 }
@@ -587,6 +589,8 @@ std::string SchedulerComponent::prices_url_(int day) const {
       return omie_url(batch.now, day);
     case Market::OKTE:
       return okte_url(batch.now, day);
+    case Market::SEMOPX:
+      return semopx_url(batch.semopx_list.data(), batch.semopx_list.size(), batch.now, day);
     default:
       return nord_pool_url(batch.area->source_name, batch.currency.c_str(), batch.now, day);
   }
@@ -603,6 +607,8 @@ int SchedulerComponent::store_prices_(const std::string &body, float rate) {
       return prices.add_omie(body.data(), body.size(), area.source_name);
     case Market::OKTE:
       return prices.add_okte(body.data(), body.size());
+    case Market::SEMOPX:
+      return prices.add_semopx(body.data(), body.size(), area.source_name);
     default:
       return prices.add_nord_pool(body.data(), body.size(), area.source_name);
   }
@@ -622,19 +628,39 @@ void SchedulerComponent::fetch_prices_() {
       return;
     rate = *ecb;
   }
+  // SEMOpx gives a day's results by an id in its list of the newest: the list first, for both days
+  if (area.market == Market::SEMOPX) {
+    std::optional<std::string> list;
+    if (this->fetch_(SEMOPX_LIST_URL, list) != http_request::HTTP_STATUS_OK || !list) {
+      ESP_LOGW(TAG, "%s: its list of results couldn't be read", source);
+      return;
+    }
+    this->requests_.semopx_list = std::move(*list);
+  }
   // Not out yet: Nord Pool has no content for tomorrow, SMARD no file for a week that hasn't begun, OMIE none for the
-  // day, and OKTE an empty list, which stores none.
+  // day, OKTE an empty list, which stores none, and SEMOpx's list no results for the day.
   const int not_yet =
       area.market == Market::NORD_POOL ? http_request::HTTP_STATUS_NO_CONTENT : http_request::HTTP_STATUS_NOT_FOUND;
-  const JsonDocument okte = okte_filter();
+  // OKTE's and SEMOpx's answers come in through a filter, as they're too long to hold, and SEMOpx's to the area's
+  // prices
+  const bool filtered = area.market == Market::OKTE || area.market == Market::SEMOPX;
+  const JsonDocument filter = area.market == Market::OKTE ? okte_filter() : semopx_filter();
+  Keep keep;
+  if (area.market == Market::SEMOPX)
+    keep = [&area](const JsonDocument &doc) { return semopx_kept(doc, area.source_name); };
   std::string fetched;  // SMARD's file has the week, so tomorrow's prices are often in today's
   for (int day = this->requests_.first_day; day < 2; day++) {
     const std::string url = this->prices_url_(day);
+    if (url.empty()) {  // not in SEMOpx's list
+      if (day == 0)
+        ESP_LOGW(TAG, "%s has no prices for %s today: check Country / Area under Settings", source, area.name);
+      continue;
+    }
     if (url == fetched)
       continue;
     fetched = url;
     std::optional<std::string> body;
-    const std::optional<int> status = this->fetch_(url, body, area.market == Market::OKTE ? &okte : nullptr);
+    const std::optional<int> status = this->fetch_(url, body, filtered ? &filter : nullptr, keep);
     if (!status) {
       ESP_LOGW(TAG, "%s request failed", source);
       break;

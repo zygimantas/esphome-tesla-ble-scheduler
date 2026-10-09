@@ -602,6 +602,7 @@ const COUNTRIES = {
   FR: [20, "Europe/Paris"],
   HR: [13, "Europe/Zagreb"],
   HU: [27, "Europe/Budapest"],
+  IE: [9, "Europe/Dublin"],
   IT: [10, "Europe/Rome"],
   LT: [21, "Europe/Vilnius"],
   LU: [8, "Europe/Luxembourg"],

@@ -344,6 +344,61 @@ static void test_omie_prices() {
   CHECK(spain.add_omie("<!DOCTYPE html>", 15, "ES") == -1);
 }
 
+static void test_semopx_prices() {
+  CHECK_STR(market_name(Market::SEMOPX), "SEMOpx");
+  // SEMOpx's list of its newest results, as it sent it but shorter, with the ids of their CET delivery days.
+  const char *list = R"({"pagination":{"pageSize":3,"currentPage":1,"totalItems":363},"items":[)"
+                     R"({"_id":"6ac77b3a9620d93c0756bb9d","Date":"2026-10-09T10:00:00","DPuG_ID":"EA-001",)"
+                     R"("ResourceName":"MarketResult_SEM-DA_PWR-MRC-D+1_20261008100000_20261008105502.csv"},)"
+                     R"({"_id":"6ac62bd09620d90a2b0557f8","Date":"2026-10-08T10:00:00"},)"
+                     R"({"_id":"../other?id","Date":"2026-10-07T10:00:00"},{"_id":"","Date":"2026-10-06T10:00:00"}]})";
+  const int64_t evening = utc("2026-10-08T20:00:00Z");  // 22:00 on Thursday 8 October in CET's summer time
+  CHECK_STR(semopx_url(list, std::strlen(list), evening, 0),
+            "https://reports.semopx.com/api/v1/documents/6ac62bd09620d90a2b0557f8");
+  CHECK_STR(semopx_url(list, std::strlen(list), evening, 1),
+            "https://reports.semopx.com/api/v1/documents/6ac77b3a9620d93c0756bb9d");
+  CHECK(semopx_url(list, std::strlen(list), evening + 2 * HOUR, 1).empty());           // Saturday's aren't out
+  CHECK(semopx_url(list, std::strlen(list), utc("2026-10-07T12:00:00Z"), 0).empty());  // not an id
+  CHECK(semopx_url(list, std::strlen(list), utc("2026-10-06T12:00:00Z"), 0).empty());  // no id
+  CHECK(semopx_url("{oops", 5, evening, 0).empty());
+  CHECK(std::string(SEMOPX_LIST_URL).find("ExcludeDelayedPublication=0") != std::string::npos);
+
+  // The results of Thursday 8 October, shorter: Northern Ireland's market before the Republic's, whose prices after
+  // the first two the board leaves out, no price and a start that isn't a time.
+  const std::string results =
+      R"({"DPuG_ID":"EA-001","FilePublicationDelayed":true,"rows":[)"
+      R"([["Market","NI-DA"],["Index prices",30,"EUR"],["2026-10-07T22:00:00Z"],[999]],)"
+      R"([["Market","ROI-DA"],["Index prices",30,"EUR"],)"
+      R"(["2026-10-07T22:00:00Z","2026-10-07T22:30:00Z","2026-10-07T23:00:00Z","later"],[166.63,-12,null,1.0],)"
+      R"(["Index prices",30,"GBP"],["2026-10-07T22:00:00Z"],[140.79]]]})";
+  PriceTable prices;
+  CHECK(prices.add_semopx(results.data(), results.size(), "ROI-DA") == 4);
+  const int64_t t = utc("2026-10-07T22:00:00Z");
+  for (const int64_t slot : {t, t + SLOT_SECONDS}) {  // a half-hour's price in both of its quarter-hours
+    const auto price = prices.get(slot);
+    CHECK(price && near(*price, 0.16663f));
+  }
+  const auto negative = prices.get(t + 3 * SLOT_SECONDS);
+  CHECK(negative && near(*negative, -0.012f));
+  CHECK(!prices.get(t + 4 * SLOT_SECONDS));
+  CHECK(prices.add_semopx(results.data(), results.size(), "XX-DA") == -1);  // not there
+  for (const char *heading :
+       {R"(["Index volumes",30])", R"(["Index prices",60,"EUR"])", R"(["Index prices",30,"GBP"])"}) {
+    const std::string other =
+        concat({R"({"rows":[[["Market","ROI-DA"],)", heading, R"(,["2026-10-07T22:00:00Z"],[1]]]})"});
+    CHECK(prices.add_semopx(other.data(), other.size(), "ROI-DA") == -1);
+  }
+  CHECK(prices.add_semopx("{oops", 5, "ROI-DA") == -1);
+
+  // The board passes on only the Republic's row, to its prices, and stores the same from it.
+  JsonDocument whole;
+  CHECK(deserializeJson(whole, results) == DeserializationError::Ok);
+  const std::string kept = semopx_kept(whole, "ROI-DA");
+  CHECK(kept.find("NI-DA") == std::string::npos && kept.find("GBP") == std::string::npos);
+  PriceTable again;
+  CHECK(again.add_semopx(kept.data(), kept.size(), "ROI-DA") == 4 && again.get(t) == prices.get(t));
+}
+
 static void test_okte_prices() {
   // A CET delivery day a request, as for Nord Pool and OMIE.
   CHECK_STR(okte_url(SEP24_1700Z, 0),
@@ -1124,6 +1179,10 @@ static void test_reads_the_settings_file() {
   const std::string slovakia = concat({"market:\n  area: SK\n  vat: 0.19\n", CAR, "timezone: Europe/Bratislava\n"});
   CHECK_STR(read_settings(slovakia, repository_plans(), s), "");
   CHECK(s.area->market == Market::OKTE && s.currency == "EUR" && s.standard_offset == 3600);
+  // Ireland, in euros from SEMOpx, on Dublin's clock, at UTC in winter
+  const std::string ireland = concat({"market:\n  area: IE\n  vat: 0.09\n", CAR, "timezone: Europe/Dublin\n"});
+  CHECK_STR(read_settings(ireland, repository_plans(), s), "");
+  CHECK(s.area->market == Market::SEMOPX && s.currency == "EUR" && s.standard_offset == 0);
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "grid: the plan's prices are in EUR, not CHF");
   for (const char *currency : {"CZK", "SEK"})  // before and after HUF
@@ -1135,9 +1194,12 @@ static void test_reads_the_settings_file() {
             "currency: OMIE's prices for ES come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "SK") + "currency: CZK\n"),
             "currency: OKTE's prices for SK come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "IE") + "currency: GBP\n"),
+            "currency: SEMOpx's prices for IE come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU")), "");
   CHECK_STR(settings_error(settings_set("  area", "PT")), "");
   CHECK_STR(settings_error(settings_set("  area", "SK")), "");
+  CHECK_STR(settings_error(settings_set("  area", "IE")), "");
 }
 
 static void test_settings_form_options() {
@@ -3062,6 +3124,7 @@ int main() {
   test_ecb_rates();
   test_omie_prices();
   test_okte_prices();
+  test_semopx_prices();
   test_cheapest_slots();
   test_schedule_picks_the_night_trough();
   test_schedule_waits_for_prices_not_out_yet();
