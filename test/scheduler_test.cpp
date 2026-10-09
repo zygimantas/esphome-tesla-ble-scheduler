@@ -1,4 +1,5 @@
 // Unit tests for charger.h, settings.h and the headers they include; CONTRIBUTING.md says how to build and run them.
+#include "repository_plans.h"
 #include "scheduler/charger.h"
 #include "scheduler/settings.h"
 #include "scheduler_test_tesla.h"
@@ -8,10 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <functional>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,6 +17,7 @@
 using namespace esphome::scheduler;
 using scheduler_test::FakeTesla;
 using scheduler_test::plugged_in;
+using scheduler_test::repository_plans;
 
 static int failures = 0;
 
@@ -978,26 +977,6 @@ static void test_calendar_and_exceptions() {
   CHECK(uk(12, 1, 23 * 60 + 59) == 0.245f);
 }
 
-// The plans in plans/, by name like lt/eso-standartinis-4-zones, as the board has them built in.
-static const Plans &repository_plans() {
-  static std::vector<std::pair<std::string, std::string>> texts;
-  static Plans plans;
-  if (plans.empty()) {
-    for (const auto &entry : std::filesystem::recursive_directory_iterator("plans")) {
-      if (entry.path().extension() != ".yaml")
-        continue;
-      std::ifstream file(entry.path());
-      std::stringstream text;
-      text << file.rdbuf();
-      texts.emplace_back(entry.path().lexically_relative("plans").replace_extension().string(), text.str());
-    }
-    std::sort(texts.begin(), texts.end());
-    for (const auto &[name, text] : texts)
-      plans.emplace_back(name, text);
-  }
-  return plans;
-}
-
 // `plan` as the page writes a custom plan: plan:, and the plan's lines under it, each indented by four spaces.
 static std::string as_custom(const std::string &plan) {
   std::string lines = "  plan:\n";
@@ -1207,15 +1186,46 @@ static void test_reads_the_settings_file() {
   CHECK_STR(settings_error(settings_set("  area", "IE")), "");
 }
 
+// What the page offers: every market area with its country's data, whose time zones are in TIME_ZONES, as every zone
+// there is a country's, and the plans.
 static void test_settings_form_options() {
   CHECK_STR(json_string("a \"b\" \\ c"), "\"a \\\"b\\\" \\\\ c\"");
+  CHECK(country_of("XX") == nullptr);
+  CHECK(std::is_sorted(std::begin(COUNTRIES), std::end(COUNTRIES),
+                       [](const Country &a, const Country &b) { return std::strcmp(a.code, b.code) < 0; }));
+  const auto has_zone = [](const Country &country, const char *zone) {
+    return std::any_of(std::begin(country.zones), std::end(country.zones),
+                       [&](const char *known) { return known != nullptr && std::strcmp(known, zone) == 0; });
+  };
+  for (const Area &area : AREAS) {
+    const Country *country = country_of(area.name);
+    REQUIRE(country != nullptr);
+    CHECK(country->vat > 0.0f && country->vat < 30.0f && country->zones[0] != nullptr);
+    for (const char *zone : country->zones)
+      CHECK(zone == nullptr || std::any_of(std::begin(TIME_ZONES), std::end(TIME_ZONES),
+                                           [&](const auto &known) { return std::strcmp(known.first, zone) == 0; }));
+  }
+  for (const auto &known : TIME_ZONES)
+    CHECK(std::any_of(std::begin(COUNTRIES), std::end(COUNTRIES),
+                      [&](const Country &country) { return has_zone(country, known.first); }));
   const Plans plans = {{"lt/one", "# Prices with VAT: https://example.com\nname: One plan\n"},
                        {"lt/two", "currency: EUR\n"}};
   std::string options;
   settings_options(plans, [&options](const std::string &piece) { options += piece; });
-  CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
-  const std::string end = R"("SI","SK"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
+  CHECK(options.rfind(R"({"areas":{"AT":{"vat":20,"zones":["Europe/Vienna"],"currency":"EUR"},"BE":)", 0) == 0);
+  for (const char *piece :
+       {R"("CH":{"vat":8.1,"zones":["Europe/Zurich"],"currency":"EUR","converted":"CHF"})",
+        R"("ES":{"vat":21,"zones":["Europe/Madrid","Africa/Ceuta","Atlantic/Canary"],"currency":"EUR"})",
+        R"("NO3":{"vat":25,"zones":["Europe/Oslo"],"currency":"NOK"})",
+        R"("NO4":{"vat":0,"zones":["Europe/Oslo"],"currency":"NOK"})"})
+    CHECK(options.find(piece) != std::string::npos);
+  const std::string end =
+      R"("SK":{"vat":19,"zones":["Europe/Bratislava"],"currency":"EUR"}},"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
   CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);
+  JsonDocument json;  // as the page reads it, every area in it
+  CHECK(deserializeJson(json, options) == DeserializationError::Ok);
+  for (const Area &area : AREAS)
+    CHECK(json["areas"][area.name]["zones"].size() > 0 && json["areas"][area.name]["currency"].is<const char *>());
 }
 
 // Which saves restart a board: once it has a car, another car, market area or currency; the rest applies at once.
