@@ -10,7 +10,7 @@ permissions:
 
 env:
   ARDUINOJSON_VERSION: 7.4.3
-  ESPHOME_VERSION: 2026.9.0
+  ESPHOME_VERSION: 2026.10.0b2
 
 jobs:
   analyze:
@@ -47,7 +47,8 @@ jobs:
           curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
             tar xz --strip-components=1 -C ArduinoJson
           g++ -std=c++17 -I . -isystem ArduinoJson/src test/scheduler_test.cpp -o scheduler_test
-          uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
+          # ESPHOME_PCH_ENABLE=0 leaves out 2026.10's precompiled header, which breaks host builds (test/AGENTS.md)
+          ESPHOME_PCH_ENABLE=0 uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
       - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           category: /language:${{ matrix.language }}

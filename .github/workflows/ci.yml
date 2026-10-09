@@ -15,7 +15,7 @@ concurrency:
 env:
   ARDUINOJSON_VERSION: 7.4.3
   CLANG_TIDY_VERSION: 22.1.8
-  ESPHOME_VERSION: 2026.9.0
+  ESPHOME_VERSION: 2026.10.0b2
 
 jobs:
   lint:
@@ -47,7 +47,7 @@ jobs:
             echo "::error file=.github/workflows/codeql.yml::env differs from ci.yml's"
             exit 1
           fi
-          for pin in "clang-tidy==$CLANG_TIDY_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
+          for pin in "clang-tidy==$CLANG_TIDY_VERSION" "esphome@$ESPHOME_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
             grep -q -F "$pin" CONTRIBUTING.md || { echo "::error file=CONTRIBUTING.md::should say $pin, as ci.yml does"; exit 1; }
           done
 
@@ -106,7 +106,8 @@ jobs:
           enable-cache: false
       - name: Simulation, starting a stopped car in a cheap quarter-hour
         run: |
-          uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
+          # ESPHOME_PCH_ENABLE=0 leaves out 2026.10's precompiled header, which breaks host builds (test/AGENTS.md)
+          ESPHOME_PCH_ENABLE=0 uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
           # pty.spawn gives the program a terminal. Anything that ends it before the timeout (124) fails the step.
           CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c \
             'import os, pty, sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(sys.argv[1:])) != 124)' \

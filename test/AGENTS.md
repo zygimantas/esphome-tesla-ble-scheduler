@@ -11,6 +11,7 @@
 
 ## The simulation
 
+- ESPHome 2026.10's precompiled header, forced into every file (`-include esphome_pch.h`), breaks the host build: logger_host.cpp's `time()` finds `namespace esphome::time` (posix_tz.h, with a time zone), and on a Mac httplib.h's MacTypes.h finds ArduinoJson's `Ptr`. `ESPHOME_PCH_ENABLE=0` leaves it out, in the workflows and CONTRIBUTING.md; the firmware builds with it. Try without it at the next ESPHome update.
 - Its program needs a terminal and a time limit: `ESPHOME_PREFDIR=$(mktemp -d) python3 -c 'import pty, sys; pty.spawn(sys.argv[1:])' perl -e 'alarm 45; exec @ARGV' test/.esphome/build/simulation/.pioenvs/simulation/program > log`, then `grep -F '][scheduler' log`. ESPHOME_PREFDIR starts it without what an earlier run saved, like the buttons' mode, Ready by and savings.
 - Without CHEAP_NOW=1, the outcome depends on the time of day, as the made-up prices are cheap from 01:00 to 05:00. A first "Wake the car (Reading battery)" is a startup race with the made-up sensors, not a bug, and the start may then wait for the next tick, 30 s later: give the program well over 30 s.
 

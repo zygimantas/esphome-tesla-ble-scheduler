@@ -28,7 +28,7 @@ esp32_ble_tracker:
 esphome:
   includes:
     - <vin_utils.h>
-  min_version: 2026.9.0
+  min_version: 2026.10.0b2
   name: tesla
   on_boot:
     priority: 800
