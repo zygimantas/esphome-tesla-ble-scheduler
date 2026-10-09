@@ -57,6 +57,7 @@ Open the page on your phone, from the home screen once you've added it there, as
 - **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
 - **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
 - **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
+- **To unlock the cable when charging finishes**, tick **Unlock the charge port when charged** under **Settings**: once the car reaches its charge limit, the board unlocks the charge port, as Unlock in the Tesla app does, so the cable comes out without the car's key.
 - **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months. The **?** after each shows the energy and what it cost, and the saving against plugging in and charging at once. Prices count VAT, grid fees and the supplier's margin or part per kWh, not monthly fees. **Reset savings** starts again from zero.
 - **To start over**, as for another car, press **Restart setup** under **Settings**: the board forgets its settings, its key and Ready by, keeps its Wi-Fi and the savings, and starts the setup again. Remove its old key in the car under **Controls** → **Locks**.
 

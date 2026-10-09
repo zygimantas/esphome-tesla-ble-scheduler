@@ -46,6 +46,7 @@ struct SettingsFile {
   std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
   float charging_kw = 0.0f;
+  bool unlock_when_charged = false;  // unlock the charge port once the car finishes charging
   std::string vin;
   int32_t standard_offset = 0;  // the time zone's, in seconds
 };
@@ -65,7 +66,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (text.size() > MAX_SETTINGS_BYTES)
     return "the file is longer than 4 kB";
   SettingsFile read;
-  std::string area, battery, charging, currency, fixed, margin, vat, zone;
+  std::string area, battery, charging, currency, fixed, margin, unlock, vat, zone;
   // Each setting by its place in the file, and where its value goes; grid: and market: head lines of their own.
   const std::pair<const char *, std::string *> places[] = {{"currency", &currency},
                                                            {"fixed_price", &fixed},
@@ -78,6 +79,7 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
                                                            {"ntfy_topic", &read.ntfy_topic},
                                                            {"tesla_battery_kwh", &battery},
                                                            {"tesla_charging_kw", &charging},
+                                                           {"tesla_unlock_when_charged", &unlock},
                                                            {"tesla_vin", &read.vin},
                                                            {"timezone", &zone}};
   std::vector<std::string> seen;
@@ -196,6 +198,9 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       return "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
              "screen under Controls, Software";
   }
+  if (!unlock.empty() && unlock != "true")
+    return "tesla_unlock_when_charged must be true, or left out";
+  read.unlock_when_charged = !unlock.empty();
   const auto *found = std::find_if(std::begin(TIME_ZONES), std::end(TIME_ZONES),
                                    [&](const auto &known) { return zone == known.first; });
   if (found == std::end(TIME_ZONES))

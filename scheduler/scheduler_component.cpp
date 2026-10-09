@@ -152,6 +152,9 @@ void SchedulerComponent::setup() {
   }
   // The charge port flap, which the car reports even while it sleeps, and to any key, one it doesn't know too.
   this->port_ = find(App.get_covers(), "Charge Port Door");
+#ifdef USE_LOCK
+  this->port_latch_ = find(App.get_locks(), "Charge Port Latch");
+#endif
   if (this->port_ != nullptr)
     this->port_->add_on_state_callback([this]() { this->port_reported_ = true; });
   // A command the car turned away, as from a key it doesn't know, says the key was removed in the car: the board
@@ -292,6 +295,7 @@ Settings SchedulerComponent::schedule_settings_() const {
   settings.battery_kwh = this->file_.battery_kwh;
   settings.charging_kw = this->file_.charging_kw;
   settings.standard_offset = this->file_.standard_offset;
+  settings.unlock_when_charged = this->file_.unlock_when_charged;
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
   const ReadyByOnce &once = *this->ready_by_once_;
   settings.ready_by_once = once.year >= 2020 ? local_to_utc(days_from_civil(once.year, once.month, once.day),
@@ -333,6 +337,12 @@ void SchedulerComponent::carry_out_(const Decision &d, int64_t now) {
     ESP_LOGI(TAG, "Wake the car (%s)", d.status.c_str());
     this->wake_->press();
   }
+#ifdef USE_LOCK
+  if (d.unlock_port && this->port_latch_ != nullptr) {
+    ESP_LOGI(TAG, "Unlock the charge port (charged)");
+    this->port_latch_->unlock();
+  }
+#endif
 }
 
 // The decision on the page's entities, with the status saying so when the Tesla's entities are missing.

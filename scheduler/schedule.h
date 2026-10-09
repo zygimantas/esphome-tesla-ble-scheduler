@@ -43,7 +43,8 @@ struct Settings {
   float battery_kwh = 75.0f;
   float charging_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
-  const char *currency = "EUR";  // of the market prices and the tariff
+  const char *currency = "EUR";      // of the market prices and the tariff
+  bool unlock_when_charged = false;  // unlock the charge port once the car finishes charging
 };
 
 struct ScheduleRequest {
