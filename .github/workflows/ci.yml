@@ -47,6 +47,10 @@ jobs:
             echo "::error file=.github/workflows/codeql.yml::env differs from ci.yml's"
             exit 1
           fi
+          if [ "$(yq '.env.ARDUINOJSON_VERSION' .github/workflows/mutation.yml)" != "$ARDUINOJSON_VERSION" ]; then
+            echo "::error file=.github/workflows/mutation.yml::ARDUINOJSON_VERSION differs from ci.yml's ($ARDUINOJSON_VERSION)"
+            exit 1
+          fi
           for pin in "clang-tidy==$CLANG_TIDY_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
             grep -q -F "$pin" CONTRIBUTING.md || { echo "::error file=CONTRIBUTING.md::should say $pin, as ci.yml does"; exit 1; }
           done

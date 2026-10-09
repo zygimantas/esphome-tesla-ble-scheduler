@@ -1,0 +1,40 @@
+name: Mutation
+
+on:
+  schedule:
+    - cron: "15 23 * * 0" # Sunday night, UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARDUINOJSON_VERSION: 7.4.3
+
+jobs:
+  mutation:
+    name: Mutation testing of the scheduler's headers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240 # about 80 minutes on the runner's 4 cores
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - name: ArduinoJson
+        run: |
+          mkdir ArduinoJson
+          curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+            tar xz --strip-components=1 -C ArduinoJson
+      - name: The score to keep is in --at-least (test/AGENTS.md says when to change it)
+        shell: bash # fails with the script, not with tee
+        env:
+          CXX: clang++ # with GCC's AddressSanitizer the tests take minutes, past the script's limit
+        run: |
+          $CXX --version | head -1
+          python3 test/mutation_test.py --at-least 75 ArduinoJson/src | tee mutation.txt
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation
+          path: mutation.txt
