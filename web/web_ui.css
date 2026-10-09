@@ -179,10 +179,11 @@ hr + .row {
   text-align: left;
 }
 
-/* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them --- */
+/* --- Fields: dropdowns, all the same width, with their own arrow, and the other fields like them. 8em fits the
+   widest Ready by, Wed 07:00, beside the arrow. --- */
 select,
 input:not([type="checkbox"]) {
-  width: 7em;
+  width: 8em;
   font: inherit;
   color: var(--text);
   background: var(--card);
