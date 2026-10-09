@@ -1,4 +1,5 @@
 // Unit tests for charger.h, settings.h and the headers they include; CONTRIBUTING.md says how to build and run them.
+#include "repository_plans.h"
 #include "scheduler/charger.h"
 #include "scheduler/settings.h"
 #include "scheduler_test_tesla.h"
@@ -8,10 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <functional>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,6 +17,7 @@
 using namespace esphome::scheduler;
 using scheduler_test::FakeTesla;
 using scheduler_test::plugged_in;
+using scheduler_test::repository_plans;
 
 static int failures = 0;
 
@@ -976,26 +975,6 @@ static void test_calendar_and_exceptions() {
   CHECK(uk(12, 1, 6 * 60 + 45) == 0.085f);
   CHECK(uk(12, 1, 7 * 60) == 0.245f);
   CHECK(uk(12, 1, 23 * 60 + 59) == 0.245f);
-}
-
-// The plans in plans/, by name like lt/eso-standartinis-4-zones, as the board has them built in.
-static const Plans &repository_plans() {
-  static std::vector<std::pair<std::string, std::string>> texts;
-  static Plans plans;
-  if (plans.empty()) {
-    for (const auto &entry : std::filesystem::recursive_directory_iterator("plans")) {
-      if (entry.path().extension() != ".yaml")
-        continue;
-      std::ifstream file(entry.path());
-      std::stringstream text;
-      text << file.rdbuf();
-      texts.emplace_back(entry.path().lexically_relative("plans").replace_extension().string(), text.str());
-    }
-    std::sort(texts.begin(), texts.end());
-    for (const auto &[name, text] : texts)
-      plans.emplace_back(name, text);
-  }
-  return plans;
 }
 
 // `plan` as the page writes a custom plan: plan:, and the plan's lines under it, each indented by four spaces.
