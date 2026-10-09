@@ -51,7 +51,7 @@ llvm-cov report scheduler_test -instr-profile=scheduler_test.profdata -show-bran
 python3 test/mutation_test.py ArduinoJson/src
 ```
 
-A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten.
+A surviving mutant is a change to one of the headers that no test notices: add a test that does, or remove the code if it makes no difference. Some can't be noticed because they change nothing, such as a spare byte in a buffer or a default that's always overwritten. CI runs it every Sunday night (the Mutation workflow, with the report in the run's artifacts) and fails under the score in `.github/workflows/mutation.yml`: raise it after killing survivors.
 
 The C++ follows ESPHome's own style. Comments say why, not what. `device.yaml`, `release.yaml` and `config.example.yaml` have no `#` comments; plans have theirs.
 

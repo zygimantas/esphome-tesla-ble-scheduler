@@ -8,8 +8,12 @@ universalmutator (run with uvx, from uv) writes copies of each header with one s
 build against every copy that changes the code, with the other headers as they are, and run with undefined behavior
 and memory errors caught; a failing run kills the mutant. A survivor is a change no test notices: a missing test, or
 code that makes no difference. Copies that build the same program as the headers or another copy count once.
+The Mutation workflow runs it weekly with --at-least, the score to keep in percent, under which the run exits with an
+error, and with CXX=clang++ for the compiler, c++ otherwise: the tests take minutes with GCC's AddressSanitizer and
+seconds with clang's.
 """
 
+import argparse
 import concurrent.futures
 import difflib
 import hashlib
@@ -20,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 SOURCES = [
@@ -32,6 +37,8 @@ CHECKS = [
     "-D_GLIBCXX_ASSERTIONS",
     "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE",
 ]
+MUTATOR = "universalmutator==1.14.1"  # pinned, so a new version's rules don't move the score
+CXX = os.environ.get("CXX", "c++")
 
 
 def code(text):
@@ -47,7 +54,7 @@ def build(headers, work, json_src):
     for path, text in headers.items():
         (work / path).write_text(text)
     test = Path("test/scheduler_test.cpp").resolve()
-    command = ["c++", "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "scheduler_test"]
+    command = [CXX, "-std=c++17", *CHECKS, "-I", ".", "-I", json_src, test, "-o", "scheduler_test"]
     built = subprocess.run(command, cwd=work, capture_output=True).returncode == 0
     return work / "scheduler_test" if built else None
 
@@ -69,17 +76,21 @@ def digest(binary):
     return hashlib.sha256(binary.read_bytes()).hexdigest()
 
 
-def passes(binary):
-    """Whether the tests pass. They take a few seconds with the checks, more while the other builds run: a mutant
-    fails only when it takes far longer, looping forever."""
+def passes(binary, limit=None):
+    """Whether the tests pass, within `limit` seconds where there is one. They take a few seconds with the checks, more
+    while the other builds run: a mutant fails only when it takes far longer, looping forever."""
     try:
-        return subprocess.run([binary], capture_output=True, timeout=20).returncode == 0
+        return subprocess.run([binary], capture_output=True, timeout=limit).returncode == 0
     except subprocess.TimeoutExpired:
         return False
 
 
 def main():
-    json_src = Path(sys.argv[1]).resolve()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("json_src", type=Path, help="ArduinoJson's src folder")
+    parser.add_argument("--at-least", type=float, default=0, metavar="SCORE", help="fail under this score, in percent")
+    args = parser.parse_args()
+    json_src = args.json_src.resolve()
     originals = {path: path.read_text() for path in SOURCES}
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -87,14 +98,16 @@ def main():
         for path in SOURCES:
             out = tmp / path.stem
             out.mkdir()
-            mutate = ["uvx", "--from", "universalmutator", "mutate", path, "cpp", "--noCheck", "--mutantDir", out]
+            mutate = ["uvx", "--no-build", "--from", MUTATOR, "mutate", path, "cpp", "--noCheck", "--mutantDir", out]
             subprocess.run(mutate, check=True, stdout=subprocess.DEVNULL)  # its errors and uv's show
             files = sorted(out.glob(f"{path.stem}.mutant.*.h"), key=lambda f: int(f.name.split(".")[2]))
             texts = (f.read_text() for f in files)
             mutants += [(path, m) for m in texts if code(m) != code(originals[path])]  # not just comments
         reference = build(originals, tmp / "original", json_src)
+        started = time.monotonic()
         if reference is None or not passes(reference):
             sys.exit("The unit tests don't build, or fail, without mutants")
+        limit = max(20, 5 * (time.monotonic() - started))  # the tests' own time here, before the pool loads the machine
         same = digest(reference)
         tested = {same}
         lock = threading.Lock()
@@ -113,7 +126,7 @@ def main():
                     if program in tested:
                         return program, None
                     tested.add(program)
-                return program, passes(binary)
+                return program, passes(binary, limit)
             finally:
                 shutil.rmtree(work, ignore_errors=True)
 
@@ -133,11 +146,14 @@ def main():
     survivors = sum(passed[program] for program in first)
     invalid = sum(program is None for program, _ in outcomes)
     unchanged = sum(program == same for program, _ in outcomes)
+    score = 1 - survivors / max(1, len(first))
     print(
         f"{len(mutants)} mutants: {invalid} don't build, {unchanged} build the same program as the headers, "
         f"{len(mutants) - invalid - unchanged - len(first)} the same as another mutant. Of the other {len(first)}, "
-        f"{len(first) - survivors} were killed and {survivors} survived: score {1 - survivors / max(1, len(first)):.1%}"
+        f"{len(first) - survivors} were killed and {survivors} survived: score {score:.1%}"
     )
+    if score < args.at_least / 100:
+        sys.exit(f"The score is under {args.at_least:g}%")
 
 
 if __name__ == "__main__":
