@@ -502,8 +502,12 @@ class ResponseReader {
   }
   size_t readBytes(char *buffer, size_t length) {
     size_t count = 0;
-    for (int c; count < length && (c = this->read()) >= 0; count++)
-      buffer[count] = static_cast<char>(c);
+    while (count < length) {
+      const int c = this->read();
+      if (c < 0)
+        break;
+      buffer[count++] = static_cast<char>(c);
+    }
     return count;
   }
 
