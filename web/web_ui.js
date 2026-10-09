@@ -587,52 +587,31 @@ function renderSavings() {
 
 // --- Settings --------------------------------------------------------------
 
-// Each market country's VAT on household electricity in %, as of October 2026, which northern Norway (NO4) doesn't
-// charge, and its time zones, the main one first. Every save writes a time zone from here, and with Dynamic the VAT, as
-// no field asks for them, and the board knows no other zones.
-const COUNTRIES = {
-  AT: [20, "Europe/Vienna"],
-  BE: [6, "Europe/Brussels"],
-  BG: [20, "Europe/Sofia"],
-  CH: [8.1, "Europe/Zurich"],
-  CZ: [21, "Europe/Prague"],
-  DE: [19, "Europe/Berlin", "Europe/Busingen"],
-  DK: [25, "Europe/Copenhagen"],
-  EE: [24, "Europe/Tallinn"],
-  ES: [21, "Europe/Madrid", "Africa/Ceuta", "Atlantic/Canary"],
-  FI: [25.5, "Europe/Helsinki", "Europe/Mariehamn"],
-  FR: [20, "Europe/Paris"],
-  HR: [13, "Europe/Zagreb"],
-  HU: [27, "Europe/Budapest"],
-  IE: [9, "Europe/Dublin"],
-  IT: [10, "Europe/Rome"],
-  LT: [21, "Europe/Vilnius"],
-  LU: [8, "Europe/Luxembourg"],
-  LV: [21, "Europe/Riga"],
-  NL: [21, "Europe/Amsterdam"],
-  NO: [25, "Europe/Oslo"],
-  PL: [23, "Europe/Warsaw"],
-  PT: [23, "Europe/Lisbon", "Atlantic/Madeira"],
-  RO: [21, "Europe/Bucharest"],
-  SE: [25, "Europe/Stockholm"],
-  SI: [22, "Europe/Ljubljana"],
-  SK: [19, "Europe/Bratislava"],
-};
-const vatOf = (area) => (area === "NO4" ? 0 : (COUNTRIES[area.slice(0, 2)]?.[0] ?? 0));
-const countryOf = (zone) => Object.keys(COUNTRIES).find((code) => COUNTRIES[code].includes(zone));
+// The market areas come from the board (GET /settings/options, settings.options.areas), each with its country's VAT in
+// %, which northern Norway (NO4) doesn't charge, its time zones, the main one first, the currency its prices come in and
+// the one the board converts them into (converted), where there is one. Every save writes a time zone from there, and
+// with Dynamic the VAT, as no field asks for them, and the board knows no other zones.
+const vatOf = (area) => settings.options.areas[area].vat;
+// The country of the market area whose time zones have `zone`, like LT for Europe/Vilnius, or undefined.
+const countryOf = (zone) =>
+  Object.keys(settings.options.areas)
+    .find((area) => settings.options.areas[area].zones.includes(zone))
+    ?.slice(0, 2);
 const PHONE_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 // The board's time zone, which follows the country: the phone's, where it's one of the country's, as on the Canary
-// Islands, else the country's main one; before the country is chosen, the phone's country's, else Brussels' for now.
+// Islands, else the country's main one.
 function timeZone() {
-  const zones = COUNTRIES[$("set-area").value.slice(0, 2) || countryOf(PHONE_ZONE)] ?? COUNTRIES.BE;
-  return zones.includes(PHONE_ZONE) ? PHONE_ZONE : zones[1];
+  const { zones } = settings.options.areas[$("set-area").value];
+  return zones.includes(PHONE_ZONE) ? PHONE_ZONE : zones[0];
 }
-// The countries without the euro, by their currency, which their prices are in: Nord Pool's market prices come in it,
-// and the board converts SMARD's, in euros, at the ECB's daily rate where the settings set the currency.
-const CURRENCIES = { CH: "CHF", CZ: "CZK", DK: "DKK", HU: "HUF", NO: "NOK", PL: "PLN", RO: "RON", SE: "SEK" };
-const SMARD_ONLY = ["CH", "CZ", "HU"];
-// About a euro in each of those currencies: the most a supplier's margin or part per kWh can be, which turns away cents
-// typed for euros.
+// The currency an area's prices are shown in: the country's own where the board converts SMARD's euros into it, else
+// the market's; euros before an area is chosen.
+const currencyOf = (area) => {
+  const known = settings.options?.areas[area];
+  return known?.converted ?? known?.currency ?? "EUR";
+};
+// About a euro in each currency but the euro: the most a supplier's margin or part per kWh can be, which turns away
+// cents typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
 
 // The settings file's values by place, like "market: area", as the board reads them; deeper lines are a custom plan's.
@@ -778,8 +757,7 @@ function renderSettings() {
   $("reset-plan").hidden = !custom;
   // the prices' names, with their unit, in the currency they're in; a fixed price's supplier part goes on top of the
   // grid plan's fees, so it's without them, even where the supplier quotes one price with them in
-  const country = $("set-area").value.slice(0, 2);
-  const currency = CURRENCIES[country] ?? "EUR";
+  const currency = currencyOf($("set-area").value);
   const unit = `${currency} with VAT per kWh`;
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
@@ -857,11 +835,11 @@ function fillPlans(plan) {
 
 // The form, from the board's settings file and what it offers. What the file doesn't have starts as a 75 kWh battery
 // and 11 kW, and on a new board, a dynamic price and the phone's country, where it has only one market area. Without a
-// market, the supplier's price is fixed, and the country the grid plan's, the currency's or the time zone's, in the
-// first of its market areas, as any of them does.
+// market, the supplier's price is fixed, and the country the grid plan's or the time zone's, in the first of its market
+// areas, as any of them does.
 function fillSettings() {
   const values = readSettings(settings.text);
-  const { areas } = settings.options;
+  const areas = Object.keys(settings.options.areas);
   // a country by its name, with its market area where it has several, like "Sweden, SE3", or a part, "Italy (north)"
   const regions = new Intl.DisplayNames(["en"], { type: "region" });
   const areaName = (area) => {
@@ -872,10 +850,7 @@ function fillSettings() {
   const areaOptions = areas.map((area) => new Option(areaName(area), area));
   areaOptions.sort((a, b) => a.text.localeCompare(b.text));
   const plan = values["grid: plan"] ?? "";
-  const ofCurrency = Object.keys(CURRENCIES).find((code) => CURRENCIES[code] === values.currency?.toUpperCase());
-  const country = unfinished()
-    ? countryOf(PHONE_ZONE)
-    : plan.slice(0, 2).toUpperCase() || ofCurrency || countryOf(values.timezone);
+  const country = unfinished() ? countryOf(PHONE_ZONE) : plan.slice(0, 2).toUpperCase() || countryOf(values.timezone);
   const ofCountry = areas.filter((area) => area.slice(0, 2) === country);
   const guess = ofCountry.length === 1 || !unfinished() ? ofCountry[0] : "";
   // Choose only where there's no guess, like a country with several market areas
@@ -930,9 +905,8 @@ function formSettings() {
   const lines = [];
   const fixed = v("set-price") === "fixed";
   // the currency: a fixed price's, and a market's from SMARD, which the board otherwise keeps in euros
-  const country = v("set-area").slice(0, 2);
-  const currency = (fixed || SMARD_ONLY.includes(country)) && CURRENCIES[country];
-  if (currency) lines.push(`currency: ${currency}`);
+  const { currency, converted } = settings.options.areas[v("set-area")];
+  if (converted || (fixed && currency !== "EUR")) lines.push(`currency: ${converted ?? currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
   if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
   if (!fixed) {
