@@ -403,8 +403,6 @@ void SchedulerComponent::press(Action action) {
 void SchedulerComponent::restart_setup_() {
   ESP_LOGW(TAG, "Restart setup");
   this->settings_pref_.save(std::make_unique<SavedSettings>().get());
-  this->controller_.reset_savings();
-  this->savings_pref_.save(&this->controller_.savings);
   this->held_ = 0;
   this->held_pref_.save(&this->held_);
   this->paired_vin_ = 0;

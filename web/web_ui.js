@@ -1416,7 +1416,7 @@ function bind() {
   // restarts into the setup, which the page then shows. It waits for the board as for Restart board.
   press($("restart-setup"), async () => {
     const what =
-      "Restart the setup? The board forgets its settings, its key, Ready by and the savings, and keeps its Wi-Fi.";
+      "Restart the setup? The board forgets its settings, its key and Ready by, and keeps its Wi-Fi and the savings.";
     if (!confirm(what)) return;
     if (await post(E.restartSetup, "press")) {
       restarting = Date.now();
