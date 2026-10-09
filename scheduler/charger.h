@@ -121,6 +121,10 @@ class Controller {
   // What the buttons (or a start from the car) chose. It holds until the car is unplugged; a real plug-in
   // also starts afresh, in case the board missed the unplug. The board persists it as an int: keep the values.
   enum class Hold { SCHEDULE = 0, NOW = 1, NONE = 2 };
+  // The car's stay, as it last reported it: unknown after a restart while it sleeps, as the car reports the plug state
+  // only awake; then unplugged, or plugged in and not charging, charging, or charged, its own word (Complete), which it
+  // keeps a percent under the limit.
+  enum class Stay { UNKNOWN, UNPLUGGED, PLUGGED_IN, CHARGING, CHARGED };
   static constexpr int64_t WAKE_FOR = 30 * 60;     // how long it wakes the car to learn the plug state or battery level
   static constexpr int64_t COMMAND_GAP = 2 * 60;   // the least time between the board's own starts and stops
   static constexpr int COMMANDS_PER_SCHEDULE = 3;  // the most of them for one schedule
@@ -144,14 +148,14 @@ class Controller {
         prices.set(t, 0.0f);
     const bool charging = observe_(car, now);
     d.save_savings = counter_.count(savings, now, car.charging_state == "Charging", car.power_kw,
-                                    plug_state_seen_ ? std::optional<bool>(plugged_ && !full_()) : std::nullopt, prices,
-                                    tariff_, settings);
+                                    stay_ != Stay::UNKNOWN ? std::optional<bool>(plugged_() && !full_()) : std::nullopt,
+                                    prices, tariff_, settings);
     d.savings = format_savings(savings);
     prices.drop_before(start_of_delivery_day(now));  // after counting, which may need the day before
     if (floor_to_slot(now) != scheduled_slot_ || reschedule_)
       update_schedule_(now, settings);
 
-    if (!plug_state_seen_) {
+    if (stay_ == Stay::UNKNOWN) {
       // The plug state comes only from an awake car, so it's unknown after the board restarts while
       // the car sleeps. With the charge port flap open the car may be plugged in: wake it to find
       // out, every 10 minutes for half an hour.
@@ -162,7 +166,7 @@ class Controller {
         d.command = Command::WAKE;
       return waiting(checking ? "Checking the car" : "Waiting for car");
     }
-    if (!plugged_) {
+    if (!plugged_()) {
       d.status = "Unplugged";
       d.mode = "unplugged";
       return d;
@@ -241,23 +245,22 @@ class Controller {
     if (!std::isnan(car.limit)) {
       if (car.limit != limit_)
         reschedule_ = true;  // a new charge limit changes the schedule right away
-      if (car.limit > limit_ && complete_)
+      if (car.limit > limit_ && stay_ == Stay::CHARGED)
         limit_raised_at_ = now;  // a finished charge resumes by itself
       limit_ = car.limit;
     }
 
-    // With "Unknown", esphome-tesla-ble also reports the charger as unplugged: that's no unplug.
-    const std::optional<bool> plugged = car.charging_state == "Unknown" ? std::nullopt : car.plugged;
-    if (plugged.has_value() && *plugged != plugged_) {
-      plugged_ = *plugged;
+    // The car's stay after this report, and what changed: a plug-in, an unplug, a start or the end of a charge.
+    const Stay was = stay_, next = stay_after_(car);
+    if ((next >= Stay::PLUGGED_IN) != (was >= Stay::PLUGGED_IN)) {
       reschedule_ = true;
       fallback_told_ = false;
-      if (plugged_) {
+      if (next >= Stay::PLUGGED_IN) {
         plugged_since_ = now;
         // The plug state first seen after a restart is not a plug-in: no message for it, and what the
         // buttons chose before the restart still holds. A real plug-in starts afresh.
-        notify_pending_ = plug_state_seen_;
-        if (plug_state_seen_)
+        notify_pending_ = was != Stay::UNKNOWN;
+        if (was != Stay::UNKNOWN)
           hold_ = Hold::SCHEDULE;
       } else {
         hold_ = Hold::SCHEDULE;
@@ -265,30 +268,37 @@ class Controller {
         notify_pending_ = false;
       }
     }
-    if (plugged.has_value())
-      plug_state_seen_ = true;
-
-    const bool charging = car.charging_state == "Charging" || car.charging_state == "Starting";
-    if (car.charging_known()) {
+    // Charged by its level, short of Complete: a car that charges again is finishing, as after a charger's pause.
+    const bool finishing = charged_() && was != Stay::CHARGED;
+    stay_ = next;
+    if (next == Stay::CHARGING && was != Stay::CHARGING) {
       const bool we_started_it = now - started_at_ < 5 * 60;
       // A Tesla starts by itself when plugged in, and when a higher limit resumes a finished charge (after
       // Stop charging, that's the app's start).
       const bool auto_start = now - plugged_since_ < 3 * 60 || (hold_ != Hold::NONE && now - limit_raised_at_ < 3 * 60);
-      // Charged by its level, short of Complete: a car that charges again is finishing, as after a charger's pause.
-      const bool finishing = charged_() && !complete_;
-      const bool started_by_car = charging && !charging_ && !we_started_it && !auto_start && !finishing;
-      if (started_by_car && plugged_ && (hold_ == Hold::NONE || !in_schedule_())) {
-        notify_car_start_ = hold_ != Hold::NOW;  // once per hold
-        hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
+      if (!we_started_it && !auto_start && !finishing && (hold_ == Hold::NONE || !in_schedule_())) {
+        notify_car_start_ = hold_ != Hold::NOW;  // once per hold: from the car or the Tesla app
+        hold_ = Hold::NOW;                       // leave it alone until unplugged
       }
-      finished_ = charging_ && car.charging_state == "Complete";  // charging until the last known state
-      charging_ = charging;
-      complete_ = car.charging_state == "Complete";
     }
+    finished_ = was == Stay::CHARGING && next == Stay::CHARGED;
     // A battery level at last, or a car charged or no longer, schedules from another battery level.
     if (battery_known_() != battery_was_known || charged_() != was_charged)
       reschedule_ = true;
-    return charging_;  // the last known state: "Unknown" says nothing about it
+    return charging_();  // the last known state: "Unknown" says nothing about it
+  }
+
+  // The car's stay after a report: its plug state while it has one (with "Unknown", esphome-tesla-ble reports the
+  // charger as unplugged too, which is no unplug), and while it's plugged in, its charging state while that's known.
+  Stay stay_after_(const CarState &car) const {
+    Stay stay = stay_;
+    if (car.charging_state != "Unknown" && car.plugged.has_value())
+      stay = *car.plugged ? std::max(stay, Stay::PLUGGED_IN) : Stay::UNPLUGGED;
+    if (stay >= Stay::PLUGGED_IN && car.charging_known())
+      stay = car.charging_state == "Charging" || car.charging_state == "Starting" ? Stay::CHARGING
+             : car.charging_state == "Complete"                                   ? Stay::CHARGED
+                                                                                  : Stay::PLUGGED_IN;
+    return stay;
   }
 
   // Schedules from the current quarter-hour; the schedule stands until the next one or reschedule().
@@ -325,7 +335,7 @@ class Controller {
       n.message += " at any price until you unplug";
       return;
     }
-    if (deadline_passed && plugged_ && hold_ == Hold::SCHEDULE && battery_known_() && !full_() && !notify_pending_) {
+    if (deadline_passed && plugged_() && hold_ == Hold::SCHEDULE && battery_known_() && !full_() && !notify_pending_) {
       Notification &n = d.notification.emplace();
       n.message = "Ready by passed at " + std::to_string(std::lround(soc_)) + "% of " +
                   std::to_string(std::lround(limit_)) + "%";
@@ -421,10 +431,12 @@ class Controller {
   bool battery_known_() const { return !std::isnan(soc_) && !std::isnan(limit_); }
 
   // At the limit by the car's word, or within half a percent; without a battery level, only by the car's word.
-  bool full_() const { return complete_ || soc_ >= limit_ - FULL_WITHIN; }
+  bool full_() const { return stay_ == Stay::CHARGED || soc_ >= limit_ - FULL_WITHIN; }
 
   // Full and not charging: the board starts no charge, and schedules none.
-  bool charged_() const { return full_() && !charging_; }
+  bool charged_() const { return full_() && !charging_(); }
+  bool plugged_() const { return stay_ >= Stay::PLUGGED_IN; }
+  bool charging_() const { return stay_ == Stay::CHARGING; }
 
   // Whether the schedule charges in the quarter-hour it was made for (always without prices or battery level).
   bool in_schedule_() const { return !schedule_.valid || schedule_.contains(scheduled_slot_); }
@@ -433,16 +445,13 @@ class Controller {
   Tariff tariff_;
   float soc_ = NAN;
   float limit_ = NAN;
-  bool plugged_ = false;
-  bool charging_ = false;
-  bool complete_ = false;  // the car's own word, which it keeps a percent under the limit
-  bool finished_ = false;  // this tick, the car went from charging to Complete: it reached its limit
+  Stay stay_ = Stay::UNKNOWN;
+  bool finished_ = false;  // this tick, the car went from charging to charged: it reached its limit
   Hold hold_ = Hold::SCHEDULE;
   bool reschedule_ = true;
   bool notify_pending_ = false;
   bool fallback_told_ = false;
   bool notify_car_start_ = false;
-  bool plug_state_seen_ = false;
   bool market_ = true;  // prices come from the market (see set_market_prices())
   int64_t scheduled_slot_ = -1;
   int64_t plugged_since_ = 0;
