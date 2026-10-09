@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -34,6 +36,54 @@ constexpr std::pair<const char *, int> TIME_ZONES[] = {
     {"Europe/Stockholm", 1}, {"Europe/Tallinn", 2},    {"Europe/Vienna", 1},     {"Europe/Vilnius", 2},
     {"Europe/Warsaw", 1},    {"Europe/Zagreb", 1},     {"Europe/Zurich", 1},
 };
+
+// The market countries, by their two-letter code: the VAT on household electricity in %, as of October 2026, and their
+// time zones, the main one first, from TIME_ZONES. The page asks for neither, by request: it writes the area's VAT with
+// Dynamic, none for northern Norway (NO4), and the phone's time zone where it's one of the country's, else the main
+// one, as /settings/options gives them (settings_options()), so a new area needs its country here, and a new rate a
+// release.
+struct Country {
+  const char *code;
+  float vat;
+  const char *zones[3];  // Spain has three
+};
+
+constexpr Country COUNTRIES[] = {
+    {"AT", 20, {"Europe/Vienna"}},
+    {"BE", 6, {"Europe/Brussels"}},
+    {"BG", 20, {"Europe/Sofia"}},
+    {"CH", 8.1f, {"Europe/Zurich"}},
+    {"CZ", 21, {"Europe/Prague"}},
+    {"DE", 19, {"Europe/Berlin", "Europe/Busingen"}},
+    {"DK", 25, {"Europe/Copenhagen"}},
+    {"EE", 24, {"Europe/Tallinn"}},
+    {"ES", 21, {"Europe/Madrid", "Africa/Ceuta", "Atlantic/Canary"}},
+    {"FI", 25.5f, {"Europe/Helsinki", "Europe/Mariehamn"}},
+    {"FR", 20, {"Europe/Paris"}},
+    {"HR", 13, {"Europe/Zagreb"}},
+    {"HU", 27, {"Europe/Budapest"}},
+    {"IE", 9, {"Europe/Dublin"}},
+    {"IT", 10, {"Europe/Rome"}},
+    {"LT", 21, {"Europe/Vilnius"}},
+    {"LU", 8, {"Europe/Luxembourg"}},
+    {"LV", 21, {"Europe/Riga"}},
+    {"NL", 21, {"Europe/Amsterdam"}},
+    {"NO", 25, {"Europe/Oslo"}},
+    {"PL", 23, {"Europe/Warsaw"}},
+    {"PT", 23, {"Europe/Lisbon", "Atlantic/Madeira"}},
+    {"RO", 21, {"Europe/Bucharest"}},
+    {"SE", 25, {"Europe/Stockholm"}},
+    {"SI", 22, {"Europe/Ljubljana"}},
+    {"SK", 19, {"Europe/Bratislava"}},
+};
+
+// The country of the market area named `area`, by its first two letters, or nullptr for one COUNTRIES doesn't have.
+inline const Country *country_of(const char *area) {
+  for (const Country &country : COUNTRIES)
+    if (std::strncmp(area, country.code, 2) == 0)
+      return &country;
+  return nullptr;
+}
 
 struct SettingsFile {
   std::string currency;        // of the market prices and the tariff
@@ -239,17 +289,29 @@ inline std::string json_string(std::string_view text) {
   return json + "\"";
 }
 
-// What the page offers for the settings, as JSON: the market areas, and the plans built in by name and name for people.
-// Calls f() with each piece in turn, as the board sends them without holding all of them.
+// What the page offers for the settings, as JSON: the market areas, each with its country's VAT in %, which northern
+// Norway (NO4) doesn't charge, its time zones, the main one first, the currency its prices come in and the one the
+// board converts them into where there is one; and the plans built in by name and name for people. Calls f() with each
+// piece in turn, as the board sends them without holding all of them.
 template <typename F>
 void settings_options(const Plans &plans, F f) {
-  f("{\"areas\":[");
+  f("{\"areas\":{");
   const char *comma = "";
   for (const Area &area : AREAS) {
-    f(concat({comma, json_string(area.name)}));
+    const Country &country = *country_of(area.name);
+    char vat[16];
+    std::snprintf(vat, sizeof(vat), "%g", std::strcmp(area.name, "NO4") == 0 ? 0.0f : country.vat);
+    std::string zones;
+    for (const char *zone : country.zones)
+      if (zone != nullptr)
+        zones += concat({zones.empty() ? "" : ",", json_string(zone)});
+    const char *converted = converted_currency(area);
+    f(concat({comma, json_string(area.name), ":{\"vat\":", vat, ",\"zones\":[", zones,
+              "],\"currency\":", json_string(own_currency(area)),
+              converted != nullptr ? concat({",\"converted\":", json_string(converted)}) : "", "}"}));
     comma = ",";
   }
-  f("],\"plans\":[");
+  f("},\"plans\":[");
   comma = "";
   for (const auto &plan : plans) {
     TariffText text;
