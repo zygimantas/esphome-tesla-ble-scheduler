@@ -1,6 +1,6 @@
 # Countries and plans
 
-The board follows market prices where Nord Pool, SMARD (Germany's Federal Network Agency) or OMIE (the market of Spain and Portugal) publishes the day-ahead prices of your area, and a fixed price anywhere. Your grid fees are a price per kWh that may change with the hour, or there are none. The board applies EU summer time, which every country here uses.
+The board follows market prices where Nord Pool, SMARD (Germany's Federal Network Agency), OMIE (the market of Spain and Portugal) or OKTE (Slovakia's market operator) publishes the day-ahead prices of your area, and a fixed price anywhere. Your grid fees are a price per kWh that may change with the hour, or there are none. The board applies EU summer time, which every country here uses.
 
 Your grid plan is what comes on top of the market price, usually your grid fees, so the board compares what you really pay. Your supplier's own price per kWh on top of the market price is the **Supplier's margin** instead. Most people only choose their grid operator's plan under **Grid plan** on the board's page.
 
@@ -30,6 +30,7 @@ The board starts with the plan from the release you installed, and downloads the
 | Poland | `PL` | `PLN` | [The five big operators' plans](pl). |
 | Portugal | `PT` | `EUR` | Prices from OMIE. [The plans](pt), on the mainland. |
 | Romania | `RO` | `RON` | [The four distribution operators' plans](ro). |
+| Slovakia | `SK` | `EUR` | Prices from OKTE. No plans: a two-rate tariff's low-tariff hours are switched by the grid operator, which no plan can hold. |
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](si), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Spain | `ES` | `EUR` | Prices from OMIE. [The 2.0TD tolls and charges](es). |
 | Sweden | `SE1` to `SE4` | `SEK` | [The big network companies' plans](se). Power fees at some aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
@@ -104,7 +105,7 @@ rates:
 
 | Where | Why | Issue |
 | --- | --- | --- |
-| The rest of Italy, Slovakia, Greece, Ireland and other countries outside Nord Pool, SMARD and OMIE | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. In Italy a fixed price works already, with [the TD plan](it); the others aren't under **Country / Area** yet. | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
+| The rest of Italy, Greece, Ireland and other countries outside Nord Pool, SMARD, OMIE and OKTE | Their day-ahead prices are on other exchanges. ENTSO-E publishes them all. In Italy a fixed price works already, with [the TD plan](it); the others aren't under **Country / Area** yet. | [#80](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/80) |
 | United Kingdom | Neither Nord Pool nor ENTSO-E has British prices. Suppliers like Octopus Agile publish their own. The page has no British pounds, so not even a fixed price works yet. | [#81](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/81) |
 
 The page and these documents are in English.

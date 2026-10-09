@@ -344,6 +344,44 @@ static void test_omie_prices() {
   CHECK(spain.add_omie("<!DOCTYPE html>", 15, "ES") == -1);
 }
 
+static void test_okte_prices() {
+  // A CET delivery day a request, as for Nord Pool and OMIE.
+  CHECK_STR(okte_url(SEP24_1700Z, 0),
+            "https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=2026-09-24&deliveryDayTo=2026-09-24");
+  CHECK(okte_url(SEP24_1700Z + 5 * HOUR + 30 * 60, 0).find("From=2026-09-25&deliveryDayTo=2026-09-25") !=
+        std::string::npos);
+  CHECK(okte_url(SEP24_1700Z, 1).find("To=2026-09-25") != std::string::npos);
+  CHECK_STR(market_name(Market::OKTE), "OKTE");
+
+  // The first quarter-hour of 9 October 2026 as OKTE sent it, with some of its other values, then ones left out.
+  const char *json =
+      R"([{"priceRo":null,"priceHu":null,"atcSkHu":null,"flowSkHu":1798.8,"publicationStatus":"final","price":276.3,)"
+      R"("purchaseSuccessfulVolume":1.5,"deliveryDay":"2026-10-09","period":1,"deliveryStart":"2026-10-08T22:00:00Z",)"
+      R"("deliveryEnd":"2026-10-08T22:15:00Z"},)"
+      R"({"publicationStatus":"final","price":-12.5,"deliveryStart":"2026-10-08T22:15:00Z"},)"
+      R"({"publicationStatus":"preliminary","price":1.0,"deliveryStart":"2026-10-08T22:30:00Z"},)"
+      R"({"publicationStatus":"final","price":null,"deliveryStart":"2026-10-08T22:45:00Z"},)"
+      R"({"publicationStatus":"final","price":1.0,"deliveryStart":"later"}])";
+  PriceTable prices;
+  CHECK(prices.add_okte(json, std::strlen(json)) == 2);
+  const int64_t t = utc("2026-10-08T22:00:00Z");
+  const auto first = prices.get(t), negative = prices.get(t + SLOT_SECONDS);
+  CHECK(first && near(*first, 0.2763f));
+  CHECK(negative && near(*negative, -0.0125f));
+  CHECK(!prices.get(t + 2 * SLOT_SECONDS) && !prices.get(t + 3 * SLOT_SECONDS));  // not final, and no price
+  CHECK(prices.add_okte("[]", 2) == 0);                                           // a day not out yet
+  CHECK(prices.add_okte("{oops", 5) == -1);
+
+  // The board keeps only what okte_filter() takes as it reads the answer, and stores the same from that.
+  JsonDocument kept;
+  CHECK(deserializeJson(kept, json, DeserializationOption::Filter(okte_filter())) == DeserializationError::Ok);
+  std::string compact;
+  serializeJson(kept, compact);
+  CHECK(compact.find("flowSkHu") == std::string::npos && compact.size() < std::strlen(json));
+  PriceTable again;
+  CHECK(again.add_okte(compact.data(), compact.size()) == 2 && again.get(t) == first);
+}
+
 // ---------------------------------------------------------------------------
 // Schedule
 // ---------------------------------------------------------------------------
@@ -1082,6 +1120,10 @@ static void test_reads_the_settings_file() {
               CAR, "timezone: Europe/Prague\n"});
   CHECK_STR(read_settings(czech, repository_plans(), s), "");
   CHECK(std::string(s.area->name) == "CZ" && s.currency == "CZK");
+  // Slovakia, in euros from OKTE, on Bratislava's clock
+  const std::string slovakia = concat({"market:\n  area: SK\n  vat: 0.19\n", CAR, "timezone: Europe/Bratislava\n"});
+  CHECK_STR(read_settings(slovakia, repository_plans(), s), "");
+  CHECK(s.area->market == Market::OKTE && s.currency == "EUR" && s.standard_offset == 3600);
   CHECK_STR(settings_error(settings_set("  area", "CH") + "currency: CHF\n"),
             "grid: the plan's prices are in EUR, not CHF");
   for (const char *currency : {"CZK", "SEK"})  // before and after HUF
@@ -1091,8 +1133,11 @@ static void test_reads_the_settings_file() {
             "currency: SMARD's prices for SI come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "ES") + "currency: NOK\n"),
             "currency: OMIE's prices for ES come in EUR");
+  CHECK_STR(settings_error(settings_set("  area", "SK") + "currency: CZK\n"),
+            "currency: OKTE's prices for SK come in EUR");
   CHECK_STR(settings_error(settings_set("  area", "HU")), "");
   CHECK_STR(settings_error(settings_set("  area", "PT")), "");
+  CHECK_STR(settings_error(settings_set("  area", "SK")), "");
 }
 
 static void test_settings_form_options() {
@@ -1102,7 +1147,7 @@ static void test_settings_form_options() {
   std::string options;
   settings_options(plans, [&options](const std::string &piece) { options += piece; });
   CHECK(options.rfind("{\"areas\":[\"AT\",\"BE\",", 0) == 0);
-  const std::string end = R"("SI"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
+  const std::string end = R"("SI","SK"],"plans":[["lt/one","One plan"],["lt/two","lt/two"]]})";
   CHECK(options.size() > end.size() && options.compare(options.size() - end.size(), end.size(), end) == 0);
 }
 
@@ -3016,6 +3061,7 @@ int main() {
   test_smard_prices();
   test_ecb_rates();
   test_omie_prices();
+  test_okte_prices();
   test_cheapest_slots();
   test_schedule_picks_the_night_trough();
   test_schedule_waits_for_prices_not_out_yet();

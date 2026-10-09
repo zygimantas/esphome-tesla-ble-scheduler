@@ -1,6 +1,6 @@
 #pragma once
-// The market: the day-ahead prices from Nord Pool, SMARD or OMIE, where to download them, and the quarter-hours'
-// prices. Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
+// The market: the day-ahead prices from Nord Pool, SMARD, OMIE or OKTE, where to download them, and the
+// quarter-hours' prices. Plain C++17 plus ArduinoJson, with nothing from ESPHome, like charger.h.
 
 #include "calendar.h"
 
@@ -22,7 +22,7 @@ namespace esphome::scheduler {
 constexpr int32_t CET_STANDARD_OFFSET = 3600;
 
 // Where the board downloads the market prices.
-enum class Market { NORD_POOL, SMARD, OMIE };
+enum class Market { NORD_POOL, SMARD, OMIE, OKTE };
 
 // The source of the market prices, as the log and the settings' messages name it.
 inline const char *market_name(Market market) {
@@ -31,14 +31,16 @@ inline const char *market_name(Market market) {
       return "SMARD";
     case Market::OMIE:
       return "OMIE";
+    case Market::OKTE:
+      return "OKTE";
     default:
       return "Nord Pool";
   }
 }
 
 // Where electricity is bought, as market: area names it: a country's code, or the price area where a country has
-// several. DE and LU are the area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, and OMIE, the
-// Iberian market, have their areas' prices in euros only.
+// several. DE and LU are the area Germany and Luxembourg share. SMARD, Germany's Federal Network Agency, OMIE, the
+// Iberian market, and OKTE, Slovakia's market operator, have their areas' prices in euros only.
 struct Area {
   const char *name;
   const char *source_name;  // the area as its market names it
@@ -79,6 +81,7 @@ constexpr Area AREAS[] = {
     {"SE3", "SE3", Market::NORD_POOL, 0},
     {"SE4", "SE4", Market::NORD_POOL, 0},
     {"SI", "SI", Market::SMARD, 260},
+    {"SK", "SK", Market::OKTE, 0},
 };
 
 // The currency of an area's market prices: the country's own where Nord Pool has it, otherwise euros.
@@ -142,6 +145,26 @@ inline std::string omie_url(int64_t now, int day_offset) {
                 "https://www.omie.es/es/file-download?parents=marginalpdbc&filename=marginalpdbc_%04d%02u%02u.1",
                 static_cast<int>(date.year), date.month, date.day);
   return buf;
+}
+
+// OKTE's day-ahead results for the CET delivery day `day_offset` days after `now`, from its public API.
+inline std::string okte_url(int64_t now, int day_offset) {
+  const CivilDate date = civil_from_days(local_day_of(now, CET_STANDARD_OFFSET) + day_offset);
+  char buf[128];
+  std::snprintf(buf, sizeof(buf),
+                "https://isot.okte.sk/api/v1/dam/results?deliveryDayFrom=%04d-%02u-%02u&deliveryDayTo=%04d-%02u-%02u",
+                static_cast<int>(date.year), date.month, date.day, static_cast<int>(date.year), date.month, date.day);
+  return buf;
+}
+
+// What the board keeps of OKTE's results, an array of the quarter-hours with about 35 values each: their start, price
+// and whether it's final. The board reads OKTE's answer through it as it comes, as it can't hold the 67 kB of a day.
+inline JsonDocument okte_filter() {
+  JsonDocument filter;
+  filter[0]["deliveryStart"] = true;
+  filter[0]["price"] = true;
+  filter[0]["publicationStatus"] = true;
+  return filter;
 }
 
 // The ECB's euro reference rates of the last working day, out around 16:00 CET.
@@ -210,6 +233,24 @@ class PriceTable {
       if (!point[0].is<int64_t>() || !point[1].is<float>())
         continue;
       stored += set(point[0].as<int64_t>() / 1000, point[1].as<float>() * rate / 1000.0f);
+    }
+    return stored;
+  }
+
+  // Stores the quarter-hour prices (per kWh) from OKTE's results, each at its start: the final ones, as a price that
+  // could still change would stay once the day is in. Returns how many were stored, or -1 if the JSON could not be
+  // parsed.
+  int add_okte(const char *json, size_t length) {
+    const JsonDocument filter = okte_filter();
+    JsonDocument doc;
+    if (deserializeJson(doc, json, length, DeserializationOption::Filter(filter)) != DeserializationError::Ok)
+      return -1;
+    int stored = 0;
+    for (JsonObject entry : doc.as<JsonArray>()) {
+      const auto start = parse_iso8601(entry["deliveryStart"].as<const char *>());
+      if (entry["publicationStatus"] != "final" || !entry["price"].is<float>() || !start)
+        continue;
+      stored += set(*start, entry["price"].as<float>() / 1000.0f);
     }
     return stored;
   }

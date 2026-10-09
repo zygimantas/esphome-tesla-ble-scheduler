@@ -80,6 +80,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits and license
 
-The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal, from SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0) and from OMIE (OMI-Polo Español, S.A.). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur, OMIE or any grid operator. Use it at your own risk.
+The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal, from SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0) from OMIE (OMI-Polo Español, S.A.) and from OKTE (OKTE, a.s.). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur, OMIE, OKTE or any grid operator. Use it at your own risk.
 
 Licensed under the GNU Affero General Public License v3.0; see [LICENSE](LICENSE).
