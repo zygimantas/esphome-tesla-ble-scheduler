@@ -35,10 +35,11 @@ uvx --from "playwright==1.63.0" python test/page_test.py
 # Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
 # -isysroot $(xcrun --show-sdk-path)
 uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src
-# The board's logic on your computer, with a simulated Tesla; CHEAP_NOW=1 START_STOPPED=1 tries the start path
-esphome run test/simulation.yaml
+# The board's logic on your computer, with a simulated Tesla, built by CI's ESPHome (ESPHOME_VERSION in ci.yml) without
+# 2026.10's precompiled header, which breaks host builds; CHEAP_NOW=1 START_STOPPED=1 tries the start path
+ESPHOME_PCH_ENABLE=0 uvx "esphome@2026.10.0b2" run test/simulation.yaml
 # The firmware, from your config.yaml pointed at this folder (see The code, above)
-esphome compile config.yaml
+uvx "esphome@2026.10.0b2" compile config.yaml
 ```
 
 New behavior comes with a unit test in `test/scheduler_test.cpp`, and a change to the page with a scenario in `test/page_test.py`. Try changes on the simulation before flashing a real board.
