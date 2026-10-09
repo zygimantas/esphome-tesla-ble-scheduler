@@ -15,7 +15,8 @@ concurrency:
 env:
   ARDUINOJSON_VERSION: 7.4.3
   CLANG_TIDY_VERSION: 22.1.8
-  ESPHOME_VERSION: 2026.9.0
+  ESPHOME_VERSION: 2026.10.0b2
+  PLAYWRIGHT_VERSION: 1.63.0
 
 jobs:
   lint:
@@ -43,11 +44,11 @@ jobs:
             echo "::error file=device.yaml::min_version differs from ESPHOME_VERSION in ci.yml ($ESPHOME_VERSION)"
             exit 1
           fi
-          if [ "$(yq '.env' .github/workflows/codeql.yml)" != "$(yq '.env | del(.CLANG_TIDY_VERSION)' .github/workflows/ci.yml)" ]; then
+          if [ "$(yq '.env' .github/workflows/codeql.yml)" != "$(yq '.env | del(.CLANG_TIDY_VERSION, .PLAYWRIGHT_VERSION)' .github/workflows/ci.yml)" ]; then
             echo "::error file=.github/workflows/codeql.yml::env differs from ci.yml's"
             exit 1
           fi
-          for pin in "clang-tidy==$CLANG_TIDY_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
+          for pin in "clang-tidy==$CLANG_TIDY_VERSION" "esphome@$ESPHOME_VERSION" "playwright==$PLAYWRIGHT_VERSION" "v$ARDUINOJSON_VERSION.tar.gz"; do
             grep -q -F "$pin" CONTRIBUTING.md || { echo "::error file=CONTRIBUTING.md::should say $pin, as ci.yml does"; exit 1; }
           done
 
@@ -96,6 +97,23 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  page:
+    name: The page on a fake board
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+      - name: ArduinoJson, and the board's settings checks built like the unit tests
+        run: |
+          mkdir ArduinoJson
+          curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
+            tar xz --strip-components=1 -C ArduinoJson
+          g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/settings_tool.cpp -o test/settings_tool
+      - name: The page in the runner's Chrome, on the fake board
+        run: uvx --no-build --from "playwright==$PLAYWRIGHT_VERSION" python test/page_test.py
+
   esphome:
     name: ESPHome builds and the simulation
     runs-on: ubuntu-24.04
@@ -106,7 +124,8 @@ jobs:
           enable-cache: false
       - name: Simulation, starting a stopped car in a cheap quarter-hour
         run: |
-          uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
+          # ESPHOME_PCH_ENABLE=0 leaves out 2026.10's precompiled header, which breaks host builds (test/AGENTS.md)
+          ESPHOME_PCH_ENABLE=0 uvx "esphome@$ESPHOME_VERSION" compile test/simulation.yaml
           # pty.spawn gives the program a terminal. Anything that ends it before the timeout (124) fails the step.
           CHEAP_NOW=1 START_STOPPED=1 ESPHOME_PREFDIR="$(mktemp -d)" python3 -c \
             'import os, pty, sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(sys.argv[1:])) != 124)' \
@@ -141,7 +160,7 @@ jobs:
   release:
     name: Release the version in device.yaml
     if: github.ref == 'refs/heads/main'
-    needs: [esphome, lint, unit-tests]
+    needs: [esphome, lint, page, unit-tests]
     runs-on: ubuntu-24.04
     concurrency: release
     permissions:

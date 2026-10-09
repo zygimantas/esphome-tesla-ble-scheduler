@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -35,6 +37,54 @@ constexpr std::pair<const char *, int> TIME_ZONES[] = {
     {"Europe/Warsaw", 1},    {"Europe/Zagreb", 1},     {"Europe/Zurich", 1},
 };
 
+// The market countries, by their two-letter code: the VAT on household electricity in %, as of October 2026, and their
+// time zones, the main one first, from TIME_ZONES. The page asks for neither, by request: it writes the area's VAT with
+// Dynamic, none for northern Norway (NO4), and the phone's time zone where it's one of the country's, else the main
+// one, as /settings/options gives them (settings_options()), so a new area needs its country here, and a new rate a
+// release.
+struct Country {
+  const char *code;
+  float vat;
+  const char *zones[3];  // Spain has three
+};
+
+constexpr Country COUNTRIES[] = {
+    {"AT", 20, {"Europe/Vienna"}},
+    {"BE", 6, {"Europe/Brussels"}},
+    {"BG", 20, {"Europe/Sofia"}},
+    {"CH", 8.1f, {"Europe/Zurich"}},
+    {"CZ", 21, {"Europe/Prague"}},
+    {"DE", 19, {"Europe/Berlin", "Europe/Busingen"}},
+    {"DK", 25, {"Europe/Copenhagen"}},
+    {"EE", 24, {"Europe/Tallinn"}},
+    {"ES", 21, {"Europe/Madrid", "Africa/Ceuta", "Atlantic/Canary"}},
+    {"FI", 25.5f, {"Europe/Helsinki", "Europe/Mariehamn"}},
+    {"FR", 20, {"Europe/Paris"}},
+    {"HR", 13, {"Europe/Zagreb"}},
+    {"HU", 27, {"Europe/Budapest"}},
+    {"IE", 9, {"Europe/Dublin"}},
+    {"IT", 10, {"Europe/Rome"}},
+    {"LT", 21, {"Europe/Vilnius"}},
+    {"LU", 8, {"Europe/Luxembourg"}},
+    {"LV", 21, {"Europe/Riga"}},
+    {"NL", 21, {"Europe/Amsterdam"}},
+    {"NO", 25, {"Europe/Oslo"}},
+    {"PL", 23, {"Europe/Warsaw"}},
+    {"PT", 23, {"Europe/Lisbon", "Atlantic/Madeira"}},
+    {"RO", 21, {"Europe/Bucharest"}},
+    {"SE", 25, {"Europe/Stockholm"}},
+    {"SI", 22, {"Europe/Ljubljana"}},
+    {"SK", 19, {"Europe/Bratislava"}},
+};
+
+// The country of the market area named `area`, by its first two letters, or nullptr for one COUNTRIES doesn't have.
+inline const Country *country_of(const char *area) {
+  for (const Country &country : COUNTRIES)
+    if (std::strncmp(area, country.code, 2) == 0)
+      return &country;
+  return nullptr;
+}
+
 struct SettingsFile {
   std::string currency;        // of the market prices and the tariff
   const Area *area = nullptr;  // null without market prices
@@ -58,31 +108,36 @@ inline std::string upper(std::string text) {
   return text;
 }
 
-// Reads and checks the settings file, in the plans' YAML (tariff.h) as the page writes it, the last line break left out
-// or not, without quotes or comments after a value. grid: plan: names a plan built in, or holds a custom plan: a
-// plan's file (plans/README.md), each line indented by four spaces, whose line numbers count from the line after
-// plan:, as in the file. Returns what's wrong, or "".
-inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
-  if (text.size() > MAX_SETTINGS_BYTES)
-    return "the file is longer than 4 kB";
-  SettingsFile read;
+// The settings the checks still have to read, as written, by their place, and the places the file has, grid: and
+// market: too; the rest go straight into the SettingsFile.
+struct SettingsText {
   std::string area, battery, charging, currency, fixed, margin, unlock, vat, zone;
+  std::vector<std::string> seen;
+};
+
+// Whether the file has a line at `place`.
+inline bool has(const SettingsText &written, std::string_view place) {
+  return std::find(written.seen.begin(), written.seen.end(), place) != written.seen.end();
+}
+
+// Reads the file's lines: each setting at its place, once, into `written` or `read`, and a custom plan's lines,
+// indented by four spaces under grid: plan:, as a plan's text. Returns what's wrong, or "".
+inline std::string read_lines(const std::string &text, SettingsText &written, SettingsFile &read) {
   // Each setting by its place in the file, and where its value goes; grid: and market: head lines of their own.
-  const std::pair<const char *, std::string *> places[] = {{"currency", &currency},
-                                                           {"fixed_price", &fixed},
+  const std::pair<const char *, std::string *> places[] = {{"currency", &written.currency},
+                                                           {"fixed_price", &written.fixed},
                                                            {"grid", nullptr},
                                                            {"grid: plan", &read.plan},
                                                            {"market", nullptr},
-                                                           {"market: area", &area},
-                                                           {"market: margin", &margin},
-                                                           {"market: vat", &vat},
+                                                           {"market: area", &written.area},
+                                                           {"market: margin", &written.margin},
+                                                           {"market: vat", &written.vat},
                                                            {"ntfy_topic", &read.ntfy_topic},
-                                                           {"tesla_battery_kwh", &battery},
-                                                           {"tesla_charging_kw", &charging},
-                                                           {"tesla_unlock_when_charged", &unlock},
+                                                           {"tesla_battery_kwh", &written.battery},
+                                                           {"tesla_charging_kw", &written.charging},
+                                                           {"tesla_unlock_when_charged", &written.unlock},
                                                            {"tesla_vin", &read.vin},
-                                                           {"timezone", &zone}};
-  std::vector<std::string> seen;
+                                                           {"timezone", &written.zone}};
   std::string section;
   bool custom = false;  // in a custom plan's lines, under grid: plan:
   size_t start = 0;
@@ -117,52 +172,78 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
         std::find_if(std::begin(places), std::end(places), [&](const auto &known) { return place == known.first; });
     if (found == std::end(places))
       return at(concat({"has ", place, ", which isn't a setting"}));
-    if (std::find(seen.begin(), seen.end(), place) != seen.end())
+    if (has(written, place))
       return at(concat({"has ", place, " again"}));
-    seen.push_back(place);
+    written.seen.push_back(place);
     if (found->second != nullptr)
       *found->second = value;
     custom = place == "grid: plan" && heading;
   }
+  return "";
+}
 
-  if (std::find(seen.begin(), seen.end(), "market") != seen.end()) {
-    for (const Area &known : AREAS)
-      if (upper(area) == known.name)
-        read.area = &known;
-    if (read.area == nullptr)
-      return "market: area must be one the board knows, like LT or SE3: see Countries and plans";
-    read.vat = number(vat);
-    if (!(read.vat >= 0.0f && read.vat < 1.0f))
-      return "market: vat must be the VAT as a fraction, like 0.21 for 21%";
-    read.margin = margin.empty() ? 0.0f : number(margin);
-    if (!(read.margin >= 0.0f && read.margin < MAX_PRICE))
-      return "market: margin must be a price per kWh, like 0.012";
-  }
-  // A fixed price's supplier part, without the grid fees, which the board adds to every quarter-hour like a margin.
-  if (!fixed.empty()) {
-    if (read.area != nullptr)
-      return "fixed_price goes without market:; on top of a market price, use market: margin";
-    read.margin = number(fixed);
-    if (!(read.margin >= 0.0f && read.margin < MAX_PRICE))
-      return "fixed_price must be a price per kWh, like 0.15";
-  }
+// The checks, in the order read_settings() runs them, each on what the ones before it read, filling its part of the
+// SettingsFile: what's wrong, or "".
 
-  read.currency = upper(!currency.empty() ? currency : read.area != nullptr ? own_currency(*read.area) : "EUR");
+// The market prices, where market: is there: their area, the VAT on them, and the supplier's margin, 0 when left out.
+inline std::string check_market(const SettingsText &written, SettingsFile &read) {
+  if (!has(written, "market"))
+    return "";
+  for (const Area &known : AREAS)
+    if (upper(written.area) == known.name)
+      read.area = &known;
+  if (read.area == nullptr)
+    return "market: area must be one the board knows, like LT or SE3: see Countries and plans";
+  read.vat = number(written.vat);
+  if (!(read.vat >= 0.0f && read.vat < 1.0f))
+    return "market: vat must be the VAT as a fraction, like 0.21 for 21%";
+  read.margin = written.margin.empty() ? 0.0f : number(written.margin);
+  if (!(read.margin >= 0.0f && read.margin < MAX_PRICE))
+    return "market: margin must be a price per kWh, like 0.012";
+  return "";
+}
+
+// A fixed price's supplier part, without the grid fees, which the board adds to every quarter-hour like a margin.
+inline std::string check_fixed_price(const SettingsText &written, SettingsFile &read) {
+  if (written.fixed.empty())
+    return "";
+  if (read.area != nullptr)
+    return "fixed_price goes without market:; on top of a market price, use market: margin";
+  read.margin = number(written.fixed);
+  if (!(read.margin >= 0.0f && read.margin < MAX_PRICE))
+    return "fixed_price must be a price per kWh, like 0.15";
+  return "";
+}
+
+// The currency: the file's, else the market's own, else euros; with a market, one its prices come in.
+inline std::string check_currency(const SettingsText &written, SettingsFile &read) {
+  const char *own = read.area != nullptr ? own_currency(*read.area) : "EUR";
+  read.currency = upper(written.currency.empty() ? own : written.currency);
   if (read.currency.size() != 3 ||
       !std::all_of(read.currency.begin(), read.currency.end(), [](char c) { return c >= 'A' && c <= 'Z'; }))
     return "currency must be a currency's three-letter code, like EUR";
-  if (read.area != nullptr) {
-    const char *own = own_currency(*read.area), *converted = converted_currency(*read.area);
-    if (read.currency != own && (converted == nullptr || read.currency != converted))
-      return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ", own,
-                     converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
-  }
+  if (read.area == nullptr)
+    return "";
+  const char *converted = converted_currency(*read.area);
+  if (read.currency != own && (converted == nullptr || read.currency != converted))
+    return concat({"currency: ", market_name(read.area->market), "'s prices for ", read.area->name, " come in ", own,
+                   converted != nullptr ? concat({", or ", converted, " at the ECB's daily rate"}) : ""});
+  return "";
+}
 
+// The ntfy topic the phone messages go to, where the file has one.
+inline std::string check_topic(const SettingsFile &read) {
   if (read.ntfy_topic.size() > 64 || !std::all_of(read.ntfy_topic.begin(), read.ntfy_topic.end(), [](char c) {
         return std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_';
       }))
     return "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _";
+  return "";
+}
 
+// The grid plan under grid: plan:, one built in, by name, or a custom plan's lines, as a tariff in the settings'
+// currency. Without market: and grid:, the board has no prices, and the car charges as usual. A grid: with neither a
+// plan nor a calendar under it, like one with the plan's name on its own line, would add nothing.
+inline std::string check_plan(const SettingsText &written, const Plans &plans, SettingsFile &read) {
   if (!read.plan.empty()) {
     const auto found =
         std::find_if(plans.begin(), plans.end(), [&](const auto &known) { return known.first == read.plan; });
@@ -170,11 +251,9 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       return concat({"grid: there's no plan ", read.plan});
     read.plan_text = found->second;
   }
-  // Without market: and grid:, the board has no prices, and the car charges as usual. A grid: with neither a plan nor
-  // a calendar under it, like one with the plan's name on its own line, would add nothing.
   TariffText custom_text;
   if (read.plan_text.empty() && read_tariff(read.custom_plan, custom_text).empty() && custom_text.calendar.empty() &&
-      std::find(seen.begin(), seen.end(), "grid") != seen.end())
+      has(written, "grid"))
     // nothing under grid: names no plan; a custom plan that doesn't read gets make_tariff()'s error
     return read.custom_plan.empty() ? "grid: there's no plan" : "custom plan: there's no calendar";
   Tariff tariff;
@@ -182,14 +261,18 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
           make_tariff(read.plan.empty() ? read.custom_plan : std::string(read.plan_text), read.currency, tariff);
       !error.empty())
     return concat({read.plan.empty() ? "custom plan: " : "grid: ", error});
+  return "";
+}
 
-  // The car, all three or none yet, as the setup saves the prices before the car's step. Wider than the page's 20 to
-  // 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
-  if (!battery.empty() || !charging.empty() || !read.vin.empty()) {
-    read.battery_kwh = number(battery);
+// The car, all three or none yet, as the setup saves the prices before the car's step, and whether to unlock the charge
+// port once it's charged. Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay
+// in range.
+inline std::string check_car(const SettingsText &written, SettingsFile &read) {
+  if (!written.battery.empty() || !written.charging.empty() || !read.vin.empty()) {
+    read.battery_kwh = number(written.battery);
     if (!(read.battery_kwh >= 10.0f && read.battery_kwh <= 1000.0f))
       return "tesla_battery_kwh must be the battery's size in kWh, like 75";
-    read.charging_kw = number(charging);
+    read.charging_kw = number(written.charging);
     if (!(read.charging_kw >= 0.5f && read.charging_kw <= 100.0f))
       return "tesla_charging_kw must be the charging power in kW, like 11";
     if (read.vin.size() != 17 || !std::all_of(read.vin.begin(), read.vin.end(), [](char c) {
@@ -198,16 +281,49 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
       return "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
              "screen under Controls, Software";
   }
-  if (!unlock.empty() && unlock != "true")
+  if (!written.unlock.empty() && written.unlock != "true")
     return "tesla_unlock_when_charged must be true, or left out";
-  read.unlock_when_charged = !unlock.empty();
+  read.unlock_when_charged = !written.unlock.empty();
+  return "";
+}
+
+// The time zone, one of TIME_ZONES, for its offset.
+inline std::string check_time_zone(const SettingsText &written, SettingsFile &read) {
   const auto *found = std::find_if(std::begin(TIME_ZONES), std::end(TIME_ZONES),
-                                   [&](const auto &known) { return zone == known.first; });
+                                   [&](const auto &known) { return written.zone == known.first; });
   if (found == std::end(TIME_ZONES))
     return "timezone must be one the board knows, like Europe/Vilnius";
   read.standard_offset = found->second * 3600;
-  settings = read;
   return "";
+}
+
+// Reads and checks the settings file, in the plans' YAML (tariff.h) as the page writes it, the last line break left out
+// or not, without quotes or comments after a value. grid: plan: names a plan built in, or holds a custom plan: a
+// plan's file (plans/README.md), each line indented by four spaces, whose line numbers count from the line after
+// plan:, as in the file. The checks run in turn, each on what the ones before it read. Returns what's wrong, or "".
+inline std::string read_settings(const std::string &text, const Plans &plans, SettingsFile &settings) {
+  if (text.size() > MAX_SETTINGS_BYTES)
+    return "the file is longer than 4 kB";
+  SettingsText written;
+  SettingsFile read;
+  std::string error = read_lines(text, written, read);
+  if (error.empty())
+    error = check_market(written, read);
+  if (error.empty())
+    error = check_fixed_price(written, read);
+  if (error.empty())
+    error = check_currency(written, read);
+  if (error.empty())
+    error = check_topic(read);
+  if (error.empty())
+    error = check_plan(written, plans, read);
+  if (error.empty())
+    error = check_car(written, read);
+  if (error.empty())
+    error = check_time_zone(written, read);
+  if (error.empty())
+    settings = read;
+  return error;
 }
 
 // Whether saving `now` over `was` restarts a board that has a car: for another car, whose Bluetooth link and key are
@@ -239,17 +355,29 @@ inline std::string json_string(std::string_view text) {
   return json + "\"";
 }
 
-// What the page offers for the settings, as JSON: the market areas, and the plans built in by name and name for people.
-// Calls f() with each piece in turn, as the board sends them without holding all of them.
+// What the page offers for the settings, as JSON: the market areas, each with its country's VAT in %, which northern
+// Norway (NO4) doesn't charge, its time zones, the main one first, the currency its prices come in and the one the
+// board converts them into where there is one; and the plans built in by name and name for people. Calls f() with each
+// piece in turn, as the board sends them without holding all of them.
 template <typename F>
 void settings_options(const Plans &plans, F f) {
-  f("{\"areas\":[");
+  f("{\"areas\":{");
   const char *comma = "";
   for (const Area &area : AREAS) {
-    f(concat({comma, json_string(area.name)}));
+    const Country &country = *country_of(area.name);
+    char vat[16];
+    std::snprintf(vat, sizeof(vat), "%g", std::strcmp(area.name, "NO4") == 0 ? 0.0f : country.vat);
+    std::string zones;
+    for (const char *zone : country.zones)
+      if (zone != nullptr)
+        zones += concat({zones.empty() ? "" : ",", json_string(zone)});
+    const char *converted = converted_currency(area);
+    f(concat({comma, json_string(area.name), ":{\"vat\":", vat, ",\"zones\":[", zones,
+              "],\"currency\":", json_string(own_currency(area)),
+              converted != nullptr ? concat({",\"converted\":", json_string(converted)}) : "", "}"}));
     comma = ",";
   }
-  f("],\"plans\":[");
+  f("},\"plans\":[");
   comma = "";
   for (const auto &plan : plans) {
     TariffText text;

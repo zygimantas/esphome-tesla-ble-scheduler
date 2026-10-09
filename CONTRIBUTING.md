@@ -4,7 +4,7 @@
 
 ## The code
 
-`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD, OMIE, OKTE and SEMOpx, the savings, the schedule and the plan, and `settings.h` reads and checks the settings file, which the page writes and POSTs to `/settings`, with a custom plan under `grid: plan:` (plain C++, unit-tested on a computer). `scheduler_component.h` and the `.cpp` files connect them to ESPHome: `scheduler_component.cpp` the settings file, the page's entities and the Tesla's, `requests.cpp` the price and plan downloads and the phone messages, and `settings_page.cpp` the settings routes, and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test and the simulation.
+`device.yaml` is the device. It sets up the `scheduler` component in `scheduler/`: `charger.h` decides, with `calendar.h`, `market.h`, `savings.h`, `schedule.h` and `tariff.h` for dates, market prices from Nord Pool, SMARD, OMIE, OKTE and SEMOpx, the savings, the schedule and the plan, and `settings.h` reads and checks the settings file, which the page writes and POSTs to `/settings`, with a custom plan under `grid: plan:` (plain C++, unit-tested on a computer). `scheduler_component.h` and the `.cpp` files connect them to ESPHome: `scheduler_component.cpp` the settings file, the page's entities and the Tesla's, `requests.cpp` the price and plan downloads and the phone messages, and `settings_page.cpp` the settings routes, and `__init__.py` builds in the plans. `plans/` holds the grid operators' plans, `web/` the page, and `test/` the unit tests, the mutation test, the simulation, and the page test with its fake board.
 
 Releases ship one firmware for every board, which CI builds from `release.yaml`: `device.yaml` with the component of this folder, and nothing of a user's, who sets Wi-Fi with ESPHome Web and enters the settings on the page. For a build of your own, start from `config.example.yaml`, which loads both from a release, or point a `config.yaml` at this folder like `release.yaml` does, and add what you need, like your Wi-Fi, an API key and OTA from your computer.
 
@@ -28,16 +28,21 @@ mkdir ArduinoJson && curl -sSfL https://github.com/bblanchon/ArduinoJson/archive
 uvx pre-commit run --all-files
 # Unit tests, with CI's flags
 g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/scheduler_test.cpp -o scheduler_test && ./scheduler_test
+# The page in a headless Chrome, the one installed, on a fake board (test/fake_board.py) with the board's own settings
+# checks, built like the unit tests; Playwright's version is PLAYWRIGHT_VERSION in ci.yml
+g++ -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src test/settings_tool.cpp -o test/settings_tool
+uvx --from "playwright==1.63.0" python test/page_test.py
 # Static analysis with CI's clang-tidy (CLANG_TIDY_VERSION in ci.yml) and the checks in .clang-tidy; on macOS, add
 # -isysroot $(xcrun --show-sdk-path)
 uvx "clang-tidy==22.1.8" test/scheduler_test.cpp -- -std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src
-# The board's logic on your computer, with a simulated Tesla; CHEAP_NOW=1 START_STOPPED=1 tries the start path
-esphome run test/simulation.yaml
+# The board's logic on your computer, with a simulated Tesla, built by CI's ESPHome (ESPHOME_VERSION in ci.yml) without
+# 2026.10's precompiled header, which breaks host builds; CHEAP_NOW=1 START_STOPPED=1 tries the start path
+ESPHOME_PCH_ENABLE=0 uvx "esphome@2026.10.0b2" run test/simulation.yaml
 # The firmware, from your config.yaml pointed at this folder (see The code, above)
-esphome compile config.yaml
+uvx "esphome@2026.10.0b2" compile config.yaml
 ```
 
-New behavior comes with a unit test in `test/scheduler_test.cpp`. Try changes on the simulation before flashing a real board.
+New behavior comes with a unit test in `test/scheduler_test.cpp`, and a change to the page with a scenario in `test/page_test.py`. Try changes on the simulation before flashing a real board.
 
 The unit tests cover every line and branch of `charger.h`, `settings.h` and the headers they include, and CI fails when they don't. Mutation testing shows what they'd still miss:
 
