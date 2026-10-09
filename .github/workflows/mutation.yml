@@ -26,10 +26,10 @@ jobs:
           mkdir ArduinoJson
           curl --proto "=https" -sSfL "https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ARDUINOJSON_VERSION.tar.gz" |
             tar xz --strip-components=1 -C ArduinoJson
-      - name: The score to keep is in --at-least (test/AGENTS.md says when to change it)
+      - name: Mutation testing, failing under the score in --at-least (test/AGENTS.md says when to change it)
         shell: bash # fails with the script, not with tee
         env:
-          CXX: clang++ # with GCC's AddressSanitizer the tests take minutes, past the script's limit
+          CXX: clang++ # with GCC's AddressSanitizer the tests take minutes, not seconds
         run: |
           $CXX --version | head -1
           python3 test/mutation_test.py --at-least 75 ArduinoJson/src | tee mutation.txt
