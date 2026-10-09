@@ -42,7 +42,7 @@ It charges the owner's car every night.
 - No ranking slots by the fraction the car would use of them: that pushes the partly used slot and the spare one to the dear edge of the trough instead of keeping them in it.
 - No settings file for users: setting the board up on the page is easy, and the only file left to upload is a custom plan (Upload custom plan). The settings file holds only what the page writes: no Download or Upload settings, no settings the page doesn't show (like ntfy_server or a currency of one's own), and nothing merged over a plan from the list.
 
-Parked for later, as issues #12 and #25: a per-start penalty, so the scheduler splits charging only when the saving beats a pause (about 2 ct), and a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided).
+Parked for later, as issues #12, #25 and #76: a per-start penalty, so the scheduler splits charging only when the saving beats a pause (about 2 ct), a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided), and charging from the solar surplus, which pays only where the car is home in daylight and grid power costs far more than an exported kWh earns, not with a morning Ready by and night charging, nor where a home stores its surplus in the grid for a fee, as in Lithuania; on sunny days the market price drops at midday anyway, which an evening Ready by catches.
 
 ## The owner's Mac
 
