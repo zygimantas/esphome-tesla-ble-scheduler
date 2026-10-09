@@ -742,7 +742,7 @@ function renderSetup() {
     ["price-fields", "prices-step", "prices-line"],
     ["car-fields", "car-step", "topic-row"],
   ]) {
-    const before = setup.step ? $(step).querySelector(".error") : $(next);
+    const before = setup.step ? $(step).querySelector(":scope > .error") : $(next); // not a field's range note
     if ($(fields).parentElement !== before.parentElement) before.before($(fields));
   }
 }
