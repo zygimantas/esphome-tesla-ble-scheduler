@@ -56,6 +56,7 @@ struct Decision {
                                              // with the car short of its limit
   std::string savings;                       // format_savings() once the key is paired and the clock set, else empty
   bool save_savings = false;                 // Controller::savings changed: time to write it to flash
+  bool unlock_port = false;                  // the car just finished charging, and the settings ask to unlock its port
 };
 
 class Controller {
@@ -166,6 +167,7 @@ class Controller {
       d.mode = "unplugged";
       return d;
     }
+    d.unlock_port = finished_ && settings.unlock_when_charged;
 
     bool want_charge = true;  // as usual, without a schedule
     bool fallback = false;    // at any price, for lack of prices or a battery level
@@ -233,6 +235,7 @@ class Controller {
   // Returns whether the car charges.
   bool observe_(const CarState &car, int64_t now) {
     const bool battery_was_known = battery_known_(), was_charged = charged_();
+    finished_ = false;
     if (!std::isnan(car.soc))
       soc_ = car.soc;
     if (!std::isnan(car.limit)) {
@@ -278,6 +281,7 @@ class Controller {
         notify_car_start_ = hold_ != Hold::NOW;  // once per hold
         hold_ = Hold::NOW;                       // from the car or the Tesla app: leave it alone until unplugged
       }
+      finished_ = charging_ && car.charging_state == "Complete";  // charging until the last known state
       charging_ = charging;
       complete_ = car.charging_state == "Complete";
     }
@@ -432,6 +436,7 @@ class Controller {
   bool plugged_ = false;
   bool charging_ = false;
   bool complete_ = false;  // the car's own word, which it keeps a percent under the limit
+  bool finished_ = false;  // this tick, the car went from charging to Complete: it reached its limit
   Hold hold_ = Hold::SCHEDULE;
   bool reschedule_ = true;
   bool notify_pending_ = false;

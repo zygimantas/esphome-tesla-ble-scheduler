@@ -230,6 +230,8 @@ const PAGE = `
       <hr id="prices-line">
       <label id="topic-row" class="row"><span>Ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
+      <label class="row check"><input id="set-unlock" type="checkbox"><span>Unlock the charge port when charged${info("unlock-hint", "About unlocking the charge port")}</span></label>
+      <p id="unlock-hint" class="note hint" hidden>When the car reaches its charge limit, the board unlocks the charge port, as Unlock in the Tesla app does, so the cable comes out without the car's key. Not after Stop charging.</p>
       <hr>
       <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
       <div class="row"><span>Version</span><strong id="version">-</strong></div>
@@ -892,6 +894,7 @@ function fillSettings() {
   batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
+  $("set-unlock").checked = values.tesla_unlock_when_charged === "true";
   for (const error of document.querySelectorAll(".error")) error.hidden = true;
 }
 
@@ -944,6 +947,7 @@ function formSettings() {
     lines.push(
       `tesla_battery_kwh: ${v("set-battery")}`,
       `tesla_charging_kw: ${v("set-power")}`,
+      ...($("set-unlock").checked ? ["tesla_unlock_when_charged: true"] : []),
       `tesla_vin: ${v("set-vin")}`,
     );
   lines.push(`timezone: ${timeZone()}`);

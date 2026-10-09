@@ -1107,6 +1107,11 @@ static void test_reads_the_settings_file() {
         s.plan_text.find("\nname: ESO Standartinis, four zones\n") != std::string::npos && s.custom_plan.empty());
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
   CHECK(s.standard_offset == 2 * 3600);
+  CHECK(!s.unlock_when_charged);  // left out, as the page leaves it while its box isn't ticked
+  CHECK_STR(read_settings(std::string(SETTINGS) + "tesla_unlock_when_charged: true\n", repository_plans(), s), "");
+  CHECK(s.unlock_when_charged);
+  CHECK_STR(settings_error(std::string(SETTINGS) + "tesla_unlock_when_charged: yes\n"),
+            "tesla_unlock_when_charged must be true, or left out");
 
   // A fixed price: no market, a custom plan with a comment and an empty line, any currency, an empty value, and Windows
   // line endings; the last line without a line break.
@@ -1223,6 +1228,7 @@ static void test_settings_that_restart() {
   const SettingsFile was = read(SETTINGS);
   CHECK(!restarts(SettingsFile(), was));  // the setup's car, on a board without one
   CHECK(!restarts(was, was));
+  CHECK(!restarts(was, read(std::string(SETTINGS) + "tesla_unlock_when_charged: true\n")));
   for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("tesla_battery_kwh", "60"),
                                   settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
                                   settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
@@ -1240,7 +1246,7 @@ static void test_settings_that_restart() {
   CHECK(restarts(was, now) && restarts(now, was));
 }
 
-// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's.
+// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's or the unlock box's.
 static void test_settings_that_delete_the_schedule() {
   SettingsFile was;
   CHECK_STR(read_settings(SETTINGS, repository_plans(), was), "");
@@ -1252,6 +1258,7 @@ static void test_settings_that_delete_the_schedule() {
     return deletes_schedule(was, now);
   };
   CHECK(!deletes([](SettingsFile &s) { s.ntfy_topic = "another-topic"; }));
+  CHECK(!deletes([](SettingsFile &s) { s.unlock_when_charged = true; }));  // it changes what follows the charge only
   CHECK(deletes([](SettingsFile &s) { s.currency = "SEK"; }));
   CHECK(deletes([](SettingsFile &s) { s.area = nullptr; }));
   CHECK(deletes([](SettingsFile &s) { s.vat = 0.5f; }));
@@ -2746,13 +2753,53 @@ static CarState drawing(int64_t now, float kw, const char *state = "Charging") {
 
 // A plug-in the board sees: the car unplugged a minute before `car`, unlike the plug state it first reads after a
 // restart.
-static Decision plug_in(Controller &controller, const CarState &car) {
+static Decision plug_in(Controller &controller, const CarState &car, const Settings &settings = Settings()) {
   CarState away = car;
   away.now -= 60;
   away.plugged = false;
   away.charging_state = "Disconnected";
-  controller.tick(away, Settings());
-  return controller.tick(car, Settings());
+  controller.tick(away, settings);
+  return controller.tick(car, settings);
+}
+
+static void test_unlocks_the_port_when_charged() {
+  // With the setting, the tick that sees the car go from charging to Complete unlocks its charge port, once.
+  Settings unlock;
+  unlock.unlock_when_charged = true;
+  const auto finish = [](Controller &controller, CarState car, const Settings &settings, const char *state) {
+    car.now += 30;
+    car.soc = 80;
+    car.power_kw = 0;
+    car.charging_state = state;
+    return controller.tick(car, settings).unlock_port;
+  };
+  Controller controller;
+  CarState car = drawing(SEP24_1700Z, 11);
+  CHECK(!plug_in(controller, car, unlock).unlock_port);
+  CHECK(finish(controller, car, unlock, "Complete"));
+  car.now += 30;
+  CHECK(!finish(controller, car, unlock, "Complete"));  // once
+  car.now += 60;
+  CHECK(!controller.tick(car, unlock).unlock_port);    // charging again, as for a higher limit,
+  CHECK(finish(controller, car, unlock, "Complete"));  // and finished again
+
+  // Not without the setting, nor stopped short of the limit, as by Stop charging.
+  Controller without;
+  plug_in(without, drawing(SEP24_1700Z, 11));
+  CHECK(!finish(without, drawing(SEP24_1700Z, 11), Settings(), "Complete"));
+  Controller stopped;
+  plug_in(stopped, drawing(SEP24_1700Z, 11), unlock);
+  CHECK(!finish(stopped, drawing(SEP24_1700Z, 11), unlock, "Stopped"));
+
+  // Nor for a car that's charged already when the board first sees it plugged in, after a plug-in or a restart.
+  Controller full;
+  CarState charged = drawing(SEP24_1700Z, 0, "Complete");
+  charged.soc = 80;
+  CHECK(!plug_in(full, charged, unlock).unlock_port);
+  CHECK(!finish(full, charged, unlock, "Complete"));
+  Controller restarted;
+  CHECK(!restarted.tick(charged, unlock).unlock_port);
+  CHECK(!finish(restarted, charged, unlock, "Complete"));
 }
 
 // format_savings() with the same figures for the last 30 days and the last 365.
@@ -3146,6 +3193,7 @@ int main() {
   test_reads_the_charging_state();
   test_tells_its_own_starts_from_the_cars();
   test_complete_under_the_limit_is_charged();
+  test_unlocks_the_port_when_charged();
   test_reschedules_when_no_longer_complete();
   test_reschedules_when_charging_runs_slow();
   test_reschedules_when_the_clock_goes_back();
