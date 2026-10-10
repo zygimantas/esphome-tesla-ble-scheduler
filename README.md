@@ -72,7 +72,7 @@ https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
-  <img src="docs/images/setup-car-light.gif" width="422" alt="The setup on a phone in the car: the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
+  <img src="docs/images/setup-car-light.gif" width="452" alt="The setup on a phone in the car: the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
 </picture>
 </p>
 
