@@ -24,7 +24,7 @@ Day-ahead electricity prices change every quarter-hour, and the cheapest hours o
 This board needs none of them. When you plug in, it picks the cheapest quarter-hours that still get the car to its charge limit by the time you leave, counting your grid fees and VAT.
 
 - **Runs at home:** no cloud, no Tesla account, no subscription, no Home Assistant.
-- **Can only charge:** its key can't open the car or drive it.
+- **Can only charge:** its key can't unlock the doors or drive the car.
 - **Works in 26 European countries,** most with their grid operators' plans built in.
 - **Updates from its own page,** with releases signed by the project.
 
@@ -48,7 +48,7 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 
 1. **Prices:** the board downloads tomorrow's prices once they're out, around 13:00 CET, and adds VAT and your grid plan's fees to each quarter-hour.
 2. **Schedule:** when you plug in, it picks the cheapest quarter-hours that reach your charge limit by **Ready by**, with a spare one in case charging runs slow.
-3. **Charging:** it starts and stops the car over Bluetooth, and sends the schedule to your phone through the ntfy app, if you like.
+3. **Charging:** it starts and stops charging over Bluetooth, and sends the schedule to your phone through the ntfy app, if you like.
 
 ## What you need
 
@@ -61,22 +61,52 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 
 ## Install
 
-1. Plug the board's USB-C port labelled **COM** into your computer.
-2. Download [the firmware](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, and install it as the video shows:
-
-https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
-
-3. On the board's page, which ESPHome Web opens, choose your country, grid plan and contract, then scan the QR code with your phone.
-4. Plug the board into the phone charger near the car, sit in the car with your key card, and finish the setup on your phone:
+1. **At your computer:** download [the firmware](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), plug the board's USB-C port labelled **COM** into the computer, and install the firmware with [ESPHome Web](https://web.esphome.io) in Chrome or Edge. Then give the board your Wi-Fi.
+2. **On the board's page,** which ESPHome Web then opens: choose your country, grid plan and contract, and scan the QR code with your phone.
+3. **At the car:** plug the board into a phone charger near the car, sit in the car with your key card, and finish the setup on your phone.
 
 <p align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
-  <img src="docs/images/setup-car-light.gif" width="452" alt="The setup on a phone in the car: the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
-</picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.gif">
+    <img src="docs/images/install-light.gif" width="540" alt="Steps 1 and 2 at a computer: ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page takes the prices and shows a QR code">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
+    <img src="docs/images/setup-car-light.gif" width="250" alt="Step 3 in the car: the VIN, the charging key and the end of the setup on a phone, then the first schedule once the car is plugged in">
+  </picture>
 </p>
 
 From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
+
+## Questions
+
+<details>
+<summary><b>Can I still charge right away?</b></summary>
+
+Yes. **Start charging now** on the board's page charges to the limit at any price, and charging you start from the car or the Tesla app goes ahead: the board leaves it alone until you unplug.
+
+</details>
+
+<details>
+<summary><b>What if the board or the prices are missing?</b></summary>
+
+The car charges as usual. Without prices or a battery level, the board lets the car charge at any price, and tells your phone if messages are on. With the board unplugged, the car is on its own.
+
+</details>
+
+<details>
+<summary><b>What can the board's key do?</b></summary>
+
+Only charging. The board adds its own key, like a phone key, with Tesla's Charging Manager role: it can start and stop charging, set the charge limit and open the charge port, but it can't unlock the doors or drive. You can remove it in the car under **Controls** → **Locks**.
+
+</details>
+
+<details>
+<summary><b>What leaves my home?</b></summary>
+
+No account, and nothing goes through Tesla's servers. The board downloads market prices, grid plans and, when you open its page, news of a release. Only phone messages go out, if you turn them on: the schedule, through the ntfy app's server, under a long random topic. The page has no password: anyone on your Wi-Fi can open it.
+
+</details>
 
 ## For developers
 
@@ -91,7 +121,7 @@ The scheduler is plain C++17 that runs on a computer as well as on the board.
 
 ## Support
 
-If it saves you money, you can [buy the developer a coffee](https://buymeacoffee.com/zygimantas_berziunas). Questions and ideas are welcome as [issues](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues).
+If it saves you money, star the repository so others find it, or [buy the developer a coffee](https://buymeacoffee.com/zygimantas_berziunas). Ideas and problems are welcome as [issues](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues).
 
 ## Credits and license
 
