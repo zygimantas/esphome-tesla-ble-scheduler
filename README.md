@@ -56,7 +56,7 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 - An ESP32-S3-DevKitC-1 (N16R8) board, within Bluetooth range of the car and on your Wi-Fi.
 - A USB-C cable for your computer, and a USB-C phone charger near the car to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) of its own.
-- A price that follows the day-ahead market, often called spot or exchange price, in one of the [26 countries](plans/README.md), which also says how to use a fixed price instead.
+- A price that follows the day-ahead market, often called spot or exchange price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, Ireland, Italy (the north), Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain, Sweden or Switzerland. [Countries and plans](plans/README.md) has the details, and how to use a fixed price instead.
 - Chrome or Edge on a computer, for the first install.
 
 ## Install
