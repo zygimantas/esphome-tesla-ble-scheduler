@@ -2,21 +2,17 @@
 
 ## What problem it solves
 
-Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.
-
 
 
 <table style="padding:10px">
   <tr>
     <td> 
+      Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.<br/><br/>
       ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
     </td>
-    <td><img src="./user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" align="left" alt="app" width="563" height="1218"></td>    
+    <td><img src="https://private-user-images.githubusercontent.com/102076/670390008-fb4e0cc5-3873-4390-baa4-68e3c73b7a39.PNG?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE2Mzk0NDAsIm5iZiI6MTc5MTYzOTE0MCwicGF0aCI6Ii8xMDIwNzYvNjcwMzkwMDA4LWZiNGUwY2M1LTM4NzMtNDM5MC1iYWE0LTY4ZTNjNzNiN2EzOS5QTkc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYxMDEwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MTAxMFQxMzMyMjBaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT01YWZhNWJiM2YyMmNmZDkxZDYxMWRmMzQ5N2M4Nzc2NmU0NTI5ZWNmNjNhNmQyNWVjMTc2MTdjOGUyZjA2YjQ3JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.b4gE3HT6Kq6l6UZ7hn3qutC9G5XdCClvl7isERPM45k" align="left" alt="app" width="563" height="1218"></td>    
   </tr>
 </table>
-
-<img width="563" height="1218" alt="IMG_7549" src="https://github.com/user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" />
-
 
 
 ## Example savings
