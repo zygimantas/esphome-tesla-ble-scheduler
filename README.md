@@ -65,16 +65,10 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 2. **On the board's page,** which ESPHome Web then opens: choose your country, grid plan and contract, and scan the QR code with your phone.
 3. **At the car:** plug the board into a phone charger near the car, sit in the car with your key card, and finish the setup on your phone.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.gif">
-    <img src="docs/images/install-light.gif" width="540" alt="Steps 1 and 2 at a computer: ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page takes the prices and shows a QR code">
-  </picture>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
-    <img src="docs/images/setup-car-light.gif" width="250" alt="Step 3 in the car: the VIN, the charging key and the end of the setup on a phone, then the first schedule once the car is plugged in">
-  </picture>
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-dark.gif">
+  <img src="docs/images/setup-light.gif" width="800" alt="The whole setup: at a computer, ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page takes the prices and shows a QR code; a moment later, on the phone in the car, the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
+</picture>
 
 From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
 
