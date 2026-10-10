@@ -5,8 +5,7 @@
 # ESPHome Tesla BLE Scheduler
 
 **Charge your Tesla in the cheapest hours of the night, automatically.**<br>
-A small ESP32 board next to the car follows the electricity market<br>
-and starts and stops charging over Bluetooth.
+A small ESP32 board by the car follows the electricity market and controls charging over Bluetooth.
 
 [![Latest release](https://img.shields.io/github/v/release/zygimantas/esphome-tesla-ble-scheduler)](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest)
 [![CI](https://github.com/zygimantas/esphome-tesla-ble-scheduler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zygimantas/esphome-tesla-ble-scheduler/actions/workflows/ci.yml)
