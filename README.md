@@ -90,7 +90,7 @@ Yes. **Start charging now** on the board's page charges to the limit at any pric
 <details>
 <summary><b>What if the board or the prices are missing?</b></summary>
 
-It charges as usual. Without prices or a battery level, the board lets the car charge at any price, and tells your phone if messages are on. With the board unplugged, the car is on its own.
+The car charges as usual. Without prices or a battery level, the board lets the car charge at any price, and tells your phone if messages are on. With the board unplugged, the car is on its own.
 
 </details>
 
