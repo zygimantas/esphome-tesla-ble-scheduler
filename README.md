@@ -5,9 +5,7 @@
 
 **Charge your Tesla in the cheapest hours, automatically, with a small board next to the car.**
 
-<table>
-  <tr>
-    <td>
+<p align="center"><img src="https://github.com/user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" alt="The board's page on a phone: tonight's charging windows and their prices" width="240"></p>
 
 Day-ahead electricity prices change every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla's own schedule knows times, not prices.
 
@@ -16,11 +14,6 @@ When you plug in, the board picks the cheapest quarter-hours that still get the 
 - **No cloud:** no Tesla account, no subscription, no Home Assistant.
 - **Charging only:** its key can't open the car or drive it.
 - **26 European countries,** most with their grid operators' plans.
-
-</td>
-    <td><img src="https://github.com/user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" alt="The board's page on a phone: tonight's charging windows and their prices" width="280"></td>
-  </tr>
-</table>
 
 ## What it saves
 
