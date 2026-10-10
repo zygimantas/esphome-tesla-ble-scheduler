@@ -4,8 +4,8 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 
 ## Before it knows the car
 
-- **Not paired**: the car hasn't answered the board's key since your settings named it, or it turned the key away, as when the key was removed in the car. The page's setup asks for the key: create it as in step 7 of the README's [Setup](../README.md#setup).
-- **No car yet**: the board has your prices, but not the car, as in the middle of the setup. Go on with the setup on the page, which asks for the car next, as the README's [Setup](../README.md#setup) says.
+- **Not paired**: the car hasn't answered the board's key since your settings named it, or it turned the key away, as when the key was removed in the car. The page's setup asks for the key: create it as in step 4 of the README's [Install](../README.md#install).
+- **No car yet**: the board has your prices, but not the car, as in the middle of the setup. Go on with the setup on the page, which asks for the car next, as the README's [Install](../README.md#install) says.
 - **Starting up**: the board has just started and has no time yet. Wait a few seconds. If it stays, the board can't reach the internet, which it needs for the time and the prices: check the Wi-Fi.
 - **Checking the car**: the charge port is open, but the car hasn't said whether it's plugged in. The board wakes it, every 10 minutes for half an hour. Wait.
 - **Waiting for car**: the board hasn't heard from the car since it started. Wait for the car to wake up. If it stays, check the Bluetooth signal at the top of the page. If the board's key was removed in the car, the status turns to **Not paired** once the car turns away one of the board's commands, like a scheduled start. If it stays while you sit in the car, the car may not know the board's key: press **Pair key** in **Settings**, tap your key card on the console and confirm on the car's screen.
@@ -17,7 +17,7 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 - **Charges at 01:30**, or **Charges at Mon 01:30** when it's more than a day away: the schedule's next window. The schedule's windows are listed below the status.
 - **Starting**: the schedule wants to charge, or you pressed Start charging now, and the board has told the car; it says Charging, or Charging now, once the car reports that it does, usually within a minute.
 - **Charging**: the car charges, as scheduled.
-- **Can't start charging**: the car ignored three starts in a quarter-hour. The board tries again in the next one. If it keeps saying this, see the README's [Troubleshooting](../README.md#troubleshooting).
+- **Can't start charging**: the car ignored three starts in a quarter-hour. The board tries again in the next one. If it keeps saying this, see the user guide's [Troubleshooting](guide.md#troubleshooting).
 - **Charger has no power**: the car says its charger gives no power. Turn off the charger's own schedule, auto-lock or OCPP approval. The board has asked the car to charge, so it starts as soon as power comes.
 - **Charged**: the battery is at the charge limit.
 - **Waiting for prices**: Ready by is later than the published prices, which come out around 13:00 CET for the next day. The schedule is made as soon as they're out.
@@ -33,9 +33,9 @@ What the **Status** row on the page can say, what it means, and what to do. A ph
 ## The board and the page
 
 - **Unplugged**: the car isn't plugged in.
-- **No settings yet**: the board has no settings yet. Go through the setup on the page, as the README's [Setup](../README.md#setup) says.
+- **No settings yet**: the board has no settings yet. Go through the setup on the page, as the README's [Install](../README.md#install) says.
 - **Settings: …**: the settings the board had no longer pass its checks, after an update made one stricter. The page opens its settings: check them and press Save.
-- **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Setup](../README.md#setup) says.
+- **Tesla entities not found**: the Tesla part of the firmware is missing. Install it again with ESPHome Web, as the README's [Install](../README.md#install) says.
 - **Connecting …**: the page has just opened and waits for the board.
 - **No connection**: the page lost the board. Check that the phone is on the same Wi-Fi and the board has power; the page reconnects by itself.
 - **Restarting …**: the board restarts, after you saved another country or area or contract type, or pressed Restart board. The page loads afresh once it's back.

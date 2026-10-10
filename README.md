@@ -1,92 +1,95 @@
+<div align="center">
+
+<img src="docs/images/logo.svg" width="88" height="88" alt="">
+
 # ESPHome Tesla BLE Scheduler
 
-## What problem it solves
+**Charge your Tesla in the cheapest hours of the night, automatically.**<br>
+A small ESP32 board by the car follows the electricity market and controls charging over Bluetooth.
 
+[![Latest release](https://img.shields.io/github/v/release/zygimantas/esphome-tesla-ble-scheduler)](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest)
+[![CI](https://github.com/zygimantas/esphome-tesla-ble-scheduler/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zygimantas/esphome-tesla-ble-scheduler/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/zygimantas/esphome-tesla-ble-scheduler)](LICENSE)
 
+[Install](#install) · [How it works](#how-it-works) · [Countries](plans/README.md) · [User guide](docs/guide.md) · [Contributing](CONTRIBUTING.md)
 
-<table style="padding:10px">
-  <tr>
-    <td> 
-      Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.<br/><br/>
-      ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
-    </td>
-    <td><img src="https://private-user-images.githubusercontent.com/102076/670390008-fb4e0cc5-3873-4390-baa4-68e3c73b7a39.PNG?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3OTE2Mzk0NDAsIm5iZiI6MTc5MTYzOTE0MCwicGF0aCI6Ii8xMDIwNzYvNjcwMzkwMDA4LWZiNGUwY2M1LTM4NzMtNDM5MC1iYWE0LTY4ZTNjNzNiN2EzOS5QTkc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYxMDEwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MTAxMFQxMzMyMjBaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT01YWZhNWJiM2YyMmNmZDkxZDYxMWRmMzQ5N2M4Nzc2NmU0NTI5ZWNmNjNhNmQyNWVjMTc2MTdjOGUyZjA2YjQ3JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.b4gE3HT6Kq6l6UZ7hn3qutC9G5XdCClvl7isERPM45k" align="left" alt="app" width="563" height="1218"></td>    
-  </tr>
-</table>
+<img src="docs/images/hero.png" width="760" alt="The board's page on a phone: tonight's schedule, one window from 00:45 to 05:30, and its settings">
 
+</div>
 
-## Example savings
+## Why
 
-An ordinary day: Sunday 27 September 2026, when Nord Pool's Lithuanian prices averaged 0.104 EUR/kWh before VAT. A 75 kWh Tesla comes home at 18:00 with 20% and must have 80% by 07:00: 45 kWh into the battery, 50 kWh from the grid at 11 kW, on a grid plan with four zones, VAT included.
+Day-ahead electricity prices change every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla's own schedule knows times, not prices, and the tools that follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.
 
-| How it charges | Cost |
-|---|---|
-| Plugged in and left to charge at once, as a Tesla does | 15.42 EUR |
-| The car's own schedule, starting at 23:00 | 6.27 EUR |
-| The board's schedule, 00:45 to 05:30 | 4.05 EUR |
+This board needs none of them. When you plug in, it picks the cheapest quarter-hours that still get the car to its charge limit by the time you leave, counting your grid fees and VAT.
 
-The board picks the quarter-hours by price, grid fee included, so it finds the cheap hours wherever they fall that day, which a fixed schedule can't. The numbers come from the board's scheduler run on the published prices. On a weekday the evening costs more still, as the evening fee applies.
+- **Runs at home:** no cloud, no Tesla account, no subscription, no Home Assistant.
+- **Can only charge:** its key can't open the car or drive it.
+- **Works in 26 European countries,** most with their grid operators' plans built in.
+- **Updates from its own page,** with releases signed by the project.
 
-## Prerequisites
+## What it saves
+
+One ordinary night in Lithuania, 27 September 2026: a 75 kWh car plugs in at 18:00 with 20% and needs 80% by 07:00, on Nord Pool prices and a grid plan with four zones, VAT included.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
+  <img src="docs/images/savings-light.svg" width="720" alt="The night's cost: 15.42 EUR charging at once, 6.27 EUR with the car's own schedule from 23:00, and 4.05 EUR with this board from 00:45 to 05:30">
+</picture>
+
+That's 74% less than charging at once, and 35% less than the car's own schedule, as the board finds the cheap hours wherever they fall. The costs are its scheduler's, run on the published prices.
+
+## How it works
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/how-it-works-dark.svg">
+  <img src="docs/images/how-it-works-light.svg" width="760" alt="Day-ahead prices and your grid plan go into the board next to the car, which starts and stops your Tesla over Bluetooth, and your phone reaches the board's page over Wi-Fi">
+</picture>
+
+1. **Prices:** the board downloads tomorrow's prices once they're out, around 13:00 CET, and adds VAT and your grid plan's fees to each quarter-hour.
+2. **Schedule:** when you plug in, it picks the cheapest quarter-hours that reach your charge limit by **Ready by**, with a spare one in case charging runs slow.
+3. **Charging:** it starts and stops the car over Bluetooth, and sends the schedule to your phone through the ntfy app, if you like.
+
+## What you need
 
 - A Tesla Model 3, Model Y, Cybertruck, or Model S/X from 2021 on.
-- An ESP32-S3-DevKitC-1 (N16R8) board. It goes within Bluetooth range of the car and needs your Wi-Fi.
-- A USB-C cable with the plug your computer takes, for the setup.
-- A USB-C phone charger, with a socket near the car, to power the board.
-- A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) on the charger itself.
-- Electricity priced by the day-ahead market, which contracts often call the exchange or spot price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, northern Italy, Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovenia, Spain, Sweden or Switzerland. [Countries and plans](plans/README.md) has the details, and how to use a fixed price instead.
-- A computer with Chrome or Edge, for the first install. After that, the board's page offers each new release.
+- An ESP32-S3-DevKitC-1 (N16R8) board, within Bluetooth range of the car and on your Wi-Fi.
+- A USB-C cable for your computer, and a USB-C phone charger near the car to power the board.
+- A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) of its own.
+- A price that follows the day-ahead market, often called spot or exchange price, in one of the [26 countries](plans/README.md), which also says how to use a fixed price instead.
+- Chrome or Edge on a computer, for the first install.
 
-## Setup
+## Install
 
-1. **Connect the board**: connect the board's USB-C port labelled **COM** to the computer.
-2. **Download the firmware**: [esphome-tesla-ble-scheduler.bin](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), from the latest release.
-3. **Install the firmware**: Open [ESPHome Web](https://web.esphome.io) in Chrome or Edge and follow steps from this video:
+1. Plug the board's USB-C port labelled **COM** into your computer.
+2. Download [the firmware](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, and install it as the video shows:
 
 https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 
-4. **Scan QR code with phone**: scan the QR code the page shows with your phone's camera, which opens the final setup steps.
-6. **Put the board next to the car**: unplug it from the computer, plug it into the USB charger near the car, and give it a minute to join your Wi-Fi.
-7. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If you closed it, open it again from the browser's history, or at http://tesla.local, which some Android phones don't find (type the `http://`: browsers try https on their own, which the board doesn't speak).
+3. On the board's page, which ESPHome Web opens, choose your country, grid plan and contract, then scan the QR code with your phone.
+4. Plug the board into the phone charger near the car, sit in the car with your key card, and finish the setup on your phone:
 
 https://github.com/user-attachments/assets/41fc06e6-78c6-4639-b068-f61f561c2c50
 
+From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
 
+## For developers
 
-## Using it
+The scheduler is plain C++17 that runs on a computer as well as on the board.
 
-Open the page on your phone, from the home screen once you've added it there, as the end of the setup says. It's at the board's address on your Wi-Fi, like http://192.168.1.23, which the QR code opened. If the router gives the board a new one, open http://tesla.local, which some Android phones don't find, or tap a phone message, which has the new one. There's no password: anyone on your Wi-Fi can use it and see your settings.
+- **Tested:** 85 unit tests cover every line and branch of the scheduler, mutation testing kills 92% of its mutants, and a simulation runs the board's logic with a simulated Tesla.
+- **Built on ESPHome:** an external component in `scheduler/`, with [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble) for the car, and a page of plain JavaScript and CSS that the board serves.
+- **Checked in CI:** clang-tidy, CodeQL, SonarCloud and the page's tests in a headless browser, and every release signed for the boards' updates.
+- **Open to your country:** a grid operator's plan is a short YAML file in `plans/`, which every board downloads within a day.
 
-- **When you plug in**, the board makes a schedule by itself: the cheapest quarter-hours to reach the car's charge limit by **Ready by**. The schedule lists each window with its price, like `Thu 02:00 - 02:45` at `0.196 EUR/kWh`, or `Thu 23:15 - Fri 01:00` past midnight. A faded window is a spare, used only if charging runs slow. If Ready by is later than the published prices, the board waits for them, and charges now only what the hours after them can't fit.
-- **To change the schedule**, press **Delete schedule**, pick **Charge limit** and **Ready by**, then **Create schedule**. Ready by offers only times with published prices: tomorrow's come out around 13:00 CET. The time you pick becomes your daily Ready by.
-- **Start charging now** charges to the limit at any price, until you unplug. **Stop charging** waits until you create a schedule, start charging or plug in again.
-- **Charging started from the car or the Tesla app** goes ahead: the board leaves it alone until you unplug.
-- **Stopping from the car or the Tesla app** lasts only until the board charges again: use **Stop charging** here instead.
-- **To let the car charge on its own**, unplug the board. Without prices or a battery level, the car also charges as usual.
-- **To unlock the cable when charging finishes**, tick **Unlock the charge port when charged** under **Settings**: once the car reaches its charge limit, the board unlocks the charge port, as Unlock in the Tesla app does, so the cable comes out without the car's key.
-- **Savings** shows what charging saved against the day's average price in the last 30 days and the last 12 months. The **?** after each shows the energy and what it cost, and the saving against plugging in and charging at once. Prices count VAT, grid fees and the supplier's margin or part per kWh, not monthly fees. **Reset savings** starts again from zero.
-- **To start over**, as for another car, press **Restart setup** under **Settings**: the board forgets its settings, its key and Ready by, keeps its Wi-Fi and the savings, and starts the setup again. Remove its old key in the car under **Controls** → **Locks**.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the checks to run and how releases are made.
 
-### Phone messages
+## Support
 
-Phone messages are optional, through the ntfy app: install it, open **Settings** on the board's page and press the button at the end of the **Ntfy topic** field, which makes a long random topic and copies it, then subscribe to it in the app by pasting it. **Send test message** checks that the app gets one; then press **Save**. Anyone who knows the topic can read the messages. About two minutes after you plug in, or once tomorrow's prices are out if Ready by is later than the published ones, your phone gets the schedule, like `56 to 80% by Thu 06:30; avg 0.096 EUR/kWh over 3 window(s)`. Tap the message to open the page. You also get a message when the board has to let the car charge at any price, for lack of prices or of a battery level or because charging was started from the car or the Tesla app, and when Ready by passes with the car short of its limit.
-
-## Troubleshooting
-
-[Statuses](docs/status.md) explains everything the Status row can say and what to do about it.
-
-- **The Tesla app says "Charging equipment not ready"**, or the page says **Charger has no power**: the charger isn't supplying power. Turn off its own schedule, auto-lock or OCPP approval.
-- **The page doesn't open**: your phone must be on the same Wi-Fi, and the address must start with `http://`, not `https://`. If the board can't join your Wi-Fi, it opens its own network called **tesla** for 15 minutes after you plug it in: join it from your phone and choose your Wi-Fi. Unplug the board and plug it in again for another 15 minutes.
-- **The board can't reach the car**: the Bluetooth signal at the top of the page is empty or very weak. Move the board closer to the car.
-- **The car doesn't charge at night**: check that the board can wake it. Let the car fall asleep, open http://tesla.local/?full and press **Wake up**.
-- **The schedule's times are an hour or two off**: check **Country / Area** under **Settings**, which sets the board's time zone.
-
-## Development
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+If it saves you money, you can [buy the developer a coffee](https://buymeacoffee.com/zygimantas_berziunas). Questions and ideas are welcome as [issues](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues).
 
 ## Credits and license
 
-The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal, from SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0) from OMIE (OMI-Polo Español, S.A.), from OKTE (OKTE, a.s.) and from SEMOpx (the market of Ireland and Northern Ireland). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur, OMIE, OKTE, SEMOpx or any grid operator. Use it at your own risk.
+The Bluetooth link to the car is [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble), which implements Tesla's [vehicle-command](https://github.com/teslamotors/vehicle-command) protocol. Prices come from Nord Pool's data portal, SMARD (Bundesnetzagentur | SMARD.de, CC BY 4.0), OMIE (OMI-Polo Español, S.A.), OKTE (OKTE, a.s.) and SEMOpx (the market of Ireland and Northern Ireland). This project isn't affiliated with Tesla, Nord Pool, the Bundesnetzagentur, OMIE, OKTE, SEMOpx or any grid operator. Use it at your own risk.
 
-Licensed under the GNU Affero General Public License v3.0; see [LICENSE](LICENSE).
+Licensed under the [GNU Affero General Public License v3.0](LICENSE).

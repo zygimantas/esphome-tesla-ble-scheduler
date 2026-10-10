@@ -3,6 +3,6 @@ contact_links:
   - about: Please report security problems privately, not as an issue.
     name: Security problem
     url: https://github.com/zygimantas/esphome-tesla-ble-scheduler/security/advisories/new
-  - about: The README's Troubleshooting section covers the usual problems.
+  - about: The user guide's Troubleshooting section covers the usual problems.
     name: Troubleshooting
-    url: https://github.com/zygimantas/esphome-tesla-ble-scheduler#troubleshooting
+    url: https://github.com/zygimantas/esphome-tesla-ble-scheduler/blob/main/docs/guide.md#troubleshooting
