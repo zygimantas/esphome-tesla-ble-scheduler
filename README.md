@@ -67,7 +67,7 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-dark.gif">
-  <img src="docs/images/setup-light.gif" width="800" alt="The whole setup: at a computer, ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page takes the prices and shows a QR code; a moment later, on the phone in the car, the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
+  <img src="docs/images/setup-light.gif" width="800" alt="The whole setup: at a computer, ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page at tesla.local takes the prices and shows a QR code; the phone in the car scans it, opens the page and goes through the VIN, the charging key and the end of the setup, then shows the first schedule once the car is plugged in">
 </picture>
 
 From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
