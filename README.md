@@ -39,13 +39,10 @@ https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 4. **Scan QR code with phone**: scan the QR code the page shows with your phone's camera, which opens the final setup steps.
 6. **Put the board next to the car**: unplug it from the computer, plug it into the USB charger near the car, and give it a minute to join your Wi-Fi.
 7. **Finish the setup in the car**: sit in the car with your key card and the page open on your phone. If you closed it, open it again from the browser's history, or at http://tesla.local, which some Android phones don't find (type the `http://`: browsers try https on their own, which the board doesn't speak).
-   - Enter your car's VIN, which the board needs to find the car over Bluetooth and talk to it: it's on the car's screen under **Controls** → **Software** and at the bottom of the Tesla app's home screen. Check the battery's size, guessed from your car's model, and the charging power the Tesla app shows while the car charges at home. Press **Continue**: the page checks the VIN, and says what's wrong if anything is.
-   - Then tick **I am in the car with my Tesla key card** and press **Create key**, which says Looking for the car … until the board finds the car over Bluetooth. Tap your key card on the console and confirm on the car's screen while the button says Waiting for the car …; if the car missed it, the button turns to **Try again**. Once the car answers, the page says the setup is done, and how to add it to your home screen.
-8. **Turn off charging schedules for home** in the Tesla app or on the car's screen.
 
-To change the country, the grid plan, the contract or the car's battery and charging power, open **Settings**, below **Savings** on the page: the country sets the VAT and the time zone too. Saving them deletes the schedule, as it was made with the old ones: press **Create schedule** for a new one. Saving only a new **Ntfy topic** doesn't. The car's VIN stays as you set it up, until you start over.
+https://github.com/user-attachments/assets/41fc06e6-78c6-4639-b068-f61f561c2c50
 
-When you open the page after a new release, it says so at the top, with the release the board runs and a link to the release notes, and **Update**: the board installs it only when you press it, and restarts with it in about a minute. **Later** hides it until you open the page again. **Settings** on the page shows the version it runs.
+
 
 ## Using it
 
