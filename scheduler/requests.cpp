@@ -10,8 +10,9 @@ namespace esphome::scheduler {
 
 static const char *const TAG = "scheduler";
 
-// The most the board reads of an answer: a day of LT prices is about 11 kB, SMARD's week 15 kB and a plan up to
-// about 2 kB. OKTE's day, 67 kB, and SEMOpx's, 20 kB, go through a filter as they come instead (read_body_()).
+// The most the board reads of an answer, into PSRAM (Body): a day of LT prices is about 11 kB, SMARD's week 15 kB and
+// a plan up to about 2 kB. OKTE's day, 67 kB, and SEMOpx's, 20 kB, go through a filter as they come instead
+// (read_body_()).
 static constexpr size_t MAX_BODY_BYTES = 24 * 1024;
 // The plans as their maintainers keep them current, on GitHub.
 static const char *const PLANS = "https://raw.githubusercontent.com/zygimantas/esphome-tesla-ble-scheduler/main/plans/";
@@ -114,8 +115,8 @@ class ResponseReader {
 // With a `filter`, what it keeps of the JSON, read as it comes, so the whole answer needn't fit: as JSON, or what
 // `keep` makes of it; nothing when it can't be read. Without App.feed_wdt(): the watchdog doesn't watch the requests
 // task, and on the loop the read feeds it.
-std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpContainer &response,
-                                                          const JsonDocument *filter, const Keep &keep) {
+std::optional<Body> SchedulerComponent::read_body_(http_request::HttpContainer &response, const JsonDocument *filter,
+                                                   const Keep &keep) {
   if (filter != nullptr) {
     ResponseReader reader(response, this->http_->get_timeout());
 #ifdef USE_PSRAM
@@ -126,14 +127,16 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 #endif
     if (deserializeJson(doc, reader, DeserializationOption::Filter(*filter)) != DeserializationError::Ok)
       return std::nullopt;
-    if (keep)
-      return keep(doc);
-    std::string kept;
+    if (keep) {
+      const std::string kept = keep(doc);
+      return Body(kept.data(), kept.size());
+    }
+    Body kept;
     kept.reserve(measureJson(doc));
     serializeJson(doc, kept);
     return kept;
   }
-  std::string body;
+  Body body;
   uint8_t chunk[512];
   uint32_t last_data = millis();
   while (body.size() <= MAX_BODY_BYTES) {  // a byte past it tells a longer body from one of exactly MAX_BODY_BYTES
@@ -153,7 +156,7 @@ std::optional<std::string> SchedulerComponent::read_body_(http_request::HttpCont
 // GETs `url`: the answer's HTTP status, or nothing when the request fails, and with 200 its body, or nothing when it's
 // cut off, through `filter` and `keep` if any (read_body_()). The response ends before the body is parsed: the
 // connection's memory isn't needed any more.
-std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<std::string> &body,
+std::optional<int> SchedulerComponent::fetch_(const std::string &url, std::optional<Body> &body,
                                               const JsonDocument *filter, const Keep &keep) {
   auto response = this->http_->get(url);
   if (response == nullptr)
@@ -183,7 +186,7 @@ std::string SchedulerComponent::prices_url_(int day) const {
 }
 
 // On the loop: stores an answer's prices, SMARD's times `rate`: how many, or -1 if it can't be read.
-int SchedulerComponent::store_prices_(const std::string &body, float rate) {
+int SchedulerComponent::store_prices_(const Body &body, float rate) {
   PriceTable &prices = this->controller_.prices;
   const Area &area = *this->file_.area;
   switch (area.market) {
@@ -216,7 +219,7 @@ void SchedulerComponent::fetch_prices_() {
   }
   // SEMOpx gives a day's results by an id in its list of the newest: the list first, for both days
   if (area.market == Market::SEMOPX) {
-    std::optional<std::string> list;
+    std::optional<Body> list;
     if (this->fetch_(SEMOPX_LIST_URL, list) != http_request::HTTP_STATUS_OK || !list) {
       ESP_LOGW(TAG, "%s: its list of results couldn't be read", source);
       return;
@@ -245,7 +248,7 @@ void SchedulerComponent::fetch_prices_() {
     if (url == fetched)
       continue;
     fetched = url;
-    std::optional<std::string> body;
+    std::optional<Body> body;
     const std::optional<int> status = this->fetch_(url, body, filtered ? &filter : nullptr, keep);
     if (!status) {
       ESP_LOGW(TAG, "%s request failed", source);
@@ -277,7 +280,7 @@ void SchedulerComponent::fetch_prices_() {
 // fails: then the prices wait for the next try.
 std::optional<float> SchedulerComponent::fetch_rate_() {
   const char *currency = this->requests_.currency.c_str();
-  std::optional<std::string> body;
+  std::optional<Body> body;
   const std::optional<int> status = this->fetch_(ECB_RATES_URL, body);
   const std::optional<float> rate = body ? ecb_rate(body->data(), body->size(), currency) : std::nullopt;
   if (!status)
@@ -295,7 +298,7 @@ std::optional<float> SchedulerComponent::fetch_rate_() {
 // the one in use, and the board tries again in an hour. So does a save that names another plan meanwhile.
 void SchedulerComponent::fetch_plan_() {
   const char *plan = this->requests_.plan.c_str();
-  std::optional<std::string> text;
+  std::optional<Body> text;
   const std::optional<int> status = this->fetch_(std::string(PLANS) + plan + ".yaml", text);
   if (!status) {
     ESP_LOGW(TAG, "Plan %s: request failed", plan);
@@ -304,7 +307,7 @@ void SchedulerComponent::fetch_plan_() {
   } else if (!text) {
     ESP_LOGW(TAG, "Plan %s: the download was cut off, so the one in use stays", plan);
   } else {
-    this->defer([this, plan = std::string(plan), text = std::move(*text)]() {
+    this->defer([this, plan = std::string(plan), text = std::string(text->data(), text->size())]() {
       if (this->file_.plan != plan)
         return;
       if (text == this->plan_text_) {
