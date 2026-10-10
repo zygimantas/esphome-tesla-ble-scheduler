@@ -61,19 +61,19 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 
 ## Install
 
-1. Plug the board's USB-C port labelled **COM** into your computer.
-2. Download [the firmware](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), open [ESPHome Web](https://web.esphome.io) in Chrome or Edge, and install it as the video shows:
-
-https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
-
-3. On the board's page, which ESPHome Web opens, choose your country, grid plan and contract, then scan the QR code with your phone.
-4. Plug the board into the phone charger near the car, sit in the car with your key card, and finish the setup on your phone:
+1. **At your computer:** download [the firmware](https://github.com/zygimantas/esphome-tesla-ble-scheduler/releases/latest/download/esphome-tesla-ble-scheduler.bin), plug the board's USB-C port labelled **COM** into the computer, and install the firmware with [ESPHome Web](https://web.esphome.io) in Chrome or Edge. Then give the board your Wi-Fi.
+2. **On the board's page,** which ESPHome Web then opens: choose your country, grid plan and contract, and scan the QR code with your phone.
+3. **At the car:** plug the board into a phone charger near the car, sit in the car with your key card, and finish the setup on your phone.
 
 <p align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
-  <img src="docs/images/setup-car-light.gif" width="452" alt="The setup on a phone in the car: the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
-</picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.gif">
+    <img src="docs/images/install-light.gif" width="540" alt="Steps 1 and 2 at a computer: ESPHome Web installs the firmware and sets up the Wi-Fi, then the board's page takes the prices and shows a QR code">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
+    <img src="docs/images/setup-car-light.gif" width="250" alt="Step 3 in the car: the VIN, the charging key and the end of the setup on a phone, then the first schedule once the car is plugged in">
+  </picture>
 </p>
 
 From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
