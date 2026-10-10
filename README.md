@@ -42,13 +42,10 @@ That's 74% less than charging at once, and 35% less than the car's own schedule,
 
 ## How it works
 
-```mermaid
-flowchart LR
-    prices["Day-ahead prices<br>Nord Pool, SMARD, OMIE, OKTE or SEMOpx"] --> board
-    plan["Your grid plan<br>its fees by the hour"] --> board
-    board["The board<br>ESP32-S3, next to the car"] -- "Bluetooth: start and stop" --> car["Your Tesla"]
-    phone["Your phone<br>the board's page"] -- "Wi-Fi" --- board
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/how-it-works-dark.svg">
+  <img src="docs/images/how-it-works-light.svg" width="760" alt="Day-ahead prices and your grid plan go into the board next to the car, which starts and stops your Tesla over Bluetooth, and your phone reaches the board's page over Wi-Fi">
+</picture>
 
 1. **Prices:** the board downloads tomorrow's prices once they're out, around 13:00 CET, and adds VAT and your grid plan's fees to each quarter-hour.
 2. **Schedule:** when you plug in, it picks the cheapest quarter-hours that reach your charge limit by **Ready by**, with a spare one in case charging runs slow.
