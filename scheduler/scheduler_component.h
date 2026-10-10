@@ -31,6 +31,16 @@
 
 #include <functional>
 
+namespace esphome {
+
+// Any RAMAllocator frees what another took (free()), so they're equal, as a string's move asks and ESPHome doesn't say.
+template <class T, class U>
+bool operator==(const RAMAllocator<T> & /*a*/, const RAMAllocator<U> & /*b*/) {
+  return true;
+}
+
+}  // namespace esphome
+
 namespace esphome::scheduler {
 
 class SchedulerComponent;
@@ -90,6 +100,10 @@ struct SavedSettings {
   char text[MAX_SETTINGS_BYTES + 1];
 };
 
+// An answer as it came, in PSRAM: a std::string takes internal RAM, which HTTPS leaves short, and a day of LT prices,
+// about 11 kB, grows one to 15 kB (scheduler/AGENTS.md).
+using Body = std::basic_string<char, std::char_traits<char>, RAMAllocator<char>>;
+
 // What a batch of the requests task does (SchedulerComponent::start_downloads_() and send_unsent_()): the downloads
 // due, or the phone message, with what they need of the settings, copied, as a save may change them while it runs.
 struct Requests {
@@ -97,7 +111,7 @@ struct Requests {
   const Area *area{nullptr};  // with prices due: from the CET delivery day `first_day` days after `now`
   int first_day{0};
   std::string currency;
-  std::string semopx_list;              // SEMOpx's newest results, with each day's id
+  Body semopx_list;                     // SEMOpx's newest results, with each day's id
   std::string plan;                     // with the plan due
   std::optional<Notification> message;  // with a message to send, and its JSON for ntfy
   std::string message_json;
@@ -160,12 +174,11 @@ class SchedulerComponent : public PollingComponent {
   void run_requests_();
   // What the requests task makes of an answer read through a filter, to pass on to the loop: JSON, as a rule.
   using Keep = std::function<std::string(const JsonDocument &)>;
-  std::optional<std::string> read_body_(http_request::HttpContainer &response, const JsonDocument *filter,
-                                        const Keep &keep);
-  std::optional<int> fetch_(const std::string &url, std::optional<std::string> &body,
-                            const JsonDocument *filter = nullptr, const Keep &keep = {});
+  std::optional<Body> read_body_(http_request::HttpContainer &response, const JsonDocument *filter, const Keep &keep);
+  std::optional<int> fetch_(const std::string &url, std::optional<Body> &body, const JsonDocument *filter = nullptr,
+                            const Keep &keep = {});
   std::string prices_url_(int day) const;
-  int store_prices_(const std::string &body, float rate);
+  int store_prices_(const Body &body, float rate);
   void fetch_prices_();
   std::optional<float> fetch_rate_();
   void fetch_plan_();
