@@ -69,7 +69,12 @@ https://github.com/user-attachments/assets/47da88c6-9992-4ed4-9c16-b7fc7fbd02fe
 3. On the board's page, which ESPHome Web opens, choose your country, grid plan and contract, then scan the QR code with your phone.
 4. Plug the board into the phone charger near the car, sit in the car with your key card, and finish the setup on your phone:
 
-https://github.com/user-attachments/assets/41fc06e6-78c6-4639-b068-f61f561c2c50
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/setup-car-dark.gif">
+  <img src="docs/images/setup-car-light.gif" width="422" alt="The setup on a phone in the car: the VIN, the charging key and the end of the setup, then the first schedule once the car is plugged in">
+</picture>
+</p>
 
 From then on, just plug in: the car is charged by **Ready by**. The [user guide](docs/guide.md) explains the page, phone messages and what to do when something is off.
 
