@@ -4,7 +4,20 @@
 
 Nord Pool electricity changes price every quarter-hour, and the cheapest hours of a night often cost a fraction of the evening peak. A Tesla can't follow that: its charging schedule works with times, not prices. Tools that can follow prices usually need a cloud service, your Tesla account, Home Assistant or a new charger.
 
-ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
+
+
+<table style="padding:10px">
+  <tr>
+    <td> 
+      ESPHome Tesla BLE Scheduler is a small ESP32 board that sits next to the car. When you plug in, it picks the cheapest quarter-hours that still reach your charge limit by the time you leave, counting grid fees and VAT. Then it starts and stops charging over Bluetooth. Everything runs at home: no cloud, no Tesla account, no subscription. Its key can only charge, so even a stolen board can't unlock or drive the car.
+    </td>
+    <td><img src="./user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" align="left" alt="app" width="563" height="1218"></td>    
+  </tr>
+</table>
+
+<img width="563" height="1218" alt="IMG_7549" src="https://github.com/user-attachments/assets/fb4e0cc5-3873-4390-baa4-68e3c73b7a39" />
+
+
 
 ## Example savings
 
