@@ -96,7 +96,6 @@ struct SettingsFile {
   std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
   float battery_kwh = 0.0f;
   float charging_kw = 0.0f;
-  bool unlock_when_charged = false;  // unlock the charge port once the car finishes charging
   std::string vin;
   int32_t standard_offset = 0;  // the time zone's, in seconds
 };
@@ -111,7 +110,7 @@ inline std::string upper(std::string text) {
 // The settings the checks still have to read, as written, by their place, and the places the file has, grid: and
 // market: too; the rest go straight into the SettingsFile.
 struct SettingsText {
-  std::string area, battery, charging, currency, fixed, margin, unlock, vat, zone;
+  std::string area, battery, charging, currency, fixed, margin, vat, zone;
   std::vector<std::string> seen;
 };
 
@@ -135,7 +134,6 @@ inline std::string read_lines(const std::string &text, SettingsText &written, Se
                                                            {"ntfy_topic", &read.ntfy_topic},
                                                            {"tesla_battery_kwh", &written.battery},
                                                            {"tesla_charging_kw", &written.charging},
-                                                           {"tesla_unlock_when_charged", &written.unlock},
                                                            {"tesla_vin", &read.vin},
                                                            {"timezone", &written.zone}};
   std::string section;
@@ -264,9 +262,8 @@ inline std::string check_plan(const SettingsText &written, const Plans &plans, S
   return "";
 }
 
-// The car, all three or none yet, as the setup saves the prices before the car's step, and whether to unlock the charge
-// port once it's charged. Wider than the page's 20 to 200 kWh and 1 to 22 kW, and closed, so a schedule's numbers stay
-// in range.
+// The car, all three or none yet, as the setup saves the prices before the car's step. Wider than the page's 20 to 200
+// kWh and 1 to 22 kW, and closed, so a schedule's numbers stay in range.
 inline std::string check_car(const SettingsText &written, SettingsFile &read) {
   if (!written.battery.empty() || !written.charging.empty() || !read.vin.empty()) {
     read.battery_kwh = number(written.battery);
@@ -281,9 +278,6 @@ inline std::string check_car(const SettingsText &written, SettingsFile &read) {
       return "tesla_vin must be the car's VIN: 17 capital letters and digits, none of them I, O or Q, on the car's "
              "screen under Controls, Software";
   }
-  if (!written.unlock.empty() && written.unlock != "true")
-    return "tesla_unlock_when_charged must be true, or left out";
-  read.unlock_when_charged = !written.unlock.empty();
   return "";
 }
 
@@ -334,8 +328,7 @@ inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
 }
 
 // Whether saving `now` over `was` deletes the schedule on a board that has a car, as Delete schedule does: for any
-// change but the ntfy topic's or the unlock box's, as the schedule was made with the rest, while the topic only says
-// where its message goes and the box what follows the charge.
+// change but the ntfy topic's, as the schedule was made with the rest, and the topic only says where its message goes.
 inline bool deletes_schedule(const SettingsFile &was, const SettingsFile &now) {
   const auto rest = [](const SettingsFile &s) {
     return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.custom_plan, s.battery_kwh, s.charging_kw, s.vin,
