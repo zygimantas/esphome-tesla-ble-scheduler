@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 103" width="720" height="103" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
-  <text x="0" y="17" font-size="17" font-weight="600" fill="#1f2328">Sweden, Vattenfall Eldistribution Tidstariff (SE3)</text>
-  <text x="0" y="53" font-size="15" font-weight="400" fill="#59636e">Car's schedule from 22:00</text>
-  <rect x="200" y="37" width="400.0" height="22" rx="4" fill="#d1d9e0"/>
-  <text x="610.0" y="54" font-size="16" font-weight="500" fill="#1f2328">6,197 SEK</text>
-  <text x="0" y="87" font-size="15" font-weight="600" fill="#1f2328">This board</text>
-  <rect x="200" y="71" width="321.1" height="22" rx="4" fill="#009ac7"/>
-  <text x="531.1" y="88" font-size="16" font-weight="700" fill="#009ac7">4,974 SEK</text>
-</svg>
