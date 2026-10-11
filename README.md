@@ -30,10 +30,10 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## Example of yearly savings
 
-Worked out for one driver, the same in every country:
+Worked out on the market prices of every night from October 2025, when they went to quarter-hours, to September 2026, for one driver, the same in every country:
 
 - **The car:** a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day.
-- **Every night:** it comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW, from October 2025, when the market prices went to quarter-hours, to September 2026.
+- **Every night:** it comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW.
 - **The driver already saves:** the car's own schedule, set in the car or the Tesla app, starts charging when the grid plan's night rate does, like 22:00 in Lithuania, or at midnight where the rate is the same all night.
 - **The contract:** a dynamic one, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price.
 - **The price of each kWh:** what the bill charges for it: the market price of its quarter-hour, or of its hour where the bill counts hours, the grid plan's fee, taxes, levies, the supplier's margin and VAT, at their 2026 rates.
