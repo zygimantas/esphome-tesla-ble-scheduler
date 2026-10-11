@@ -30,24 +30,24 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## Example of yearly savings
 
-Worked out on the market prices of every night from October 2025, when they went to quarter-hours, to September 2026, for one driver, the same in every country:
+For one driver, the same in every country, from October 2025 to September 2026:
 
-- **The car:** a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, at 15 kWh per 100 km.
+- **The car:** a 75 kWh Tesla driving 20,000 km a year, about 55 km a day.
 - **Every night:** plugged in from 18:00 to 07:00, charging at 11 kW.
-- **The driver already saves:** the Tesla's own scheduler starts charging at the same time every night, when cheap hours usually begin.
-- **The contract:** a price that changes every hour with the market, called dynamic or spot, or the usual price where homes can't have one.
-- **Full prices:** each kWh costs what the bill would say, with grid fees, taxes and VAT.
+- **Without the board:** the Tesla's own schedule starts charging at the same time every night, when cheap hours usually begin.
+- **The contract:** a price that follows the market (dynamic or spot), or the usual price where homes can't have one.
+- **Full prices:** with grid fees, taxes and VAT.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km a year, about 55 km a day. Sweden, Vattenfall Eldistribution Tidstariff (SE3): 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="Sweden, Vattenfall Eldistribution Tidstariff (SE3): 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board.">
 </picture>
 
-That's 20% less, 1,223 SEK saved a year, as the board finds the cheap quarter-hours wherever they fall each night.
+The board saved 1,223 SEK, or 20%, by charging in each night's cheapest quarter-hours, wherever they fall.
 
 ### Every country
 
-Open your country for what charging cost a year on each grid plan, on the car's own night schedule and with this board. Confidence says how many homes there pay such prices.
+Open your country to see what charging cost a year on each grid plan, with the car's own schedule and with this board.
 
 <table>
 <tr><td>🟢 <b>Worth it</b></td><td>A plan saves 15% or more, with high or medium confidence</td></tr>
@@ -534,21 +534,20 @@ High confidence: homes pay their grid operator's price, which at EKZ, the larges
 
 </details>
 
-AI agents researched each country in October 2026: its notes give every figure's source, what the example settled and what's still open, like [Lithuania's](plans/lt/AGENTS.md). Something wrong or out of date? [Open an issue](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/new/choose).
+AI agents researched each country in October 2026, with every figure's source in its notes, like [Lithuania's](plans/lt/AGENTS.md). Something wrong or out of date? [Open an issue](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/new/choose).
 
 <details>
 <summary>How it's calculated</summary>
 <p></p>
 
-- **The nights:** 365, from 1 October 2025 to 30 September 2026, in local time. 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into the battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery.
-- **The market prices:** each quarter-hour's, from the day-ahead auction, where a country has several areas, each plan's, named after it, and Italy's north. As Nord Pool keeps only its last two months free to download, they come from others that publish the same, to the cent where checked: Elering, Estonia's grid operator, for the Baltics and Finland, elprisetjustnu.se for Sweden, Energy-Charts for Norway and Romania and SMARD, Germany's Federal Network Agency, for the rest; for Spain and Portugal from OMIE, the Iberian market, as the board downloads them. Other currencies are at the ECB's daily rate, within half a percent of Nord Pool's own. Where bills count hours, as many still do, each hour costs the average of its four quarter-hours.
-- **The grid fees:** every plan the board has in the countries where homes pay the market price, at their 2026 prices all year, like [Vattenfall Eldistribution Tidstariff](plans/se/vattenfall-tidstariff.yaml) in the chart. Where a country has several market areas, a plan takes the one most of its company's homes are in, named after it. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
-- **The rest of each kWh:** VAT, a typical dynamic contract's margin, and what's the same every hour: taxes, levies and, where suppliers bill them, grid losses, at their 2026 rates. Monthly fees are left out, as they don't depend on when the car charges, and so are fees per kW, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
-- **Regulated and fixed prices:** where homes can't have a dynamic contract, or it costs more than their usual price, the usual price, with its network fees and levies: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, in Hungary A2, for an electric car's own meter, and in Ireland Night Boost, a plan for electric cars with a cheap night.
-- **The car's own schedule:** from when the plan's cheapest fee of the night starts on a workday, in the month it starts latest, like 22:00 for Vattenfall's Tidstariff in the chart, or from midnight where the fee is the same all night.
-- **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
-- **The research:** AI agents gathered each country's figures, one per country, from regulators', statistics offices' and suppliers' own pages, each with its source. Scripts then checked that no source or figure was lost when the notes were tidied, that each country's summary matches its row here, and that the market prices match Nord Pool's where both could be compared. Each country's notes list the sources to re-check every January.
-- **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices, prints what each plan cost, and last the list of countries above.
+- **The nights:** 365, in local time, from 1 October 2025, when the market prices went to quarter-hours. 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into the battery and 9.1 kWh from the grid, with 10% lost in charging.
+- **The market prices:** each quarter-hour's day-ahead price, northern Italy's for Italy, from Elering, elprisetjustnu.se, Energy-Charts, SMARD and OMIE, the same as Nord Pool's where checked. Other currencies are at the ECB's daily rate. Where bills count hours, each hour costs the average of its quarter-hours.
+- **The grid fees:** every plan the board has where homes pay the market price, at 2026 prices, like [Vattenfall's Tidstariff](plans/se/vattenfall-tidstariff.yaml) in the chart, each in the market area most of its homes are in, shown in brackets. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
+- **The rest of each kWh:** VAT, a typical supplier's margin, taxes, levies and, where suppliers bill them, grid losses, at 2026 rates. Monthly fees are left out, and so are fees per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
+- **Regulated and fixed prices:** where homes usually pay those: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, Hungary's A2 for an electric car's own meter, and Ireland's Night Boost, a plan for electric cars with a cheap night.
+- **The car's own schedule:** starts when the plan's cheapest fee of the night does on a workday, in the month it starts latest, like 22:00 for Vattenfall's Tidstariff, or at midnight where the fee is the same all night.
+- **This board:** its own code picks each night's cheapest quarter-hours from the prices out at 18:00.
+- **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows: it downloads the prices and prints each plan's cost, then the list above.
 
 ```bash
 g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
