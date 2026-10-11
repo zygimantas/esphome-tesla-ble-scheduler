@@ -34,7 +34,7 @@ Every night from January to September 2026, a 75 kWh Tesla comes home at 18:00 w
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="January to September 2026. Germany, Westnetz Modul 3: 1,011 EUR charging at once, 583 EUR with the car's own schedule from 00:00 and 538 EUR with this board. Lithuania, ESO Standartinis with four zones: 648 EUR at once, 572 EUR from 22:00 and 383 EUR with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="A month on average, charging from 70% to 80% every night, January to September 2026. Germany, Westnetz Modul 3: 112 EUR charging at once, 65 EUR with the car's own schedule from 00:00 and 60 EUR with this board. Lithuania, ESO Standartinis with four zones: 72 EUR at once, 64 EUR from 22:00 and 43 EUR with this board.">
 </picture>
 
 That's 47% less than charging at once in Germany and 41% in Lithuania, and 8% and 33% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:45 in Germany and 04:00 in Lithuania, still costs 1% and 9% more.

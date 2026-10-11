@@ -195,8 +195,11 @@ void run(const Country &country, const PriceTable &prices, int64_t first_night, 
   const auto best = std::min_element(straight.begin(), straight.end(),
                                      [](const auto &a, const auto &b) { return a.second < b.second; });
   const double at_once = straight.at(PLUG_IN), cheap = straight.at(country.cheap_from);
-  const auto row = [energy](const std::string &label, double cost) {
-    std::printf("  %-42s %8.2f EUR  %.3f EUR/kWh\n", label.c_str(), cost, cost / energy);
+  const CivilDate first = civil_from_days(first_night), last = civil_from_days(last_night);
+  const auto months = static_cast<double>((last.year - first.year) * 12 + last.month - first.month + 1);
+  const auto row = [energy, months](const std::string &label, double cost) {
+    std::printf("  %-42s %8.2f EUR, %6.2f EUR a month  %.3f EUR/kWh\n", label.c_str(), cost, cost / months,
+                cost / energy);
   };
   std::printf("%s, %s, on %s's prices: %lld nights from %s to %s, %.0f kWh from the grid\n", country.name, country.plan,
               country.prices_from, static_cast<long long>(last_night - first_night + 1), date(first_night).c_str(),
