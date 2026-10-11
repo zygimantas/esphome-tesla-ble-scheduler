@@ -1386,8 +1386,8 @@ function bind() {
       setTimeout(reconnect, 3000);
     }
   });
-  // Restart setup, in Settings: the board forgets its settings, key, savings and Ready by, keeps its Wi-Fi, and
-  // restarts into the setup, which the page then shows. It waits for the board as for Restart board.
+  // Restart setup, in Settings: the board forgets its settings, key and Ready by, keeps its Wi-Fi and the savings,
+  // and restarts into the setup, which the page then shows. It waits for the board as for Restart board.
   press($("restart-setup"), async () => {
     const what =
       "Restart the setup? The board forgets its settings, its key and Ready by, and keeps its Wi-Fi and the savings.";

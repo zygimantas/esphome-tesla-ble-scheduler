@@ -385,8 +385,8 @@ void SchedulerComponent::press(Action action) {
   this->tick_soon_();
 }
 
-// Restart setup: forgets what the board keeps of its own, the settings, the savings, the buttons' hold, the pairing and
-// Ready by, makes a new key, which the car doesn't know, and restarts into the setup. ESPHome's Wi-Fi stays.
+// Restart setup: forgets what the board keeps of its own, the settings, the buttons' hold, the pairing and Ready by,
+// makes a new key, which the car doesn't know, and restarts into the setup. ESPHome's Wi-Fi and the savings stay.
 void SchedulerComponent::restart_setup_() {
   ESP_LOGW(TAG, "Restart setup");
   this->settings_pref_.save(std::make_unique<SavedSettings>().get());
