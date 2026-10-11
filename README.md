@@ -40,7 +40,7 @@ For one driver, the same in every country, from October 2025 to September 2026:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km a year, about 55 km a day. Sweden, Vattenfall Eldistribution Tidstariff (SE3): 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="Sweden, Vattenfall Eldistribution Tidstariff (SE3): 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board.">
 </picture>
 
 The board saved 1,223 SEK, or 20%, by charging in each night's cheapest quarter-hours, wherever they fall.
