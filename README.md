@@ -47,11 +47,9 @@ That's 20% less than the car's own schedule in Sweden, 32% in Lithuania and 23% 
 
 ### Every country
 
-Where homes pay the market price, charging with the board cost 4% to 36% less than charging scheduled for the night, by the country and the grid plan. Much of that comes from charging later in the night, which a schedule can do too: set to the start time that turned out cheapest over the year, it came within 2% of the board on nearly half the plans, though no one knows that time in advance. Where homes pay regulated or fixed prices, a night schedule does as well as the board. In many countries few homes pay the market price yet, as each country's confidence says. These are shares of what charging costs, not of the whole bill.
+Open your country for what charging cost a year on each grid plan, on the car's own night schedule and with this board. Confidence says how many homes there pay such prices.
 
-Open your country for what charging cost a year on each of its grid plans, or on its regulated or fixed price, on the car's own schedule and with this board. Confidence says how many homes there pay the prices the example takes: high where many do, medium where a few percent do or most chose another price, low where hardly any do or the bill follows other prices.
-
-- 🟢 **Worth it:** a plan saves 15% or more against a night schedule, with high or medium confidence.
+- 🟢 **Worth it:** a plan saves 15% or more, with high or medium confidence.
 - 🟡 **Maybe:** less than that, or low confidence.
 - ⚪ **Nothing:** homes pay regulated or fixed prices, where a night schedule does as well.
 
