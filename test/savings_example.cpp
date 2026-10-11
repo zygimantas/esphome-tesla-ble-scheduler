@@ -1,9 +1,9 @@
-// The README's What it saves: what charging cost every night of a year, from 1 October 2025, when the market prices
-// went to quarter-hours, to 30 September 2026, in Germany and in Lithuania, on the published market prices, with the
-// board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against
-// charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from the start
-// time that cost the least over those nights. Built like the unit tests (CONTRIBUTING.md's Checks) and run from the
-// repository root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
+// The README's Example of yearly savings: what charging cost every night of a year, from 1 October 2025, when the
+// market prices went to quarter-hours, to 30 September 2026, in Germany and in Lithuania, on the published market
+// prices, with the board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all year,
+// against charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from the
+// start time that cost the least over those nights. Built like the unit tests (CONTRIBUTING.md's Checks) and run from
+// the repository root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
 //   g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
 //   test/savings_example
 #include "scheduler/market.h"
