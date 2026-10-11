@@ -648,7 +648,8 @@ int main() try {
            std::make_pair(percent_less(b.board, b.schedule), percent_less(b.board, b.at_once));
   });
   std::printf(
-      "| Country | Cheaper than charging at once | Cheaper than the car's own schedule | Cheaper than the best fixed start "
+      "| Country | Cheaper than charging at once | Cheaper than the car's own schedule | Cheaper than the best fixed "
+      "start "
       "|\n| --- | --- | --- | --- |\n");
   for (const Result &r : results)
     std::printf("| %s | %ld%% | %ld%% | %ld%% |\n", r.country->name, percent_less(r.board, r.at_once),
