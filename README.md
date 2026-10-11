@@ -538,6 +538,7 @@ AI agents researched each country in October 2026: its notes give every figure's
 
 <details>
 <summary>How it's calculated</summary>
+<p></p>
 
 - **The nights:** 365, from 1 October 2025 to 30 September 2026, in local time. 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into the battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery.
 - **The market prices:** each quarter-hour's, from the day-ahead auction, where a country has several areas, each plan's, named after it, and Italy's north. As Nord Pool keeps only its last two months free to download, they come from others that publish the same, to the cent where checked: Elering, Estonia's grid operator, for the Baltics and Finland, elprisetjustnu.se for Sweden, Energy-Charts for Norway and Romania and SMARD, Germany's Federal Network Agency, for the rest; for Spain and Portugal from OMIE, the Iberian market, as the board downloads them. Other currencies are at the ECB's daily rate, within half a percent of Nord Pool's own. Where bills count hours, as many still do, each hour costs the average of its four quarter-hours.
@@ -593,6 +594,7 @@ From then on, just plug in: the car is charged by **Ready by**. The [user guide]
 
 <details>
 <summary><b>Can I still charge right away?</b></summary>
+<p></p>
 
 Yes. **Start charging now** on the board's page charges to the limit at any price, and charging you start from the car or the Tesla app goes ahead: the board leaves it alone until you unplug.
 
@@ -600,6 +602,7 @@ Yes. **Start charging now** on the board's page charges to the limit at any pric
 
 <details>
 <summary><b>What if the board or the prices are missing?</b></summary>
+<p></p>
 
 The car charges as usual. Without prices or a battery level, the board lets the car charge at any price, and tells your phone if messages are on. With the board unplugged, the car is on its own.
 
@@ -607,6 +610,7 @@ The car charges as usual. Without prices or a battery level, the board lets the 
 
 <details>
 <summary><b>What can the board's key do?</b></summary>
+<p></p>
 
 Only charging. The board adds its own key, like a phone key, with Tesla's Charging Manager role: it can start and stop charging and set the charge limit, but it can't unlock the doors or drive. You can remove it in the car under **Controls** → **Locks**.
 
@@ -614,6 +618,7 @@ Only charging. The board adds its own key, like a phone key, with Tesla's Chargi
 
 <details>
 <summary><b>What leaves my home?</b></summary>
+<p></p>
 
 No account, and nothing goes through Tesla's servers. The board downloads market prices, grid plans and, when you open its page, news of a release. Only phone messages go out, if you turn them on: the schedule, through the ntfy app's server, under a long random topic. The page has no password: anyone on your Wi-Fi can open it.
 
