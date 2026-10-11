@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" width="720" height="520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 782" width="720" height="782" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
   <text x="0" y="16" font-size="15" font-weight="400" fill="#9198a1">October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night</text>
   <text x="0" y="55" font-size="17" font-weight="600" fill="#f0f6fc">Germany, Westnetz Modul 3</text>
   <text x="0" y="88" font-size="15" font-weight="400" fill="#9198a1">Charging at once, as a Tesla does when you plug in</text>
@@ -20,4 +20,14 @@
   <text x="0" y="482" font-size="15" font-weight="600" fill="#f0f6fc">This board</text>
   <rect x="0" y="492" width="187.2" height="26" rx="5" fill="#009ac7"/>
   <text x="199.2" y="511" font-size="17" font-weight="600" fill="#009ac7">536 EUR</text>
+  <text x="0" y="579" font-size="17" font-weight="600" fill="#f0f6fc">Poland, Tauron G12, in złoty</text>
+  <text x="0" y="612" font-size="15" font-weight="400" fill="#9198a1">Charging at once</text>
+  <rect x="0" y="622" width="363.9" height="26" rx="5" fill="#3d444d"/>
+  <text x="375.9" y="641" font-size="17" font-weight="500" fill="#f0f6fc">4,440 PLN</text>
+  <text x="0" y="678" font-size="15" font-weight="400" fill="#9198a1">The car's own schedule, from 23:00, in the night fee all year</text>
+  <rect x="0" y="688" width="238.0" height="26" rx="5" fill="#3d444d"/>
+  <text x="250.0" y="707" font-size="17" font-weight="500" fill="#f0f6fc">2,905 PLN</text>
+  <text x="0" y="744" font-size="15" font-weight="600" fill="#f0f6fc">This board</text>
+  <rect x="0" y="754" width="209.3" height="26" rx="5" fill="#009ac7"/>
+  <text x="221.3" y="773" font-size="17" font-weight="600" fill="#009ac7">2,554 PLN</text>
 </svg>
