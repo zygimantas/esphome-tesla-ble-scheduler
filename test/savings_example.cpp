@@ -930,7 +930,8 @@ int main() try {
     for (const Result *r : mine)
       most = std::max(most, percent_less(r->board, r->schedule));
     const char *icon = most <= 0 ? "⚪" : most >= 15 && level != "Low" ? "🟢" : "🟡";
-    std::printf("<details>\n<summary>%s <b>%s</b></summary>\n\n", icon, country.name);
+    // The empty paragraph leaves as much room above the table as below it.
+    std::printf("<details>\n<summary>%s <b>%s</b></summary>\n<p></p>\n\n", icon, country.name);
     std::printf(
         "| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |\n"
         "| --- | ---: | ---: | ---: | ---: |\n");
