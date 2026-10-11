@@ -46,7 +46,7 @@ On an exchange-price plan, the board's charging cost 535.54 EUR over the year fr
 
 ## Notes
 
-- **To fix:** ESO's 2026 price rules (point 3.2) list the holidays with weekend zones without Easter Monday or 2 November, which the four-zone plans have as holidays.
+- **ESO's holidays aren't the law's:** its price rules list the holidays with weekend zones themselves (point 3.2 of the [2026 rules](https://www.eso.lt/storage/public/uploads/2025/11/elektros-energijos-persiuntimo-paslaugos-kainos-ir-ju-taikymo-tvarka-2026-metams.docx)): 1 January, 16 February, 11 March, 1 May, 24 June, 6 July, 15 August, 1 November and 24 to 26 December, kept even if the law changes. Easter Monday and 2 November, public holidays by law, are workdays there, and the four-zone plans follow ESO's list since October 2026.
 - **Dynamic in name:** the Rules on Electricity Supply and Use, point 47(1) in a 2024 consolidated text, bar calling a contract dynamic where the home has no smart meter and pays a monthly weighted average. VERT's counts still mix the two, so say "each quarter-hour's price" rather than "dynamic".
 
 ## References
@@ -54,6 +54,7 @@ On an exchange-price plan, the board's charging cost 535.54 EUR over the year fr
 | Source | What it gives | Changes |
 | --- | --- | --- |
 | [ESO's plans and prices for 2026](https://www.eso.lt/namams/elektra/tarifu-planai-kainos-atsiskaitymas/tarifu-planai-ir-kainos-2026-metais/4801) | the plans' fees and hours, the household extra component | each 1 January |
+| [ESO's price rules for 2026](https://www.eso.lt/storage/public/uploads/2025/11/elektros-energijos-persiuntimo-paslaugos-kainos-ir-ju-taikymo-tvarka-2026-metams.docx) | the zones' hours and ESO's holidays (point 3.2) | each 1 January |
 | [VERT's comparison of offers](https://skaiciuokle.vert.lt/) | the suppliers' margins and monthly fees | any time |
 | [VERT's monthly retail market review](https://www.vert.lt/elektra/SiteAssets/2026-04/Tiekimo%20rinka_apzvalga_kovas_2026.pdf) | supply points by supplier, the public and guaranteed suppliers' included | each month |
 | [VERT's annual report to the European Commission](https://www.ceer.eu/wp-content/uploads/2026/09/NERC-Annual-Report-2025-EN.pdf) | the count of dynamic and exchange-linked contracts | each year, around September |

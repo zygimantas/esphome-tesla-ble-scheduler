@@ -1,6 +1,6 @@
 # Swiss plans
 
-The network fees for homes of nine of Switzerland's largest grid operators, with prices with VAT, in francs. About 550 operators set their own; these nine serve over 40% of the people. Your bill or [ElCom's price comparison](https://www.strompreis.elcom.admin.ch) names yours.
+The network fees for homes of nine of Switzerland's largest grid operators, with prices with VAT, in francs. About 580 operators set their own; these nine serve over 40% of the people. Your bill or [ElCom's price comparison](https://www.strompreis.elcom.admin.ch) names yours.
 
 Choose yours under **Grid plan** on the board's page. The board gets Swiss market prices from SMARD in euros and converts them into francs at the ECB's daily rate.
 

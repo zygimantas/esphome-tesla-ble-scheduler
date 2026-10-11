@@ -58,7 +58,7 @@ On the regulated price, ZSE's DD3 without the state's aid, the board's charging 
 
 ## Notes
 
-- **To fix:** plans/README.md says no plan can hold Slovakia's low-tariff hours, but DD3's NT hours are at fixed times (The low-tariff hours, above), so a custom plan can hold a home's, as the example's does.
+- **Custom plans:** DD3's NT hours are at fixed times for each address (The low-tariff hours, above), so a custom plan can hold a home's, as the example's does, and plans/README.md says so since October 2026; SSD may change D4 to D8's at any time.
 - **HDO on winter time:** some HDO devices stay on winter time all year, which puts their hours an hour later on the clock in summer. ZSD's page lists the codes 101, 102, 103, 111, 149, 150, 151, 159 and 162, and asks for the device type.
 - **D9 in name:** Magna Energia lists DD9 ([ÚRSO decision 0010/2026/E](https://data.urso.gov.sk/CISRES/Agenda.nsf/0/0FD21461BB257CDDC1258D2B003434AB/$FILE/0010_2026_E_MAGNA_ENERGIA_Piestany.pdf)), but the D9 product on its [price page](https://www.magna-energia.sk/domacnosti/ceny-elektriny-a-plynu-na-rok-2026/) is four fixed daily bands.
 

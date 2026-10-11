@@ -31,7 +31,7 @@ The board starts with the plan from the release you installed, and downloads the
 | Poland | `PL` | `PLN` | [The five big operators' plans](pl). |
 | Portugal | `PT` | `EUR` | Prices from OMIE. [The plans](pt), on the mainland. |
 | Romania | `RO` | `RON` | [The four distribution operators' plans](ro). |
-| Slovakia | `SK` | `EUR` | Prices from OKTE. No plans: a two-rate tariff's low-tariff hours are switched by the grid operator, which no plan can hold. |
+| Slovakia | `SK` | `EUR` | Prices from OKTE. No plans: a two-rate price's low-tariff hours are set for each address: [write a custom plan](#custom-plan) with yours. |
 | Slovenia | `SI` | `EUR` | Prices from SMARD. [The network charge](si), without its charge per kW ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
 | Spain | `ES` | `EUR` | Prices from OMIE. [The 2.0TD tolls and charges](es). |
 | Sweden | `SE1` to `SE4` | `SEK` | [The big network companies' plans](se). Power fees at some aren't counted ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)). |
