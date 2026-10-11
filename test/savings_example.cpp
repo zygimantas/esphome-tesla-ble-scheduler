@@ -1,5 +1,5 @@
 // The README's Example of yearly savings: what charging cost every night of a year, from 1 October 2025, when the
-// market prices went to quarter-hours, to 30 September 2026, in Spain, Lithuania and Sweden, on the published
+// market prices went to quarter-hours, to 30 September 2026, in Sweden, Lithuania and Spain, on the published
 // market prices, with the board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all
 // year, against charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from
 // the start time that cost the least over those nights; Sweden's in kronor, as its board counts, and in euros at the
@@ -321,26 +321,26 @@ void run(const Country &country, const PriceTable &prices, const Rates &rates, i
 
 int main() try {
   const int64_t first_night = days_from_civil(2025, 10, 1), last_night = days_from_civil(2026, 9, 30);
-  // Spain in 2026, with 21% VAT and the electricity tax, 5.11269632% of the rest (Ley 38/1992, art. 99). The plan has
-  // the tolls and charges of 2.0TD, whose valley period starts at 00:00.
-  const Country spain{"Spain", "es/2-0td", "OMIE",        "EUR",   0.21f,
-                      0.0f,    0.0f,       1.0511269632f, 24 * 60, CET_STANDARD_OFFSET};
-  // Lithuania in 2026, with 21% VAT: an exchange-price contract's margin of 2.5 ct, about the middle of the three
-  // suppliers' (VERT's comparison, skaiciuokle.vert.lt), and per kWh VIAP, -0.044 ct, and the household extra
-  // component, 0.0223 ct (VERT), with no excise on households. ESO's night fee starts at 22:00.
-  const Country lithuania{"Lithuania", "lt/eso-standartinis-4-zones", "Elering", "EUR", 0.21f, 0.025f, -0.00026f, 1.0f,
-                          22 * 60,     VILNIUS_STANDARD_OFFSET};
-  run(spain, spanish_prices(first_night, last_night + 1), {}, first_night, last_night);
-  run(lithuania, lithuanian_prices(first_night, last_night + 1), {}, first_night, last_night);
   // Sweden in 2026, with 25% VAT: a quarter-hour contract's margin of 9.6 öre, about the middle of the big suppliers'
   // with their variable costs (Ei's Elpriskollen), and the energy tax, 36 öre per kWh (Skatteverket), the only charge
   // per kWh that's the same every hour. Vattenfall Eldistribution's Tidstariff costs more on winter weekdays from 06:00
   // to 22:00, so its low fee starts at 22:00.
   const Country sweden{"Sweden", "se/vattenfall-tidstariff", "elprisetjustnu.se", "SEK", 0.25f, 0.12f, 0.45f, 1.0f,
                        22 * 60,  CET_STANDARD_OFFSET};
+  // Lithuania in 2026, with 21% VAT: an exchange-price contract's margin of 2.5 ct, about the middle of the three
+  // suppliers' (VERT's comparison, skaiciuokle.vert.lt), and per kWh VIAP, -0.044 ct, and the household extra
+  // component, 0.0223 ct (VERT), with no excise on households. ESO's night fee starts at 22:00.
+  const Country lithuania{"Lithuania", "lt/eso-standartinis-4-zones", "Elering", "EUR", 0.21f, 0.025f, -0.00026f, 1.0f,
+                          22 * 60,     VILNIUS_STANDARD_OFFSET};
+  // Spain in 2026, with 21% VAT and the electricity tax, 5.11269632% of the rest (Ley 38/1992, art. 99). The plan has
+  // the tolls and charges of 2.0TD, whose valley period starts at 00:00.
+  const Country spain{"Spain", "es/2-0td", "OMIE",        "EUR",   0.21f,
+                      0.0f,    0.0f,       1.0511269632f, 24 * 60, CET_STANDARD_OFFSET};
   const Rates kronor = ecb_rates("SEK", first_night, last_night + 1);
   run(sweden, in_currency(swedish_prices(first_night, last_night + 1), kronor, first_night, last_night + 1), kronor,
       first_night, last_night);
+  run(lithuania, lithuanian_prices(first_night, last_night + 1), {}, first_night, last_night);
+  run(spain, spanish_prices(first_night, last_night + 1), {}, first_night, last_night);
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());

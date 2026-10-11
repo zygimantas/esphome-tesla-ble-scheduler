@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 488" width="720" height="488" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
   <text x="0" y="16" font-size="15" fill="#59636e">October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night</text>
-  <text x="0" y="60" font-size="17" font-weight="600" fill="#1f2328">Spain, 2.0TD</text>
+  <text x="0" y="60" font-size="17" font-weight="600" fill="#1f2328">Sweden, Vattenfall Tidstariff (SE3), in kronor</text>
   <text x="0" y="96" font-size="15" font-weight="400" fill="#59636e">Charging at once</text>
-  <rect x="200" y="80" width="227.1" height="22" rx="4" fill="#d1d9e0"/>
-  <text x="437.1" y="97" font-size="16" font-weight="500" fill="#1f2328">568 EUR</text>
-  <text x="0" y="130" font-size="15" font-weight="400" fill="#59636e">Car's schedule from 00:00</text>
-  <rect x="200" y="114" width="174.4" height="22" rx="4" fill="#d1d9e0"/>
-  <text x="384.4" y="131" font-size="16" font-weight="500" fill="#1f2328">436 EUR</text>
+  <rect x="200" y="80" width="276.6" height="22" rx="4" fill="#d1d9e0"/>
+  <text x="486.6" y="97" font-size="16" font-weight="500" fill="#1f2328">7,543 SEK</text>
+  <text x="0" y="130" font-size="15" font-weight="400" fill="#59636e">Car's schedule from 22:00</text>
+  <rect x="200" y="114" width="227.1" height="22" rx="4" fill="#d1d9e0"/>
+  <text x="437.1" y="131" font-size="16" font-weight="500" fill="#1f2328">6,197 SEK</text>
   <text x="0" y="164" font-size="15" font-weight="600" fill="#1f2328">This board</text>
-  <rect x="200" y="148" width="121.9" height="22" rx="4" fill="#009ac7"/>
-  <text x="331.9" y="165" font-size="16" font-weight="700" fill="#009ac7">305 EUR</text>
+  <rect x="200" y="148" width="182.5" height="22" rx="4" fill="#009ac7"/>
+  <text x="392.5" y="165" font-size="16" font-weight="700" fill="#009ac7">4,974 SEK</text>
   <text x="0" y="214" font-size="17" font-weight="600" fill="#1f2328">Lithuania, ESO Standartinis with four zones</text>
   <text x="0" y="250" font-size="15" font-weight="400" fill="#59636e">Charging at once</text>
   <rect x="200" y="234" width="400.0" height="22" rx="4" fill="#d1d9e0"/>
@@ -20,14 +20,14 @@
   <text x="0" y="318" font-size="15" font-weight="600" fill="#1f2328">This board</text>
   <rect x="200" y="302" width="214.1" height="22" rx="4" fill="#009ac7"/>
   <text x="424.1" y="319" font-size="16" font-weight="700" fill="#009ac7">536 EUR</text>
-  <text x="0" y="368" font-size="17" font-weight="600" fill="#1f2328">Sweden, Vattenfall Tidstariff (SE3), in kronor</text>
+  <text x="0" y="368" font-size="17" font-weight="600" fill="#1f2328">Spain, 2.0TD</text>
   <text x="0" y="404" font-size="15" font-weight="400" fill="#59636e">Charging at once</text>
-  <rect x="200" y="388" width="276.6" height="22" rx="4" fill="#d1d9e0"/>
-  <text x="486.6" y="405" font-size="16" font-weight="500" fill="#1f2328">7,543 SEK</text>
-  <text x="0" y="438" font-size="15" font-weight="400" fill="#59636e">Car's schedule from 22:00</text>
-  <rect x="200" y="422" width="227.1" height="22" rx="4" fill="#d1d9e0"/>
-  <text x="437.1" y="439" font-size="16" font-weight="500" fill="#1f2328">6,197 SEK</text>
+  <rect x="200" y="388" width="227.1" height="22" rx="4" fill="#d1d9e0"/>
+  <text x="437.1" y="405" font-size="16" font-weight="500" fill="#1f2328">568 EUR</text>
+  <text x="0" y="438" font-size="15" font-weight="400" fill="#59636e">Car's schedule from 00:00</text>
+  <rect x="200" y="422" width="174.4" height="22" rx="4" fill="#d1d9e0"/>
+  <text x="384.4" y="439" font-size="16" font-weight="500" fill="#1f2328">436 EUR</text>
   <text x="0" y="472" font-size="15" font-weight="600" fill="#1f2328">This board</text>
-  <rect x="200" y="456" width="182.5" height="22" rx="4" fill="#009ac7"/>
-  <text x="392.5" y="473" font-size="16" font-weight="700" fill="#009ac7">4,974 SEK</text>
+  <rect x="200" y="456" width="121.9" height="22" rx="4" fill="#009ac7"/>
+  <text x="331.9" y="473" font-size="16" font-weight="700" fill="#009ac7">305 EUR</text>
 </svg>
