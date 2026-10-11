@@ -925,7 +925,12 @@ int main() try {
         mine.push_back(&r);
     const std::string level = std::string(country.confidence).substr(0, std::string(country.confidence).find(':'));
     const std::string reason = std::string(country.confidence).substr(level.size() + 1);
-    std::printf("<details>\n<summary><b>%s</b></summary>\n\n", country.name);
+    // Worth it where a plan saves 15% or more and many homes pay the market price, nothing where none saves anything.
+    long most = 0;
+    for (const Result *r : mine)
+      most = std::max(most, percent_less(r->board, r->schedule));
+    const char *icon = most <= 0 ? "⚪" : most >= 15 && level != "Low" ? "🟢" : "🟡";
+    std::printf("<details>\n<summary>%s <b>%s</b></summary>\n\n", icon, country.name);
     std::printf(
         "| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |\n"
         "| --- | ---: | ---: | ---: | ---: |\n");
