@@ -56,7 +56,6 @@ struct Decision {
                                              // with the car short of its limit
   std::string savings;                       // format_savings() once the key is paired and the clock set, else empty
   bool save_savings = false;                 // Controller::savings changed: time to write it to flash
-  bool unlock_port = false;                  // the car just finished charging, and the settings ask to unlock its port
 };
 
 class Controller {
@@ -171,7 +170,6 @@ class Controller {
       d.mode = "unplugged";
       return d;
     }
-    d.unlock_port = finished_ && settings.unlock_when_charged;
 
     bool want_charge = true;  // as usual, without a schedule
     bool fallback = false;    // at any price, for lack of prices or a battery level
@@ -239,7 +237,6 @@ class Controller {
   // Returns whether the car charges.
   bool observe_(const CarState &car, int64_t now) {
     const bool battery_was_known = battery_known_(), was_charged = charged_();
-    finished_ = false;
     if (!std::isnan(car.soc))
       soc_ = car.soc;
     if (!std::isnan(car.limit)) {
@@ -250,7 +247,7 @@ class Controller {
       limit_ = car.limit;
     }
 
-    // The car's stay after this report, and what changed: a plug-in, an unplug, a start or the end of a charge.
+    // The car's stay after this report, and what changed: a plug-in, an unplug or a start.
     const Stay was = stay_, next = stay_after_(car);
     if ((next >= Stay::PLUGGED_IN) != (was >= Stay::PLUGGED_IN)) {
       reschedule_ = true;
@@ -281,7 +278,6 @@ class Controller {
         hold_ = Hold::NOW;                       // leave it alone until unplugged
       }
     }
-    finished_ = was == Stay::CHARGING && next == Stay::CHARGED;
     // A battery level at last, or a car charged or no longer, schedules from another battery level.
     if (battery_known_() != battery_was_known || charged_() != was_charged)
       reschedule_ = true;
@@ -446,7 +442,6 @@ class Controller {
   float soc_ = NAN;
   float limit_ = NAN;
   Stay stay_ = Stay::UNKNOWN;
-  bool finished_ = false;  // this tick, the car went from charging to charged: it reached its limit
   Hold hold_ = Hold::SCHEDULE;
   bool reschedule_ = true;
   bool notify_pending_ = false;

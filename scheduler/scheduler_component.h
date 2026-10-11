@@ -22,9 +22,6 @@
 #ifdef USE_ESP32
 #include "esphome/core/static_task.h"
 #endif
-#ifdef USE_LOCK
-#include "esphome/components/lock/lock.h"
-#endif
 #ifdef USE_WEBSERVER
 #include "esphome/components/web_server_base/web_server_base.h"
 #endif
@@ -226,9 +223,6 @@ class SchedulerComponent : public PollingComponent {
   button::Button *wake_{nullptr};
   number::Number *limit_{nullptr};
   cover::Cover *port_{nullptr};
-#ifdef USE_LOCK
-  lock::Lock *port_latch_{nullptr};  // the Tesla's Charge Port Latch, which unlocks the cable
-#endif
   bool port_reported_{false};  // the cover reads open until the car reports it
   float last_limit_{NAN};
 

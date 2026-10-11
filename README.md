@@ -91,7 +91,7 @@ The car charges as usual. Without prices or a battery level, the board lets the 
 <details>
 <summary><b>What can the board's key do?</b></summary>
 
-Only charging. The board adds its own key, like a phone key, with Tesla's Charging Manager role: it can start and stop charging, set the charge limit and open the charge port, but it can't unlock the doors or drive. You can remove it in the car under **Controls** → **Locks**.
+Only charging. The board adds its own key, like a phone key, with Tesla's Charging Manager role: it can start and stop charging and set the charge limit, but it can't unlock the doors or drive. You can remove it in the car under **Controls** → **Locks**.
 
 </details>
 

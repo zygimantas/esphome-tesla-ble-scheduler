@@ -44,6 +44,8 @@ It charges the owner's car every night.
 
 Parked for later, as issues #12, #25 and #76: a per-start penalty, so the scheduler splits charging only when the saving beats a pause (about 2 ct), a phone message at plug-in when a later Ready by is much cheaper (the threshold is undecided), and charging from the solar surplus, which pays only where the car is home in daylight and grid power costs far more than an exported kWh earns, not with a morning Ready by and night charging, nor where a home stores its surplus in the grid for a fee, as in Lithuania; on sunny days the market price drops at midday anyway, which an evening Ready by catches.
 
+Blocked on Tesla, as issue #275: releasing the charge cable once the car is charged, which a car refuses from the board's Charging Manager key (scheduler/AGENTS.md); teslamotors/vehicle-command#413 asks Tesla to allow it.
+
 ## The owner's Mac
 
 - zsh doesn't split `$flags` into words: use `${=flags}` or an array. It also reads `$sha:r` as a modifier, so write `${sha}:refs/heads/main`.
