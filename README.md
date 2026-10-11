@@ -40,19 +40,21 @@ Worked out on the market prices of every night from October 2025, when they went
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km a year, about 55 km a day. Sweden, Vattenfall Tidstariff (SE3), in kronor: 7,543 SEK charging at once, 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board. Lithuania, ESO Standartinis with four zones: 1,001 EUR at once, 786 EUR from 22:00 and 536 EUR with this board. Spain, 2.0TD: 744 EUR at once, 616 EUR from 00:00 and 476 EUR with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km a year, about 55 km a day. Sweden, Vattenfall Eldistribution Tidstariff (SE3): 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board.">
 </picture>
 
-That's 20% less than the car's own schedule in Sweden, 32% in Lithuania and 23% in Spain, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the board still costs 5%, 8% and 12% less than the best one, which shows only afterwards, from 03:30 in Sweden, 03:45 in Lithuania and 04:00 in Spain. A driver whose car charges as soon as it's plugged in would save more: 34%, 46% and 36%.
+That's 20% less, 1,223 SEK saved a year, as the board finds the cheap quarter-hours wherever they fall each night.
 
 ### Every country
 
-Where homes pay the market price, charging with the board cost 4% to 36% less than charging scheduled for the night, by the country and the grid plan. Much of that comes from charging later in the night, which a schedule can do too: set to the start time that turned out cheapest over the year, it came within 2% of the board on nearly half the plans, though no one knows that time in advance. Where homes pay regulated or fixed prices, a night schedule does as well as the board. In many countries few homes pay the market price yet, as each country's confidence says. These are shares of what charging costs, not of the whole bill.
+Open your country for what charging cost a year on each grid plan, on the car's own night schedule and with this board. Confidence says how many homes there pay such prices.
 
-Open your country for what charging cost a year on each of its grid plans, or on its regulated or fixed price, on the car's own schedule and with this board. Confidence says how many homes there pay the prices the example takes: high where many do, medium where a few percent do or most chose another price, low where hardly any do or the bill follows other prices.
+- 🟢 **Worth it:** a plan saves 15% or more, with high or medium confidence.
+- 🟡 **Maybe:** less than that, or low confidence.
+- ⚪ **Nothing:** homes pay regulated or fixed prices, where a night schedule does as well.
 
 <details>
-<summary><b>Austria</b>: up to 48 EUR a year, 5% to 6% less, low confidence</summary>
+<summary>🟡 <b>Austria</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -75,7 +77,7 @@ Low confidence: about 1% of homes paid the market price in 2025. [The research](
 </details>
 
 <details>
-<summary><b>Belgium</b>: up to 126 EUR a year, 4% to 13% less, low confidence</summary>
+<summary>🟡 <b>Belgium</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -101,7 +103,7 @@ Low confidence: 0.4% of homes pay the market price, and Flanders' fee per kW isn
 </details>
 
 <details>
-<summary><b>Bulgaria</b>: nothing saved, high confidence</summary>
+<summary>⚪ <b>Bulgaria</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -112,7 +114,7 @@ High confidence: nearly every home pays a regulated price, cheaper at night. [Th
 </details>
 
 <details>
-<summary><b>Croatia</b>: nothing saved, high confidence</summary>
+<summary>⚪ <b>Croatia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -123,7 +125,7 @@ High confidence: no home pays the market price, and the regulated one is cheaper
 </details>
 
 <details>
-<summary><b>Czechia</b>: up to 5,578 CZK a year, 5% to 30% less, low confidence</summary>
+<summary>🟡 <b>Czechia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -143,7 +145,7 @@ Low confidence: few homes pay the market price. [The research](plans/cz/AGENTS.m
 </details>
 
 <details>
-<summary><b>Denmark</b>: up to 409 DKK a year, 9% less, high confidence</summary>
+<summary>🟡 <b>Denmark</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -161,7 +163,7 @@ High confidence: most homes pay the market price. [The research](plans/dk/AGENTS
 </details>
 
 <details>
-<summary><b>Estonia</b>: up to 213 EUR a year, 12% to 36% less, high confidence</summary>
+<summary>🟢 <b>Estonia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -175,7 +177,7 @@ High confidence: exchange-price packages are common. [The research](plans/ee/AGE
 </details>
 
 <details>
-<summary><b>Finland</b>: up to 100 EUR a year, 6% to 25% less, high confidence</summary>
+<summary>🟢 <b>Finland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -208,7 +210,7 @@ High confidence: a third of homes pay the market price. [The research](plans/fi/
 </details>
 
 <details>
-<summary><b>France</b>: 171 EUR a year, 23% less, low confidence</summary>
+<summary>🟡 <b>France</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -219,7 +221,7 @@ Low confidence: two small suppliers bill the market price, and off-peak hours di
 </details>
 
 <details>
-<summary><b>Germany</b>: up to 247 EUR a year, 5% to 23% less, low confidence</summary>
+<summary>🟡 <b>Germany</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -268,7 +270,7 @@ Low confidence: dynamic contracts and Modul 3 need a smart meter, and 6% of mete
 </details>
 
 <details>
-<summary><b>Hungary</b>: nothing saved, medium confidence</summary>
+<summary>⚪ <b>Hungary</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -279,7 +281,7 @@ Medium confidence: homes pay regulated prices, and the car's own meter (A2) pays
 </details>
 
 <details>
-<summary><b>Ireland</b>: nothing saved, high confidence</summary>
+<summary>⚪ <b>Ireland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -290,7 +292,7 @@ High confidence: electric car owners usually take a fixed plan with a cheap nigh
 </details>
 
 <details>
-<summary><b>Italy</b>: 45 EUR a year, 5% less, medium confidence</summary>
+<summary>🟡 <b>Italy</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -301,7 +303,7 @@ Medium confidence: about 3% of homes pay the hourly price. [The research](plans/
 </details>
 
 <details>
-<summary><b>Latvia</b>: up to 142 EUR a year, 14% to 25% less, high confidence</summary>
+<summary>🟢 <b>Latvia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -313,7 +315,7 @@ High confidence: one home in six pays the market price. [The research](plans/lv/
 </details>
 
 <details>
-<summary><b>Lithuania</b>: up to 254 EUR a year, 17% to 34% less, medium confidence</summary>
+<summary>🟢 <b>Lithuania</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -331,7 +333,7 @@ Medium confidence: a few percent of homes pay each quarter-hour's price, most a 
 </details>
 
 <details>
-<summary><b>Luxembourg</b>: 49 EUR a year, 8% less, low confidence</summary>
+<summary>🟡 <b>Luxembourg</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -342,7 +344,7 @@ Low confidence: few homes pay the market price. [The research](plans/lu/AGENTS.m
 </details>
 
 <details>
-<summary><b>Netherlands</b>: 60 EUR a year, 7% less, high confidence</summary>
+<summary>🟡 <b>Netherlands</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -353,7 +355,7 @@ High confidence: 8% of homes pay the market price. [The research](plans/nl/AGENT
 </details>
 
 <details>
-<summary><b>Norway</b>: up to 276 NOK a year, 4% to 14% less, medium confidence</summary>
+<summary>🟡 <b>Norway</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -372,7 +374,7 @@ Medium confidence: most homes' power is at Norgespris, a fixed price, where the 
 </details>
 
 <details>
-<summary><b>Poland</b>: up to 480 PLN a year, 5% to 15% less, low confidence</summary>
+<summary>🟡 <b>Poland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -396,7 +398,7 @@ Low confidence: 0.03% of homes have a dynamic contract, and it bills another auc
 </details>
 
 <details>
-<summary><b>Portugal</b>: up to 139 EUR a year, 13% to 20% less, low confidence</summary>
+<summary>🟡 <b>Portugal</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -411,7 +413,7 @@ Low confidence: under 1% of homes pay the market price. [The research](plans/pt/
 </details>
 
 <details>
-<summary><b>Romania</b>: up to 806 RON a year, 14% to 15% less, low confidence</summary>
+<summary>🟡 <b>Romania</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -425,7 +427,7 @@ Low confidence: no home had a dynamic contract in 2025. [The research](plans/ro/
 </details>
 
 <details>
-<summary><b>Slovakia</b>: nothing saved, high confidence</summary>
+<summary>⚪ <b>Slovakia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -436,7 +438,7 @@ High confidence: nearly every home pays a regulated price, cheaper at night. [Th
 </details>
 
 <details>
-<summary><b>Slovenia</b>: 120 EUR a year, 17% less, low confidence</summary>
+<summary>🟡 <b>Slovenia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -447,7 +449,7 @@ Low confidence: 0.3% of homes pay the market price. [The research](plans/si/AGEN
 </details>
 
 <details>
-<summary><b>Spain</b>: 140 EUR a year, 23% less, high confidence</summary>
+<summary>🟢 <b>Spain</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -458,7 +460,7 @@ High confidence: over a quarter of homes pay each hour's price, most on the regu
 </details>
 
 <details>
-<summary><b>Sweden</b>: up to 1,716 SEK a year, 5% to 26% less, high confidence</summary>
+<summary>🟢 <b>Sweden</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -494,7 +496,7 @@ High confidence: one contract in seven pays each quarter-hour's or hour's price,
 </details>
 
 <details>
-<summary><b>Switzerland</b>: nothing saved, high confidence</summary>
+<summary>⚪ <b>Switzerland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -511,13 +513,12 @@ AI agents researched each country in October 2026: its notes give every figure's
 
 - **The nights:** 365, from 1 October 2025 to 30 September 2026, in local time. 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into the battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery.
 - **The market prices:** each quarter-hour's, from the day-ahead auction, where a country has several areas, each plan's, named after it, and Italy's north. As Nord Pool keeps only its last two months free to download, they come from others that publish the same, to the cent where checked: Elering, Estonia's grid operator, for the Baltics and Finland, elprisetjustnu.se for Sweden, Energy-Charts for Norway and Romania and SMARD, Germany's Federal Network Agency, for the rest; for Spain and Portugal from OMIE, the Iberian market, as the board downloads them. Other currencies are at the ECB's daily rate, within half a percent of Nord Pool's own. Where bills count hours, as many still do, each hour costs the average of its four quarter-hours.
-- **The grid fees:** every plan the board has in the countries where homes pay the market price, at their 2026 prices all year, like [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml) in the chart. Where a country has several market areas, a plan takes the one most of its company's homes are in, named after it. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
+- **The grid fees:** every plan the board has in the countries where homes pay the market price, at their 2026 prices all year, like [Vattenfall Eldistribution Tidstariff](plans/se/vattenfall-tidstariff.yaml) in the chart. Where a country has several market areas, a plan takes the one most of its company's homes are in, named after it. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
 - **The rest of each kWh:** VAT, a typical dynamic contract's margin, and what's the same every hour: taxes, levies and, where suppliers bill them, grid losses, at their 2026 rates. Monthly fees are left out, as they don't depend on when the car charges, and so are fees per kW, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
 - **Regulated and fixed prices:** where homes can't have a dynamic contract, or it costs more than their usual price, the usual price, with its network fees and levies: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, in Hungary A2, for an electric car's own meter, and in Ireland Night Boost, a plan for electric cars with a cheap night.
-- **The car's own schedule:** from when the plan's cheapest fee of the night starts on a workday, in the month it starts latest, like 22:00 for ESO's four zones, or from midnight where the fee is the same all night.
+- **The car's own schedule:** from when the plan's cheapest fee of the night starts on a workday, in the month it starts latest, like 22:00 for Vattenfall's Tidstariff in the chart, or from midnight where the fee is the same all night.
 - **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
 - **The research:** AI agents gathered each country's figures, one per country, from regulators', statistics offices' and suppliers' own pages, each with its source. Scripts then checked that no source or figure was lost when the notes were tidied, that each country's summary matches its row here, and that the market prices match Nord Pool's where both could be compared. Each country's notes list the sources to re-check every January.
-- **The chart:** Sweden's costs are in kronor, as its board counts them, and its bars as long as their euros at the ECB's daily rate, so the three compare.
 - **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices, prints what each plan cost, and last the list of countries above.
 
 ```bash
