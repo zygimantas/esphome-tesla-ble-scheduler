@@ -568,7 +568,7 @@ test/savings_example
 - An ESP32-S3-DevKitC-1 (N16R8) board, within Bluetooth range of the car and on your Wi-Fi.
 - A USB-C cable for your computer, and a USB-C phone charger near the car to power the board.
 - A home charger that charges whenever the car asks: no schedule, auto-lock or app approval (OCPP) of its own.
-- A price that follows the day-ahead market, often called spot or exchange price, in Austria, Belgium, Bulgaria, Croatia, Czechia, Denmark, Estonia, Finland, France, Germany, Hungary, Ireland, Italy (the north), Latvia, Lithuania, Luxembourg, the Netherlands, Norway, Poland, Portugal, Romania, Slovakia, Slovenia, Spain, Sweden or Switzerland. [Countries and plans](plans/README.md) has the details, and how to use a fixed price instead.
+- An electricity price that follows the day-ahead market, called dynamic or spot. [The yearly savings](#example-of-yearly-savings) show where that pays off, and [Countries and plans](plans/README.md) has the details.
 - Chrome or Edge on a computer, for the first install.
 
 ## Install
@@ -617,21 +617,6 @@ Only charging. The board adds its own key, like a phone key, with Tesla's Chargi
 No account, and nothing goes through Tesla's servers. The board downloads market prices, grid plans and, when you open its page, news of a release. Only phone messages go out, if you turn them on: the schedule, through the ntfy app's server, under a long random topic. The page has no password: anyone on your Wi-Fi can open it.
 
 </details>
-
-## For developers
-
-The scheduler is plain C++17 that runs on a computer as well as on the board.
-
-- **Tested:** 85 unit tests cover every line and branch of the scheduler, mutation testing kills 92% of its mutants, and a simulation runs the board's logic with a simulated Tesla.
-- **Built on ESPHome:** an external component in `scheduler/`, with [esphome-tesla-ble](https://github.com/yoziru/esphome-tesla-ble) for the car, and a page of plain JavaScript and CSS that the board serves.
-- **Checked in CI:** clang-tidy, CodeQL, SonarCloud and the page's tests in a headless browser, and every release signed for the boards' updates.
-- **Open to your country:** a grid operator's plan is a short YAML file in `plans/`, which every board downloads within a day.
-
-[CONTRIBUTING.md](CONTRIBUTING.md) has the checks to run and how releases are made.
-
-## Support
-
-If it saves you money, star the repository so others find it, or [buy the developer a coffee](https://buymeacoffee.com/zygimantas_berziunas). Ideas and problems are welcome as [issues](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues).
 
 ## Credits and license
 
