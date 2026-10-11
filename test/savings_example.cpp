@@ -467,15 +467,11 @@ int main() try {
   }
 
   {
-    // ČEZ Distribuce's D27d, the rate for charging an EV, in its variant for interval meters with fixed hours (EMOV1),
-    // which plans/cz hasn't got, as other meters' hours are set by ripple control.
-    Country c{"Czechia", "cz/cez-d27d (custom)", Source::SMARD, "261", "CZK", 0.21f, 0.4477f, 0.23297f,
+    // ČEZ Distribuce's D27d, the rate for charging an EV, with the fixed hours of a meter that records every
+    // quarter-hour, as a spot contract needs.
+    Country c{"Czechia", "cz/cez-d27d-interval", Source::SMARD, "261", "CZK", 0.21f, 0.4477f, 0.23297f,
               20 * 60,   CET_STANDARD_OFFSET};
     c.hourly = true;  // as Delta Green's and Yello's price lists say
-    c.plan_text =
-        "name: ČEZ Distribuce D27d, EMOV1\ncurrency: CZK\ncalendar:\n  jan-dec:\n    mon-sun: vt 02:00 nt 06:00 vt "
-        "20:00 "
-        "nt\nrates:\n  nt: 0.14097\n  vt: 2.72546\n";
     countries.push_back(c);
   }
 

@@ -1,0 +1,13 @@
+# Prices with VAT: https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf
+# ERÚ, the regulator, prints the prices in koruna per MWh without VAT, in its price decision 14/2025: these are per kWh, with 21% VAT.
+# D27d is the rate for a home with an electric car. Where the meter records every quarter-hour (průběhové měření), ČEZ Distribuce fixes its low tariff, nt, at 02:00 - 06:00 and 20:00 - 24:00 every day (variant EMOV1: https://www.cezdistribuce.cz/file/edee/distribuce/cezdistribuce_pasmaplatnostintavt_prubehove_mereni.pdf); the high tariff, vt, is the rest. Other meters get their hours by HDO, set for each place.
+# ERÚ's next price decision, due at the end of November, sets the prices from 1 January 2027.
+# Maintained by @zygimantas
+name: ČEZ Distribuce D27d, interval meter
+currency: CZK
+calendar:
+  jan-dec:
+    mon-sun: vt 02:00 nt 06:00 vt 20:00 nt
+rates:
+  nt: 0.14097
+  vt: 2.72546

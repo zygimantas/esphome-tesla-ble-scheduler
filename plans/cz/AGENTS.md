@@ -9,7 +9,7 @@ On a spot contract billing OTE's day-ahead price, the board's charging cost 13,0
 ## Decisions
 
 - **Contract:** a spot contract billing OTE's day-ahead price.
-- **Plan:** ČEZ Distribuce's D27d for electric cars, in its variant for interval meters with fixed hours (EMOV1), which plans/cz hasn't got, as a custom plan: `mon-sun: vt 02:00 nt 06:00 vt 20:00 nt`, nt 0.14097 and vt 2.72546 CZK with VAT. The car's own schedule starts at 20:00, when its low fee does.
+- **Plan:** `cz/cez-d27d-interval`, ČEZ Distribuce's D27d for electric cars with the fixed hours of a meter that records every quarter-hour (EMOV1), in plans/cz since October 2026: nt 0.14097 and vt 2.72546 CZK with VAT. The car's own schedule starts at 20:00, when its low fee does.
 - **Billing:** each hour at the average of its four quarter-hours, as Delta Green's and Yello's price lists say.
 - **Margin:** 0.4477 CZK per kWh with VAT, the middle of four fixed adders.
 - **The same every hour:** 0.23297 CZK per kWh with VAT, the electricity tax and system services, POZE being 0 in 2026.
@@ -37,7 +37,7 @@ On a spot contract billing OTE's day-ahead price, the board's charging cost 13,0
   - Yello, PRE's brand, Yello Spot, from 1 January 2026, adds 15% to the market price instead (takes 85% of a negative one), and 199 Kč a month ([price list](https://www.yello.cz/files/ceniky/yello-spot-cenik/)).
 
   Worked out from these, the middle of four fixed adders is about 370 Kč/MWh, 0.44770 per kWh with VAT.
-- **The plan:** D27d, the rate for EV owners, from ČEZ Distribuce, the largest operator. ERÚ gives D27d to anyone who shows they own or lease an EV, with a low tariff of at least 8 hours a day between 18:00 and 08:00, set by the operator ([cenový výměr 14/2025](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf), D 27d). For supply points with interval metering, which a dynamic contract needs, ČEZ Distribuce fixes D27d's low tariff at 02:00 - 06:00 and 20:00 - 24:00 every day ([variant EMOV1](https://www.cezdistribuce.cz/file/edee/distribuce/cezdistribuce_pasmaplatnostintavt_prubehove_mereni.pdf)). With ripple control (HDO), the hours differ by place. Its fees in 2026 are nt 116.50 and vt 2,252.45 Kč/MWh without VAT, 0.14097 and 2.72546 per kWh with it, and from October to December 2025 they were nt 0.24926 and vt 2.74320 with VAT ([ERÚ](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv142024.pdf)). Its breaker fee is D02d's (255 against 256 Kč a month at 3x25 A). Worked out from these and cz/cez-d02d, D27d pays with an EV: 3,300 kWh charged in the low tariff cost about 7,800 Kč a year less than on D02d, while the rest of the home pays 0.21038 more per kWh. On one rate, D02d, the plan is cz/cez-d02d.
+- **The plan:** D27d, the rate for EV owners, from ČEZ Distribuce, the largest operator. ERÚ gives D27d to anyone who shows they own or lease an EV, with a low tariff of at least 8 hours a day between 18:00 and 08:00, set by the operator ([cenový výměr 14/2025](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf), D 27d). For supply points with interval metering, which a dynamic contract needs, ČEZ Distribuce fixes D27d's low tariff at 02:00 - 06:00 and 20:00 - 24:00 every day ([variant EMOV1](https://www.cezdistribuce.cz/file/edee/distribuce/cezdistribuce_pasmaplatnostintavt_prubehove_mereni.pdf)). With ripple control (HDO), the hours differ by place. Its fees in 2026 are nt 116.50 and vt 2,252.45 Kč/MWh without VAT, 0.14097 and 2.72546 per kWh with it, and from October to December 2025 they were nt 0.24926 and vt 2.74320 with VAT ([ERÚ](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv142024.pdf)). Its breaker fee is D02d's (255 against 256 Kč a month at 3x25 A). Worked out from these and cz/cez-d02d, D27d pays with an EV: 3,300 kWh charged in the low tariff cost about 7,800 Kč a year less than on D02d, while the rest of the home pays 0.21038 more per kWh. The plan is cz/cez-d27d-interval, and on one rate, D02d, cz/cez-d02d.
 - **The plans' fees:** all nine plans' prices match cenový výměr 14/2025 times 1.21, to 5 decimals.
 - **Market prices:** spot contracts bill OTE's day-ahead price for the Czech area, set per quarter-hour in euros since 1 October 2025, converted at the ČNB's middle rate of the day; the board converts at the ECB's. SMARD's series 261 has Czechia's quarter-hour day-ahead prices in euros per MWh, free and without an account, a week a file, named by its Monday's 00:00 Prague time in ms, like [the week from Monday 29 September 2025](https://www.smard.de/app/chart_data/261/DE/261_DE_quarterhour_1759096800000.json), and listed in https://www.smard.de/app/chart_data/261/DE/index_quarterhour.json. They are OTE's prices: both have 97.21 EUR/MWh for 1 October 2025, 00:00 - 00:15 ([OTE's day](https://www.ote-cr.cz/pubweb/attachments/01/2025/month10/day01/DT_15MIN_01_10_2025_CZ.xlsx)). The files have every quarter-hour from 1 October 2025 to the morning of 1 October 2026.
 
@@ -49,21 +49,22 @@ On a spot contract billing OTE's day-ahead price, the board's charging cost 13,0
 ## Open questions
 
 - **How many homes pay the market price:** no figures on households with a spot contract, nor on EV owners with D27d rather than D02d or a heating rate with its own low tariff (D25d, D26d, D56d, D57d). ERÚ's reports page refused access.
-- **D27d on smart meters:** whether smart meters (C1 to C3) on D27d get EMOV1's hours or the place's HDO command, as ČEZ's sheet names types A and B, and whether EMOV1 applied from October to December 2025 too.
+- **D27d on smart meters:** ČEZ's sheet says only "supply points with interval metering" (odběrná místa s průběhovým měřením), so whether smart meters (C1 to C3) on D27d get EMOV1's hours or the place's HDO command is unconfirmed, as is whether EMOV1 applied from October to December 2025 too.
+- **EMOV1's clock:** the sheet doesn't say whether its hours follow the clock or winter time; cz/cez-d27d-interval follows the clock, as ERÚ's D61d does.
 - **E.ON's and innogy's offers:** their dynamic offers for households weren't found, though suppliers that large must have one.
 - **Delta Green's and Yello's billing:** whether they bill quarter-hours or hours since October 2025: their price lists say hours.
 - **The margin:** it differs by supplier: four offers from 0.36300 to 0.48279 with VAT, with monthly fees of 99 to 199 Kč left out.
 
 ## Notes
 
-- **Not done yet:** D27d and the other rates whose low-tariff hours ripple control sets per place, left out of plans/cz in October 2026. D27d's EMOV1 variant for interval meters has fixed hours (The plan, above), which the example holds as a custom plan.
+- **Not done yet:** the rates whose low-tariff hours ripple control sets per place, D27d's on other meters among them, left out of plans/cz in October 2026. D27d's EMOV1 hours for interval meters are fixed (The plan, above), so it's in plans/cz as cz/cez-d27d-interval; EG.D's and PREdistribuce's hours for interval meters weren't found.
 
 ## References
 
 | Source | What it gives | Changes |
 | --- | --- | --- |
 | [ERÚ's cenový výměr 14/2025](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv182025.pdf) | the operators' distribution fees, D27d's and the nine plans' | each 1 January, by ERÚ's decision at the end of November |
-| [ČEZ Distribuce's hours for interval meters](https://www.cezdistribuce.cz/file/edee/distribuce/cezdistribuce_pasmaplatnostintavt_prubehove_mereni.pdf) | D27d's fixed low-tariff hours (EMOV1) | not known |
+| [ČEZ Distribuce's hours for interval meters](https://www.cezdistribuce.cz/file/edee/distribuce/cezdistribuce_pasmaplatnostintavt_prubehove_mereni.pdf) | D27d's fixed low-tariff hours (EMOV1), in cz/cez-d27d-interval | not known |
 | [ERÚ's cenový výměr 13/2025](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv172025.pdf) | system services | each 1 January |
 | [ERÚ's cenový výměr 15/2025](https://eru.gov.cz/sites/default/files/obsah/prilohy/erv192025.pdf) | POZE | each 1 January |
 | Act 261/2007 Sb., part 47 | the electricity tax | when the Act changes |
