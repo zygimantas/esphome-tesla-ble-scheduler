@@ -143,6 +143,7 @@ class SchedulerComponent : public PollingComponent {
   void set_status(text_sensor::TextSensor *status) { this->status_ = status; }
   void set_mode(text_sensor::TextSensor *mode) { this->mode_ = mode; }
   void set_windows(text_sensor::TextSensor *windows) { this->windows_ = windows; }
+  void set_warning(text_sensor::TextSensor *warning) { this->warning_ = warning; }
   void set_prices_until(text_sensor::TextSensor *prices_until) { this->prices_until_ = prices_until; }
   void set_savings(text_sensor::TextSensor *savings) { this->savings_ = savings; }
 
@@ -211,6 +212,7 @@ class SchedulerComponent : public PollingComponent {
   text_sensor::TextSensor *status_{nullptr};
   text_sensor::TextSensor *mode_{nullptr};
   text_sensor::TextSensor *windows_{nullptr};
+  text_sensor::TextSensor *warning_{nullptr};
   text_sensor::TextSensor *prices_until_{nullptr};
   text_sensor::TextSensor *savings_{nullptr};
 

@@ -144,6 +144,31 @@ def schedule_card(page, board):
     ]
 
 
+def warning_price(page, board):
+    """Warning price: saved without a restart or deleting the schedule, and its card while the schedule reaches it."""
+    board.reset(settings=SETTINGS, paired=True, plugged=True)
+    page.goto(board.url)
+    status = page.locator("#status")
+    card = page.locator("#warning-card")
+    expect(status).to_contain_text("Charges at")
+    expect(card).to_be_hidden()
+    page.click("#settings-card .title")
+    page.fill("#set-warning", "25")  # cents typed for euros
+    expect(page.locator("#warning-range")).to_have_text("From 0 to 1 EUR with VAT per kWh")
+    page.click("#save-settings")  # the page turns it away
+    page.fill("#set-warning", "0.05")
+    page.click("#save-settings")
+    expect(card).to_contain_text("The schedule averages 0.076 EUR/kWh, at or above the warning price of 0.05 EUR/kWh.")
+    expect(status).to_contain_text("Charges at")  # it still charges
+    page.click("#settings-card .title")
+    expect(page.locator("#set-warning")).to_have_value("0.05")
+    page.fill("#set-warning", "")
+    page.click("#save-settings")
+    expect(card).to_be_hidden()
+    warned = PRICES.replace("grid:", "warning_price: 0.05\ngrid:") + CAR + ZONE
+    assert board.posts() == [("/settings", warned), ("/settings", SETTINGS)]
+
+
 def update_card(page, board):
     """Update available: the card, Update, Updating …, and the page afresh on the new release."""
     board.reset(settings=SETTINGS, paired=True, update="9.9.9")
@@ -179,7 +204,7 @@ def restart_board(page, board):
     assert board.posts() == [("/button/Restart/press", ""), ("/button/Restart setup/press", "")]
 
 
-SCENARIOS = [setup_from_scratch, settings_round_trip, schedule_card, update_card, restart_board]
+SCENARIOS = [setup_from_scratch, settings_round_trip, schedule_card, warning_price, update_card, restart_board]
 
 
 def main():

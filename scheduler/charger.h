@@ -40,6 +40,7 @@ struct CarState {
 struct Notification {
   std::string title = "ESPHome Tesla BLE Scheduler";
   std::string message;
+  bool warning = false;  // a schedule at the warning price or more: the phone shows it as a warning
 };
 
 struct Decision {
@@ -50,6 +51,8 @@ struct Decision {
   // or no clock, plug state, battery level or prices).
   std::string mode;
   std::string windows;                       // format_windows() while the schedule decides, else empty
+  std::string warning;                       // while the schedule decides and averages the warning price or
+                                             // more, what the page's warning card says, else empty; it still charges
   std::optional<Notification> notification;  // once per plug-in, when its schedule has settled, once more
                                              // when the board falls back to charging at any price or a
                                              // start from the car takes over, and when Ready by passes
@@ -202,6 +205,13 @@ class Controller {
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(schedule_, settings.currency);
+      if (settings.warning_price > 0.0f && planned_avg_ >= settings.warning_price) {
+        char text[160];
+        std::snprintf(text, sizeof(text),
+                      "The schedule averages %.3f %s/kWh, at or above the warning price of %g %s/kWh.", planned_avg_,
+                      settings.currency, settings.warning_price, settings.currency);
+        d.warning = text;
+      }
     }
     if (want_charge && charged_()) {
       d.status = "Charged";
@@ -300,8 +310,15 @@ class Controller {
   // Schedules from the current quarter-hour; the schedule stands until the next one or reschedule().
   void update_schedule_(int64_t now, const Settings &settings) {
     // A charged car is at its limit, whatever the level reads: it won't take a start.
-    const ScheduleRequest request{now, deadline_(now, settings), charged_() ? limit_ : soc_, limit_, tariff_, settings};
+    const int64_t deadline = deadline_(now, settings);
+    const ScheduleRequest request{now, deadline, charged_() ? limit_ : soc_, limit_, tariff_, settings};
     schedule_ = battery_known_() ? make_schedule(prices, request) : Schedule{};
+    // The warning goes by the schedule as made anew, for new prices, a plug-in, a button, another limit or Ready by,
+    // not as charging uses up its cheapest quarter-hours and leaves the dearer ones.
+    if (reschedule_ || deadline != planned_for_) {
+      planned_avg_ = schedule_.avg_price;
+      planned_for_ = deadline;
+    }
     scheduled_slot_ = floor_to_slot(now);
     reschedule_ = false;
     commands_this_schedule_ = 0;
@@ -316,9 +333,10 @@ class Controller {
   }
 
   // After a plug-in, one message once its schedule has settled: the battery levels, deadline, average price
-  // and window count, why nothing was bought, or else the status. A start from the car or the Tesla app
-  // outside the schedule sends one at once, as the board then charges at any price. So does Ready by passing
-  // with the car short while the schedule decides, after the plug-in message: a night that went wrong.
+  // and window count, as a warning where the page warns of the price, why nothing was bought, or else the
+  // status. A start from the car or the Tesla app outside the schedule sends one at once, as the board then
+  // charges at any price. So does Ready by passing with the car short while the schedule decides, after the
+  // plug-in message: a night that went wrong.
   void notify_(int64_t now, const Settings &settings, Decision &d) {
     const bool deadline_passed = deadline_passed_(now, settings);
     if (notify_car_start_) {
@@ -368,6 +386,10 @@ class Controller {
     n.message = text;
     if (schedule_.soc_at_end < limit_ - FULL_WITHIN)
       n.message += "\nNot enough time to reach the limit";
+    if (!d.warning.empty()) {  // it still charges: Delete schedule on the page, which a tap opens, stops it
+      n.title = "Tesla schedule above warning price";
+      n.warning = true;
+    }
   }
 
   // The board's own starts and stops: at most one every COMMAND_GAP, and COMMANDS_PER_SCHEDULE for each schedule, which
@@ -382,9 +404,10 @@ class Controller {
     return want_charge ? Command::START_CHARGING : Command::STOP_CHARGING;
   }
 
-  // What each button does: holds its choice, and lets the next command go out at once.
+  // What each button does: holds its choice, makes the schedule anew, and lets the next command go out at once.
   void press_(Hold hold) {
     hold_ = hold;
+    reschedule_ = true;
     last_command_at_ = 0;
     commands_this_schedule_ = 0;
     asked_at_ = 0;  // a button asks again at once, also while the charger has no power
@@ -449,6 +472,8 @@ class Controller {
   bool notify_car_start_ = false;
   bool market_ = true;  // prices come from the market (see set_market_prices())
   int64_t scheduled_slot_ = -1;
+  float planned_avg_ = NAN;  // the schedule's average as made anew, which the warning goes by; none for a charged car
+  int64_t planned_for_ = 0;  // the deadline it was made for
   int64_t plugged_since_ = 0;
   int64_t deadline_at_ = 0;  // the deadline in force at the last tick, 0 before the clock is set
   int64_t limit_raised_at_ = 0;

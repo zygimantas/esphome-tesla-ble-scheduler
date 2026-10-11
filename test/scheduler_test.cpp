@@ -1055,7 +1055,8 @@ static const char *const SETTINGS =
     "tesla_battery_kwh: 75\n"
     "tesla_charging_kw: 11\n"
     "tesla_vin: 5YJ3E1EA0KF000000\n"
-    "timezone: Europe/Vilnius\n";
+    "timezone: Europe/Vilnius\n"
+    "warning_price: 0.25\n";
 
 // SETTINGS with its line that starts with `line` replaced by `with`, which may be several lines or none.
 static std::string settings_with(const std::string &line, const std::string &with) {
@@ -1080,7 +1081,7 @@ static void test_reads_the_settings_file() {
   CHECK_STR(read_settings(SETTINGS, repository_plans(), s), "");
   CHECK(s.area != nullptr && std::string(s.area->name) == "LT" && s.currency == "EUR");
   CHECK(near(s.vat, 0.21f) && near(s.margin, 0.016f));
-  CHECK(s.ntfy_topic == "my-topic_1");
+  CHECK(s.ntfy_topic == "my-topic_1" && near(s.warning_price, 0.25f));
   CHECK(s.plan == "lt/eso-standartinis-4-zones" &&
         s.plan_text.find("\nname: ESO Standartinis, four zones\n") != std::string::npos && s.custom_plan.empty());
   CHECK(s.battery_kwh == 75.0f && s.charging_kw == 11.0f && s.vin == "5YJ3E1EA0KF000000");
@@ -1109,7 +1110,7 @@ static void test_reads_the_settings_file() {
   CHECK(s.currency == "EUR");  // without a market or a currency of its own
   CHECK_STR(read_settings(fixed, repository_plans(), s), "");
   CHECK(s.area == nullptr && s.currency == "GBP" && s.vat == 0.0f && s.margin == 0.0f && s.plan_text.empty());
-  CHECK(s.ntfy_topic.empty() && s.standard_offset == 0);
+  CHECK(s.ntfy_topic.empty() && s.standard_offset == 0 && s.warning_price == 0.0f);  // no warning without one
   TariffText custom;
   CHECK_STR(read_tariff(s.custom_plan, custom), "");
   CHECK(custom.calendar.size() == 1 && custom.calendar[0].second[0].second == "day 00:30 night 05:30 day");
@@ -1232,9 +1233,10 @@ static void test_settings_that_restart() {
   const SettingsFile was = read(SETTINGS);
   CHECK(!restarts(SettingsFile(), was));  // the setup's car, on a board without one
   CHECK(!restarts(was, was));
-  for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("tesla_battery_kwh", "60"),
-                                  settings_set("tesla_charging_kw", "7.4"), settings_set("  margin", "0.02"),
-                                  settings_set("  vat", "0.09"), settings_set("  plan", "lt/eso-efektyvus-2-zones")})
+  for (const std::string &text : {settings_set("ntfy_topic", "another-topic"), settings_set("warning_price", "0.3"),
+                                  settings_set("tesla_battery_kwh", "60"), settings_set("tesla_charging_kw", "7.4"),
+                                  settings_set("  margin", "0.02"), settings_set("  vat", "0.09"),
+                                  settings_set("  plan", "lt/eso-efektyvus-2-zones")})
     CHECK(!restarts(was, read(text)));
   SettingsFile now = was;  // another car, area or currency, either way
   now.vin = "5YJ3E1EA2KF317000";
@@ -1249,7 +1251,7 @@ static void test_settings_that_restart() {
   CHECK(restarts(was, now) && restarts(now, was));
 }
 
-// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's.
+// Which saves delete the schedule: once the board has a car, any change but the ntfy topic's and the warning price's.
 static void test_settings_that_delete_the_schedule() {
   SettingsFile was;
   CHECK_STR(read_settings(SETTINGS, repository_plans(), was), "");
@@ -1261,6 +1263,7 @@ static void test_settings_that_delete_the_schedule() {
     return deletes_schedule(was, now);
   };
   CHECK(!deletes([](SettingsFile &s) { s.ntfy_topic = "another-topic"; }));
+  CHECK(!deletes([](SettingsFile &s) { s.warning_price = 0.3f; }));
   CHECK(deletes([](SettingsFile &s) { s.currency = "SEK"; }));
   CHECK(deletes([](SettingsFile &s) { s.area = nullptr; }));
   CHECK(deletes([](SettingsFile &s) { s.vat = 0.5f; }));
@@ -1298,7 +1301,7 @@ static void test_settings_file_errors() {
   CHECK_STR(settings_error(settings_with("  vat", "  vat: 0.21\n  colour: red\n")),
             "line 6 has market: colour, which isn't a setting");
   CHECK_STR(settings_error(settings_set("grid", "none")), "line 8 doesn't belong there: plan");
-  CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 13 has colour, which isn't a setting");
+  CHECK_STR(settings_error(std::string(SETTINGS) + "colour: red\n"), "line 14 has colour, which isn't a setting");
   // Missing: with a market, the grid plan can go; without one, it's the whole price; without either, there are no
   // prices yet. A grid: has a plan, from the list or with a calendar of its own, also with a market.
   std::string no_grid = SETTINGS;
@@ -1348,6 +1351,11 @@ static void test_settings_file_errors() {
        {std::string("https://ntfy.sh/mine"), std::string(65, 'a'), std::string("my topic"), std::string("my~topic")})
     CHECK_STR(settings_error(settings_set("ntfy_topic", topic)),
               "ntfy_topic must be the topic's name, not its address: up to 64 letters, digits, - and _");
+  // The warning price: any price per kWh above 0, as the page writes none for 0
+  for (const char *price : {"0.001", "999999"})
+    CHECK_STR(settings_error(settings_set("warning_price", price)), "");
+  for (const char *price : {"0", "-0.25", "1e30", "inf", "nan", "0.25 EUR"})
+    CHECK_STR(settings_error(settings_set("warning_price", price)), "warning_price must be a price per kWh, like 0.25");
   // Tariff
   CHECK_STR(settings_error(settings_set("  plan", "lt/nope")), "grid: there's no plan lt/nope");
   // A custom plan: under grid: plan:, in the settings' currency where it names one, and with its errors counted in its
@@ -1437,6 +1445,7 @@ struct Run {
   std::vector<std::pair<int64_t, Command>> commands;
   std::vector<int64_t> charging_at;
   std::vector<std::string> statuses;
+  std::vector<std::string> warnings;  // the page's warning card, as it changes
   std::vector<std::pair<int64_t, Notification>> messages;
   FakeTesla car;
 };
@@ -1453,6 +1462,8 @@ static Run simulate(Controller &controller, FakeTesla car, int64_t from, int64_t
       run.commands.emplace_back(now, d.command);
     if (run.statuses.empty() || run.statuses.back() != d.status)
       run.statuses.push_back(d.status);
+    if (run.warnings.empty() || run.warnings.back() != d.warning)
+      run.warnings.push_back(d.warning);
     if (d.notification)
       run.messages.emplace_back(now, *d.notification);
     if (d.command == Command::START_CHARGING)
@@ -1491,6 +1502,36 @@ static void test_charges_only_in_the_cheap_window() {
   // average 21.2 EUR/MWh: (28+26+24+22+20+18+16+16+18+20+22+24 + 0.12*26) / 12.12.
   CHECK_STR(run.messages[0].second.title, "Tesla schedule created");
   CHECK_STR(run.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
+}
+
+// A schedule that averages the warning price or more still charges, with a warning on the page and in its message.
+static void test_warns_of_a_dear_schedule() {
+  const auto night = [](float warning_price) {
+    Settings settings;
+    settings.warning_price = warning_price;
+    Controller controller = with_prices();
+    return simulate(controller, FakeTesla(), SEP24_1700Z - HOUR, SEP24_1700Z + 12 * HOUR,
+                    {{SEP24_1700Z, &FakeTesla::plug_in}}, settings);
+  };
+  // The night trough's 0.0212 EUR/kWh (test_charges_only_in_the_cheap_window) is at 0.021 or above
+  const Run dear = night(0.021f);
+  CHECK(dear.car.soc >= 79.9f);  // charged all the same
+  REQUIRE(dear.messages.size() == 1);
+  CHECK_STR(dear.messages[0].second.title, "Tesla schedule above warning price");
+  CHECK_STR(dear.messages[0].second.message, "40 to 80% by Fri 07:00; avg 0.021 EUR/kWh over 1 window(s)");
+  CHECK(dear.messages[0].second.warning);
+  // From the plug-in until charged, as the schedule was made, though the quarter-hours left get dearer as it charges
+  const std::vector<std::string> card = {
+      "", "The schedule averages 0.021 EUR/kWh, at or above the warning price of 0.021 EUR/kWh.", ""};
+  CHECK(dear.warnings == card);
+  // Below 0.022, or without a warning price, nothing warns
+  for (const float price : {0.022f, 0.0f}) {
+    const Run calm = night(price);
+    REQUIRE(calm.messages.size() == 1);
+    CHECK_STR(calm.messages[0].second.title, "Tesla schedule created");
+    CHECK(!calm.messages[0].second.warning);
+    CHECK(calm.warnings == std::vector<std::string>{""});
+  }
 }
 
 static void test_start_from_the_car_holds_until_unplugged() {
@@ -3151,6 +3192,7 @@ int main() {
   test_settings_that_delete_the_schedule();
   test_settings_file_errors();
   test_charges_only_in_the_cheap_window();
+  test_warns_of_a_dear_schedule();
   test_start_from_the_car_holds_until_unplugged();
   test_reads_the_charging_state();
   test_tells_its_own_starts_from_the_cars();

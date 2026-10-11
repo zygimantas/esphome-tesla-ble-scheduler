@@ -279,6 +279,7 @@ Settings SchedulerComponent::schedule_settings_() const {
   settings.battery_kwh = this->file_.battery_kwh;
   settings.charging_kw = this->file_.charging_kw;
   settings.standard_offset = this->file_.standard_offset;
+  settings.warning_price = this->file_.warning_price;
   settings.ready_by_minutes = this->ready_by_->hour * 60 + this->ready_by_->minute;
   const ReadyByOnce &once = *this->ready_by_once_;
   settings.ready_by_once = once.year >= 2020 ? local_to_utc(days_from_civil(once.year, once.month, once.day),
@@ -330,6 +331,7 @@ void SchedulerComponent::publish_(const Decision &d, int64_t now) {
   publish(this->status_, found ? d.status : "Tesla entities not found");
   publish(this->mode_, d.mode);
   publish(this->windows_, d.windows);
+  publish(this->warning_, d.warning);
   publish(this->prices_until_, std::to_string(this->controller_.prices.known_until(now)));
   publish(this->savings_, d.savings);
 }

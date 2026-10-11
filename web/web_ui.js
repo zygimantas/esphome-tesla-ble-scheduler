@@ -44,6 +44,7 @@ const E = {
   stopCharging: "button/Stop charging",
   uptime: "sensor/Uptime",
   version: "text_sensor/Release",
+  warning: "text_sensor/Price warning",
   wifi: "sensor/WiFi Signal",
   windows: "text_sensor/Charge windows",
 };
@@ -142,6 +143,11 @@ const PAGE = `
     <p class="note"><span id="plan-why"></span> You can select one in Settings, below.</p>
   </section>
 
+  <section id="warning-card" class="card" hidden>
+    <div class="title">Above warning price</div>
+    <p class="note"><span id="warning-why"></span> The car still charges: Delete schedule, below, stops it.</p>
+  </section>
+
   <section id="schedule-card" class="card" hidden>
     <div class="title">Schedule</div>
     <label class="row"><span>Charge limit</span><span class="dropdown"><select id="limit-select" aria-label="Charge limit"></select></span></label>
@@ -230,6 +236,8 @@ const PAGE = `
       <hr id="prices-line">
       <label id="topic-row" class="row"><span>Ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
+      <label id="warning-row" class="row"><span>Warning price${info("warning-hint", "About the warning price")}</span><input id="set-warning" type="number" min="0" step="any" inputmode="decimal" placeholder="none"><span id="warning-range" class="note error" hidden></span></label>
+      <p id="warning-hint" class="note hint" hidden>A schedule that would average this much or more per kWh, with the grid fees, brings a warning here and in its phone message. The car still charges, unless you delete the schedule. Empty for no warning.</p>
       <hr>
       <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
       <div class="row"><span>Version</span><strong id="version">-</strong></div>
@@ -503,6 +511,9 @@ function renderSchedule() {
   $("create-schedule").disabled = !priced || busy;
   $("create-schedule").textContent = priced ? "Create schedule" : "Getting prices …";
   renderWindows();
+  // the board's warning while the schedule averages the warning price or more
+  $("warning-card").hidden = !text(E.warning);
+  $("warning-why").textContent = text(E.warning);
 }
 
 // "<currency>;<start>,<end>,<price>[,spare];..." from format_windows() in schedule.h: the windows in UTC
@@ -608,8 +619,8 @@ const currencyOf = (area) => {
   const known = settings.options?.areas[area];
   return known?.converted ?? known?.currency ?? "EUR";
 };
-// About a euro in each currency but the euro: the most a supplier's margin or part per kWh can be, which turns away
-// cents typed for euros.
+// About a euro in each currency but the euro: the most a supplier's margin or part, or a warning price, per kWh can
+// be, which turns away cents typed for euros.
 const EURO = { CHF: 1, CZK: 25, DKK: 7.5, HUF: 400, NOK: 12, PLN: 4.5, RON: 5, SEK: 12 };
 
 // The settings file's values by place, like "market: area", as the board reads them; deeper lines are a custom plan's.
@@ -759,8 +770,9 @@ function renderSettings() {
   const unit = `${currency} with VAT per kWh`;
   $("margin-row").firstElementChild.firstChild.nodeValue = `Supplier's margin (${unit})`;
   $("fixed-row").firstElementChild.firstChild.nodeValue = `Supplier's part (${unit}, without grid fees)`;
-  $("set-margin").max = $("set-fixed").max = String(EURO[currency] ?? 1);
-  for (const id of ["set-margin", "set-fixed"]) checkRange($(id)); // the range, and its unit, of the country now
+  $("warning-row").firstElementChild.firstChild.nodeValue = `Warning price (${unit})`;
+  $("set-margin").max = $("set-fixed").max = $("set-warning").max = String(EURO[currency] ?? 1);
+  for (const id of ["set-margin", "set-fixed", "set-warning"]) checkRange($(id)); // the range, and its unit, of the country now
   $("uptime").textContent = duration(value(E.uptime));
   $("version").textContent = text(E.version) || "-";
 }
@@ -867,6 +879,7 @@ function fillSettings() {
   batteryTyped = values.tesla_battery_kwh !== undefined; // a saved size is the owner's
   $("set-power").value = values.tesla_charging_kw ?? 11;
   $("set-topic").value = values.ntfy_topic ?? "";
+  $("set-warning").value = values.warning_price ?? "";
   for (const error of document.querySelectorAll(".error")) error.hidden = true;
 }
 
@@ -912,6 +925,7 @@ function formSettings() {
     lines.push(`  vat: ${vatOf(v("set-area")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
+  if (Number(v("set-warning")) > 0) lines.push(`warning_price: ${v("set-warning")}`);
   if (gridPlan()) lines.push("grid:", `  plan: ${gridPlan()}`);
   else if (customPlan) lines.push("grid:", "  plan:", ...customPlan.split("\n").map((line) => line && `    ${line}`));
   if (v("set-vin"))
@@ -1265,7 +1279,7 @@ function bind() {
     keepOnly(e.target, (text) => text.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64)),
   );
   $("set-battery").addEventListener("input", () => (batteryTyped = true));
-  for (const id of ["set-margin", "set-fixed", "set-battery", "set-power"])
+  for (const id of ["set-margin", "set-fixed", "set-warning", "set-battery", "set-power"])
     $(id).addEventListener("input", (e) => checkRange(e.target));
   for (const button of document.querySelectorAll(".info[data-hint]"))
     button.addEventListener("click", (e) => {

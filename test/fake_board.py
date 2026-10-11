@@ -6,7 +6,8 @@ It serves the page as the board does, web/web_ui.js as /0.js and web/web_ui.css 
 requests: /events, /settings, /settings/options and the entities' REST routes. A settings file goes through the board's
 own checks in settings_tool (settings_tool.cpp, built next to this file or named with --tool). Of the board it models
 what the page needs: a status that follows the settings, a car that takes the key, plugs in and follows the schedule
-buttons, a restart, which drops the connections and starts the uptime again, and the update entity. POST /fake sets its
+buttons, a schedule of one window at 0.076 per kWh, which the warning price warns of at that price or under it, a
+restart, which drops the connections and starts the uptime again, and the update entity. POST /fake sets its
 state, as page_test.py does, and GET /fake answers it, with the POSTs received.
 """
 
@@ -230,6 +231,13 @@ class Board:
         """Every entity's state, as /events reports them."""
         status, mode = self.status()
         currency = (re.search(r"^currency: (\w+)", self.settings, re.M) or [None, "EUR"])[1]
+        price = re.search(r"^warning_price: (\S+)$", self.settings, re.M)
+        warning = (  # the window's price, at the warning price or above it
+            f"The schedule averages 0.076 {currency}/kWh, at or above the warning price of "
+            f"{float(price[1]):g} {currency}/kWh."
+            if mode == "schedule" and price and float(price[1]) <= 0.076
+            else ""
+        )
         charging = self.plugged and self.hold == "now"
         start, end = self.window()
         if self.installing:
@@ -242,6 +250,7 @@ class Board:
             text("Charging status", status),
             text("Charging mode", mode),
             text("Charge windows", f"{currency};{start},{end},0.076" if mode == "schedule" else ""),
+            text("Price warning", warning),
             text("Prices until", str((int(time.time()) // 86400 + 2) * 86400) if self.has_car() else "0"),
             text("Savings", SAVINGS if self.paired else ""),
             text("Release", self.release),

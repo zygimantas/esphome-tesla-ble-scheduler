@@ -91,6 +91,7 @@ struct SettingsFile {
   float vat = 0.0f;            // on the market prices
   float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed part
   std::string ntfy_topic;      // empty: no phone messages
+  float warning_price = 0.0f;  // per kWh with VAT, the grid fees and the margin: a schedule averaging it warns; 0 never
   std::string plan;            // a plan from the list, by its path; empty for a custom plan or none
   std::string_view plan_text;  // the plan as built in
   std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
@@ -110,7 +111,7 @@ inline std::string upper(std::string text) {
 // The settings the checks still have to read, as written, by their place, and the places the file has, grid: and
 // market: too; the rest go straight into the SettingsFile.
 struct SettingsText {
-  std::string area, battery, charging, currency, fixed, margin, vat, zone;
+  std::string area, battery, charging, currency, fixed, margin, vat, warning, zone;
   std::vector<std::string> seen;
 };
 
@@ -135,7 +136,8 @@ inline std::string read_lines(const std::string &text, SettingsText &written, Se
                                                            {"tesla_battery_kwh", &written.battery},
                                                            {"tesla_charging_kw", &written.charging},
                                                            {"tesla_vin", &read.vin},
-                                                           {"timezone", &written.zone}};
+                                                           {"timezone", &written.zone},
+                                                           {"warning_price", &written.warning}};
   std::string section;
   bool custom = false;  // in a custom plan's lines, under grid: plan:
   size_t start = 0;
@@ -238,6 +240,17 @@ inline std::string check_topic(const SettingsFile &read) {
   return "";
 }
 
+// The price per kWh at which a schedule's average warns, on the page and in its message, where the file has one: with
+// VAT, the grid fees and the margin, as the schedule counts them. The car still charges.
+inline std::string check_warning_price(const SettingsText &written, SettingsFile &read) {
+  if (written.warning.empty())
+    return "";
+  read.warning_price = number(written.warning);
+  if (!(read.warning_price > 0.0f && read.warning_price < MAX_PRICE))
+    return "warning_price must be a price per kWh, like 0.25";
+  return "";
+}
+
 // The grid plan under grid: plan:, one built in, by name, or a custom plan's lines, as a tariff in the settings'
 // currency. Without market: and grid:, the board has no prices, and the car charges as usual. A grid: with neither a
 // plan nor a calendar under it, like one with the plan's name on its own line, would add nothing.
@@ -310,6 +323,8 @@ inline std::string read_settings(const std::string &text, const Plans &plans, Se
   if (error.empty())
     error = check_topic(read);
   if (error.empty())
+    error = check_warning_price(written, read);
+  if (error.empty())
     error = check_plan(written, plans, read);
   if (error.empty())
     error = check_car(written, read);
@@ -328,7 +343,8 @@ inline bool restarts(const SettingsFile &was, const SettingsFile &now) {
 }
 
 // Whether saving `now` over `was` deletes the schedule on a board that has a car, as Delete schedule does: for any
-// change but the ntfy topic's, as the schedule was made with the rest, and the topic only says where its message goes.
+// change but the ntfy topic's and the warning price's, as the schedule was made with the rest, and those only say where
+// its message goes and when it warns.
 inline bool deletes_schedule(const SettingsFile &was, const SettingsFile &now) {
   const auto rest = [](const SettingsFile &s) {
     return std::tie(s.currency, s.area, s.vat, s.margin, s.plan, s.custom_plan, s.battery_kwh, s.charging_kw, s.vin,

@@ -44,6 +44,7 @@ struct Settings {
   float charging_kw = 11.0f;
   int32_t standard_offset = VILNIUS_STANDARD_OFFSET;
   const char *currency = "EUR";  // of the market prices and the tariff
+  float warning_price = 0.0f;    // per kWh at total prices: a schedule that averages it or more warns; 0 never
 };
 
 struct ScheduleRequest {
