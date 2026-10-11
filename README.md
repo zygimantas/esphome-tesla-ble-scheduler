@@ -52,7 +52,8 @@ That's 51% less than charging at once in Germany and 47% in Lithuania, and 6% an
 - **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs, and its comments give the sources of the taxes, levies and margins.
 
 ```bash
-g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example && test/savings_example
+g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
+test/savings_example
 ```
 
 </details>
