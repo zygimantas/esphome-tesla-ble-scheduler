@@ -1,11 +1,11 @@
 // The README's Example of yearly savings and its countries: what charging cost every night of a year, from 1 October
 // 2025, when the market prices went to quarter-hours, to 30 September 2026, on the published market prices, on every
-// plan in plans/, with the board's own scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against
-// charging at once and the car's own schedule, from when the plan's cheapest fee starts at night, or midnight where
-// it's the same all night, and from the start time that cost the least over those nights. It prints the README's list
-// of countries last. Each country's figures and their sources are in plans/<country>/AGENTS.md. Built like the unit
-// tests (CONTRIBUTING.md's Checks) and run from the repository root, as it reads plans/; it downloads the prices with
-// curl into test/.prices the first time:
+// plan in plans/ of the countries where homes pay them, else on the regulated or fixed price, with the board's own
+// scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against charging at once and the car's own
+// schedule, from when the plan's cheapest fee starts at night, or midnight where it's the same all night, and from the
+// start time that cost the least over those nights. It prints the README's list of countries last. Each country's
+// figures and their sources are in plans/<country>/AGENTS.md. Built like the unit tests (CONTRIBUTING.md's Checks) and
+// run from the repository root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
 //   g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
 //   test/savings_example
 #include "scheduler/market.h"
