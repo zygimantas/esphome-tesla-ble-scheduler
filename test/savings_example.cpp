@@ -1,10 +1,10 @@
 // The README's Example of yearly savings: what charging cost every night of a year, from 1 October 2025, when the
-// market prices went to quarter-hours, to 30 September 2026, in Germany, Lithuania and Poland, on the published market
-// prices, with the board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all year,
-// against charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from the
-// start time that cost the least over those nights; Poland's in złoty, as its board counts, and in euros at the ECB's
-// daily rate. Built like the unit tests (CONTRIBUTING.md's Checks) and run from
-// the repository root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
+// market prices went to quarter-hours, to 30 September 2026, in Spain, Lithuania and Sweden, on the published
+// market prices, with the board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all
+// year, against charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from
+// the start time that cost the least over those nights; Sweden's in kronor, as its board counts, and in euros at the
+// ECB's daily rate. Built like the unit tests (CONTRIBUTING.md's Checks) and run from the repository root, as it reads
+// plans/; it downloads the prices with curl into test/.prices the first time:
 //   g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
 //   test/savings_example
 #include "scheduler/market.h"
@@ -40,8 +40,6 @@ constexpr float LIMIT = 80.0f;
 constexpr float SOC = LIMIT - KM_A_YEAR / 365 * KWH_PER_KM / BATTERY_KWH * 100;
 constexpr int PLUG_IN = 18 * 60;         // local time, in minutes
 constexpr int READY_BY = (24 + 7) * 60;  // the next morning
-constexpr int SMARD_GERMANY = 4169;      // SMARD's numbers for the day-ahead prices of Germany and Luxembourg,
-constexpr int SMARD_POLAND = 257;        // and of Poland
 
 struct Country {
   const char *name;
@@ -51,6 +49,7 @@ struct Country {
   float vat;             // on the market price
   float margin;          // the supplier's, per kWh with VAT
   float flat;            // the other charges per kWh with VAT, the same every quarter-hour, which plans leave out
+  float factor;          // on all of it, for a tax that's a share of the bill, as Spain's is
   int cheap_from;  // when the plan's cheapest fee starts at night, in minutes, where an owner would set the car's own
                    // schedule
   int32_t standard_offset;
@@ -63,8 +62,8 @@ std::string date(int64_t day) {
   return text;
 }
 
-// The file `url` answers, downloaded once into test/.prices/`name`.
-std::string download(const std::string &url, const std::string &name) {
+// The file `url` answers, downloaded once into test/.prices/`name`, or nothing if it can't be.
+std::optional<std::string> fetch(const std::string &url, const std::string &name) {
   const std::filesystem::path path = std::filesystem::path("test/.prices") / name;
   if (!std::filesystem::exists(path)) {
     std::filesystem::create_directories(path.parent_path());
@@ -75,8 +74,8 @@ std::string download(const std::string &url, const std::string &name) {
     int status = 0;
     if (posix_spawnp(&pid, "curl", nullptr, nullptr, const_cast<char **>(args), environ) != 0 ||
         waitpid(pid, &status, 0) != pid || status != 0) {
-      std::fprintf(stderr, "Couldn't download %s\n", url.c_str());
-      std::exit(1);
+      std::filesystem::remove(part);
+      return std::nullopt;
     }
     std::filesystem::rename(part, path);
   }
@@ -84,6 +83,15 @@ std::string download(const std::string &url, const std::string &name) {
   std::stringstream text;
   text << file.rdbuf();
   return text.str();
+}
+
+std::string download(const std::string &url, const std::string &name) {
+  std::optional<std::string> text = fetch(url, name);
+  if (!text) {
+    std::fprintf(stderr, "Couldn't download %s\n", url.c_str());
+    std::exit(1);
+  }
+  return *text;
 }
 
 // The ECB's rates of the euro in `currency` by day, from the week before `first_day`; days without one, like
@@ -123,24 +131,56 @@ double rate_on(const Rates &rates, int64_t day) {
   return std::prev(after)->second;
 }
 
-// SMARD's prices, the Federal Network Agency's, a week a file, in euros: the day-ahead auction's, as Nord Pool's for
-// the area, which the board downloads, are.
-PriceTable smard_prices(int filter, int64_t first_day, int64_t last_day) {
-  std::set<std::string> urls;
-  for (int64_t day = first_day; day <= last_day; ++day)
-    urls.insert(smard_url(filter, local_to_utc(day, 12 * 60, CET_STANDARD_OFFSET), 0));
+// Spain's prices from OMIE, the Iberian market's, a day a file, as the board downloads and reads them. OMIE keeps only
+// a day's latest file, whose number grows when it corrects one, as it did 30 October 2025's.
+PriceTable spanish_prices(int64_t first_day, int64_t last_day) {
   PriceTable prices;
-  for (const std::string &url : urls) {
-    const std::string json = download(url, url.substr(url.rfind('/') + 1));
-    if (prices.add_smard(json.data(), json.size()) < 0) {
-      std::fprintf(stderr, "Couldn't read %s\n", url.c_str());
+  for (int64_t day = first_day; day <= last_day; ++day) {
+    std::string url = omie_url(local_to_utc(day, 12 * 60, CET_STANDARD_OFFSET), 0);
+    std::optional<std::string> text;
+    for (char version = '1'; version <= '5' && !text; ++version) {
+      url.back() = version;
+      text = fetch(url, "omie_" + date(day) + ".txt");
+    }
+    if (!text || prices.add_omie(text->data(), text->size(), "ES") < 0) {
+      std::fprintf(stderr, "Couldn't download or read OMIE's prices for %s\n", date(day).c_str());
       std::exit(1);
     }
   }
   return prices;
 }
 
-// The prices in another currency, each delivery day's at that day's rate, as Nord Pool's in złoty are.
+// Sweden's SE3 prices from elprisetjustnu.se, a day a file, which republishes Nord Pool's: in euros, as its own
+// kronor come at another rate.
+PriceTable swedish_prices(int64_t first_day, int64_t last_day) {
+  PriceTable prices;
+  for (int64_t day = first_day; day <= last_day; ++day) {
+    const CivilDate d = civil_from_days(day);
+    char url[96], name[48];
+    std::snprintf(url, sizeof(url), "https://www.elprisetjustnu.se/api/v1/prices/%04d/%02u-%02u_SE3.json",
+                  static_cast<int>(d.year), d.month, d.day);
+    std::snprintf(name, sizeof(name), "elprisetjustnu_%s_SE3.json", date(day).c_str());
+    const std::string json = download(url, name);
+    JsonDocument doc;
+    if (deserializeJson(doc, json) != DeserializationError::Ok) {
+      std::fprintf(stderr, "Couldn't read %s\n", url);
+      std::exit(1);
+    }
+    for (JsonObject entry : doc.as<JsonArray>()) {
+      int year, month, mday, hour, minute, second, offset_hours, offset_minutes;
+      char sign;
+      if (std::sscanf(entry["time_start"].as<const char *>(), "%d-%d-%dT%d:%d:%d%c%d:%d", &year, &month, &mday, &hour,
+                      &minute, &second, &sign, &offset_hours, &offset_minutes) != 9)
+        continue;
+      const int64_t offset = (sign == '-' ? -1 : 1) * (offset_hours * 3600 + offset_minutes * 60);
+      prices.set(days_from_civil(year, month, mday) * DAY_SECONDS + hour * 3600 + minute * 60 + second - offset,
+                 entry["EUR_per_kWh"].as<float>());
+    }
+  }
+  return prices;
+}
+
+// The prices in another currency, each delivery day's at that day's rate, as Nord Pool's in kronor are.
 PriceTable in_currency(const PriceTable &euros, const Rates &rates, int64_t first_day, int64_t last_day) {
   PriceTable prices;
   for (int64_t slot = local_to_utc(first_day, 0, CET_STANDARD_OFFSET);
@@ -190,7 +230,7 @@ double straight_cost(const PriceTable &prices, const Tariff &tariff, const Count
       std::exit(1);
     }
     const float kwh = std::min(grid_kwh, CHARGING_KW * SLOT_SECONDS / 3600.0f);
-    cost += kwh * (total_price(*price, slot, tariff, country.standard_offset) + country.flat);
+    cost += kwh * (total_price(*price, slot, tariff, country.standard_offset) + country.flat) * country.factor;
     grid_kwh -= kwh;
   }
   return cost;
@@ -241,7 +281,7 @@ void run(const Country &country, const PriceTable &prices, const Rates &rates, i
     float kwh = 0;
     double cost = 0;
     for (const Window &w : schedule.windows) {
-      cost += w.cost + w.energy_kwh * country.flat;
+      cost += (w.cost + w.energy_kwh * country.flat) * country.factor;
       kwh += w.energy_kwh;
     }
     board += cost;
@@ -281,28 +321,26 @@ void run(const Country &country, const PriceTable &prices, const Rates &rates, i
 
 int main() try {
   const int64_t first_night = days_from_civil(2025, 10, 1), last_night = days_from_civil(2026, 9, 30);
-  // Germany in 2026, with 19% VAT: a dynamic contract's margin of 2 ct, about the middle of the offers', and per kWh
-  // the electricity tax, 2.05 ct (§ 3 StromStG), the concession fee of a town of up to 100,000, 1.59 ct (§ 2 KAV), the
-  // median home's in Westnetz's area, and the levies, KWKG 0.446 ct, offshore 0.941 ct and § 19 StromNEV 1.559 ct
-  // (netztransparenz.de). The low fee of Westnetz's Modul 3 starts at 00:00.
-  const Country germany{"Germany", "de/westnetz-modul-3", "SMARD", "EUR", 0.19f, 0.020f, 0.07837f,
-                        24 * 60,   CET_STANDARD_OFFSET};
+  // Spain in 2026, with 21% VAT and the electricity tax, 5.11269632% of the rest (Ley 38/1992, art. 99). The plan has
+  // the tolls and charges of 2.0TD, whose valley period starts at 00:00.
+  const Country spain{"Spain", "es/2-0td", "OMIE",        "EUR",   0.21f,
+                      0.0f,    0.0f,       1.0511269632f, 24 * 60, CET_STANDARD_OFFSET};
   // Lithuania in 2026, with 21% VAT: an exchange-price contract's margin of 2.5 ct, about the middle of the three
   // suppliers' (VERT's comparison, skaiciuokle.vert.lt), and per kWh VIAP, -0.044 ct, and the household extra
   // component, 0.0223 ct (VERT), with no excise on households. ESO's night fee starts at 22:00.
-  const Country lithuania{"Lithuania", "lt/eso-standartinis-4-zones", "Elering", "EUR", 0.21f, 0.025f, -0.00026f,
+  const Country lithuania{"Lithuania", "lt/eso-standartinis-4-zones", "Elering", "EUR", 0.21f, 0.025f, -0.00026f, 1.0f,
                           22 * 60,     VILNIUS_STANDARD_OFFSET};
-  // Poland in 2026, with 23% VAT: the margin of Tauron's own dynamic offer, 0.0842 zł, about the middle of the big
-  // suppliers' in the Energy Regulatory Office's comparison of offers, and per kWh the quality fee, 0.0332 zł (PSE's
-  // tariff), the renewable energy fee, 0.0073 zł, the cogeneration fee, 0.0030 zł (Dz.U. 2025 poz. 1664), and excise,
-  // 0.0050 zł. Tauron Dystrybucja's G12 night fee starts at 22:00 winter time, so by 23:00 on the clock all year.
-  const Country poland{"Poland", "pl/tauron-g12",    "SMARD", "PLN", 0.23f, 0.10357f, 0.059655f,
-                       23 * 60,  CET_STANDARD_OFFSET};
-  run(germany, smard_prices(SMARD_GERMANY, first_night, last_night + 1), {}, first_night, last_night);
+  run(spain, spanish_prices(first_night, last_night + 1), {}, first_night, last_night);
   run(lithuania, lithuanian_prices(first_night, last_night + 1), {}, first_night, last_night);
-  const Rates zloty = ecb_rates("PLN", first_night, last_night + 1);
-  run(poland, in_currency(smard_prices(SMARD_POLAND, first_night, last_night + 1), zloty, first_night, last_night + 1),
-      zloty, first_night, last_night);
+  // Sweden in 2026, with 25% VAT: a quarter-hour contract's margin of 9.6 öre, about the middle of the big suppliers'
+  // with their variable costs (Ei's Elpriskollen), and the energy tax, 36 öre per kWh (Skatteverket), the only charge
+  // per kWh that's the same every hour. Vattenfall Eldistribution's Tidstariff costs more on winter weekdays from 06:00
+  // to 22:00, so its low fee starts at 22:00.
+  const Country sweden{"Sweden", "se/vattenfall-tidstariff", "elprisetjustnu.se", "SEK", 0.25f, 0.12f, 0.45f, 1.0f,
+                       22 * 60,  CET_STANDARD_OFFSET};
+  const Rates kronor = ecb_rates("SEK", first_night, last_night + 1);
+  run(sweden, in_currency(swedish_prices(first_night, last_night + 1), kronor, first_night, last_night + 1), kronor,
+      first_night, last_night);
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());
