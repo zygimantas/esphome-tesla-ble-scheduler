@@ -83,14 +83,14 @@ test/savings_example
 | Energie Klagenfurt | 00:00 | 886&nbsp;EUR | 841&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Energienetze Steiermark | 00:00 | 953&nbsp;EUR | 908&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Innsbrucker Kommunalbetriebe | 00:00 | 926&nbsp;EUR | 881&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
-| KNG-Kärnten Netz | 00:00 | 988&nbsp;EUR | 944&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
+| KNG&#8209;Kärnten Netz | 00:00 | 988&nbsp;EUR | 944&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | LINZ NETZ | 00:00 | 829&nbsp;EUR | 784&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Netz Burgenland | 00:00 | 925&nbsp;EUR | 880&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Netz Niederösterreich | 00:00 | 954&nbsp;EUR | 909&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Netz Oberösterreich | 00:00 | 859&nbsp;EUR | 815&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Salzburg Netz | 00:00 | 864&nbsp;EUR | 820&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Stromnetz Graz | 00:00 | 820&nbsp;EUR | 775&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
-| TINETZ-Tiroler Netze | 00:00 | 871&nbsp;EUR | 826&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
+| TINETZ&#8209;Tiroler Netze | 00:00 | 871&nbsp;EUR | 826&nbsp;EUR | 45&nbsp;EUR,&nbsp;5% |
 | Vorarlberger Energienetze | 00:00 | 801&nbsp;EUR | 756&nbsp;EUR | 45&nbsp;EUR,&nbsp;6% |
 | Wiener Netze | 00:00 | 954&nbsp;EUR | 907&nbsp;EUR | 48&nbsp;EUR,&nbsp;5% |
 
@@ -105,13 +105,13 @@ Low confidence: about 1% of homes paid the market price in 2025. [The research](
 | Grid plan | Car's&nbsp;schedule&nbsp;from | Car's&nbsp;schedule | This&nbsp;board | Saved&nbsp;a&nbsp;year |
 | --- | ---: | ---: | ---: | ---: |
 | Fluvius Antwerpen, digital meter | 00:00 | 839&nbsp;EUR | 783&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
-| Fluvius Halle-Vilvoorde, digital meter | 00:00 | 851&nbsp;EUR | 796&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
+| Fluvius Halle&#8209;Vilvoorde, digital meter | 00:00 | 851&nbsp;EUR | 796&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
 | Fluvius Imewo, digital meter | 00:00 | 847&nbsp;EUR | 792&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
 | Fluvius Kempen, digital meter | 00:00 | 849&nbsp;EUR | 793&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
 | Fluvius Limburg, digital meter | 00:00 | 838&nbsp;EUR | 782&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
-| Fluvius Midden-Vlaanderen, digital meter | 00:00 | 844&nbsp;EUR | 788&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
+| Fluvius Midden&#8209;Vlaanderen, digital meter | 00:00 | 844&nbsp;EUR | 788&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
 | Fluvius West, digital meter | 00:00 | 855&nbsp;EUR | 799&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
-| Fluvius Zenne-Dijle, digital meter | 00:00 | 851&nbsp;EUR | 796&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
+| Fluvius Zenne&#8209;Dijle, digital meter | 00:00 | 851&nbsp;EUR | 796&nbsp;EUR | 56&nbsp;EUR,&nbsp;7% |
 | ORES Bihoraire, two rates | 22:00 | 1,000&nbsp;EUR | 878&nbsp;EUR | 122&nbsp;EUR,&nbsp;12% |
 | ORES Impact, three rates | 01:00 | 831&nbsp;EUR | 799&nbsp;EUR | 31&nbsp;EUR,&nbsp;4% |
 | ORES Monohoraire, one rate | 00:00 | 1,081&nbsp;EUR | 1,025&nbsp;EUR | 56&nbsp;EUR,&nbsp;5% |
@@ -182,7 +182,7 @@ Low confidence: few homes pay the market price. [The research](plans/cz/AGENTS.m
 | N1 Nettarif C (DK1) | 00:00 | 4,504&nbsp;DKK | 4,118&nbsp;DKK | 387&nbsp;DKK,&nbsp;9% |
 | Nord Energi Net Nettarif C (DK1) | 00:00 | 4,443&nbsp;DKK | 4,050&nbsp;DKK | 393&nbsp;DKK,&nbsp;9% |
 | Radius Elnet Nettarif C (DK2) | 00:00 | 4,537&nbsp;DKK | 4,146&nbsp;DKK | 391&nbsp;DKK,&nbsp;9% |
-| TREFOR El-net Nettarif C (DK1) | 00:00 | 4,317&nbsp;DKK | 3,908&nbsp;DKK | 409&nbsp;DKK,&nbsp;9% |
+| TREFOR El&#8209;net Nettarif C (DK1) | 00:00 | 4,317&nbsp;DKK | 3,908&nbsp;DKK | 409&nbsp;DKK,&nbsp;9% |
 | Vores Elnet Nettarif C (DK1) | 00:00 | 4,459&nbsp;DKK | 4,066&nbsp;DKK | 392&nbsp;DKK,&nbsp;9% |
 
 High confidence: most homes pay the market price. [The research](plans/dk/AGENTS.md)
@@ -244,7 +244,7 @@ High confidence: a third of homes pay the market price. [The research](plans/fi/
 
 | Grid plan | Car's&nbsp;schedule&nbsp;from | Car's&nbsp;schedule | This&nbsp;board | Saved&nbsp;a&nbsp;year |
 | --- | ---: | ---: | ---: | ---: |
-| TURPE CU4, off-peak 22:00 - 06:00 | 22:00 | 732&nbsp;EUR | 561&nbsp;EUR | 171&nbsp;EUR,&nbsp;23% |
+| TURPE CU4, off&#8209;peak 22:00&nbsp;&#8209;&nbsp;06:00 | 22:00 | 732&nbsp;EUR | 561&nbsp;EUR | 171&nbsp;EUR,&nbsp;23% |
 
 Low confidence: two small suppliers bill the market price, and off-peak hours differ by address. [The research](plans/fr/AGENTS.md)
 
@@ -277,9 +277,9 @@ Low confidence: two small suppliers bill the market price, and off-peak hours di
 | MITNETZ STROM Modul 2, separate meter | 00:00 | 870&nbsp;EUR | 787&nbsp;EUR | 83&nbsp;EUR,&nbsp;10% |
 | MITNETZ STROM Modul 3, three rates | 19:00 | 1,078&nbsp;EUR | 831&nbsp;EUR | 247&nbsp;EUR,&nbsp;23% |
 | MITNETZ STROM, standard | 00:00 | 1,020&nbsp;EUR | 937&nbsp;EUR | 83&nbsp;EUR,&nbsp;8% |
-| N-ERGIE Netz Modul 2, separate meter | 00:00 | 864&nbsp;EUR | 781&nbsp;EUR | 83&nbsp;EUR,&nbsp;10% |
-| N-ERGIE Netz Modul 3, three rates | 23:00 | 887&nbsp;EUR | 803&nbsp;EUR | 84&nbsp;EUR,&nbsp;9% |
-| N-ERGIE Netz, standard | 00:00 | 1,006&nbsp;EUR | 923&nbsp;EUR | 83&nbsp;EUR,&nbsp;8% |
+| N&#8209;ERGIE Netz Modul 2, separate meter | 00:00 | 864&nbsp;EUR | 781&nbsp;EUR | 83&nbsp;EUR,&nbsp;10% |
+| N&#8209;ERGIE Netz Modul 3, three rates | 23:00 | 887&nbsp;EUR | 803&nbsp;EUR | 84&nbsp;EUR,&nbsp;9% |
+| N&#8209;ERGIE Netz, standard | 00:00 | 1,006&nbsp;EUR | 923&nbsp;EUR | 83&nbsp;EUR,&nbsp;8% |
 | Netze BW Modul 2, separate meter | 00:00 | 890&nbsp;EUR | 807&nbsp;EUR | 83&nbsp;EUR,&nbsp;9% |
 | Netze BW Modul 3, three rates | 22:00 | 1,150&nbsp;EUR | 1,001&nbsp;EUR | 150&nbsp;EUR,&nbsp;13% |
 | Netze BW, standard | 00:00 | 1,070&nbsp;EUR | 987&nbsp;EUR | 83&nbsp;EUR,&nbsp;8% |
@@ -420,9 +420,9 @@ Medium confidence: most homes' power is at Norgespris, a fixed price, where the 
 | --- | ---: | ---: | ---: | ---: |
 | Enea Operator G11 | 00:00 | 3,608&nbsp;PLN | 3,421&nbsp;PLN | 186&nbsp;PLN,&nbsp;5% |
 | Enea Operator G12w | 22:00 | 3,217&nbsp;PLN | 2,737&nbsp;PLN | 480&nbsp;PLN,&nbsp;15% |
-| Energa-Operator G11 | 00:00 | 4,030&nbsp;PLN | 3,843&nbsp;PLN | 186&nbsp;PLN,&nbsp;5% |
-| Energa-Operator G12 | 23:00 | 2,986&nbsp;PLN | 2,746&nbsp;PLN | 240&nbsp;PLN,&nbsp;8% |
-| Energa-Operator G12w | 23:00 | 2,996&nbsp;PLN | 2,748&nbsp;PLN | 248&nbsp;PLN,&nbsp;8% |
+| Energa&#8209;Operator G11 | 00:00 | 4,030&nbsp;PLN | 3,843&nbsp;PLN | 186&nbsp;PLN,&nbsp;5% |
+| Energa&#8209;Operator G12 | 23:00 | 2,986&nbsp;PLN | 2,746&nbsp;PLN | 240&nbsp;PLN,&nbsp;8% |
+| Energa&#8209;Operator G12w | 23:00 | 2,996&nbsp;PLN | 2,748&nbsp;PLN | 248&nbsp;PLN,&nbsp;8% |
 | PGE Dystrybucja G11 | 00:00 | 4,023&nbsp;PLN | 3,837&nbsp;PLN | 186&nbsp;PLN,&nbsp;5% |
 | PGE Dystrybucja G12 | 23:00 | 2,961&nbsp;PLN | 2,721&nbsp;PLN | 240&nbsp;PLN,&nbsp;8% |
 | PGE Dystrybucja G12w | 23:00 | 2,993&nbsp;PLN | 2,746&nbsp;PLN | 248&nbsp;PLN,&nbsp;8% |
@@ -443,11 +443,11 @@ Low confidence: 0.03% of homes have a dynamic contract, and it bills another auc
 
 | Grid plan | Car's&nbsp;schedule&nbsp;from | Car's&nbsp;schedule | This&nbsp;board | Saved&nbsp;a&nbsp;year |
 | --- | ---: | ---: | ---: | ---: |
-| Bi-horária, ciclo diário | 22:00 | 680&nbsp;EUR | 568&nbsp;EUR | 112&nbsp;EUR,&nbsp;16% |
-| Bi-horária, ciclo semanal | 00:00 | 627&nbsp;EUR | 548&nbsp;EUR | 79&nbsp;EUR,&nbsp;13% |
+| Bi&#8209;horária, ciclo diário | 22:00 | 680&nbsp;EUR | 568&nbsp;EUR | 112&nbsp;EUR,&nbsp;16% |
+| Bi&#8209;horária, ciclo semanal | 00:00 | 627&nbsp;EUR | 548&nbsp;EUR | 79&nbsp;EUR,&nbsp;13% |
 | Simples | 00:00 | 812&nbsp;EUR | 694&nbsp;EUR | 118&nbsp;EUR,&nbsp;15% |
-| Tri-horária, ciclo diário | 22:00 | 680&nbsp;EUR | 541&nbsp;EUR | 139&nbsp;EUR,&nbsp;20% |
-| Tri-horária, ciclo semanal | 00:00 | 627&nbsp;EUR | 532&nbsp;EUR | 96&nbsp;EUR,&nbsp;15% |
+| Tri&#8209;horária, ciclo diário | 22:00 | 680&nbsp;EUR | 541&nbsp;EUR | 139&nbsp;EUR,&nbsp;20% |
+| Tri&#8209;horária, ciclo semanal | 00:00 | 627&nbsp;EUR | 532&nbsp;EUR | 96&nbsp;EUR,&nbsp;15% |
 
 Low confidence: under 1% of homes pay the market price. [The research](plans/pt/AGENTS.md)
 
@@ -512,18 +512,18 @@ High confidence: over a quarter of homes pay each hour's price, most on the regu
 | --- | ---: | ---: | ---: | ---: |
 | Ellevio (SE3) | 00:00 | 5,384&nbsp;SEK | 4,824&nbsp;SEK | 560&nbsp;SEK,&nbsp;10% |
 | Ellevio, single phase up to 20 A (SE3) | 00:00 | 6,184&nbsp;SEK | 5,624&nbsp;SEK | 560&nbsp;SEK,&nbsp;9% |
-| E.ON Nord, 16-63 A (SE2) | 00:00 | 4,201&nbsp;SEK | 3,846&nbsp;SEK | 355&nbsp;SEK,&nbsp;8% |
+| E.ON Nord, 16&#8209;63 A (SE2) | 00:00 | 4,201&nbsp;SEK | 3,846&nbsp;SEK | 355&nbsp;SEK,&nbsp;8% |
 | E.ON Nord, 16 A up to 8,000 kWh (SE2) | 00:00 | 6,558&nbsp;SEK | 6,203&nbsp;SEK | 355&nbsp;SEK,&nbsp;5% |
 | E.ON Nord, apartment 16 A (SE2) | 00:00 | 6,964&nbsp;SEK | 6,610&nbsp;SEK | 355&nbsp;SEK,&nbsp;5% |
-| E.ON Nord, apartment 20-25 A (SE2) | 00:00 | 6,383&nbsp;SEK | 6,028&nbsp;SEK | 355&nbsp;SEK,&nbsp;6% |
-| E.ON Stockholm, 16-63 A (SE3) | 00:00 | 5,394&nbsp;SEK | 4,834&nbsp;SEK | 560&nbsp;SEK,&nbsp;10% |
+| E.ON Nord, apartment 20&#8209;25 A (SE2) | 00:00 | 6,383&nbsp;SEK | 6,028&nbsp;SEK | 355&nbsp;SEK,&nbsp;6% |
+| E.ON Stockholm, 16&#8209;63 A (SE3) | 00:00 | 5,394&nbsp;SEK | 4,834&nbsp;SEK | 560&nbsp;SEK,&nbsp;10% |
 | E.ON Stockholm, 16 A up to 8,000 kWh (SE3) | 00:00 | 6,757&nbsp;SEK | 6,197&nbsp;SEK | 560&nbsp;SEK,&nbsp;8% |
 | E.ON Stockholm, apartment 16 A (SE3) | 00:00 | 7,212&nbsp;SEK | 6,652&nbsp;SEK | 560&nbsp;SEK,&nbsp;8% |
-| E.ON Stockholm, apartment 20-25 A (SE3) | 00:00 | 6,757&nbsp;SEK | 6,197&nbsp;SEK | 560&nbsp;SEK,&nbsp;8% |
-| E.ON Syd, 16-63 A (SE4) | 00:00 | 6,396&nbsp;SEK | 5,586&nbsp;SEK | 811&nbsp;SEK,&nbsp;13% |
+| E.ON Stockholm, apartment 20&#8209;25 A (SE3) | 00:00 | 6,757&nbsp;SEK | 6,197&nbsp;SEK | 560&nbsp;SEK,&nbsp;8% |
+| E.ON Syd, 16&#8209;63 A (SE4) | 00:00 | 6,396&nbsp;SEK | 5,586&nbsp;SEK | 811&nbsp;SEK,&nbsp;13% |
 | E.ON Syd, 16 A up to 8,000 kWh (SE4) | 00:00 | 8,378&nbsp;SEK | 7,567&nbsp;SEK | 811&nbsp;SEK,&nbsp;10% |
 | E.ON Syd, apartment 16 A (SE4) | 00:00 | 8,960&nbsp;SEK | 8,149&nbsp;SEK | 811&nbsp;SEK,&nbsp;9% |
-| E.ON Syd, apartment 20-25 A (SE4) | 00:00 | 8,378&nbsp;SEK | 7,567&nbsp;SEK | 811&nbsp;SEK,&nbsp;10% |
+| E.ON Syd, apartment 20&#8209;25 A (SE4) | 00:00 | 8,378&nbsp;SEK | 7,567&nbsp;SEK | 811&nbsp;SEK,&nbsp;10% |
 | Göteborg Energi, apartment (SE3) | 00:00 | 5,767&nbsp;SEK | 5,207&nbsp;SEK | 560&nbsp;SEK,&nbsp;10% |
 | Göteborg Energi, house (SE3) | 00:00 | 5,284&nbsp;SEK | 4,724&nbsp;SEK | 560&nbsp;SEK,&nbsp;11% |
 | Göteborg Energi Tidsindelad (SE3) | 00:00 | 4,734&nbsp;SEK | 4,174&nbsp;SEK | 560&nbsp;SEK,&nbsp;12% |
