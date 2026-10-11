@@ -64,7 +64,7 @@ Where homes pay the market price, the board's charging cost 13% to 50% less than
 | Luxembourg | 20% | 8%, from 00:00 | 2%, from 03:00 | Low: few homes pay the market price |
 | Netherlands | 17% | 7%, from 00:00 | 1%, from 03:00 | High: 8% of homes pay the market price |
 | Belgium | 15% | 7%, from 00:00 | 1%, from 04:00 | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
-| Norway | 14% | 6%, from 22:00 | 1%, from 04:00 | Medium: most homes chose Norgespris, a fixed price, where the car's own schedule does as well |
+| Norway | 14% | 6%, from 22:00 | 1%, from 04:00 | Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well |
 | Austria | 17% | 5%, from 00:00 | 0%, from 03:00 | Low: about 1% of homes paid the market price in 2025 |
 | Italy | 13% | 5%, from 00:00 | 0%, from 04:00 | Medium: about 3% of homes pay the hourly price |
 | Ireland | 71% | 0%, from 02:00 | 0%, from 02:00 | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
