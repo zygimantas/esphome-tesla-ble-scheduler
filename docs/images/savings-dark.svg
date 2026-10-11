@@ -1,11 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 202" width="720" height="202" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
-  <text x="0" y="18" font-size="15" font-weight="400" fill="#9198a1">Charging at once, as a Tesla does when you plug in</text>
-  <rect x="0" y="28" width="560.0" height="26" rx="5" fill="#3d444d"/>
-  <text x="572.0" y="47" font-size="17" font-weight="500" fill="#f0f6fc">15.42 EUR</text>
-  <text x="0" y="84" font-size="15" font-weight="400" fill="#9198a1">The car's own schedule, from 23:00</text>
-  <rect x="0" y="94" width="227.7" height="26" rx="5" fill="#3d444d"/>
-  <text x="239.7" y="113" font-size="17" font-weight="500" fill="#f0f6fc">6.27 EUR</text>
-  <text x="0" y="150" font-size="15" font-weight="600" fill="#f0f6fc">This board, 00:45 to 05:30</text>
-  <rect x="0" y="160" width="147.1" height="26" rx="5" fill="#009ac7"/>
-  <text x="159.1" y="179" font-size="17" font-weight="600" fill="#009ac7">4.05 EUR</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 484" width="720" height="484" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+  <text x="0" y="19" font-size="17" font-weight="600" fill="#f0f6fc">Germany, Westnetz Modul 3</text>
+  <text x="0" y="52" font-size="15" font-weight="400" fill="#9198a1">Charging at once, as a Tesla does when you plug in</text>
+  <rect x="0" y="62" width="520.0" height="26" rx="5" fill="#3d444d"/>
+  <text x="532.0" y="81" font-size="17" font-weight="500" fill="#f0f6fc">1,011 EUR</text>
+  <text x="0" y="118" font-size="15" font-weight="400" fill="#9198a1">The car's own schedule, from 00:00, when the low fee starts</text>
+  <rect x="0" y="128" width="300.0" height="26" rx="5" fill="#3d444d"/>
+  <text x="312.0" y="147" font-size="17" font-weight="500" fill="#f0f6fc">583 EUR</text>
+  <text x="0" y="184" font-size="15" font-weight="600" fill="#f0f6fc">This board</text>
+  <rect x="0" y="194" width="276.4" height="26" rx="5" fill="#009ac7"/>
+  <text x="288.4" y="213" font-size="17" font-weight="600" fill="#009ac7">538 EUR</text>
+  <text x="0" y="281" font-size="17" font-weight="600" fill="#f0f6fc">Lithuania, ESO Standartinis with four zones</text>
+  <text x="0" y="314" font-size="15" font-weight="400" fill="#9198a1">Charging at once</text>
+  <rect x="0" y="324" width="333.2" height="26" rx="5" fill="#3d444d"/>
+  <text x="345.2" y="343" font-size="17" font-weight="500" fill="#f0f6fc">648 EUR</text>
+  <text x="0" y="380" font-size="15" font-weight="400" fill="#9198a1">The car's own schedule, from 22:00, when the night fee starts</text>
+  <rect x="0" y="390" width="294.2" height="26" rx="5" fill="#3d444d"/>
+  <text x="306.2" y="409" font-size="17" font-weight="500" fill="#f0f6fc">572 EUR</text>
+  <text x="0" y="446" font-size="15" font-weight="600" fill="#f0f6fc">This board</text>
+  <rect x="0" y="456" width="196.7" height="26" rx="5" fill="#009ac7"/>
+  <text x="208.7" y="475" font-size="17" font-weight="600" fill="#009ac7">383 EUR</text>
 </svg>

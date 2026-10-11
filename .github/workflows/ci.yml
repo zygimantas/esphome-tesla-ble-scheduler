@@ -73,6 +73,8 @@ jobs:
           echo "-std=c++17 -Wall -Wextra -Wshadow -Werror -I . -isystem ArduinoJson/src" > flags
       - name: GCC
         run: g++ @flags test/scheduler_test.cpp -o scheduler_test && ./scheduler_test
+      - name: The README's savings example builds (it downloads months of prices, so it doesn't run here)
+        run: g++ @flags test/savings_example.cpp -o test/savings_example
       - name: Clang, with undefined behavior and memory errors caught
         run: |
           clang++ @flags -fsanitize=address,undefined -fno-sanitize-recover=all test/scheduler_test.cpp -o scheduler_test

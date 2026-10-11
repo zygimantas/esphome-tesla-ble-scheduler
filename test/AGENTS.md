@@ -22,6 +22,12 @@
 - page_test.py drives it in Google Chrome, headless, through Playwright's channel chrome, the Chrome installed on GitHub's runners and a Mac, so nothing is downloaded: `uvx --from "playwright==1.63.0" python test/page_test.py` from the repository root, with test/settings_tool built (PLAYWRIGHT_VERSION in ci.yml, pinned in CONTRIBUTING.md too). It starts the fake board on a free port and asserts on the page's text and on the POSTs the board received, without the page's own Check for update press as it opens. A JavaScript error on the page fails its scenario: that's how the setup's DOMException was found. Its VIN, 5YJ3E1EA6KF000000, passes the page's check digit; the unit tests' 5YJ3E1EA0KF000000 doesn't, as read_settings() doesn't check it.
 - The Schedule scenario picks the first Ready by offered that isn't the board's, as the board's own isn't sent. A restart keeps the board away for about 3 s and the page reconnects 3 s after it asked, or when EventSource retries, so expect's timeout is 15 s. The run takes about a minute, most of it those waits.
 
+## The README's savings
+
+- savings_example.cpp works out the README's What it saves: every night from January to September 2026, in Germany on Westnetz's Modul 3 and in Lithuania on ESO's four zones, the board's make_schedule() against charging at once, the car's own schedule from when the plan's cheap fee starts and the best start found afterwards, each with the energy the board's schedule takes, and with the taxes, levies and margins that plans leave out, whose sources its comments give (researched in October 2026, each against a second source). CI only builds it, as it downloads the prices.
+- Nord Pool serves only its last two months without an account, so Germany's prices come from SMARD and Lithuania's from Elering's dashboard: both matched Nord Pool's on every quarter-hour from 10 August to 30 September 2026.
+- Redo it after the plans' prices change in January (#161), with the year's taxes, levies and margins, then the README's figures and its charts, docs/images/savings-light.svg and savings-dark.svg, whose bars are 520 px times the cost over the largest.
+
 ## Mutation testing
 
 - A run takes about 40 minutes on 8 cores and builds scheduler_test.cpp for every mutant: don't edit it while a run is going. Survivor line numbers refer to the headers as they were when the run started. On the owner's Mac a run took 5 hours in October 2026, with XProtect checking every new program and ReportCrash reporting every mutant that crashes.

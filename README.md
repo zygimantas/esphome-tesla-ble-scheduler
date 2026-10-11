@@ -30,14 +30,16 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## What it saves
 
-One ordinary night in Lithuania, 27 September 2026: a 75 kWh car plugs in at 18:00 with 20% and needs 80% by 07:00, on Nord Pool prices and a grid plan with four zones, VAT included.
+Every night from January to September 2026, a 75 kWh Tesla comes home at 18:00 with 70% and needs 80% by 07:00, about 50 km of driving, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price, the grid plan's fee for that quarter-hour, taxes, levies, the supplier's margin and VAT.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="The night's cost: 15.42 EUR charging at once, 6.27 EUR with the car's own schedule from 23:00, and 4.05 EUR with this board from 00:45 to 05:30">
+  <img src="docs/images/savings-light.svg" width="720" alt="January to September 2026. Germany, Westnetz Modul 3: 1,011 EUR charging at once, 583 EUR with the car's own schedule from 00:00 and 538 EUR with this board. Lithuania, ESO Standartinis with four zones: 648 EUR at once, 572 EUR from 22:00 and 383 EUR with this board.">
 </picture>
 
-That's 74% less than charging at once, and 35% less than the car's own schedule, as the board finds the cheap hours wherever they fall. The costs are its scheduler's, run on the published prices.
+That's 47% less than charging at once in Germany and 41% in Lithuania, and 8% and 33% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:45 in Germany and 04:00 in Lithuania, still costs 1% and 9% more.
+
+The costs come from the published prices: the market's, from SMARD in Germany and Nord Pool in Lithuania, the plans' for 2026 in [plans/](plans/), and the taxes, levies and a typical margin, with their sources in [test/savings_example.cpp](test/savings_example.cpp), which reruns it all with the board's own scheduler.
 
 ## How it works
 
