@@ -1,10 +1,11 @@
 // The README's Example of yearly savings and its countries: what charging cost every night of a year, from 1 October
-// 2025, when the market prices went to quarter-hours, to 30 September 2026, on the published market prices, with the
-// board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against charging at
-// once and the car's own schedule, from when the plan's cheapest fee starts at night, or midnight where it's the same
-// all night, and from the start time that cost the least over those nights. Each country's figures and their sources
-// are in plans/<country>/AGENTS.md. Built like the unit tests (CONTRIBUTING.md's Checks) and run from the repository
-// root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
+// 2025, when the market prices went to quarter-hours, to 30 September 2026, on the published market prices, on every
+// plan in plans/, with the board's own scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against
+// charging at once and the car's own schedule, from when the plan's cheapest fee starts at night, or midnight where
+// it's the same all night, and from the start time that cost the least over those nights. It prints the README's list
+// of countries last. Each country's figures and their sources are in plans/<country>/AGENTS.md. Built like the unit
+// tests (CONTRIBUTING.md's Checks) and run from the repository root, as it reads plans/; it downloads the prices with
+// curl into test/.prices the first time:
 //   g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
 //   test/savings_example
 #include "scheduler/market.h"
@@ -16,6 +17,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -51,23 +53,55 @@ enum class Source { SMARD, ELERING, OMIE, ELPRISETJUSTNU, ENERGY_CHARTS, NONE };
 
 struct Country {
   const char *name;
-  const char *plan;  // in plans/, with 2026's prices, used all year
+  const char *code;  // its folder in plans/, each of whose plans it takes in turn, with 2026's prices all year
   Source source;
   const char *area;      // in the source: SMARD's series, Elering's, elprisetjustnu.se's or Energy-Charts' area, OMIE's
-  const char *currency;  // the plan's, which the board counts in
+  const char *currency;  // the plans', which the board counts in
   float vat;             // on the market price
   float margin;          // the supplier's, per kWh with VAT
   float flat;            // the other charges per kWh with VAT, the same every quarter-hour, which plans leave out
-  int cheap_from;        // where an owner would set the car's own schedule, in minutes after midnight before the night:
-                         // when the plan's cheapest fee starts, or midnight where it's the same all night
   int32_t standard_offset;
+  const char *confidence;           // the README's, from the research in plans/<code>/AGENTS.md
   float factor = 1;                 // on all of it, for a tax that's a share of the bill, as Spain's is
   float market_factor = 1;          // on the market price, for the grid losses a supplier passes on, as Spain's do
   bool hourly = false;              // billed at each hour's average price, as meters that record hours are
-  const char *plan_text = nullptr;  // a custom plan, for one plans/ hasn't got, named by `plan`
+  const char *plan_text = nullptr;  // its one plan instead, the whole price, where homes pay a regulated or fixed one
   float support_share = 0;          // what the state pays back of the market price above `support_from`, without
   float support_from = 0;           // VAT, as Norway's strømstøtte does, each hour
+  std::string plan{};               // this run's, like lt/eso-standartinis-4-zones
+  std::string area_name{};          // this plan's market area, where the country has several
 };
+
+// What a plan changes in its country's figures: its market area, where the country has several, the one most of its
+// homes are in, and what only some plans' homes pay: Vienna's levy, and VAT, which Norway's north doesn't.
+void take_plan(Country &c, const std::string &plan) {
+  c.plan = plan;
+  struct Area {
+    const char *plan, *area, *name;
+  };
+  static const Area AREAS[] = {
+      {"dk/cerius", "253", "DK2"},  {"dk/radius", "253", "DK2"},      {"dk/", "252", "DK1"},
+      {"no/arva", "NO4", "NO4"},    {"no/bkk", "NO5", "NO5"},         {"no/elvia", "NO1", "NO1"},
+      {"no/fagne", "NO2", "NO2"},   {"no/glitre", "NO2", "NO2"},      {"no/lede", "NO1", "NO1"},
+      {"no/lnett", "NO2", "NO2"},   {"no/tensio", "NO3", "NO3"},      {"se/eon-nord", "SE2", "SE2"},
+      {"se/eon-syd", "SE4", "SE4"}, {"se/kraftringen", "SE4", "SE4"}, {"se/oresundskraft", "SE4", "SE4"},
+      {"se/", "SE3", "SE3"},
+  };
+  for (const Area &a : AREAS)
+    if (plan.rfind(a.plan, 0) == 0) {
+      c.area = a.area;
+      c.area_name = a.name;
+      break;
+    }
+  if (plan == "no/arva-households") {
+    c.vat = 0;         // and so the support adds none
+    c.flat = 0.0813f;  // the electricity tax and the Enova fee, without VAT
+  }
+  if (std::string(c.code) == "at" && plan != "at/wiener-netze") {
+    c.factor = 1;  // Vienna's Gebrauchsabgabe is Vienna's
+    c.flat = 0.00864f;
+  }
+}
 
 std::string date(int64_t day) {
   const CivilDate d = civil_from_days(day);
@@ -330,29 +364,48 @@ double straight_cost(const PriceTable &prices, const Tariff &tariff, const Count
   return cost;
 }
 
-// A country's year, in the plan's currency and in euros at the ECB's daily rate.
+// When an owner would start the car's own schedule on a plan: when its cheapest fee of the night starts on a workday,
+// in the month that's latest, so the schedule is cheap all year, or midnight where the fee is the same all night.
+int night_start(const Tariff &tariff, int32_t standard_offset) {
+  int latest = -1;
+  for (unsigned month = 1; month <= 12; ++month) {
+    int64_t day = days_from_civil(2026, month, 15);
+    while (weekday(day) != 3)  // a Wednesday
+      ++day;
+    std::map<int, float> fees;
+    for (int at = PLUG_IN; at < READY_BY; at += SLOT_SECONDS / 60)
+      fees[at] = tariff_fee(local_to_utc(day, at, standard_offset), tariff, standard_offset);
+    const auto [low, high] =
+        std::minmax_element(fees.begin(), fees.end(), [](const auto &a, const auto &b) { return a.second < b.second; });
+    if (high->second - low->second > 1e-6f)
+      latest = std::max(latest, low->first);  // the first of the cheapest
+  }
+  return latest < 0 ? 24 * 60 : latest;
+}
+
+// A plan's year, in its currency and in euros at the ECB's daily rate.
 struct Result {
-  const Country *country;
+  Country country;
+  std::string name;  // the plan's
   double at_once = 0, schedule = 0, best = 0, board = 0, energy = 0;
   double at_once_euros = 0, schedule_euros = 0, best_euros = 0, board_euros = 0;
-  int best_from = 0;
+  int schedule_from = 0, best_from = 0;
 };
 
-Result run(const Country &country, int64_t first_night, int64_t last_night) {
-  const bool euros = std::string(country.currency) == "EUR";
-  const Rates rates = euros ? Rates{} : ecb_rates(country.currency, first_night, last_night + 1);
-  const PriceTable market = market_prices(country, first_night, last_night + 1);
-  const PriceTable prices = euros ? market : in_currency(market, rates, first_night, last_night + 1);
-
+Result run(const Country &country, const PriceTable &prices, const Rates &rates, int64_t first_night,
+           int64_t last_night) {
   std::stringstream plan;
   if (country.plan_text != nullptr)
     plan << country.plan_text;
   else
-    plan << std::ifstream(std::string("plans/") + country.plan + ".yaml").rdbuf();
+    plan << std::ifstream("plans/" + country.plan + ".yaml").rdbuf();
+  TariffText text;
   Tariff tariff;
-  const std::string error = make_tariff(plan.str(), country.currency, tariff);
+  std::string error = read_tariff(plan.str(), text);
+  if (error.empty())
+    error = make_tariff(plan.str(), country.currency, tariff);
   if (!error.empty())
-    fail(std::string(country.plan) + ": " + error);
+    fail(country.name + std::string(", ") + country.plan + ": " + error);
   tariff.vat = country.vat;
   tariff.margin = country.margin;
   Settings settings;
@@ -363,7 +416,8 @@ Result run(const Country &country, int64_t first_night, int64_t last_night) {
   const int minutes = static_cast<int>(std::ceil((LIMIT - SOC) / 100.0f * BATTERY_KWH / EFFICIENCY / CHARGING_KW * 60));
   // By the start time, in minutes after midnight before the night, in the plan's currency and in euros.
   std::map<int, double> straight, straight_euros;
-  Result result{&country};
+  Result result{country, text.name};
+  result.schedule_from = night_start(tariff, country.standard_offset);
   for (int64_t day = first_night; day <= last_night; ++day) {
     ScheduleRequest request;
     request.now = local_to_utc(day, PLUG_IN, country.standard_offset);
@@ -400,8 +454,8 @@ Result run(const Country &country, int64_t first_night, int64_t last_night) {
   result.at_once_euros = straight_euros.at(PLUG_IN);
   result.best = best->second;
   result.best_euros = straight_euros.at(best->first);
-  result.schedule = straight.at(country.cheap_from);
-  result.schedule_euros = straight_euros.at(country.cheap_from);
+  result.schedule = straight.at(result.schedule_from);
+  result.schedule_euros = straight_euros.at(result.schedule_from);
 
   const auto row = [&country, &result](const std::string &label, double cost, double in_euros) {
     std::printf("  %-42s %8.2f %s  %.3f %s/kWh", label.c_str(), cost, country.currency, cost / result.energy,
@@ -410,11 +464,12 @@ Result run(const Country &country, int64_t first_night, int64_t last_night) {
       std::printf("  %8.2f EUR", in_euros);
     std::printf("\n");
   };
-  std::printf("%s, %s: %d nights from %s to %s, %.0f kWh from the grid\n", country.name, country.plan,
+  std::printf("%s, %s%s: %d nights from %s to %s, %.0f kWh from the grid\n", country.name, result.name.c_str(),
+              country.area_name.empty() ? "" : (" (" + country.area_name + ")").c_str(),
               static_cast<int>(last_night - first_night + 1), date(first_night).c_str(), date(last_night).c_str(),
               result.energy);
   row("Charging at once, from " + hhmm(PLUG_IN), result.at_once, result.at_once_euros);
-  row("The car's own schedule, from " + hhmm(country.cheap_from), result.schedule, result.schedule_euros);
+  row("The car's own schedule, from " + hhmm(result.schedule_from), result.schedule, result.schedule_euros);
   row("The best start, found afterwards, " + hhmm(result.best_from), result.best, result.best_euros);
   row("This board", result.board, result.board_euros);
   std::printf("\n");
@@ -439,135 +494,156 @@ int main() try {
   // Each country's figures, with VAT, and their sources are in plans/<country>/AGENTS.md.
   std::vector<Country> countries;
   {
-    Country c{"Sweden", "se/vattenfall-tidstariff", Source::ELPRISETJUSTNU, "SE3", "SEK", 0.25f, 0.12f, 0.45f,
-              22 * 60,  CET_STANDARD_OFFSET};
+    Country c{"Austria",
+              "at",
+              Source::SMARD,
+              "4170",
+              "EUR",
+              0.20f,
+              0.018f,
+              0.00807f,
+              CET_STANDARD_OFFSET,
+              "Low: about 1% of homes paid the market price in 2025"};
+    c.factor = 1.07f;  // Vienna's Gebrauchsabgabe
+    c.hourly = true;   // as most dynamic contracts bill
     countries.push_back(c);
   }
   {
-    Country c{"Lithuania", "lt/eso-standartinis-4-zones", Source::ELERING, "lt", "EUR", 0.21f, 0.025f, -0.00026f,
-              22 * 60,     VILNIUS_STANDARD_OFFSET};
-    countries.push_back(c);
-  }
-  {
-    Country c{"Spain", "es/2-0td", Source::OMIE, "ES", "EUR", 0.21f, 0.03267f, 0.0f, 24 * 60, CET_STANDARD_OFFSET};
-    c.factor = 1.0511269632f;  // the electricity tax
-    c.market_factor = 1.167f;  // grid losses at night and the municipal rate
-    c.hourly = true;
-    countries.push_back(c);
-  }
-  {
-    Country c{"Germany", "de/westnetz-modul-3", Source::SMARD, "4169", "EUR", 0.19f, 0.020f, 0.07837f,
-              24 * 60,   CET_STANDARD_OFFSET};
-    countries.push_back(c);
-  }
-  {
-    Country c{"Poland", "pl/tauron-g12", Source::SMARD, "257",   "PLN",
-              0.23f,    0.10357f,        0.059655f,     23 * 60, CET_STANDARD_OFFSET};
-    c.hourly = true;  // as dynamic contracts bill TGE's Fixing I, a price the board doesn't have, by the hour
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Finland", "fi/caruna-yosiirto",   Source::ELERING, "fi", "EUR", 0.255f, 0.0055f, 0.02918f,
-              22 * 60,   VILNIUS_STANDARD_OFFSET};
-    c.hourly = true;  // most meters still record hours
-    countries.push_back(c);
-  }
-
-  {
-    // ČEZ Distribuce's D27d, the rate for charging an EV, with the fixed hours of a meter that records every
-    // quarter-hour, as a spot contract needs.
-    Country c{"Czechia", "cz/cez-d27d-interval", Source::SMARD, "261", "CZK", 0.21f, 0.4477f, 0.23297f,
-              20 * 60,   CET_STANDARD_OFFSET};
-    c.hourly = true;  // as Delta Green's and Yello's price lists say
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Latvia", "lv/sadales-tikls-pamata", Source::ELERING, "lv", "EUR", 0.21f, 0.014f, 0.0f,
-              24 * 60,  VILNIUS_STANDARD_OFFSET};
-    countries.push_back(c);
-  }
-  {
-    Country c{"Luxembourg", "lu/client-standard", Source::SMARD, "4169", "EUR", 0.08f, 0.0216f, 0.0f,
-              24 * 60,      CET_STANDARD_OFFSET};
-    c.hourly = true;  // as Encevo's suppliers billed until 31 May 2026
-    countries.push_back(c);
-  }
-  {
-    // Households pay the EWRC's regulated price, with ERM Zapad's network fees and ESO's in the rates.
-    Country c{"Bulgaria",   "bg/erm-zapad-households (regulated)",
-              Source::NONE, "",
-              "EUR",        0.0f,
-              0.0f,         0.0f,
-              23 * 60,      CET_STANDARD_OFFSET + 3600};
-    c.plan_text =
-        "name: Bulgaria, regulated\ncurrency: EUR\ncalendar:\n  apr-oct:\n    mon-sun: night 07:00 day 23:00 night\n"
-        "  nov-mar:\n    mon-sun: night 06:00 day 22:00 night\nrates:\n  night: 0.09192\n  day: 0.15425\n";
-    countries.push_back(c);
-  }
-  {
-    // Households pay EKZ's regulated price, the same every hour, with its network fee and the federal levies.
-    Country c{"Switzerland", "ch/ekz-400st (regulated)", Source::NONE, "", "CHF", 0.0f, 0.0f, 0.0f,
-              24 * 60,       CET_STANDARD_OFFSET};
-    c.plan_text =
-        "name: Switzerland, regulated\ncurrency: CHF\ncalendar:\n  apr-sep:\n    mon-sun: summer\n  oct-mar:\n"
-        "    mon-sun: winter\nrates:\n  summer: 0.21771\n  winter: 0.26419\n";
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Estonia", "ee/elektrilevi-vork-2", Source::ELERING, "ee", "EUR", 0.24f, 0.005f, 0.02704f,
-              22 * 60,   VILNIUS_STANDARD_OFFSET};
-    c.hourly = true;  // most meters still record hours
-    countries.push_back(c);
-  }
-
-  {
-    // Households pay the government's regulated price, with HEP ODS's network fees (bijeli) and the renewables fee in
-    // the rates, the night from 21:00 winter time, so 22:00 on the clock in summer.
-    Country c{"Croatia",          "hr/hep-ods-bijeli (regulated)", Source::NONE, "", "EUR", 0.0f, 0.0f, 0.0f, 22 * 60,
-              CET_STANDARD_OFFSET};
-    c.plan_text =
-        "name: Croatia, regulated\ncurrency: EUR\nclock: winter\ncalendar:\n  jan-dec:\n    mon-sun: nt 07:00 vt 21:00 "
-        "nt\nrates:\n  nt: 0.10127\n  vt: 0.19903\n";
-    countries.push_back(c);
-  }
-
-  {
-    // Spot contracts with the state's support, which most homes in NO1 have left for Norgespris' fixed price.
-    Country c{"Norway", "no/elvia-households", Source::ENERGY_CHARTS, "NO1", "NOK", 0.25f, 0.059f, 0.10163f,
-              22 * 60,  CET_STANDARD_OFFSET};
-    c.hourly = true;  // meters record hours
-    c.support_share = 0.9f;
-    c.support_from = 0.77f;
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Denmark", "dk/radius-nettarif-c", Source::SMARD, "253", "DKK", 0.25f, 0.10f, 0.15375f,
-              24 * 60,   CET_STANDARD_OFFSET};
-    c.hourly = true;  // Radius reads meters by the hour unless asked
-    countries.push_back(c);
-  }
-  {
-    Country c{"Netherlands", "no plan: no fee per kWh", Source::SMARD, "256", "EUR", 0.21f, 0.019f, 0.11085f,
-              24 * 60,       CET_STANDARD_OFFSET};
-    c.hourly = true;  // as about half the dynamic contracts bill
-    c.plan_text = "name: none\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\nrates:\n  flat: 0\n";
-    countries.push_back(c);
-  }
-  {
-    Country c{"Belgium", "be/fluvius-imewo", Source::SMARD, "4996",  "EUR",
-              0.06f,     0.01676f,           0.0953f,       24 * 60, CET_STANDARD_OFFSET};
+    Country c{"Belgium",
+              "be",
+              Source::SMARD,
+              "4996",
+              "EUR",
+              0.06f,
+              0.01676f,
+              0.0953f,
+              CET_STANDARD_OFFSET,
+              "Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted"};
     c.hourly = true;  // as Luminus, TotalEnergies, Eneco and Mega bill
     countries.push_back(c);
   }
   {
-    Country c{"Austria", "at/wiener-netze", Source::SMARD,      "4170", "EUR", 0.20f, 0.018f,
-              0.00807f,  24 * 60,           CET_STANDARD_OFFSET};
-    c.factor = 1.07f;  // Vienna's Gebrauchsabgabe
-    c.hourly = true;   // as most dynamic contracts bill
+    // Households pay the EWRC's regulated price, with ERM Zapad's network fees and ESO's in the rates.
+    Country c{"Bulgaria",
+              "bg",
+              Source::NONE,
+              "",
+              "EUR",
+              0.0f,
+              0.0f,
+              0.0f,
+              CET_STANDARD_OFFSET + 3600,
+              "High: nearly every home pays a regulated price, cheaper at night"};
+    c.plan_text =
+        "name: Regulated price, in ERM Zapad's area\ncurrency: EUR\ncalendar:\n  apr-oct:\n    mon-sun: night "
+        "07:00 day 23:00 night\n  nov-mar:\n    mon-sun: night 06:00 day 22:00 night\nrates:\n  night: "
+        "0.09192\n  day: 0.15425\n";
+    countries.push_back(c);
+  }
+  {
+    // Households pay the government's regulated price, with HEP ODS's network fees (Bijeli) and the renewables fee in
+    // the rates, the night from 21:00 winter time, so 22:00 on the clock in summer.
+    Country c{"Croatia",
+              "hr",
+              Source::NONE,
+              "",
+              "EUR",
+              0.0f,
+              0.0f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "High: no home pays the market price, and the regulated one is cheaper at night"};
+    c.plan_text =
+        "name: Regulated price, HEP ODS Bijeli\ncurrency: EUR\nclock: winter\ncalendar:\n  jan-dec:\n    "
+        "mon-sun: nt 07:00 vt 21:00 nt\nrates:\n  nt: 0.10127\n  vt: 0.19903\n";
+    countries.push_back(c);
+  }
+  {
+    Country c{"Czechia",
+              "cz",
+              Source::SMARD,
+              "261",
+              "CZK",
+              0.21f,
+              0.4477f,
+              0.23297f,
+              CET_STANDARD_OFFSET,
+              "Low: few homes pay the market price"};
+    c.hourly = true;  // as Delta Green's and Yello's price lists say
+    countries.push_back(c);
+  }
+  {
+    Country c{"Denmark",
+              "dk",
+              Source::SMARD,
+              "253",
+              "DKK",
+              0.25f,
+              0.10f,
+              0.15375f,
+              CET_STANDARD_OFFSET,
+              "High: most homes pay the market price"};
+    c.hourly = true;  // as Radius reads meters by the hour unless asked
+    countries.push_back(c);
+  }
+  {
+    Country c{"Estonia",
+              "ee",
+              Source::ELERING,
+              "ee",
+              "EUR",
+              0.24f,
+              0.005f,
+              0.02704f,
+              VILNIUS_STANDARD_OFFSET,
+              "High: exchange-price packages are common"};
+    c.hourly = true;  // most meters still record hours
+    countries.push_back(c);
+  }
+  {
+    Country c{"Finland",
+              "fi",
+              Source::ELERING,
+              "fi",
+              "EUR",
+              0.255f,
+              0.0055f,
+              0.02918f,
+              VILNIUS_STANDARD_OFFSET,
+              "High: a third of homes pay the market price"};
+    c.hourly = true;  // most meters still record hours
+    countries.push_back(c);
+  }
+  {
+    // TURPE's network fee for a home with off-peak hours (CU4), 22:00 - 06:00, which Enedis sets for each address.
+    Country c{"France",
+              "fr",
+              Source::SMARD,
+              "254",
+              "EUR",
+              0.20f,
+              0.0234f,
+              0.03702f,
+              CET_STANDARD_OFFSET,
+              "Low: two small suppliers bill the market price, and off-peak hours differ by address"};
+    c.hourly = true;  // as Frank Énergie bills
+    c.plan_text =
+        "name: TURPE CU4, off-peak 22:00 - 06:00\ncurrency: EUR\ncalendar:\n  nov-mar:\n    mon-sun: hch 06:00 hph "
+        "22:00 hch\n  apr-oct:\n    mon-sun: hcb 06:00 hpb 22:00 hcb\nrates:\n  hph: 0.08988\n  hch: 0.04764\n  hpb: "
+        "0.01992\n  hcb: 0.01392\n";
+    countries.push_back(c);
+  }
+  {
+    Country c{"Germany",
+              "de",
+              Source::SMARD,
+              "4169",
+              "EUR",
+              0.19f,
+              0.020f,
+              0.07837f,
+              CET_STANDARD_OFFSET,
+              "Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one"};
     countries.push_back(c);
   }
   {
@@ -575,91 +651,304 @@ int main() try {
     // meter, in ELMŰ's area: cheaper from 22:00 winter time on workdays and all weekend, within its own 2,523 kWh a
     // year. The car's 3,333 kWh pass that, so each rate blends its price with the 70.104 Ft above the band, by their
     // shares.
-    Country c{"Hungary", "A2 (regulated)", Source::NONE, "", "HUF", 0.0f, 0.0f, 0.0f, 23 * 60, CET_STANDARD_OFFSET};
+    Country c{"Hungary",
+              "hu",
+              Source::NONE,
+              "",
+              "HUF",
+              0.0f,
+              0.0f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night"};
     c.plan_text =
-        "name: Hungary, A2\ncurrency: HUF\nclock: winter\ncalendar:\n  jan-dec:\n    mon-fri: off 06:00 "
-        "peak 22:00 off\n    sat-sun: off\nrates:\n  off: 41.388\n  peak: 49.175\n";
-    countries.push_back(c);
-  }
-
-  {
-    // TURPE's network fee for a home with off-peak hours (CU4), 22:00 - 06:00, which Enedis sets for each address.
-    Country c{"France",      "TURPE CU4, 22:00 - 06:00 (custom)",
-              Source::SMARD, "254",
-              "EUR",         0.20f,
-              0.0234f,       0.03702f,
-              22 * 60,       CET_STANDARD_OFFSET};
-    c.hourly = true;  // as Frank Énergie bills
-    c.plan_text =
-        "name: TURPE CU4, 22:00 - 06:00\ncurrency: EUR\ncalendar:\n  nov-mar:\n    mon-sun: hch 06:00 hph 22:00 hch\n"
-        "  apr-oct:\n    mon-sun: hcb 06:00 hpb 22:00 hcb\nrates:\n  hph: 0.08988\n  hch: 0.04764\n  hpb: 0.01992\n"
-        "  hcb: 0.01392\n";
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Romania", "ro/deer-jt", Source::ENERGY_CHARTS,     "RO", "RON", 0.21f, 0.242f,
-              0.17847f,  24 * 60,      CET_STANDARD_OFFSET + 3600};
-    countries.push_back(c);
-  }
-
-  {
-    // Hourly offers bill the national PUN Index GME, which only GME serves, with a session token: IT-North's price,
-    // which the board uses, stands in for it.
-    Country c{"Italy", "it/td", Source::SMARD, "255", "EUR", 0.10f, 0.0242f, 0.08286f, 24 * 60, CET_STANDARD_OFFSET};
-    c.market_factor = 1.10f;  // the PUN billed on 10% grid losses too
-    c.hourly = true;
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Portugal", "pt/bi-horaria-diario", Source::OMIE, "PT", "EUR", 0.23f, 0.03444f, 0.00377f, 22 * 60, 0};
-    c.market_factor = 1.15f;  // the grid losses indexed offers bill
-    countries.push_back(c);
-  }
-
-  {
-    Country c{"Slovenia", "si/omreznina", Source::SMARD, "260",   "EUR",
-              0.22f,      0.01586f,       0.003f,        22 * 60, CET_STANDARD_OFFSET};
-    c.hourly = true;  // as Bisol, most dynamic homes' supplier, bills
-    countries.push_back(c);
-  }
-
-  {
-    // Households pay ÚRSO's regulated price, ZSE's DD3 without the state's aid, with ZSD's fees and levies in the
-    // rates, its low tariff at the hours of most of ZSD's programs.
-    Country c{"Slovakia", "DD3 (regulated)", Source::NONE,       "", "EUR", 0.0f, 0.0f,
-              0.0f,       23 * 60 + 30,      CET_STANDARD_OFFSET};
-    c.plan_text =
-        "name: Slovakia, regulated\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: nt 05:30 vt 13:30 nt "
-        "15:30 vt 23:30 nt\nrates:\n  nt: 0.15264\n  vt: 0.21046\n";
+        "name: A2 on the car's own meter, ELMŰ\ncurrency: HUF\nclock: winter\ncalendar:\n  jan-dec:\n    "
+        "mon-fri: off 06:00 peak 22:00 off\n    sat-sun: off\nrates:\n  off: 41.388\n  peak: 49.175\n";
     countries.push_back(c);
   }
   {
     // EV owners take a fixed plan with a cheap night instead of a dynamic contract, which costs more: Electric
     // Ireland's Night Boost from 1 July 2026.
-    Country c{"Ireland", "Night Boost (fixed)", Source::NONE, "", "EUR", 0.0f, 0.0f, 0.0f, 26 * 60, 0};
+    Country c{"Ireland",
+              "ie",
+              Source::NONE,
+              "",
+              "EUR",
+              0.0f,
+              0.0f,
+              0.0f,
+              0,
+              "High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts"};
     c.plan_text =
-        "name: Ireland, Night Boost\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: night 02:00 boost "
-        "04:00 night 08:00 day 23:00 night\nrates:\n  boost: 0.10880\n  night: 0.18540\n  day: 0.37600\n";
+        "name: Electric Ireland Night Boost\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: night 02:00 "
+        "boost 04:00 night 08:00 day 23:00 night\nrates:\n  boost: 0.10880\n  night: 0.18540\n  day: 0.37600\n";
+    countries.push_back(c);
+  }
+  {
+    // Hourly offers bill the national PUN Index GME, which only GME serves, with a session token: IT-North's price,
+    // which the board uses, stands in for it.
+    Country c{"Italy",
+              "it",
+              Source::SMARD,
+              "255",
+              "EUR",
+              0.10f,
+              0.0242f,
+              0.08286f,
+              CET_STANDARD_OFFSET,
+              "Medium: about 3% of homes pay the hourly price"};
+    c.market_factor = 1.10f;  // the PUN billed on 10% grid losses too
+    c.hourly = true;
+    countries.push_back(c);
+  }
+  {
+    Country c{"Latvia",
+              "lv",
+              Source::ELERING,
+              "lv",
+              "EUR",
+              0.21f,
+              0.014f,
+              0.0f,
+              VILNIUS_STANDARD_OFFSET,
+              "High: one home in six pays the market price"};
+    countries.push_back(c);
+  }
+  {
+    Country c{"Lithuania",
+              "lt",
+              Source::ELERING,
+              "lt",
+              "EUR",
+              0.21f,
+              0.025f,
+              -0.00026f,
+              VILNIUS_STANDARD_OFFSET,
+              "Medium: a few percent of homes pay each quarter-hour's price, most a fixed one"};
+    countries.push_back(c);
+  }
+  {
+    Country c{"Luxembourg",
+              "lu",
+              Source::SMARD,
+              "4169",
+              "EUR",
+              0.08f,
+              0.0216f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "Low: few homes pay the market price"};
+    c.hourly = true;  // as Encevo's suppliers billed until 31 May 2026
+    countries.push_back(c);
+  }
+  {
+    Country c{"Netherlands",
+              "nl",
+              Source::SMARD,
+              "256",
+              "EUR",
+              0.21f,
+              0.019f,
+              0.11085f,
+              CET_STANDARD_OFFSET,
+              "High: 8% of homes pay the market price"};
+    c.hourly = true;  // as about half the dynamic contracts bill
+    c.plan_text =
+        "name: No grid fee per kWh\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: flat\nrates:\n  flat: 0\n";
+    countries.push_back(c);
+  }
+  {
+    // Spot contracts with the state's support, which most homes' power in NO1 has left for Norgespris' fixed price.
+    Country c{"Norway",
+              "no",
+              Source::ENERGY_CHARTS,
+              "NO1",
+              "NOK",
+              0.25f,
+              0.059f,
+              0.10163f,
+              CET_STANDARD_OFFSET,
+              "Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well"};
+    c.hourly = true;  // meters record hours
+    c.support_share = 0.9f;
+    c.support_from = 0.77f;
+    countries.push_back(c);
+  }
+  {
+    Country c{"Poland",
+              "pl",
+              Source::SMARD,
+              "257",
+              "PLN",
+              0.23f,
+              0.10357f,
+              0.059655f,
+              CET_STANDARD_OFFSET,
+              "Low: 0.03% of homes have a dynamic contract, and it bills another auction's price"};
+    c.hourly = true;  // as dynamic contracts bill TGE's Fixing I, a price the board doesn't have, by the hour
+    countries.push_back(c);
+  }
+  {
+    Country c{"Portugal", "pt",     Source::OMIE, "PT", "EUR",
+              0.23f,      0.03444f, 0.00377f,     0,    "Low: under 1% of homes pay the market price"};
+    c.market_factor = 1.15f;  // the grid losses indexed offers bill
+    countries.push_back(c);
+  }
+  {
+    Country c{"Romania",
+              "ro",
+              Source::ENERGY_CHARTS,
+              "RO",
+              "RON",
+              0.21f,
+              0.242f,
+              0.17847f,
+              CET_STANDARD_OFFSET + 3600,
+              "Low: no home had a dynamic contract in 2025"};
+    countries.push_back(c);
+  }
+  {
+    // Households pay ÚRSO's regulated price, ZSE's DD3 without the state's aid, with ZSD's fees and levies in the
+    // rates, its low tariff at the hours of most of ZSD's programs.
+    Country c{"Slovakia",
+              "sk",
+              Source::NONE,
+              "",
+              "EUR",
+              0.0f,
+              0.0f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "High: nearly every home pays a regulated price, cheaper at night"};
+    c.plan_text =
+        "name: Regulated price, DD3 in ZSD's area\ncurrency: EUR\ncalendar:\n  jan-dec:\n    mon-sun: nt "
+        "05:30 vt 13:30 nt 15:30 vt 23:30 nt\nrates:\n  nt: 0.15264\n  vt: 0.21046\n";
+    countries.push_back(c);
+  }
+  {
+    Country c{"Slovenia",
+              "si",
+              Source::SMARD,
+              "260",
+              "EUR",
+              0.22f,
+              0.01586f,
+              0.003f,
+              CET_STANDARD_OFFSET,
+              "Low: 0.3% of homes pay the market price"};
+    c.hourly = true;  // as Bisol, most dynamic homes' supplier, bills
+    countries.push_back(c);
+  }
+  {
+    Country c{"Spain",
+              "es",
+              Source::OMIE,
+              "ES",
+              "EUR",
+              0.21f,
+              0.03267f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "High: over a quarter of homes pay each hour's price, most on the regulated PVPC"};
+    c.factor = 1.0511269632f;  // the electricity tax
+    c.market_factor = 1.167f;  // grid losses at night and the municipal rate
+    c.hourly = true;
+    countries.push_back(c);
+  }
+  {
+    Country c{"Sweden",
+              "se",
+              Source::ELPRISETJUSTNU,
+              "SE3",
+              "SEK",
+              0.25f,
+              0.12f,
+              0.45f,
+              CET_STANDARD_OFFSET,
+              "High: one contract in seven pays each quarter-hour's or hour's price, most the month's average"};
+    countries.push_back(c);
+  }
+  {
+    // Households pay EKZ's regulated price, the same every hour, with its network fee and the federal levies.
+    Country c{"Switzerland",
+              "ch",
+              Source::NONE,
+              "",
+              "CHF",
+              0.0f,
+              0.0f,
+              0.0f,
+              CET_STANDARD_OFFSET,
+              "High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour"};
+    c.plan_text =
+        "name: EKZ's price, Netz 400ST\ncurrency: CHF\ncalendar:\n  apr-sep:\n    mon-sun: summer\n  "
+        "oct-mar:\n    mon-sun: winter\nrates:\n  summer: 0.21771\n  winter: 0.26419\n";
     countries.push_back(c);
   }
 
+  // Every plan of each country, the market prices loaded once for each area.
+  std::map<std::string, PriceTable> markets;
+  std::map<std::string, Rates> rates;
   std::vector<Result> results;
-  results.reserve(countries.size());
-  for (const Country &country : countries)
-    results.push_back(run(country, first_night, last_night));
+  for (const Country &country : countries) {
+    std::vector<std::string> plans;
+    if (country.plan_text == nullptr) {
+      for (const auto &entry : std::filesystem::directory_iterator(std::string("plans/") + country.code))
+        if (entry.path().extension() == ".yaml")
+          plans.push_back(std::string(country.code) + "/" + entry.path().stem().string());
+      std::sort(plans.begin(), plans.end());
+    } else {
+      plans.emplace_back();  // its own
+    }
+    for (const std::string &plan : plans) {
+      Country c = country;
+      if (!plan.empty())
+        take_plan(c, plan);
+      const std::string key = std::to_string(static_cast<int>(c.source)) + c.area;
+      if (markets.count(key) == 0)
+        markets[key] = market_prices(c, first_night, last_night + 1);
+      const bool euros = std::string(c.currency) == "EUR";
+      if (!euros && rates.count(c.currency) == 0)
+        rates[c.currency] = ecb_rates(c.currency, first_night, last_night + 1);
+      const Rates &rate = rates[euros ? std::string() : c.currency];
+      results.push_back(run(c, euros ? markets[key] : in_currency(markets[key], rate, first_night, last_night + 1),
+                            rate, first_night, last_night));
+    }
+  }
 
-  // The countries, by how much less charging cost with the board than with the car's own schedule, then by name.
-  std::sort(results.begin(), results.end(), [](const Result &a, const Result &b) {
-    const long less_a = percent_less(a.board, a.schedule), less_b = percent_less(b.board, b.schedule);
-    return less_a != less_b ? less_a > less_b : std::string(a.country->name) < b.country->name;
-  });
-  // What the board saved a year against the car's own schedule, in the plan's currency and in percent.
-  std::printf("| Country | Saved a year against a night schedule |\n| --- | --- |\n");
-  for (const Result &r : results)
-    std::printf("| %s | %s %s, %ld%% |\n", r.country->name, whole(r.schedule - r.board).c_str(), r.country->currency,
-                percent_less(r.board, r.schedule));
+  // The README's list of countries, each with what charging cost a year on each plan, against the car's own schedule.
+  const auto less = [](const Result &r) {
+    const long percent = percent_less(r.board, r.schedule);
+    return percent == 0  ? std::string("the same")
+           : percent > 0 ? std::to_string(percent) + "% less"
+                         : std::to_string(-percent) + "% more";
+  };
+  for (const Country &country : countries) {
+    std::vector<const Result *> mine;
+    for (const Result &r : results)
+      if (std::string(r.country.name) == country.name)
+        mine.push_back(&r);
+    std::sort(mine.begin(), mine.end(), [](const Result *a, const Result *b) { return a->name < b->name; });
+    long low = 100, high = -100;
+    for (const Result *r : mine) {
+      low = std::min(low, percent_less(r->board, r->schedule));
+      high = std::max(high, percent_less(r->board, r->schedule));
+    }
+    std::string level = std::string(country.confidence).substr(0, std::string(country.confidence).find(':'));
+    level[0] = static_cast<char>(std::tolower(level[0]));
+    const std::string saved = high <= 0 ? std::string("nothing saved")
+                              : low == high
+                                  ? std::to_string(high) + "% less"
+                                  : std::to_string(std::max(low, 0L)) + "% to " + std::to_string(high) + "% less";
+    std::printf("<details>\n<summary><b>%s</b>: %s, %s confidence</summary>\n\n", country.name, saved.c_str(),
+                level.c_str());
+    for (const Result *r : mine)
+      std::printf("- **%s%s:** %s %s on the car's schedule from %s, %s %s with this board, %s\n", r->name.c_str(),
+                  r->country.area_name.empty() ? "" : (" (" + r->country.area_name + ")").c_str(),
+                  whole(r->schedule).c_str(), country.currency, hhmm(r->schedule_from).c_str(), whole(r->board).c_str(),
+                  country.currency, less(*r).c_str());
+    std::printf("\n%s. [The research](plans/%s/AGENTS.md)\n\n</details>\n\n", country.confidence, country.code);
+  }
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());
