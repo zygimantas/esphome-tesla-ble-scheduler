@@ -34,7 +34,7 @@ Worked out on the market prices of every night from October 2025, when they went
 
 - **The car:** a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, at 15 kWh per 100 km.
 - **Every night:** plugged in from 18:00 to 07:00, charging at 11 kW.
-- **The driver already saves:** the car's own schedule, set in the car or the Tesla app, starts charging when the grid plan's night rate does, like 22:00 in Lithuania, or at midnight where the rate is the same all night.
+- **The driver already saves:** the Tesla's own scheduler starts charging at the same time every night, when cheap hours usually begin.
 - **The contract:** a dynamic one, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price.
 - **The price of each kWh:** what the bill charges for it: the market price of its quarter-hour, or of its hour where the bill counts hours, the grid plan's fee, taxes, levies, the supplier's margin and VAT, at their 2026 rates.
 
@@ -92,6 +92,7 @@ AI agents researched each country in October 2026: its notes give every figure's
 - **The grid fees:** the board's own plans, at their 2026 prices all year: each country's largest grid operator's, with a cheaper night where it has one, like [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml) in the chart. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
 - **The rest of each kWh:** VAT, a typical dynamic contract's margin, and what's the same every hour: taxes, levies and, where suppliers bill them, grid losses, at their 2026 rates. Monthly fees are left out, as they don't depend on when the car charges, and so are fees per kW, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
 - **Regulated and fixed prices:** the price itself, with its network fees and levies: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, in Hungary A2, for an electric car's own meter, and in Ireland Night Boost, a plan for electric cars with a cheap night.
+- **The car's own schedule:** from when the grid plan's night rate starts, like 22:00 in Lithuania, or from midnight where the rate is the same all night.
 - **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
 - **The research:** AI agents gathered each country's figures, one per country, from regulators', statistics offices' and suppliers' own pages, each with its source. Scripts then checked that no source or figure was lost when the notes were tidied, that each country's summary matches its row here, and that the market prices match Nord Pool's where both could be compared. Each country's notes list the sources to re-check every January.
 - **The chart:** Sweden's costs are in kronor, as its board counts them, and its bars as long as their euros at the ECB's daily rate, so the three compare.
