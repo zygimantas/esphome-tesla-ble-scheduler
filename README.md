@@ -33,7 +33,7 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 For one driver, the same in every country, from October 2025 to September 2026:
 
 - **The car:** a 75 kWh Tesla driving 20,000 km a year, about 55 km a day.
-- **Without the board:** the Tesla's own schedule starts charging at the same time every night, when cheap hours usually begin.
+- **Schedule:** the Tesla's own schedule starts charging at the same time every night, when cheap hours usually begin.
 - **Full prices:** with grid fees, taxes and VAT.
 
 **Sweden, Vattenfall Eldistribution Tidstariff (SE3)**
