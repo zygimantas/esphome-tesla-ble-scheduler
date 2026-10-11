@@ -30,27 +30,64 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## Example of yearly savings
 
-Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price of its quarter-hour, the grid plan's fee, taxes, levies, the supplier's margin and VAT, these at their 2026 rates.
+Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price of its quarter-hour, or of its hour where the bill counts hours, the grid plan's fee, taxes, levies, the supplier's margin and VAT, these at their 2026 rates.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night. Sweden, Vattenfall Tidstariff (SE3), in kronor: 7,543 SEK charging at once, 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board. Lithuania, ESO Standartinis with four zones: 1,001 EUR at once, 786 EUR from 22:00 and 536 EUR with this board. Spain, 2.0TD: 568 EUR at once, 436 EUR from 00:00 and 305 EUR with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night. Sweden, Vattenfall Tidstariff (SE3), in kronor: 7,543 SEK charging at once, 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board. Lithuania, ESO Standartinis with four zones: 1,001 EUR at once, 786 EUR from 22:00 and 536 EUR with this board. Spain, 2.0TD: 744 EUR at once, 616 EUR from 00:00 and 476 EUR with this board.">
 </picture>
 
-That's 34% less than charging at once in Sweden and 46% in Lithuania and Spain, and 20%, 32% and 30% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:30 in Sweden, 03:45 in Lithuania and 04:00 in Spain, still costs 5%, 9% and 20% more.
+That's 34% less than charging at once in Sweden, 46% in Lithuania and 36% in Spain, and 20%, 32% and 23% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the board still costs 5%, 8% and 12% less than the best one, which shows only afterwards, from 03:30 in Sweden, 03:45 in Lithuania and 04:00 in Spain.
+
+### Every country
+
+The same car and nights in each of the 26 countries, on a dynamic contract, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price. The car's own schedule starts when the plan's cheapest fee does, or at midnight where the fee is the same all night, and its best start is the one that cost least over the year, which shows only afterwards.
+
+Where homes pay the market price, the board's charging cost 13% to 50% less than charging at once, and 5% to 33% less than the car's own schedule. Much of that comes from charging late in the night, which the car's own schedule can do too, set at the right time: from its best start it came within 2% of the board in most of these countries. Where homes pay regulated or fixed prices, the car's own schedule does as well as the board. In many countries few homes pay the market price yet, as Confidence says. All these are shares of what charging costs, not of the whole bill.
+
+| Country | Less than charging at once | Less than the car's own schedule | Less than its best start | Confidence |
+| --- | --- | --- | --- | --- |
+| Estonia | 43% | 33%, from 22:00 | 5%, from 03:00 | High: exchange-price packages are common |
+| Lithuania | 46% | 32%, from 22:00 | 8%, from 03:45 | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
+| Czechia | 50% | 30%, from 20:00 | 0%, from 03:00 | Low: few homes pay the market price |
+| Latvia | 38% | 25%, from 00:00 | 15%, from 04:30 | High: one home in six pays the market price |
+| Spain | 36% | 23%, from 00:00 | 12%, from 04:00 | High: over a quarter of homes pay each hour's price, most on the regulated PVPC |
+| France | 26% | 23%, from 22:00 | 1%, from 04:00 | Low: two small suppliers bill the market price, and off-peak hours differ by address |
+| Finland | 38% | 22%, from 22:00 | 2%, from 03:00 | High: a third of homes pay the market price |
+| Sweden | 34% | 20%, from 22:00 | 5%, from 03:30 | High: one contract in seven pays each quarter-hour's or hour's price, most the month's average |
+| Slovenia | 28% | 17%, from 22:00 | 0%, from 03:00 | Low: 0.3% of homes pay the market price |
+| Portugal | 37% | 16%, from 22:00 | 3%, from 03:00 | Low: under 1% of homes pay the market price |
+| Romania | 18% | 14%, from 00:00 | 6%, from 04:30 | Low: no home had a dynamic contract in 2025 |
+| Denmark | 48% | 9%, from 00:00 | 1%, from 04:00 | High: most homes pay the market price |
+| Germany | 50% | 8%, from 00:00 | 1%, from 03:30 | Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one |
+| Poland | 41% | 8%, from 23:00 | 1%, from 03:00 | Low: 0.03% of homes have a dynamic contract, and it bills another auction's price |
+| Luxembourg | 20% | 8%, from 00:00 | 2%, from 03:00 | Low: few homes pay the market price |
+| Netherlands | 17% | 7%, from 00:00 | 1%, from 03:00 | High: 8% of homes pay the market price |
+| Belgium | 15% | 7%, from 00:00 | 1%, from 04:00 | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
+| Norway | 14% | 6%, from 22:00 | 1%, from 04:00 | Medium: most homes chose Norgespris, a fixed price, where the car's own schedule does as well |
+| Austria | 17% | 5%, from 00:00 | 0%, from 03:00 | Low: about 1% of homes paid the market price in 2025 |
+| Italy | 13% | 5%, from 00:00 | 0%, from 04:00 | Medium: about 3% of homes pay the hourly price |
+| Ireland | 71% | 0%, from 02:00 | 0%, from 02:00 | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
+| Croatia | 49% | 0%, from 22:00 | 0%, from 22:00 | High: no home pays the market price, and the regulated one is cheaper at night |
+| Bulgaria | 40% | 0%, from 23:00 | 0%, from 23:00 | High: nearly every home pays a regulated price, cheaper at night |
+| Slovakia | 27% | 0%, from 23:30 | 0%, from 23:30 | High: nearly every home pays a regulated price, cheaper at night |
+| Hungary | 12% | 0%, from 23:00 | 0%, from 23:00 | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
+| Switzerland | 0% | 0% | 0% | High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour |
 
 <details>
 <summary>How it's calculated</summary>
 
 - **The nights:** 365, from 1 October 2025 to 30 September 2026. Each night the car plugs in at 18:00 with 69% and needs 80% by 07:00, local time: 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into its battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery, at 11 kW.
-- **The market prices:** each quarter-hour's, from the day-ahead auction: for Sweden and Lithuania as elprisetjustnu.se and Elering, Estonia's grid operator, publish Nord Pool's, which the board downloads, to the cent, as Nord Pool keeps only its last two months free to download, Sweden's in kronor at the ECB's daily rate, within half a percent of Nord Pool's own; for Spain from OMIE, the Iberian market, as the board downloads them.
-- **The grid fees:** the board's own plans, [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml), at their 2026 prices all year.
-- **The rest of each kWh:** VAT on the market price, 25%, 21% and 21%; a typical supplier's margin, 0.12 kronor in Sweden and 2.5 cents in Lithuania with VAT; and what's the same every hour. In Sweden that's the energy tax, 0.45 kronor with VAT; in Lithuania the public service charges (VIAP), -0.03 cents, with no excise; in Spain the electricity tax, 5.11% of the rest. Monthly fees are left out, as they don't depend on when the car charges.
+- **The market prices:** each quarter-hour's, from the day-ahead auction, where a country has several areas, Stockholm's (SE3), Oslo's (NO1), Copenhagen's (DK2) and Italy's north. As Nord Pool keeps only its last two months free to download, they come from others that publish the same, to the cent where checked: Elering, Estonia's grid operator, for the Baltics and Finland, elprisetjustnu.se for Sweden, Energy-Charts for Norway and Romania and SMARD, Germany's Federal Network Agency, for the rest; for Spain and Portugal from OMIE, the Iberian market, as the board downloads them. Other currencies are at the ECB's daily rate, within half a percent of Nord Pool's own. Where bills count hours, as many still do, each hour costs the average of its four quarter-hours.
+- **The grid fees:** the board's own plans, at their 2026 prices all year: each country's largest grid operator's, with a cheaper night where it has one, like [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml) in the chart. Czechia's D27d, for electric cars, and France's off-peak hours from 22:00 are custom plans, as the board has neither, and the Netherlands has no grid fee per kWh.
+- **The rest of each kWh:** VAT, a typical dynamic contract's margin, and what's the same every hour: taxes, levies and, where suppliers bill them, grid losses, at their 2026 rates. Monthly fees are left out, as they don't depend on when the car charges, and so are fees per kW, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
+- **Regulated and fixed prices:** the price itself, with its network fees and levies: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, in Hungary A2, for an electric car's own meter, and in Ireland Night Boost, a plan for electric cars with a cheap night.
 - **Charging at once:** from 18:00 straight through, as a Tesla does when you plug it in.
-- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, 22:00 for Vattenfall and ESO and 00:00 for 2.0TD, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, 03:30, 03:45 and 04:00, shows only afterwards.
+- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, or midnight where the fee is the same all night, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, its best start, shows only afterwards.
 - **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
+- **Confidence:** High where many homes pay the prices the example takes, Medium where a few percent do or most chose another price, Low where hardly any do or the bill follows other prices. Each country's research, with its sources, is in its folder under plans/, in AGENTS.md, like [Lithuania's](plans/lt/AGENTS.md).
 - **The chart:** Sweden's costs are in kronor, as its board counts them, and its bars as long as their euros at the ECB's daily rate, so the three compare.
-- **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs, and its comments give the sources of the taxes, levies and margins.
+- **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs and the table.
 
 ```bash
 g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
