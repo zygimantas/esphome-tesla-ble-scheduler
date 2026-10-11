@@ -916,38 +916,47 @@ int main() try {
     }
   }
 
-  // The README's list of countries, each with what charging cost a year on each plan, against the car's own schedule.
-  const auto less = [](const Result &r) {
-    const long percent = percent_less(r.board, r.schedule);
-    return percent == 0  ? std::string("the same")
-           : percent > 0 ? std::to_string(percent) + "% less"
-                         : std::to_string(-percent) + "% more";
-  };
+  // The README's list of countries, each with a table of what charging cost a year on each plan, in the order of their
+  // files, against the car's own schedule.
   for (const Country &country : countries) {
+    const std::string currency = std::string(" ") + country.currency;
     std::vector<const Result *> mine;
     for (const Result &r : results)
       if (std::string(r.country.name) == country.name)
         mine.push_back(&r);
-    std::sort(mine.begin(), mine.end(), [](const Result *a, const Result *b) { return a->name < b->name; });
     long low = 100, high = -100;
+    double most = 0;
     for (const Result *r : mine) {
       low = std::min(low, percent_less(r->board, r->schedule));
       high = std::max(high, percent_less(r->board, r->schedule));
+      most = std::max(most, r->schedule - r->board);
     }
     std::string level = std::string(country.confidence).substr(0, std::string(country.confidence).find(':'));
-    level[0] = static_cast<char>(std::tolower(level[0]));
-    const std::string saved = high <= 0 ? std::string("nothing saved")
-                              : low == high
-                                  ? std::to_string(high) + "% less"
-                                  : std::to_string(std::max(low, 0L)) + "% to " + std::to_string(high) + "% less";
-    std::printf("<details>\n<summary><b>%s</b>: %s, %s confidence</summary>\n\n", country.name, saved.c_str(),
-                level.c_str());
-    for (const Result *r : mine)
-      std::printf("- **%s%s:** %s %s on the car's schedule from %s, %s %s with this board, %s\n", r->name.c_str(),
+    const std::string reason = std::string(country.confidence).substr(level.size() + 1);
+    std::string summary = "nothing saved";
+    if (high > 0)
+      summary = (mine.size() > 1 ? "up to " : "") + whole(most) + currency + " a year, " +
+                (low == high ? "" : std::to_string(std::max(low, 0L)) + "% to ") + std::to_string(high) + "% less";
+    std::string lower = level;
+    lower[0] = static_cast<char>(std::tolower(lower[0]));
+    std::printf("<details>\n<summary><b>%s</b>: %s, %s confidence</summary>\n\n", country.name, summary.c_str(),
+                lower.c_str());
+    std::printf(
+        "| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |\n"
+        "| --- | ---: | ---: | ---: | ---: |\n");
+    for (const Result *r : mine) {
+      const long percent = percent_less(r->board, r->schedule);
+      const std::string saved =
+          percent > 0   ? whole(r->schedule - r->board) + currency + ", " + std::to_string(percent) + "%"
+          : percent < 0 ? whole(r->board - r->schedule) + currency + " more, " + std::to_string(-percent) + "%"
+                        : std::string("nothing");
+      std::printf("| %s%s | %s | %s%s | %s%s | %s |\n", r->name.c_str(),
                   r->country.area_name.empty() ? "" : (" (" + r->country.area_name + ")").c_str(),
-                  whole(r->schedule).c_str(), country.currency, hhmm(r->schedule_from).c_str(), whole(r->board).c_str(),
-                  country.currency, less(*r).c_str());
-    std::printf("\n%s. [The research](plans/%s/AGENTS.md)\n\n</details>\n\n", country.confidence, country.code);
+                  hhmm(r->schedule_from).c_str(), whole(r->schedule).c_str(), currency.c_str(), whole(r->board).c_str(),
+                  currency.c_str(), saved.c_str());
+    }
+    std::printf("\n%s confidence:%s. [The research](plans/%s/AGENTS.md)\n\n</details>\n\n", level.c_str(),
+                reason.c_str(), country.code);
   }
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
