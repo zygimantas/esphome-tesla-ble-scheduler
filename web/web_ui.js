@@ -191,9 +191,9 @@ const PAGE = `
         <input id="plan-file" type="file" accept=".yaml,.yml,.txt" hidden>
         <label class="row"><span>Contract type${info("price-hint", "About the contract type")}</span><span class="dropdown"><select id="set-price"><option value="market">Dynamic (spot, exchange)</option><option value="fixed">Fixed (or a monthly average)</option></select></span></label>
         <p id="price-hint" class="note hint" hidden>What your contract with the supplier says: Dynamic if its price follows the exchange or spot price by the hour, Fixed for a fixed price or one set by the month's average.</p>
-        <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" type="number" min="0" step="any" inputmode="decimal"><span id="margin-range" class="note error" hidden></span></label>
+        <label id="margin-row" class="row"><span>Supplier's margin${info("margin-hint", "About the supplier's margin")}</span><input id="set-margin" min="0" inputmode="decimal"><span id="margin-range" class="note error" hidden></span></label>
         <p id="margin-hint" class="note hint" hidden>What your supplier adds per kWh on top of the exchange price, as your contract says. It doesn't change when the car charges, only the costs the page shows.</p>
-        <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" type="number" min="0" step="any" inputmode="decimal"><span id="fixed-range" class="note error" hidden></span></label>
+        <label id="fixed-row" class="row"><span>Supplier's part${info("fixed-hint", "About the supplier's part")}</span><input id="set-fixed" min="0" inputmode="decimal"><span id="fixed-range" class="note error" hidden></span></label>
         <p id="fixed-hint" class="note hint" hidden>Your supplier's own price per kWh, without the grid fees, as on its line of the bill. It doesn't change when the car charges, only the costs the page shows.</p>
         </div>
         <p class="note error" hidden></p>
@@ -209,9 +209,9 @@ const PAGE = `
         <label class="row"><span>VIN${info("vin-hint", "About the VIN")}</span><input id="set-vin" placeholder="17 letters and digits" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></label>
         <p id="vin-hint" class="note hint" hidden>The board needs your car's VIN to find it over Bluetooth and talk to it. It's on the car's screen under Controls → Software, and at the bottom of the Tesla app's home screen. It stays on the board.</p>
         <div id="car-fields">
-        <label class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" type="number" required min="20" max="200" step="any" inputmode="decimal" placeholder="75"><span id="battery-range" class="note error" hidden></span></label>
+        <label class="row"><span>Battery (kWh)${info("battery-hint", "About the battery")}</span><input id="set-battery" required min="20" max="200" inputmode="decimal" placeholder="75"><span id="battery-range" class="note error" hidden></span></label>
         <p id="battery-hint" class="note hint" hidden>The battery's usable size tells the board how much to charge. A new board guesses it from the car's model: about 60 kWh for a standard range Model 3 or Y, 75 to 79 for a Long Range, 95 to 100 for a Model S or X.</p>
-        <label class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" type="number" required min="1" max="22" step="any" inputmode="decimal" placeholder="11"><span id="power-range" class="note error" hidden></span></label>
+        <label class="row"><span>Charging power (kW)${info("power-hint", "About the charging power")}</span><input id="set-power" required min="1" max="22" inputmode="decimal" placeholder="11"><span id="power-range" class="note error" hidden></span></label>
         <p id="power-hint" class="note hint" hidden>What the Tesla app shows while the car charges at home, like 11 kW on three phases or 7.4 kW on one. With the battery's size, it tells the board how long charging takes.</p>
         </div>
         <p class="note error" hidden></p>
@@ -236,7 +236,7 @@ const PAGE = `
       <hr id="prices-line">
       <label id="topic-row" class="row"><span>Ntfy topic${info("topic-hint", "About phone messages")}</span><span class="inline-field"><input id="set-topic" maxlength="64" pattern="[A-Za-z0-9_\\-]{0,64}" title="The topic's name: up to 64 letters, digits, - and _" autocomplete="off" spellcheck="false" placeholder="none"><button id="topic" type="button" aria-label="A new topic, copied">${RENEW}</button></span></label>
       <p id="topic-hint" class="note hint" hidden>Phone messages come through the ntfy app. The button in the field makes a new topic and copies it: subscribe to it in the app by pasting it, and press Save. Anyone who knows the topic can read the messages.</p>
-      <label id="warning-row" class="row"><span>Warning price${info("warning-hint", "About the warning price")}</span><input id="set-warning" type="number" min="0" step="any" inputmode="decimal" placeholder="none"><span id="warning-range" class="note error" hidden></span></label>
+      <label id="warning-row" class="row"><span>Warning price${info("warning-hint", "About the warning price")}</span><input id="set-warning" min="0" inputmode="decimal" placeholder="none"><span id="warning-range" class="note error" hidden></span></label>
       <p id="warning-hint" class="note hint" hidden>A schedule that would average this much or more per kWh, with the grid fees, brings a warning here and in its phone message. The car still charges, unless you delete the schedule. Empty for no warning.</p>
       <hr>
       <div class="row"><span>Uptime</span><strong id="uptime">-</strong></div>
@@ -793,22 +793,30 @@ function keepOnly(field, clean) {
   field.setSelectionRange(caret, caret);
 }
 
-// Whether the shown fields pass their own checks; else the first that doesn't says why, by the field, and number fields
-// show their range under them. A hidden one can't, so it isn't checked.
+// Whether the shown fields pass their own checks; else the first that doesn't says why, by the field, and decimal
+// fields show their range under them. A hidden one can't, so it isn't checked.
 const valid = (fields) => {
-  for (const field of fields) if (field.type === "number") checkRange(field);
+  for (const field of fields) if (field.inputMode === "decimal") checkRange(field);
   return [...fields].every((field) => field.closest("[hidden]") || field.reportValidity());
 };
 
-// A number field's range under it, in red, while what it holds is outside it, as the browser says so only at Continue
+// A decimal field's range under it, in red, while what it holds is outside it, as the browser says so only at Continue
 // or Save, and Safari on a phone not even then; the unit is the one its name ends in.
 function checkRange(field) {
   const name = field.closest(".row").firstElementChild.textContent;
   const unit = name.includes("(") ? name.slice(name.indexOf("(") + 1, name.indexOf(")")) : "";
+  const range = `From ${field.min} to ${field.max} ${unit}`;
+  const number = Number(decimal(field.id));
+  field.setCustomValidity(!field.value.trim() || (number >= field.min && number <= field.max) ? "" : range);
   const note = $(`${field.id.slice(4)}-range`);
-  note.textContent = `From ${field.min} to ${field.max} ${unit}`;
+  note.textContent = range;
   note.hidden = field.validity.valid;
 }
+
+// A decimal field's value as the settings file has it, with a point, also where a comma was typed: decimal fields are
+// text fields with the decimal keypad, as an iPhone in a country that writes a comma shows only the comma there and
+// turns it away in a number field.
+const decimal = (id) => $(id).value.trim().replace(",", ".");
 
 // Continue, at the setup's prices and car: the step's checks, the car's VIN first, and its save, which the board takes
 // at once while it has no car, as in the setup, then on to the next step.
@@ -918,20 +926,20 @@ function formSettings() {
   const { currency, converted } = settings.options.areas[v("set-area")];
   if (converted || (fixed && currency !== "EUR")) lines.push(`currency: ${converted ?? currency}`);
   // the supplier's fixed price goes on top of a grid plan's fees; even at 0, it says the contract is a fixed one
-  if (fixed) lines.push(`fixed_price: ${v("set-fixed") || 0}`);
+  if (fixed) lines.push(`fixed_price: ${decimal("set-fixed") || 0}`);
   if (!fixed) {
     lines.push("market:", `  area: ${v("set-area")}`);
-    if (Number(v("set-margin"))) lines.push(`  margin: ${v("set-margin")}`);
+    if (Number(decimal("set-margin"))) lines.push(`  margin: ${decimal("set-margin")}`);
     lines.push(`  vat: ${vatOf(v("set-area")) / 100}`);
   }
   if (v("set-topic")) lines.push(`ntfy_topic: ${v("set-topic")}`);
-  if (Number(v("set-warning")) > 0) lines.push(`warning_price: ${v("set-warning")}`);
+  if (Number(decimal("set-warning")) > 0) lines.push(`warning_price: ${decimal("set-warning")}`);
   if (gridPlan()) lines.push("grid:", `  plan: ${gridPlan()}`);
   else if (customPlan) lines.push("grid:", "  plan:", ...customPlan.split("\n").map((line) => line && `    ${line}`));
   if (v("set-vin"))
     lines.push(
-      `tesla_battery_kwh: ${v("set-battery")}`,
-      `tesla_charging_kw: ${v("set-power")}`,
+      `tesla_battery_kwh: ${decimal("set-battery")}`,
+      `tesla_charging_kw: ${decimal("set-power")}`,
       `tesla_vin: ${v("set-vin")}`,
     );
   lines.push(`timezone: ${timeZone()}`);
