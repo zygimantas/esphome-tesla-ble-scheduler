@@ -918,7 +918,8 @@ int main() try {
   // The README's list of countries, each with a table of what charging cost a year on each plan, in the order of their
   // files, against the car's own schedule.
   for (const Country &country : countries) {
-    const std::string currency = std::string(" ") + country.currency;
+    // Non-breaking spaces keep each figure and its heading on one line, so only a plan's name wraps.
+    const std::string currency = std::string("&nbsp;") + country.currency;
     std::vector<const Result *> mine;
     for (const Result &r : results)
       if (std::string(r.country.name) == country.name)
@@ -933,14 +934,16 @@ int main() try {
     // The empty paragraph leaves as much room above the table as below it.
     std::printf("<details>\n<summary>%s <b>%s</b></summary>\n<p></p>\n\n", icon, country.name);
     std::printf(
-        "| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |\n"
+        "| Grid plan | Car's&nbsp;schedule&nbsp;from | Car's&nbsp;schedule "
+        "| This&nbsp;board | Saved&nbsp;a&nbsp;year |\n"
         "| --- | ---: | ---: | ---: | ---: |\n");
     for (const Result *r : mine) {
       const long percent = percent_less(r->board, r->schedule);
       const std::string saved =
-          percent > 0   ? whole(r->schedule - r->board) + currency + ", " + std::to_string(percent) + "%"
-          : percent < 0 ? whole(r->board - r->schedule) + currency + " more, " + std::to_string(-percent) + "%"
-                        : std::string("nothing");
+          percent > 0 ? whole(r->schedule - r->board) + currency + ",&nbsp;" + std::to_string(percent) + "%"
+          : percent < 0
+              ? whole(r->board - r->schedule) + currency + "&nbsp;more,&nbsp;" + std::to_string(-percent) + "%"
+              : std::string("nothing");
       std::printf("| %s%s | %s | %s%s | %s%s | %s |\n", r->name.c_str(),
                   r->country.area_name.empty() ? "" : (" (" + r->country.area_name + ")").c_str(),
                   hhmm(r->schedule_from).c_str(), whole(r->schedule).c_str(), currency.c_str(), whole(r->board).c_str(),
