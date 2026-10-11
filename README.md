@@ -534,7 +534,7 @@ High confidence: homes pay their grid operator's price, which at EKZ, the larges
 
 </details>
 
-AI agents researched each country in October 2026, with every figure's source in its notes, like [Lithuania's](plans/lt/AGENTS.md). Something wrong or out of date? [Open an issue](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/new/choose).
+<p><br></p>
 
 <details>
 <summary>How it's calculated</summary>
