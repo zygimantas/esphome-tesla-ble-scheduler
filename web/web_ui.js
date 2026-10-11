@@ -153,7 +153,7 @@ const PAGE = `
     </div>
     <div id="schedule-rows">
       <div id="windows"></div>
-      <button id="delete-schedule" class="red">Delete schedule</button>
+      <button id="delete-schedule" class="danger">Delete schedule</button>
     </div>
     <button id="stop-charging" class="red">Stop charging</button>
   </section>
