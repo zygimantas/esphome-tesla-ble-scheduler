@@ -17,7 +17,6 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -924,23 +923,9 @@ int main() try {
     for (const Result &r : results)
       if (std::string(r.country.name) == country.name)
         mine.push_back(&r);
-    long low = 100, high = -100;
-    double most = 0;
-    for (const Result *r : mine) {
-      low = std::min(low, percent_less(r->board, r->schedule));
-      high = std::max(high, percent_less(r->board, r->schedule));
-      most = std::max(most, r->schedule - r->board);
-    }
-    std::string level = std::string(country.confidence).substr(0, std::string(country.confidence).find(':'));
+    const std::string level = std::string(country.confidence).substr(0, std::string(country.confidence).find(':'));
     const std::string reason = std::string(country.confidence).substr(level.size() + 1);
-    std::string summary = "nothing saved";
-    if (high > 0)
-      summary = (mine.size() > 1 ? "up to " : "") + whole(most) + currency + " a year, " +
-                (low == high ? "" : std::to_string(std::max(low, 0L)) + "% to ") + std::to_string(high) + "% less";
-    std::string lower = level;
-    lower[0] = static_cast<char>(std::tolower(lower[0]));
-    std::printf("<details>\n<summary><b>%s</b>: %s, %s confidence</summary>\n\n", country.name, summary.c_str(),
-                lower.c_str());
+    std::printf("<details>\n<summary><b>%s</b></summary>\n\n", country.name);
     std::printf(
         "| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |\n"
         "| --- | ---: | ---: | ---: | ---: |\n");

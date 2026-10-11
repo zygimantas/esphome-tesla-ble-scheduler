@@ -52,7 +52,7 @@ Where homes pay the market price, charging with the board cost 4% to 36% less th
 Open your country for what charging cost a year on each of its grid plans, or on its regulated or fixed price, on the car's own schedule and with this board. Confidence says how many homes there pay the prices the example takes: high where many do, medium where a few percent do or most chose another price, low where hardly any do or the bill follows other prices.
 
 <details>
-<summary><b>Austria</b>: up to 48 EUR a year, 5% to 6% less, low confidence</summary>
+<summary><b>Austria</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -75,7 +75,7 @@ Low confidence: about 1% of homes paid the market price in 2025. [The research](
 </details>
 
 <details>
-<summary><b>Belgium</b>: up to 126 EUR a year, 4% to 13% less, low confidence</summary>
+<summary><b>Belgium</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -101,7 +101,7 @@ Low confidence: 0.4% of homes pay the market price, and Flanders' fee per kW isn
 </details>
 
 <details>
-<summary><b>Bulgaria</b>: nothing saved, high confidence</summary>
+<summary><b>Bulgaria</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -112,7 +112,7 @@ High confidence: nearly every home pays a regulated price, cheaper at night. [Th
 </details>
 
 <details>
-<summary><b>Croatia</b>: nothing saved, high confidence</summary>
+<summary><b>Croatia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -123,7 +123,7 @@ High confidence: no home pays the market price, and the regulated one is cheaper
 </details>
 
 <details>
-<summary><b>Czechia</b>: up to 5,578 CZK a year, 5% to 30% less, low confidence</summary>
+<summary><b>Czechia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -143,7 +143,7 @@ Low confidence: few homes pay the market price. [The research](plans/cz/AGENTS.m
 </details>
 
 <details>
-<summary><b>Denmark</b>: up to 409 DKK a year, 9% less, high confidence</summary>
+<summary><b>Denmark</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -161,7 +161,7 @@ High confidence: most homes pay the market price. [The research](plans/dk/AGENTS
 </details>
 
 <details>
-<summary><b>Estonia</b>: up to 213 EUR a year, 12% to 36% less, high confidence</summary>
+<summary><b>Estonia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -175,7 +175,7 @@ High confidence: exchange-price packages are common. [The research](plans/ee/AGE
 </details>
 
 <details>
-<summary><b>Finland</b>: up to 100 EUR a year, 6% to 25% less, high confidence</summary>
+<summary><b>Finland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -208,7 +208,7 @@ High confidence: a third of homes pay the market price. [The research](plans/fi/
 </details>
 
 <details>
-<summary><b>France</b>: 171 EUR a year, 23% less, low confidence</summary>
+<summary><b>France</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -219,7 +219,7 @@ Low confidence: two small suppliers bill the market price, and off-peak hours di
 </details>
 
 <details>
-<summary><b>Germany</b>: up to 247 EUR a year, 5% to 23% less, low confidence</summary>
+<summary><b>Germany</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -268,7 +268,7 @@ Low confidence: dynamic contracts and Modul 3 need a smart meter, and 6% of mete
 </details>
 
 <details>
-<summary><b>Hungary</b>: nothing saved, medium confidence</summary>
+<summary><b>Hungary</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -279,7 +279,7 @@ Medium confidence: homes pay regulated prices, and the car's own meter (A2) pays
 </details>
 
 <details>
-<summary><b>Ireland</b>: nothing saved, high confidence</summary>
+<summary><b>Ireland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -290,7 +290,7 @@ High confidence: electric car owners usually take a fixed plan with a cheap nigh
 </details>
 
 <details>
-<summary><b>Italy</b>: 45 EUR a year, 5% less, medium confidence</summary>
+<summary><b>Italy</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -301,7 +301,7 @@ Medium confidence: about 3% of homes pay the hourly price. [The research](plans/
 </details>
 
 <details>
-<summary><b>Latvia</b>: up to 142 EUR a year, 14% to 25% less, high confidence</summary>
+<summary><b>Latvia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -313,7 +313,7 @@ High confidence: one home in six pays the market price. [The research](plans/lv/
 </details>
 
 <details>
-<summary><b>Lithuania</b>: up to 254 EUR a year, 17% to 34% less, medium confidence</summary>
+<summary><b>Lithuania</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -331,7 +331,7 @@ Medium confidence: a few percent of homes pay each quarter-hour's price, most a 
 </details>
 
 <details>
-<summary><b>Luxembourg</b>: 49 EUR a year, 8% less, low confidence</summary>
+<summary><b>Luxembourg</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -342,7 +342,7 @@ Low confidence: few homes pay the market price. [The research](plans/lu/AGENTS.m
 </details>
 
 <details>
-<summary><b>Netherlands</b>: 60 EUR a year, 7% less, high confidence</summary>
+<summary><b>Netherlands</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -353,7 +353,7 @@ High confidence: 8% of homes pay the market price. [The research](plans/nl/AGENT
 </details>
 
 <details>
-<summary><b>Norway</b>: up to 276 NOK a year, 4% to 14% less, medium confidence</summary>
+<summary><b>Norway</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -372,7 +372,7 @@ Medium confidence: most homes' power is at Norgespris, a fixed price, where the 
 </details>
 
 <details>
-<summary><b>Poland</b>: up to 480 PLN a year, 5% to 15% less, low confidence</summary>
+<summary><b>Poland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -396,7 +396,7 @@ Low confidence: 0.03% of homes have a dynamic contract, and it bills another auc
 </details>
 
 <details>
-<summary><b>Portugal</b>: up to 139 EUR a year, 13% to 20% less, low confidence</summary>
+<summary><b>Portugal</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -411,7 +411,7 @@ Low confidence: under 1% of homes pay the market price. [The research](plans/pt/
 </details>
 
 <details>
-<summary><b>Romania</b>: up to 806 RON a year, 14% to 15% less, low confidence</summary>
+<summary><b>Romania</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -425,7 +425,7 @@ Low confidence: no home had a dynamic contract in 2025. [The research](plans/ro/
 </details>
 
 <details>
-<summary><b>Slovakia</b>: nothing saved, high confidence</summary>
+<summary><b>Slovakia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -436,7 +436,7 @@ High confidence: nearly every home pays a regulated price, cheaper at night. [Th
 </details>
 
 <details>
-<summary><b>Slovenia</b>: 120 EUR a year, 17% less, low confidence</summary>
+<summary><b>Slovenia</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -447,7 +447,7 @@ Low confidence: 0.3% of homes pay the market price. [The research](plans/si/AGEN
 </details>
 
 <details>
-<summary><b>Spain</b>: 140 EUR a year, 23% less, high confidence</summary>
+<summary><b>Spain</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -458,7 +458,7 @@ High confidence: over a quarter of homes pay each hour's price, most on the regu
 </details>
 
 <details>
-<summary><b>Sweden</b>: up to 1,716 SEK a year, 5% to 26% less, high confidence</summary>
+<summary><b>Sweden</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
@@ -494,7 +494,7 @@ High confidence: one contract in seven pays each quarter-hour's or hour's price,
 </details>
 
 <details>
-<summary><b>Switzerland</b>: nothing saved, high confidence</summary>
+<summary><b>Switzerland</b></summary>
 
 | Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
 | --- | ---: | ---: | ---: | ---: |
