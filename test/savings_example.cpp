@@ -650,14 +650,9 @@ int main() try {
   std::printf(
       "| Country | Less than charging at once | Less than the car's own schedule | Less than its best start "
       "|\n| --- | --- | --- | --- |\n");
-  for (const Result &r : results) {
-    // Where every start costs the same, as with one price at every hour, no start time is worth naming.
-    const bool same = percent_less(r.board, r.at_once) == 0;
-    const auto from = [same](int minutes) { return same ? std::string() : ", from " + hhmm(minutes); };
-    std::printf("| %s | %ld%% | %ld%%%s | %ld%%%s |\n", r.country->name, percent_less(r.board, r.at_once),
-                percent_less(r.board, r.schedule), from(r.country->cheap_from).c_str(), percent_less(r.board, r.best),
-                from(r.best_from).c_str());
-  }
+  for (const Result &r : results)
+    std::printf("| %s | %ld%% | %ld%% | %ld%% |\n", r.country->name, percent_less(r.board, r.at_once),
+                percent_less(r.board, r.schedule), percent_less(r.board, r.best));
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());

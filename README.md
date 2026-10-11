@@ -47,31 +47,31 @@ Where homes pay the market price, the board's charging cost 13% to 50% less than
 
 | Country | Less than charging at once | Less than the car's own schedule | Less than its best start | Confidence |
 | --- | --- | --- | --- | --- |
-| Estonia | 43% | 33%, from 22:00 | 5%, from 03:00 | High: exchange-price packages are common |
-| Lithuania | 46% | 32%, from 22:00 | 8%, from 03:45 | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
-| Czechia | 50% | 30%, from 20:00 | 0%, from 03:00 | Low: few homes pay the market price |
-| Latvia | 38% | 25%, from 00:00 | 15%, from 04:30 | High: one home in six pays the market price |
-| Spain | 36% | 23%, from 00:00 | 12%, from 04:00 | High: over a quarter of homes pay each hour's price, most on the regulated PVPC |
-| France | 26% | 23%, from 22:00 | 1%, from 04:00 | Low: two small suppliers bill the market price, and off-peak hours differ by address |
-| Finland | 38% | 22%, from 22:00 | 2%, from 03:00 | High: a third of homes pay the market price |
-| Sweden | 34% | 20%, from 22:00 | 5%, from 03:30 | High: one contract in seven pays each quarter-hour's or hour's price, most the month's average |
-| Slovenia | 28% | 17%, from 22:00 | 0%, from 03:00 | Low: 0.3% of homes pay the market price |
-| Portugal | 37% | 16%, from 22:00 | 3%, from 03:00 | Low: under 1% of homes pay the market price |
-| Romania | 18% | 14%, from 00:00 | 6%, from 04:30 | Low: no home had a dynamic contract in 2025 |
-| Denmark | 48% | 9%, from 00:00 | 1%, from 04:00 | High: most homes pay the market price |
-| Germany | 50% | 8%, from 00:00 | 1%, from 03:30 | Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one |
-| Poland | 41% | 8%, from 23:00 | 1%, from 03:00 | Low: 0.03% of homes have a dynamic contract, and it bills another auction's price |
-| Luxembourg | 20% | 8%, from 00:00 | 2%, from 03:00 | Low: few homes pay the market price |
-| Netherlands | 17% | 7%, from 00:00 | 1%, from 03:00 | High: 8% of homes pay the market price |
-| Belgium | 15% | 7%, from 00:00 | 1%, from 04:00 | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
-| Norway | 14% | 6%, from 22:00 | 1%, from 04:00 | Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well |
-| Austria | 17% | 5%, from 00:00 | 0%, from 03:00 | Low: about 1% of homes paid the market price in 2025 |
-| Italy | 13% | 5%, from 00:00 | 0%, from 04:00 | Medium: about 3% of homes pay the hourly price |
-| Ireland | 71% | 0%, from 02:00 | 0%, from 02:00 | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
-| Croatia | 49% | 0%, from 22:00 | 0%, from 22:00 | High: no home pays the market price, and the regulated one is cheaper at night |
-| Bulgaria | 40% | 0%, from 23:00 | 0%, from 23:00 | High: nearly every home pays a regulated price, cheaper at night |
-| Slovakia | 27% | 0%, from 23:30 | 0%, from 23:30 | High: nearly every home pays a regulated price, cheaper at night |
-| Hungary | 12% | 0%, from 23:00 | 0%, from 23:00 | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
+| Estonia | 43% | 33% | 5% | High: exchange-price packages are common |
+| Lithuania | 46% | 32% | 8% | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
+| Czechia | 50% | 30% | 0% | Low: few homes pay the market price |
+| Latvia | 38% | 25% | 15% | High: one home in six pays the market price |
+| Spain | 36% | 23% | 12% | High: over a quarter of homes pay each hour's price, most on the regulated PVPC |
+| France | 26% | 23% | 1% | Low: two small suppliers bill the market price, and off-peak hours differ by address |
+| Finland | 38% | 22% | 2% | High: a third of homes pay the market price |
+| Sweden | 34% | 20% | 5% | High: one contract in seven pays each quarter-hour's or hour's price, most the month's average |
+| Slovenia | 28% | 17% | 0% | Low: 0.3% of homes pay the market price |
+| Portugal | 37% | 16% | 3% | Low: under 1% of homes pay the market price |
+| Romania | 18% | 14% | 6% | Low: no home had a dynamic contract in 2025 |
+| Denmark | 48% | 9% | 1% | High: most homes pay the market price |
+| Germany | 50% | 8% | 1% | Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one |
+| Poland | 41% | 8% | 1% | Low: 0.03% of homes have a dynamic contract, and it bills another auction's price |
+| Luxembourg | 20% | 8% | 2% | Low: few homes pay the market price |
+| Netherlands | 17% | 7% | 1% | High: 8% of homes pay the market price |
+| Belgium | 15% | 7% | 1% | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
+| Norway | 14% | 6% | 1% | Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well |
+| Austria | 17% | 5% | 0% | Low: about 1% of homes paid the market price in 2025 |
+| Italy | 13% | 5% | 0% | Medium: about 3% of homes pay the hourly price |
+| Ireland | 71% | 0% | 0% | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
+| Croatia | 49% | 0% | 0% | High: no home pays the market price, and the regulated one is cheaper at night |
+| Bulgaria | 40% | 0% | 0% | High: nearly every home pays a regulated price, cheaper at night |
+| Slovakia | 27% | 0% | 0% | High: nearly every home pays a regulated price, cheaper at night |
+| Hungary | 12% | 0% | 0% | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
 | Switzerland | 0% | 0% | 0% | High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour |
 
 <details>
