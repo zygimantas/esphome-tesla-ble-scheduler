@@ -424,6 +424,14 @@ Result run(const Country &country, int64_t first_night, int64_t last_night) {
 // How much less the board's charging cost than another way, in whole percents.
 long percent_less(double board, double other) { return std::lround(100 * (1 - board / other)); }
 
+// A whole amount with commas between the thousands, as the README writes them.
+std::string whole(double amount) {
+  std::string digits = std::to_string(std::lround(amount));
+  for (auto at = static_cast<int>(digits.size()) - 3; at > (digits[0] == '-' ? 1 : 0); at -= 3)
+    digits.insert(static_cast<size_t>(at), ",");
+  return digits;
+}
+
 }  // namespace
 
 int main() try {
@@ -647,12 +655,16 @@ int main() try {
     return std::make_pair(percent_less(a.board, a.schedule), percent_less(a.board, a.at_once)) >
            std::make_pair(percent_less(b.board, b.schedule), percent_less(b.board, b.at_once));
   });
+  // What the board saved a year against each way of charging, in the plan's currency and in percent.
+  const auto saved = [](const Result &r, double other) {
+    return whole(other - r.board) + " " + r.country->currency + ", " + std::to_string(percent_less(r.board, other)) +
+           "%";
+  };
   std::printf(
-      "| Country | Less than charging at once | Less than the car's own schedule | Less than its best start "
-      "|\n| --- | --- | --- | --- |\n");
+      "| Country | If you charge as soon as you plug in | If you schedule charging for the night |\n"
+      "| --- | --- | --- |\n");
   for (const Result &r : results)
-    std::printf("| %s | %ld%% | %ld%% | %ld%% |\n", r.country->name, percent_less(r.board, r.at_once),
-                percent_less(r.board, r.schedule), percent_less(r.board, r.best));
+    std::printf("| %s | %s | %s |\n", r.country->name, saved(r, r.at_once).c_str(), saved(r, r.schedule).c_str());
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());
