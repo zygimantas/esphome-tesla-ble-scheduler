@@ -486,6 +486,22 @@ std::string whole(double amount) {
   return digits;
 }
 
+// A plan's name as the README's tables write it, to wrap only at a space: its hyphens are non-breaking ones, and so
+// are the spaces around one, as in a time range.
+std::string unbroken(const std::string &name) {
+  std::string out;
+  for (size_t i = 0; i < name.size(); ++i) {
+    const bool by_hyphen = (i > 0 && name[i - 1] == '-') || (i + 1 < name.size() && name[i + 1] == '-');
+    if (name[i] == '-')
+      out += "&#8209;";
+    else if (name[i] == ' ' && by_hyphen)
+      out += "&nbsp;";
+    else
+      out += name[i];
+  }
+  return out;
+}
+
 }  // namespace
 
 int main() try {
@@ -918,7 +934,7 @@ int main() try {
   // The README's list of countries, each with a table of what charging cost a year on each plan, in the order of their
   // files, against the car's own schedule.
   for (const Country &country : countries) {
-    // Non-breaking spaces keep each figure and its heading on one line, so only a plan's name wraps.
+    // Non-breaking spaces keep each figure and its heading on one line, so only a plan's name wraps, at its spaces.
     const std::string currency = std::string("&nbsp;") + country.currency;
     std::vector<const Result *> mine;
     for (const Result &r : results)
@@ -944,7 +960,7 @@ int main() try {
           : percent < 0
               ? whole(r->board - r->schedule) + currency + "&nbsp;more,&nbsp;" + std::to_string(-percent) + "%"
               : std::string("nothing");
-      std::printf("| %s%s | %s | %s%s | %s%s | %s |\n", r->name.c_str(),
+      std::printf("| %s%s | %s | %s%s | %s%s | %s |\n", unbroken(r->name).c_str(),
                   r->country.area_name.empty() ? "" : (" (" + r->country.area_name + ")").c_str(),
                   hhmm(r->schedule_from).c_str(), whole(r->schedule).c_str(), currency.c_str(), whole(r->board).c_str(),
                   currency.c_str(), saved.c_str());
