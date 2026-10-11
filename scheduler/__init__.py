@@ -74,6 +74,7 @@ async def to_code(config):
         ("status", "Charging status", var.set_status),
         ("mode", "Charging mode", var.set_mode),
         ("windows", "Charge windows", var.set_windows),
+        ("warning", "Price warning", var.set_warning),
         ("prices_until", "Prices until", var.set_prices_until),
         ("savings", "Savings", var.set_savings),
     ):

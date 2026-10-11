@@ -356,8 +356,9 @@ button:disabled {
   color: var(--accent);
 }
 
-/* --- No grid plan selected: in amber, as a warning --- */
-#plan-card {
+/* --- No grid plan selected and Above warning price: in amber, as warnings --- */
+#plan-card,
+#warning-card {
   border-color: var(--orange);
   background: color-mix(in srgb, var(--orange) 12%, var(--card));
 }

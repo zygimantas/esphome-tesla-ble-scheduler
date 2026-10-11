@@ -39,6 +39,7 @@ It charges the owner's car every night.
 - No charging the part above 80% late, just before Ready by.
 - No limit on the number of windows.
 - No guessed prices: a schedule uses only published quarter-hours and waits for the rest.
+- No price at which the board stops charging: the warning price only warns, on the page and by phone, as the owner doesn't want to wake up to a car that isn't charged. Delete schedule is the owner's to press.
 - No ranking slots by the fraction the car would use of them: that pushes the partly used slot and the spare one to the dear edge of the trough instead of keeping them in it.
 - No settings file for users: setting the board up on the page is easy, and the only file left to upload is a custom plan (Upload custom plan). The settings file holds only what the page writes: no Download or Upload settings, no settings the page doesn't show (like ntfy_server or a currency of one's own), and nothing merged over a plan from the list.
 

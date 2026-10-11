@@ -343,8 +343,9 @@ void SchedulerComponent::send_unsent_(int64_t now) {
   this->start_requests_();
 }
 
-// A message as ntfy takes it. A tap opens the page, on the home Wi-Fi, at the board's address now, which every phone
-// opens, as some Android phones don't find tesla.local. An unset address reads 0.0.0.0.
+// A message as ntfy takes it, a warning with ntfy's warning sign and at high priority. A tap opens the page, on the
+// home Wi-Fi, at the board's address now, which every phone opens, as some Android phones don't find tesla.local. An
+// unset address reads 0.0.0.0.
 std::string SchedulerComponent::message_json_(const Notification &message) const {
   std::string host = App.get_name() + ".local";
   for (const auto &ip : network::get_ip_addresses()) {
@@ -358,7 +359,12 @@ std::string SchedulerComponent::message_json_(const Notification &message) const
     root["topic"] = this->file_.ntfy_topic;
     root["title"] = message.title;
     root["message"] = message.message;
-    root["tags"].to<JsonArray>().add("electric_plug");
+    JsonArray tags = root["tags"].to<JsonArray>();
+    if (message.warning) {
+      tags.add("warning");
+      root["priority"] = 4;  // high
+    }
+    tags.add("electric_plug");
     root["click"] = "http://" + host;
   });
 }
