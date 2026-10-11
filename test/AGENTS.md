@@ -24,9 +24,9 @@
 
 ## The README's savings
 
-- savings_example.cpp works out the README's What it saves: every night from January to September 2026, in Germany on Westnetz's Modul 3 and in Lithuania on ESO's four zones, the board's make_schedule() against charging at once, the car's own schedule from when the plan's cheap fee starts and the best start found afterwards, each with the energy the board's schedule takes, and with the taxes, levies and margins that plans leave out, whose sources its comments give (researched in October 2026, each against a second source). CI only builds it, as it downloads the prices.
+- savings_example.cpp works out the README's What it saves: every night of a year, from October 2025, when the market prices went to quarter-hours, to September 2026, for 100 km of driving a day, in Germany on Westnetz's Modul 3 and in Lithuania on ESO's four zones, at 2026's fees, taxes and margins all year, the board's make_schedule() against charging at once, the car's own schedule from when the plan's cheap fee starts and the best start found afterwards, each with the energy the board's schedule takes, and with the taxes, levies and margins that plans leave out, whose sources its comments give (researched in October 2026, each against a second source). CI only builds it, as it downloads the prices.
 - Nord Pool serves only its last two months without an account, so Germany's prices come from SMARD and Lithuania's from Elering's dashboard: both matched Nord Pool's on every quarter-hour from 10 August to 30 September 2026.
-- Redo it after the plans' prices change in January (#161), with the year's taxes, levies and margins, then the README's figures and its charts, docs/images/savings-light.svg and savings-dark.svg, with a month's average, whose bars are 520 px times the cost over the largest.
+- Redo it after the plans' prices change in January (#161), for the last 12 months at the new prices, taxes, levies and margins, then the README's figures and its charts, docs/images/savings-light.svg and savings-dark.svg, whose bars are 520 px times the cost over the largest.
 
 ## Mutation testing
 

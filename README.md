@@ -30,16 +30,16 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## What it saves
 
-Every night from January to September 2026, a 75 kWh Tesla comes home at 18:00 with 70% and needs 80% by 07:00, about 50 km of driving, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price, the grid plan's fee for that quarter-hour, taxes, levies, the supplier's margin and VAT.
+Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 100 km a day comes home at 18:00 with 60% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it at 2026's prices: the market price, the grid plan's fee for that quarter-hour, taxes, levies, the supplier's margin and VAT.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="A month on average, charging from 70% to 80% every night, January to September 2026. Germany, Westnetz Modul 3: 112 EUR charging at once, 65 EUR with the car's own schedule from 00:00 and 60 EUR with this board. Lithuania, ESO Standartinis with four zones: 72 EUR at once, 64 EUR from 22:00 and 43 EUR with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="A year, October 2025 to September 2026, driving 100 km a day and charging from 60% to 80% every night. Germany, Westnetz Modul 3: 2,760 EUR charging at once, 1,452 EUR with the car's own schedule from 00:00 and 1,365 EUR with this board. Lithuania, ESO Standartinis with four zones: 1,869 EUR at once, 1,385 EUR from 22:00 and 994 EUR with this board.">
 </picture>
 
-That's 47% less than charging at once in Germany and 41% in Lithuania, and 8% and 33% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:45 in Germany and 04:00 in Lithuania, still costs 1% and 9% more.
+That's 51% less than charging at once in Germany and 47% in Lithuania, and 6% and 28% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:00 in Germany and 03:15 in Lithuania, still costs 1% and 7% more.
 
-The costs come from the published prices: the market's, from SMARD in Germany and Nord Pool in Lithuania, the plans' for 2026 in [plans/](plans/), and the taxes, levies and a typical margin, with their sources in [test/savings_example.cpp](test/savings_example.cpp), which reruns it all with the board's own scheduler.
+The costs come from the published prices: the market's, from SMARD in Germany and Nord Pool in Lithuania, the plans' in [plans/](plans/), and the taxes, levies and a typical margin, with their sources in [test/savings_example.cpp](test/savings_example.cpp), which reruns it all with the board's own scheduler.
 
 ## How it works
 

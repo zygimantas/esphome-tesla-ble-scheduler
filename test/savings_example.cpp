@@ -1,5 +1,6 @@
-// The README's What it saves: what charging cost every night from 1 January to 30 September 2026, in Germany and in
-// Lithuania, on the published market prices, with the board's own plans and scheduler (make_schedule()), against
+// The README's What it saves: what charging cost every night of a year, from 1 October 2025, when the market prices
+// went to quarter-hours, to 30 September 2026, in Germany and in Lithuania, on the published market prices, with the
+// board's own plans and scheduler (make_schedule()) and 2026's fees, taxes and margins all year, against
 // charging at once and the car's own schedule, from when the plan's cheapest fee starts at night and from the start
 // time that cost the least over those nights. Built like the unit tests (CONTRIBUTING.md's Checks) and run from the
 // repository root, as it reads plans/; it downloads the prices with curl into test/.prices the first time:
@@ -28,10 +29,11 @@ using namespace esphome::scheduler;
 
 namespace {
 
-// The car, the same every night: home at 18:00 with 70%, 80% by 07:00, about 50 km of driving a day.
+// The car, the same every night: 100 km of driving a day, at about 15 kWh per 100 km, so home at 18:00 with 60%, and
+// 80% by 07:00.
 constexpr float BATTERY_KWH = 75.0f;
 constexpr float CHARGING_KW = 11.0f;
-constexpr float SOC = 70.0f;
+constexpr float SOC = 60.0f;
 constexpr float LIMIT = 80.0f;
 constexpr int PLUG_IN = 18 * 60;         // local time, in minutes
 constexpr int READY_BY = (24 + 7) * 60;  // the next morning
@@ -39,7 +41,7 @@ constexpr int SMARD_GERMANY = 4169;      // SMARD's number for the day-ahead pri
 
 struct Country {
   const char *name;
-  const char *plan;  // in plans/, with 2026's prices
+  const char *plan;  // in plans/, with 2026's prices, used all year
   const char *prices_from;
   float vat;       // on the market price
   float margin;    // the supplier's, per kWh with VAT
@@ -195,11 +197,8 @@ void run(const Country &country, const PriceTable &prices, int64_t first_night, 
   const auto best = std::min_element(straight.begin(), straight.end(),
                                      [](const auto &a, const auto &b) { return a.second < b.second; });
   const double at_once = straight.at(PLUG_IN), cheap = straight.at(country.cheap_from);
-  const CivilDate first = civil_from_days(first_night), last = civil_from_days(last_night);
-  const auto months = static_cast<double>((last.year - first.year) * 12 + last.month - first.month + 1);
-  const auto row = [energy, months](const std::string &label, double cost) {
-    std::printf("  %-42s %8.2f EUR, %6.2f EUR a month  %.3f EUR/kWh\n", label.c_str(), cost, cost / months,
-                cost / energy);
+  const auto row = [energy](const std::string &label, double cost) {
+    std::printf("  %-42s %8.2f EUR  %.3f EUR/kWh\n", label.c_str(), cost, cost / energy);
   };
   std::printf("%s, %s, on %s's prices: %lld nights from %s to %s, %.0f kWh from the grid\n", country.name, country.plan,
               country.prices_from, static_cast<long long>(last_night - first_night + 1), date(first_night).c_str(),
@@ -215,7 +214,7 @@ void run(const Country &country, const PriceTable &prices, int64_t first_night, 
 }  // namespace
 
 int main() try {
-  const int64_t first_night = days_from_civil(2026, 1, 1), last_night = days_from_civil(2026, 9, 30);
+  const int64_t first_night = days_from_civil(2025, 10, 1), last_night = days_from_civil(2026, 9, 30);
   // Germany in 2026, with 19% VAT: a dynamic contract's margin of 2 ct, about the middle of the offers', and per kWh
   // the electricity tax, 2.05 ct (§ 3 StromStG), the concession fee of a town of up to 100,000, 1.59 ct (§ 2 KAV), the
   // median home's in Westnetz's area, and the levies, KWKG 0.446 ct, offshore 0.941 ct and § 19 StromNEV 1.559 ct
