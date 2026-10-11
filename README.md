@@ -28,16 +28,36 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 - **Works in 26 European countries,** most with their grid operators' plans built in.
 - **Updates from its own page,** with releases signed by the project.
 
-## What it saves
+## Example of yearly savings
 
-One ordinary night in Lithuania, 27 September 2026: a 75 kWh car plugs in at 18:00 with 20% and needs 80% by 07:00, on Nord Pool prices and a grid plan with four zones, VAT included.
+Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price of its quarter-hour, the grid plan's fee, taxes, levies, the supplier's margin and VAT, these at their 2026 rates.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="The night's cost: 15.42 EUR charging at once, 6.27 EUR with the car's own schedule from 23:00, and 4.05 EUR with this board from 00:45 to 05:30">
+  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night. Sweden, Vattenfall Tidstariff (SE3), in kronor: 7,543 SEK charging at once, 6,197 SEK with the car's own schedule from 22:00 and 4,974 SEK with this board. Lithuania, ESO Standartinis with four zones: 1,001 EUR at once, 786 EUR from 22:00 and 536 EUR with this board. Spain, 2.0TD: 568 EUR at once, 436 EUR from 00:00 and 305 EUR with this board.">
 </picture>
 
-That's 74% less than charging at once, and 35% less than the car's own schedule, as the board finds the cheap hours wherever they fall. The costs are its scheduler's, run on the published prices.
+That's 34% less than charging at once in Sweden and 46% in Lithuania and Spain, and 20%, 32% and 30% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:30 in Sweden, 03:45 in Lithuania and 04:00 in Spain, still costs 5%, 9% and 20% more.
+
+<details>
+<summary>How it's calculated</summary>
+
+- **The nights:** 365, from 1 October 2025 to 30 September 2026. Each night the car plugs in at 18:00 with 69% and needs 80% by 07:00, local time: 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into its battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery, at 11 kW.
+- **The market prices:** each quarter-hour's, from the day-ahead auction: for Sweden and Lithuania as elprisetjustnu.se and Elering, Estonia's grid operator, publish Nord Pool's, which the board downloads, to the cent, as Nord Pool keeps only its last two months free to download, Sweden's in kronor at the ECB's daily rate, within half a percent of Nord Pool's own; for Spain from OMIE, the Iberian market, as the board downloads them.
+- **The grid fees:** the board's own plans, [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml), at their 2026 prices all year.
+- **The rest of each kWh:** VAT on the market price, 25%, 21% and 21%; a typical supplier's margin, 0.12 kronor in Sweden and 2.5 cents in Lithuania with VAT; and what's the same every hour. In Sweden that's the energy tax, 0.45 kronor with VAT; in Lithuania the public service charges (VIAP), -0.03 cents, with no excise; in Spain the electricity tax, 5.11% of the rest. Monthly fees are left out, as they don't depend on when the car charges.
+- **Charging at once:** from 18:00 straight through, as a Tesla does when you plug it in.
+- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, 22:00 for Vattenfall and ESO and 00:00 for 2.0TD, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, 03:30, 03:45 and 04:00, shows only afterwards.
+- **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
+- **The chart:** Sweden's costs are in kronor, as its board counts them, and its bars as long as their euros at the ECB's daily rate, so the three compare.
+- **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs, and its comments give the sources of the taxes, levies and margins.
+
+```bash
+g++ -std=c++17 -I . -isystem ArduinoJson/src test/savings_example.cpp -o test/savings_example
+test/savings_example
+```
+
+</details>
 
 ## How it works
 
