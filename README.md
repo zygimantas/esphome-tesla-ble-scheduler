@@ -43,38 +43,38 @@ That's 34% less than charging at once in Sweden, 46% in Lithuania and 36% in Spa
 
 The same car and nights in each of the 26 countries, on a dynamic contract, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price.
 
-Where homes pay the market price, charging with the board cost 13% to 50% less than charging as soon as you plug in, and 5% to 33% less than charging scheduled for the night. Much of that comes from charging late in the night, which a schedule can do too: set to the start time that turned out cheapest over the year, it came within 2% of the board in most of these countries, though no one knows that time in advance. Where homes pay regulated or fixed prices, a night schedule does as well as the board. In many countries few homes pay the market price yet, as Confidence says. All these are shares of what charging costs, not of the whole bill.
+Where homes pay the market price, charging with the board cost 5% to 33% less than charging scheduled for the night. Much of that comes from charging later in the night, which a schedule can do too: set to the start time that turned out cheapest over the year, it came within 2% of the board in most of these countries, though no one knows that time in advance. Where homes pay regulated or fixed prices, a night schedule does as well as the board. In many countries few homes pay the market price yet, as Confidence says. All these are shares of what charging costs, not of the whole bill.
 
-What the board would save you in a year, by how you charge now. In Lithuania, for example, 465 EUR if your car charges as soon as you plug it in, and 250 EUR if you already schedule it for the night, from 22:00.
+What the board would save you in a year, if your car now charges on a schedule for the night: in Lithuania, for example, 250 EUR, 32% less than a schedule from 22:00.
 
-| Country | If you charge as soon as you plug in | If you schedule charging for the night | Confidence |
-| --- | --- | --- | --- |
-| [Estonia](plans/ee/AGENTS.md) | 333 EUR, 43% | 212 EUR, 33% | High: exchange-price packages are common |
-| [Lithuania](plans/lt/AGENTS.md) | 465 EUR, 46% | 250 EUR, 32% | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
-| [Czechia](plans/cz/AGENTS.md) | 12,905 CZK, 50% | 5,578 CZK, 30% | Low: few homes pay the market price |
-| [Latvia](plans/lv/AGENTS.md) | 261 EUR, 38% | 142 EUR, 25% | High: one home in six pays the market price |
-| [Spain](plans/es/AGENTS.md) | 268 EUR, 36% | 140 EUR, 23% | High: over a quarter of homes pay each hour's price, most on the regulated PVPC |
-| [France](plans/fr/AGENTS.md) | 196 EUR, 26% | 171 EUR, 23% | Low: two small suppliers bill the market price, and off-peak hours differ by address |
-| [Finland](plans/fi/AGENTS.md) | 223 EUR, 38% | 99 EUR, 22% | High: a third of homes pay the market price |
-| [Sweden](plans/se/AGENTS.md) | 2,568 SEK, 34% | 1,223 SEK, 20% | High: one contract in seven pays each quarter-hour's or hour's price, most the month's average |
-| [Slovenia](plans/si/AGENTS.md) | 229 EUR, 28% | 120 EUR, 17% | Low: 0.3% of homes pay the market price |
-| [Portugal](plans/pt/AGENTS.md) | 341 EUR, 37% | 112 EUR, 16% | Low: under 1% of homes pay the market price |
-| [Romania](plans/ro/AGENTS.md) | 1,056 RON, 18% | 806 RON, 14% | Low: no home had a dynamic contract in 2025 |
-| [Denmark](plans/dk/AGENTS.md) | 3,847 DKK, 48% | 391 DKK, 9% | High: most homes pay the market price |
-| [Germany](plans/de/AGENTS.md) | 741 EUR, 50% | 61 EUR, 8% | Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one |
-| [Poland](plans/pl/AGENTS.md) | 1,866 PLN, 41% | 241 PLN, 8% | Low: 0.03% of homes have a dynamic contract, and it bills another auction's price |
-| [Luxembourg](plans/lu/AGENTS.md) | 154 EUR, 20% | 49 EUR, 8% | Low: few homes pay the market price |
-| [Netherlands](plans/nl/AGENTS.md) | 166 EUR, 17% | 60 EUR, 7% | High: 8% of homes pay the market price |
-| [Belgium](plans/be/AGENTS.md) | 136 EUR, 15% | 56 EUR, 7% | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
-| [Norway](plans/no/AGENTS.md) | 685 NOK, 14% | 276 NOK, 6% | Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well |
-| [Austria](plans/at/AGENTS.md) | 189 EUR, 17% | 48 EUR, 5% | Low: about 1% of homes paid the market price in 2025 |
-| [Italy](plans/it/AGENTS.md) | 134 EUR, 13% | 45 EUR, 5% | Medium: about 3% of homes pay the hourly price |
-| [Ireland](plans/ie/AGENTS.md) | 891 EUR, 71% | 0 EUR, 0% | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
-| [Croatia](plans/hr/AGENTS.md) | 326 EUR, 49% | 0 EUR, 0% | High: no home pays the market price, and the regulated one is cheaper at night |
-| [Bulgaria](plans/bg/AGENTS.md) | 208 EUR, 40% | 0 EUR, 0% | High: nearly every home pays a regulated price, cheaper at night |
-| [Slovakia](plans/sk/AGENTS.md) | 193 EUR, 27% | 0 EUR, 0% | High: nearly every home pays a regulated price, cheaper at night |
-| [Hungary](plans/hu/AGENTS.md) | 18,561 HUF, 12% | 0 HUF, 0% | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
-| [Switzerland](plans/ch/AGENTS.md) | 0 CHF, 0% | 0 CHF, 0% | High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour |
+| Country | Saved a year against a night schedule | Confidence |
+| --- | --- | --- |
+| [Estonia](plans/ee/AGENTS.md) | 212 EUR, 33% | High: exchange-price packages are common |
+| [Lithuania](plans/lt/AGENTS.md) | 250 EUR, 32% | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
+| [Czechia](plans/cz/AGENTS.md) | 5,578 CZK, 30% | Low: few homes pay the market price |
+| [Latvia](plans/lv/AGENTS.md) | 142 EUR, 25% | High: one home in six pays the market price |
+| [France](plans/fr/AGENTS.md) | 171 EUR, 23% | Low: two small suppliers bill the market price, and off-peak hours differ by address |
+| [Spain](plans/es/AGENTS.md) | 140 EUR, 23% | High: over a quarter of homes pay each hour's price, most on the regulated PVPC |
+| [Finland](plans/fi/AGENTS.md) | 99 EUR, 22% | High: a third of homes pay the market price |
+| [Sweden](plans/se/AGENTS.md) | 1,223 SEK, 20% | High: one contract in seven pays each quarter-hour's or hour's price, most the month's average |
+| [Slovenia](plans/si/AGENTS.md) | 120 EUR, 17% | Low: 0.3% of homes pay the market price |
+| [Portugal](plans/pt/AGENTS.md) | 112 EUR, 16% | Low: under 1% of homes pay the market price |
+| [Romania](plans/ro/AGENTS.md) | 806 RON, 14% | Low: no home had a dynamic contract in 2025 |
+| [Denmark](plans/dk/AGENTS.md) | 391 DKK, 9% | High: most homes pay the market price |
+| [Germany](plans/de/AGENTS.md) | 61 EUR, 8% | Low: dynamic contracts and Modul 3 need a smart meter, and 6% of meters are one |
+| [Luxembourg](plans/lu/AGENTS.md) | 49 EUR, 8% | Low: few homes pay the market price |
+| [Poland](plans/pl/AGENTS.md) | 241 PLN, 8% | Low: 0.03% of homes have a dynamic contract, and it bills another auction's price |
+| [Belgium](plans/be/AGENTS.md) | 56 EUR, 7% | Low: 0.4% of homes pay the market price, and Flanders' fee per kW isn't counted |
+| [Netherlands](plans/nl/AGENTS.md) | 60 EUR, 7% | High: 8% of homes pay the market price |
+| [Norway](plans/no/AGENTS.md) | 276 NOK, 6% | Medium: most homes' power is at Norgespris, a fixed price, where the car's own schedule does as well |
+| [Austria](plans/at/AGENTS.md) | 48 EUR, 5% | Low: about 1% of homes paid the market price in 2025 |
+| [Italy](plans/it/AGENTS.md) | 45 EUR, 5% | Medium: about 3% of homes pay the hourly price |
+| [Bulgaria](plans/bg/AGENTS.md) | 0 EUR, 0% | High: nearly every home pays a regulated price, cheaper at night |
+| [Croatia](plans/hr/AGENTS.md) | 0 EUR, 0% | High: no home pays the market price, and the regulated one is cheaper at night |
+| [Hungary](plans/hu/AGENTS.md) | 0 HUF, 0% | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
+| [Ireland](plans/ie/AGENTS.md) | 0 EUR, 0% | High: electric car owners usually take a fixed plan with a cheap night, cheaper than dynamic contracts |
+| [Slovakia](plans/sk/AGENTS.md) | 0 EUR, 0% | High: nearly every home pays a regulated price, cheaper at night |
+| [Switzerland](plans/ch/AGENTS.md) | 0 CHF, 0% | High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour |
 
 - **Scheduled for the night:** the car's own scheduled charging, set in the car or the Tesla app, from when the grid plan's night rate starts, like 22:00 in Lithuania, or from midnight where the rate is the same all night.
 - **Confidence:** how many homes there pay the prices the example takes. High: many do. Medium: a few percent do, or most chose another price. Low: hardly any do, or the bill follows other prices.

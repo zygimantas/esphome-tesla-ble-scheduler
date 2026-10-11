@@ -650,21 +650,16 @@ int main() try {
   for (const Country &country : countries)
     results.push_back(run(country, first_night, last_night));
 
-  // The countries, by how much less charging cost with the board than with the car's own schedule, then than at once.
+  // The countries, by how much less charging cost with the board than with the car's own schedule, then by name.
   std::sort(results.begin(), results.end(), [](const Result &a, const Result &b) {
-    return std::make_pair(percent_less(a.board, a.schedule), percent_less(a.board, a.at_once)) >
-           std::make_pair(percent_less(b.board, b.schedule), percent_less(b.board, b.at_once));
+    const long less_a = percent_less(a.board, a.schedule), less_b = percent_less(b.board, b.schedule);
+    return less_a != less_b ? less_a > less_b : std::string(a.country->name) < b.country->name;
   });
-  // What the board saved a year against each way of charging, in the plan's currency and in percent.
-  const auto saved = [](const Result &r, double other) {
-    return whole(other - r.board) + " " + r.country->currency + ", " + std::to_string(percent_less(r.board, other)) +
-           "%";
-  };
-  std::printf(
-      "| Country | If you charge as soon as you plug in | If you schedule charging for the night |\n"
-      "| --- | --- | --- |\n");
+  // What the board saved a year against the car's own schedule, in the plan's currency and in percent.
+  std::printf("| Country | Saved a year against a night schedule |\n| --- | --- |\n");
   for (const Result &r : results)
-    std::printf("| %s | %s | %s |\n", r.country->name, saved(r, r.at_once).c_str(), saved(r, r.schedule).c_str());
+    std::printf("| %s | %s %s, %ld%% |\n", r.country->name, whole(r.schedule - r.board).c_str(), r.country->currency,
+                percent_less(r.board, r.schedule));
   return 0;
 } catch (const std::exception &e) {  // a file it couldn't write or read
   std::fprintf(stderr, "%s\n", e.what());
