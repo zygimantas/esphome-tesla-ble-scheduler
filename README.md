@@ -36,9 +36,11 @@ For one driver, the same in every country, from October 2025 to September 2026:
 - **Without the board:** the Tesla's own schedule starts charging at the same time every night, when cheap hours usually begin.
 - **Full prices:** with grid fees, taxes and VAT.
 
-| Grid plan | Car's schedule from | Car's schedule | This board | Saved a year |
-| --- | ---: | ---: | ---: | ---: |
-| Sweden, Vattenfall Eldistribution Tidstariff (SE3) | 22:00 | 6,197 SEK | 4,974 SEK | 1,223 SEK, 20% |
+**Sweden, Vattenfall Eldistribution Tidstariff (SE3)**
+
+| Car's schedule from | Car's schedule | This board | Saved a year |
+| ---: | ---: | ---: | ---: |
+| 22:00 | 6,197 SEK | 4,974 SEK | 1,223 SEK, 20% |
 
 ### Savings by country
 
