@@ -67,9 +67,9 @@ test/savings_example
 </details>
 
 <table>
-<tr><td>🟢 <b>Worth it</b></td><td>A plan saves 15% or more, with high or medium confidence</td></tr>
-<tr><td>🟡 <b>Maybe</b></td><td>Less than that, or low confidence</td></tr>
-<tr><td>⚪ <b>Nothing</b></td><td>Homes pay regulated or fixed prices, where a night schedule does as well</td></tr>
+<tr><td>🟢 <b>Worth it</b></td><td>Saves 15% or more on a plan, with high or medium confidence</td></tr>
+<tr><td>🟡 <b>Maybe worth it</b></td><td>Saves less than 15%, or with low confidence</td></tr>
+<tr><td>⚪ <b>Not worth it</b></td><td>Saves nothing, as homes pay regulated or fixed prices</td></tr>
 </table>
 
 <p><br></p>
