@@ -29,12 +29,14 @@ using namespace esphome::scheduler;
 
 namespace {
 
-// The car, the same every night: 100 km of driving a day, at about 15 kWh per 100 km, so home at 18:00 with 60%, and
-// 80% by 07:00.
+// The car, the same every night: 20,000 km a year, about 55 km a day, at 15 kWh per 100 km, so home at 18:00 with 69%,
+// and 80% by 07:00.
+constexpr float KM_A_YEAR = 20000.0f;
+constexpr float KWH_PER_KM = 0.15f;
 constexpr float BATTERY_KWH = 75.0f;
 constexpr float CHARGING_KW = 11.0f;
-constexpr float SOC = 60.0f;
 constexpr float LIMIT = 80.0f;
+constexpr float SOC = LIMIT - KM_A_YEAR / 365 * KWH_PER_KM / BATTERY_KWH * 100;
 constexpr int PLUG_IN = 18 * 60;         // local time, in minutes
 constexpr int READY_BY = (24 + 7) * 60;  // the next morning
 constexpr int SMARD_GERMANY = 4169;      // SMARD's number for the day-ahead prices of Germany and Luxembourg

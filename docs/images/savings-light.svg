@@ -1,23 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" width="720" height="520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
-  <text x="0" y="16" font-size="15" font-weight="400" fill="#59636e">October 2025 to September 2026: 36,500 km, 100 km a day, 60% to 80% every night</text>
+  <text x="0" y="16" font-size="15" font-weight="400" fill="#59636e">October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night</text>
   <text x="0" y="55" font-size="17" font-weight="600" fill="#1f2328">Germany, Westnetz Modul 3</text>
   <text x="0" y="88" font-size="15" font-weight="400" fill="#59636e">Charging at once, as a Tesla does when you plug in</text>
   <rect x="0" y="98" width="520.0" height="26" rx="5" fill="#d1d9e0"/>
-  <text x="532.0" y="117" font-size="17" font-weight="500" fill="#1f2328">2,760 EUR</text>
+  <text x="532.0" y="117" font-size="17" font-weight="500" fill="#1f2328">1,488 EUR</text>
   <text x="0" y="154" font-size="15" font-weight="400" fill="#59636e">The car's own schedule, from 00:00, when the low fee starts</text>
-  <rect x="0" y="164" width="273.6" height="26" rx="5" fill="#d1d9e0"/>
-  <text x="285.6" y="183" font-size="17" font-weight="500" fill="#1f2328">1,452 EUR</text>
+  <rect x="0" y="164" width="282.3" height="26" rx="5" fill="#d1d9e0"/>
+  <text x="294.3" y="183" font-size="17" font-weight="500" fill="#1f2328">808 EUR</text>
   <text x="0" y="220" font-size="15" font-weight="600" fill="#1f2328">This board</text>
-  <rect x="0" y="230" width="257.3" height="26" rx="5" fill="#009ac7"/>
-  <text x="269.3" y="249" font-size="17" font-weight="600" fill="#009ac7">1,365 EUR</text>
+  <rect x="0" y="230" width="261.1" height="26" rx="5" fill="#009ac7"/>
+  <text x="273.1" y="249" font-size="17" font-weight="600" fill="#009ac7">747 EUR</text>
   <text x="0" y="317" font-size="17" font-weight="600" fill="#1f2328">Lithuania, ESO Standartinis with four zones</text>
   <text x="0" y="350" font-size="15" font-weight="400" fill="#59636e">Charging at once</text>
-  <rect x="0" y="360" width="352.2" height="26" rx="5" fill="#d1d9e0"/>
-  <text x="364.2" y="379" font-size="17" font-weight="500" fill="#1f2328">1,869 EUR</text>
+  <rect x="0" y="360" width="349.8" height="26" rx="5" fill="#d1d9e0"/>
+  <text x="361.8" y="379" font-size="17" font-weight="500" fill="#1f2328">1,001 EUR</text>
   <text x="0" y="416" font-size="15" font-weight="400" fill="#59636e">The car's own schedule, from 22:00, when the night fee starts</text>
-  <rect x="0" y="426" width="261.0" height="26" rx="5" fill="#d1d9e0"/>
-  <text x="273.0" y="445" font-size="17" font-weight="500" fill="#1f2328">1,385 EUR</text>
+  <rect x="0" y="426" width="274.6" height="26" rx="5" fill="#d1d9e0"/>
+  <text x="286.6" y="445" font-size="17" font-weight="500" fill="#1f2328">786 EUR</text>
   <text x="0" y="482" font-size="15" font-weight="600" fill="#1f2328">This board</text>
-  <rect x="0" y="492" width="187.3" height="26" rx="5" fill="#009ac7"/>
-  <text x="199.3" y="511" font-size="17" font-weight="600" fill="#009ac7">994 EUR</text>
+  <rect x="0" y="492" width="187.2" height="26" rx="5" fill="#009ac7"/>
+  <text x="199.2" y="511" font-size="17" font-weight="600" fill="#009ac7">536 EUR</text>
 </svg>

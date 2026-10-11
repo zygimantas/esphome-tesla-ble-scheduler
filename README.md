@@ -30,24 +30,24 @@ This board needs none of them. When you plug in, it picks the cheapest quarter-h
 
 ## Example of yearly savings
 
-Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 100 km a day, 36,500 km a year, comes home at 18:00 with 60% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price of its quarter-hour, the grid plan's fee, taxes, levies, the supplier's margin and VAT, these at their 2026 rates.
+Every night for a year, from October 2025, when the market prices went to quarter-hours, to September 2026, a 75 kWh Tesla that drives 20,000 km a year, about 55 km a day, comes home at 18:00 with 69% and needs 80% by 07:00, charged at 11 kW on a dynamic contract. Each kWh costs what the bill charges for it: the market price of its quarter-hour, the grid plan's fee, taxes, levies, the supplier's margin and VAT, these at their 2026 rates.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/savings-dark.svg">
-  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 36,500 km, 100 km a day, 60% to 80% every night. Germany, Westnetz Modul 3: 2,760 EUR charging at once, 1,452 EUR with the car's own schedule from 00:00 and 1,365 EUR with this board. Lithuania, ESO Standartinis with four zones: 1,869 EUR at once, 1,385 EUR from 22:00 and 994 EUR with this board.">
+  <img src="docs/images/savings-light.svg" width="720" alt="October 2025 to September 2026: 20,000 km, about 55 km a day, 69% to 80% every night. Germany, Westnetz Modul 3: 1,488 EUR charging at once, 808 EUR with the car's own schedule from 00:00 and 747 EUR with this board. Lithuania, ESO Standartinis with four zones: 1,001 EUR at once, 786 EUR from 22:00 and 536 EUR with this board.">
 </picture>
 
-That's 51% less than charging at once in Germany and 47% in Lithuania, and 6% and 28% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:00 in Germany and 03:15 in Lithuania, still costs 1% and 7% more.
+That's 50% less than charging at once in Germany and 46% in Lithuania, and 8% and 32% less than the car's own schedule, as the board finds the cheap quarter-hours wherever they fall each night. No fixed start does as well: the best one, which shows only afterwards, from 03:30 in Germany and 03:45 in Lithuania, still costs 1% and 9% more.
 
 <details>
 <summary>How it's calculated</summary>
 
-- **The nights:** 365, from 1 October 2025 to 30 September 2026. Each night the car plugs in at 18:00 with 60% and needs 80% by 07:00, local time: 15 kWh into its battery and 16.7 kWh from the grid, as the board counts 90% of it reaching the battery, at 11 kW.
+- **The nights:** 365, from 1 October 2025 to 30 September 2026. Each night the car plugs in at 18:00 with 69% and needs 80% by 07:00, local time: 20,000 km a year at 15 kWh per 100 km is 8.2 kWh a night into its battery, and 9.1 kWh from the grid, as the board counts 90% of it reaching the battery, at 11 kW.
 - **The market prices:** each quarter-hour's, from the day-ahead auction, as SMARD, Germany's Federal Network Agency, publishes them for Germany and Elering, Estonia's grid operator, for Lithuania. They're Nord Pool's, which the board downloads, to the cent, as Nord Pool keeps only its last two months free to download.
 - **The grid fees:** the board's own plans, [Westnetz Modul 3](plans/de/westnetz-modul-3.yaml) and [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml), at their 2026 prices all year.
 - **The rest of each kWh:** VAT on the market price, 19% and 21%; a typical supplier's margin, 2 and 2.5 cents with VAT; and what's the same every hour. In Germany that's the electricity tax, the concession fee of a town of up to 100,000 and three levies, 7.84 cents with VAT; in Lithuania the public service charges (VIAP), -0.03 cents, with no excise. Monthly fees are left out, as they don't depend on when the car charges.
 - **Charging at once:** from 18:00 straight through, as a Tesla does when you plug it in.
-- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, 00:00 for Westnetz and 22:00 for ESO, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, 03:00 and 03:15, shows only afterwards.
+- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, 00:00 for Westnetz and 22:00 for ESO, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, 03:30 and 03:45, shows only afterwards.
 - **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
 - **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs, and its comments give the sources of the taxes, levies and margins.
 
