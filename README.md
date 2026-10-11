@@ -49,9 +49,11 @@ That's 20% less, 1,223 SEK saved a year, as the board finds the cheap quarter-ho
 
 Open your country for what charging cost a year on each grid plan, on the car's own night schedule and with this board. Confidence says how many homes there pay such prices.
 
-- 🟢 **Worth it:** a plan saves 15% or more, with high or medium confidence.
-- 🟡 **Maybe:** less than that, or low confidence.
-- ⚪ **Nothing:** homes pay regulated or fixed prices, where a night schedule does as well.
+<table>
+<tr><td>🟢 <b>Worth it</b></td><td>A plan saves 15% or more, with high or medium confidence</td></tr>
+<tr><td>🟡 <b>Maybe</b></td><td>Less than that, or low confidence</td></tr>
+<tr><td>⚪ <b>Nothing</b></td><td>Homes pay regulated or fixed prices, where a night schedule does as well</td></tr>
+</table>
 
 <details>
 <summary>🟡 <b>Austria</b></summary>
