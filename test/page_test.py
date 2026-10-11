@@ -156,7 +156,7 @@ def warning_price(page, board):
     page.fill("#set-warning", "25")  # cents typed for euros
     expect(page.locator("#warning-range")).to_have_text("From 0 to 1 EUR with VAT per kWh")
     page.click("#save-settings")  # the page turns it away
-    page.fill("#set-warning", "0.05")
+    page.fill("#set-warning", "0,05")  # a phone's decimal keypad where a comma is written
     page.click("#save-settings")
     expect(card).to_contain_text("The schedule averages 0.076 EUR/kWh, at or above the warning price of 0.05 EUR/kWh.")
     expect(status).to_contain_text("Charges at")  # it still charges
