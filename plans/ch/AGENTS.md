@@ -1,0 +1,69 @@
+# plans/ch/
+
+Switzerland's research, checked in October 2026, for this folder's plans and the README's Example of yearly savings (test/savings_example.cpp). Start an update here, re-checking the sources under References and the dates under Changes ahead, rather than researching afresh.
+
+## Summary
+
+On EKZ's regulated price, the same every hour, the board's charging cost 802.53 CHF (867.58 EUR) over the year from 1 October 2025: 0% less than charging at once (802.95 CHF, 868.04 EUR) and than the car's own schedule from midnight (802.95 CHF, 868.03 EUR), the small difference coming from the night that crosses into April's cheaper summer price. Confidence in the README is High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour.
+
+## Decisions
+
+- **Contract:** EKZ's regulated standard energy price, as no home pays the market price. It's the same every hour and changes with the season, and with its 400ST network fee and the levies it makes a custom plan of 0.21771 CHF per kWh with VAT in summer (April to September) and 0.26419 in winter (October to March).
+- **Plan:** that custom plan, in place of `ch/ekz-400st`. With the same price all night, the car's own schedule starts at midnight.
+- **Left out:** EKZ's monthly base and metering fees, as they don't depend on when the car charges.
+- **Market prices:** none, as no standard home tariff follows them.
+- **Currency:** Switzerland's plans are in francs, and the board converts SMARD's euros into francs at the ECB's daily rate, as the owner settled. The example gives its costs in francs, and in euros at the ECB's daily rate.
+
+## Findings
+
+- **Who pays the market price:** no home. A home using under 100,000 kWh a year can't choose its supplier: it buys energy, network and levies from its grid operator, one of about 580 on 31 August 2026 ([ElCom, 8 September 2026](https://www.elcom.admin.ch/de/newnsb/1miE201yRzoA); [ElCom's FAQ](https://www.elcom.admin.ch/de/faq-stromtarife) still has 2025's 590), at prices the operator sets once a year from its own costs and publishes by the end of August. Dynamic tariffs are rare, and none bills the market price: ElCom calls dynamic energy tariffs the exception, and no operator made a dynamic tariff its standard for 2026 (the FAQ).
+- **EKZ Energie Dynamisch:** the only energy price that moves with the market, an optional tariff since 1 January 2026, only with EKZ Netz 400D and a smart meter ([tariff sheet](https://www.ekz.ch/dam/ekz/privatkunden/strom/tarife-und-agb/Tarifdokumente/tarife-2026/ekz-dynamischer-tarif-2026-tarifblatt.pdf)). Each quarter-hour it is EKZ's standard energy price reshaped by EPEX SPOT's Swiss day-ahead price, at most 0.05000 above or below it, and a typical home's day costs the same as on the standard price ([technical description](https://www.ekz.ch/dam/ekz/privatkunden/strom/tarife-und-agb/Tarifdokumente/tarife-2026/EKZ_Dynamischer-Tarif-2026_technischer-Beschrieb.pdf)). By the start, 100 of 40,000 customers had signed up ([SRF, 31 December 2025](https://www.srf.ch/news/schweiz/dynamische-stromtarife-ekz-bieten-dynamische-tarife-an-viele-andere-firmen-noch-nicht)). EKZ gave no count in August 2026, only that most of those who shift their use pay about 5% less than on the standard tariff ([EKZ, 28 August 2026](https://www.strom.ch/de/document/260828mmekz-tarife-2027pdf)). Worked out from EKZ's and SMARD's prices, on 10 March and 15 June 2026 it followed SMARD's Swiss prices (correlation 0.95 and 0.97) with about 85% and 70% of their spread, in francs at the ECB's rate.
+- **Netz 400D:** set a day ahead from the grid's load forecast, from 0.05000 below to 0.15000 above Netz 400ST. On those two days it was dearest at 18:00 - 21:00 and, at night, cheapest around 04:00.
+- **Dynamic network fees:** the other dynamic tariffs are network fees only, set a day ahead from the load forecast, with the usual fixed energy price: Groupe E's Vario since 2024, with about 70 users at the end of 2024 ([Bulletin, May 2025](https://www.bulletin.ch/fr/news-detail/tarif-dynamique-dans-la-pratique.html)), and since 2026 CKW's Netz Home dynamic ([CKW 2026](https://www.ckw.ch/_Resources/Persistent/c/8/a/a/c8aa65040b94b6d0b687142ef494f00707a0f75a/2026_Preisblaetter_Energieprodukte_dynamisch.pdf)) and Primeo's NetzDynamisch ([fact sheet](https://www.primeo-energie.ch/magnolia/dam/jcr:2a776feb-30aa-481b-8bc0-7f157c00d955/FS_Merkblatt_Wahltarif%20Primeo_NetzDynamisch.pdf)). BKW's Sonne Scheint, from 2027, cuts the network fee on sunny afternoons from April to September.
+- **VAT:** 8.1%, the normal rate since 1 January 2024, on the whole bill, levies included ([ESTV](https://www.estv.admin.ch/estv/de/home/mehrwertsteuer/mwst-steuersaetze.html), updated 22 September 2026, with no change announced; EKZ's, BKW's and CKW's sheets). The same in October to December 2025.
+- **Per kWh, the same every hour:** 0.03190 CHF without VAT, 0.03448 with it, for a home in EKZ's area in 2026 ([Swissgrid's tariffs of 17 March 2026](https://www.swissgrid.ch/dam/swissgrid/customers/topics/tariffs/Tabelle-Tarife-de.pdf); [EKZ's tariff collection 2026](https://www.ekz.ch/dam/ekz/privatkunden/strom/tarife-und-agb/Tarifdokumente/tarife-2026/ekz-tarifsammlung-2026.pdf), pages 8 and 41), each part without and with VAT:
+  - Swissgrid's system services (SDL), 0.00270 and 0.00292;
+  - Swissgrid's electricity reserve (Stromreserve), 0.00410 and 0.00443;
+  - Swissgrid's solidarised costs, for grid reinforcement and aid to steel and aluminium works, 0.00050 and 0.00054;
+  - the federal surcharge (Netzzuschlag, Energiegesetz art. 35), 0.02300 and 0.02486, unchanged in 2027 (ElCom, 8 September 2026);
+  - EKZ's levy for energy advice and efficiency programmes (Förderbeitrag), 0.00160 and 0.00173: its only levy to the public, but in Menzingen, which adds a concession fee of 0.00490, 0.00530 with VAT;
+  - EKZ's API agrees: its grid price for Netz 400ST, 0.10980 without VAT, is 400ST's own 0.07950 plus the first four, and its regional_fees are 0.00160 ([api.tariffs.ekz.ch](https://api.tariffs.ekz.ch/v1/tariffs)). BKW and CKW charge the same four, plus their communes' levies;
+  - in October to December 2025 the SDL was 0.00550 and the reserve 0.00230, with no solidarised costs (Swissgrid), so the sum was 0.03240, 0.03502 with VAT.
+- **The communes' levies:** they differ. ElCom's median is 0.01000, and the city of Zurich's, through ewz, 0.02000 (0.02162 with VAT), which makes 0.05437 with VAT there.
+- **Monthly fees:** EKZ's base fee of 3.00 francs a month and metering at 5.00 a month, without VAT, and CKW's fee per kW of the month's highest quarter-hour, all left out.
+- **Energy price:** no market price reaches a standard Swiss bill: the operator's regulated energy price replaces the market price and the margin. EKZ's standard product, EKZ Energie Erneuerbar, costs the same every hour in 2026 and changes with the season only: 0.13300 (0.14377 with VAT) in January to March and October to December, 0.09000 (0.09729 with VAT) in April to September (tariff collection, page 7; the API's electricity_standard). Worked out from these, with 400ST's 0.08594 and the 0.03448 above, the whole price is 0.26419 CHF per kWh with VAT in winter and 0.21771 in summer, the example's. BKW's standard Energy Blue, 0.10020 (0.10832 with VAT), and CKW's ClassicStrom, 0.12000 (0.12972 with VAT), are flat too ([BKW 2026](https://www.bkw.ch/fileadmin/user_upload/03_Energie/03_06_Gesetzliche_Publikationen/Tarife___Tarifanpassungen/Tarifblaetter_2026/01_Tarifblatt_Privat-Gewerbekunden_2026_DE.pdf), [CKW 2026](https://www.ckw.ch/_Resources/Persistent/b/2/b/1/b2b135be0472fe589ad8a75c21c770c99c39b79f/Preisinformation%20Stromprodukte%202026_Privat-und%20Gewerbekunden_weniger%20als%2050%27000.pdf)).
+  - October to December 2025 differed: EKZ's energy, then EKZ Mixstrom, had a high rate of 0.15600 (0.16864 with VAT) Monday to Friday 07:00 - 20:00, holidays included, and a low rate of 0.14400 (0.15566 with VAT) the rest ([tariff collection 2025](https://www.ekz.ch/dam/ekz/privatkunden/strom/tarife-und-agb/Tarifdokumente/tarife-2025/ekz-tarifsammlung-2025.pdf), page 5; the API's 0.26330 and 0.25130 without VAT on 15 October 2025, network included).
+  - Where the energy has a high and a low rate, as at ewz in the city of Zurich, ewz.natur, its standard product, costs 0.09300 (0.10053 with VAT) Monday to Saturday 06:00 - 22:00 and 0.04900 (0.05297 with VAT) the rest ([ewz 2026](https://www.ewz.ch/dam/ewz/meta/pdf-no-index/Uebersicht_Tarife_ewz-2026.pdf)).
+- **The plan:** `ch/ekz-400st`, EKZ's standard network tariff (Standardtarif), for homes that don't let EKZ steer their devices. EKZ says it supplies about a million people ([EKZ](https://www.ekz.ch/de/ueber-ekz/unternehmen.html)). Its fee is the same every hour, so nothing is cheaper at night: with EKZ's energy price, charging at once, the car's own schedule and the board all cost the same in 2026. Its 0.08594 matches EKZ's 2026 price, 0.07950 without VAT, and its comment's 0.08432 for 2027 matches EKZ's 2027 sheet. EKZ's 400F (0.08108, for homes EKZ may steer, its base tariff from 2027) and BKW's Einheitstarif (0.09070, from BKW's 0.08390) are flat too. So on a standard tariff the board saves only the difference between a high and a low rate, and the car's own schedule from the low rate's start gets all of it.
+- **A plan with a cheap night:** `ch/ewz-nna`, whose 0.12886 and 0.06454 match ewz's 0.11920 and 0.05970 without VAT: its low rate starts at 22:00 Monday to Saturday and lasts all Sunday. With ewz.natur, charging at once costs 0.11188 more per kWh with VAT than from 22:00 on those nights.
+- **Charger tariffs:** for a charger with a meter of its own, as this folder's README.md lists them: ewz NNE-H, high Monday to Saturday 11:00 - 13:00 and 18:00 - 20:00, for the energy too, so low from 20:00; IWB Elektromobilität, flat, but IWB may switch the charger off up to three times two hours a day; Primeo E-Mobilität, low from 21:00 on weekdays, at weekends and on seven holidays where the meter allows.
+- **Market prices:** SMARD, Germany's Federal Network Agency, has Switzerland's day-ahead prices as series 259, in euros per MWh, a week a file from Monday 00:00 German time, without an account, like https://www.smard.de/app/chart_data/259/DE/259_DE_quarterhour_1759096800000.json, the week from 29 September 2025, with the weeks listed in https://www.smard.de/app/chart_data/259/DE/index_quarterhour.json. All 35,068 quarter-hours from 1 October 2025 to 30 September 2026 are there, but the four of each hour share its price: EPEX SPOT's Swiss auction, outside the EU's market coupling, kept hourly products ([APG, 2025](https://pb1-medien.apg.at/im/dl/apg-631671136/Day-Ahead%2015%20Min%20MTU%20CH-AT.pdf)). [Energy-Charts](https://api.energy-charts.info/price?bzn=CH) republishes SMARD's, hourly. No standard home tariff follows them. EKZ's API has its dynamic energy price from 1 January 2026, in francs without VAT, 31 days at most a request, like [10 March 2026's](https://api.tariffs.ekz.ch/v1/tariffs?tariff_name=electricity_dynamic&start_timestamp=2026-03-10T00:00:00%2B01:00&end_timestamp=2026-03-10T23:59:59%2B01:00), and grid_400D for Netz 400D.
+
+## Changes ahead
+
+- **1 January each year:** each operator's new prices, energy and network, which it sets once a year from its own costs and publishes by the end of August; ElCom's comparison has them all. 2027's network prices are in each plan's comments.
+- **1 January 2027:** EKZ's 400ST becomes 0.08432 with VAT, as EKZ's 2027 sheet says, and its 400F, for homes EKZ may steer, becomes its base tariff. BKW's Sonne Scheint starts, cutting the network fee on sunny afternoons from April to September. The federal surcharge stays at 0.02300 without VAT (ElCom, 8 September 2026).
+
+## Open questions
+
+- **High and low rates:** how many homes have one: ElCom gives no count. EKZ, BKW and CKW have none in 2026, while ewz, Groupe E, Romande Energie, SIG, IWB and Primeo have network plans with one.
+- **EKZ's dynamic tariff:** how many homes took it after its start, and what SRF's 40,000 counts.
+- **The communes' levies:** they differ by commune.
+- **ewz's holidays:** whether ewz's low rate covers public holidays.
+- **Quarter-hours:** when the Swiss auction moves to quarter-hours.
+
+## Notes
+
+- **Network prices set a day ahead:** EKZ's Netz 400D, CKW's Netz Home dynamic, Primeo's NetzDynamisch and Groupe E's Vario set network prices a day ahead, which a plan can't hold.
+
+## References
+
+| Source | What it gives | Changes |
+| --- | --- | --- |
+| [ElCom's price comparison](https://www.strompreis.elcom.admin.ch) | every operator's prices | each 1 January, published by the end of August |
+| [EKZ's tariff collection 2026](https://www.ekz.ch/dam/ekz/privatkunden/strom/tarife-und-agb/Tarifdokumente/tarife-2026/ekz-tarifsammlung-2026.pdf) | the example's energy price, 400ST's fee and EKZ's levy | each 1 January |
+| [EKZ's tariff API](https://api.tariffs.ekz.ch/v1/tariffs) | EKZ's prices by date, the dynamic ones included | each 1 January, the dynamic ones daily |
+| [Swissgrid's tariffs](https://www.swissgrid.ch/dam/swissgrid/customers/topics/tariffs/Tabelle-Tarife-de.pdf) | the system services, the electricity reserve and the solidarised costs | each 1 January |
+| [ElCom, 8 September 2026](https://www.elcom.admin.ch/de/newnsb/1miE201yRzoA) | the operators' count and the federal surcharge for 2027 | each year |
+| [ewz's tariffs for 2026](https://www.ewz.ch/dam/ewz/meta/pdf-no-index/Uebersicht_Tarife_ewz-2026.pdf) | ewz's energy and network prices | each 1 January |
+| [SMARD's series 259](https://www.smard.de/app/chart_data/259/DE/index_quarterhour.json) | the market prices, a week a file | daily |

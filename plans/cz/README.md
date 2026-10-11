@@ -1,16 +1,17 @@
 # Czech plans
 
-The distribution fees of Czechia's three regional distribution operators for the rates D01d, D02d and D61d, with prices with VAT, in koruna. Your bill names your operator and your rate (distribuční sazba).
+The distribution fees of Czechia's three regional distribution operators for the rates D01d, D02d and D61d, and ČEZ Distribuce's D27d for a meter that records every quarter-hour, with prices with VAT, in koruna. Your bill names your operator and your rate (distribuční sazba).
 
-| Operator | D01d | D02d | D61d |
-| --- | --- | --- | --- |
-| ČEZ Distribuce | `cz/cez-d01d` | `cz/cez-d02d` | `cz/cez-d61d` |
-| EG.D | `cz/egd-d01d` | `cz/egd-d02d` | `cz/egd-d61d` |
-| PREdistribuce | `cz/pre-d01d` | `cz/pre-d02d` | `cz/pre-d61d` |
+| Operator | D01d | D02d | D61d | D27d |
+| --- | --- | --- | --- | --- |
+| ČEZ Distribuce | `cz/cez-d01d` | `cz/cez-d02d` | `cz/cez-d61d` | `cz/cez-d27d-interval` |
+| EG.D | `cz/egd-d01d` | `cz/egd-d02d` | `cz/egd-d61d` | |
+| PREdistribuce | `cz/pre-d01d` | `cz/pre-d02d` | `cz/pre-d61d` | |
 
 - **D01d and D02d:** the same fee every hour.
 - **D61d:** the low tariff (NT) from Friday 12:00 to Sunday 22:00, all year, and the high tariff (VT) the rest of the week. The hours follow the clock, summer time included.
-- **D27d, the rate for electric cars,** isn't here, nor are the other rates with a low tariff (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write a custom plan with them, as [Custom plan](../README.md#custom-plan) says.
+- **D27d, the rate for electric cars:** where the meter records every quarter-hour (průběhové měření), as a spot contract needs, ČEZ Distribuce fixes the low tariff (NT) at 02:00 - 06:00 and 20:00 - 24:00 every day, and the high tariff (VT) is the rest. The hours follow the clock, summer time included.
+- **The other rates with a low tariff,** and D27d with another meter or operator, aren't here (D25d, D26d, D35d, D45d, D56d and D57d). Your operator switches their low tariff by a signal (HDO) or in your meter, at hours it sets for each place and can change. Its site shows your hours by the HDO code on your meter, and your supplier's price list shows the rate's prices. Write a custom plan with them, as [Custom plan](../README.md#custom-plan) says.
 
 Choose yours under **Grid plan** on the board's page. The board gets Czech market prices from SMARD in euros and converts them into koruna at the ECB's daily rate.
 

@@ -6,18 +6,16 @@ calendar:
   jan-dec:
     mon-fri: night 05:00 morning 07:00 day 17:00 evening 22:00 night
     sat-sun: night 07:00 day 22:00 night
+# ESO's own holidays (its price rules, point 3.2), without Easter Monday or 2 November
 exceptions:
   01-01: night 07:00 day 22:00 night
   02-16: night 07:00 day 22:00 night
   03-11: night 07:00 day 22:00 night
-  # Easter Monday, 2027
-  03-29: night 07:00 day 22:00 night
   05-01: night 07:00 day 22:00 night
   06-24: night 07:00 day 22:00 night
   07-06: night 07:00 day 22:00 night
   08-15: night 07:00 day 22:00 night
   11-01: night 07:00 day 22:00 night
-  11-02: night 07:00 day 22:00 night
   12-24: night 07:00 day 22:00 night
   12-25: night 07:00 day 22:00 night
   12-26: night 07:00 day 22:00 night

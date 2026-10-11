@@ -615,8 +615,8 @@ static void test_schedule_windows_and_prices() {
 // Tariff: VAT, and the rates of a plan from plans/ or a custom one
 // ---------------------------------------------------------------------------
 
-// ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with Lithuania's public holidays
-// of 2026.
+// ESO's 2026 plans (prices in EUR/kWh with VAT), the four-zone one with ESO's holidays, which leave out
+// Easter Monday and 2 November.
 static const char *const FOUR_ZONES = R"(# ESO's Standartinis plan with four zones
 currency: EUR
 calendar:
@@ -627,13 +627,11 @@ exceptions:
   01-01: night 07:00 day 22:00 night
   02-16: night 07:00 day 22:00 night
   03-11: night 07:00 day 22:00 night
-  04-06: night 07:00 day 22:00 night
   05-01: night 07:00 day 22:00 night
   06-24: night 07:00 day 22:00 night
   07-06: night 07:00 day 22:00 night
   08-15: night 07:00 day 22:00 night
   11-01: night 07:00 day 22:00 night
-  11-02: night 07:00 day 22:00 night
   12-24: night 07:00 day 22:00 night
   12-25: night 07:00 day 22:00 night
   12-26: night 07:00 day 22:00 night
@@ -886,11 +884,12 @@ static void test_eso_plans() {
   CHECK(near(fee_at(t, 2026, 9, 26, 18), day));
   CHECK(near(fee_at(t, 2026, 9, 26, 22), night));
   CHECK(near(fee_at(t, 2026, 9, 27, 18), day));
-  // Weekday holidays use weekend hours: Christmas Eve (a Thursday) and Easter Monday.
+  // Weekday holidays use weekend hours, as Christmas Eve (a Thursday) does, but only the plan's: Easter Monday,
+  // which ESO leaves out, is a workday.
   CHECK(near(fee_at(t, 2026, 12, 24, 6), night));
   CHECK(near(fee_at(t, 2026, 12, 24, 18), day));
-  CHECK(near(fee_at(t, 2026, 4, 6, 18), day));
-  CHECK(near(fee_at(t, 2026, 4, 7, 18), evening));   // the Tuesday after is a workday again
+  CHECK(near(fee_at(t, 2026, 12, 23, 18), evening));  // the Wednesday before is a workday
+  CHECK(near(fee_at(t, 2026, 4, 6, 18), evening));
   CHECK(near(fee_at(t, 2026, 12, 1, 17), evening));  // winter time: the same clock hours
   // 02:00 local on Friday is night: spot plus VAT, plus the night fee.
   CHECK(near(total_price(0.10f, SEP24_1700Z + 6 * HOUR, t, VILNIUS_STANDARD_OFFSET), 0.10f * 1.21f + night));

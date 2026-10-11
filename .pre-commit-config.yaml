@@ -14,6 +14,7 @@ repos:
         # names in the plans and their pages, like Modul in Germany's Modul 3, and trough, as in the night trough
         args:
           - --ignore-words-list=alternativ,groupe,konstant,lew,linz,modul,olt,trough,whit
+        exclude: ^plans/[a-z]+/AGENTS\.md$ # research notes, full of names and links in other languages
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v23.1.1
     hooks:
