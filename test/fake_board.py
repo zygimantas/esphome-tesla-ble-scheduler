@@ -231,8 +231,13 @@ class Board:
         """Every entity's state, as /events reports them."""
         status, mode = self.status()
         currency = (re.search(r"^currency: (\w+)", self.settings, re.M) or [None, "EUR"])[1]
-        warning = re.search(r"^warning_price: (\S+)$", self.settings, re.M)
-        dear = mode == "schedule" and warning and float(warning[1]) <= 0.076  # the window's price
+        price = re.search(r"^warning_price: (\S+)$", self.settings, re.M)
+        warning = (  # the window's price, at the warning price or above it
+            f"The schedule averages 0.076 {currency}/kWh, at or above the warning price of "
+            f"{float(price[1]):g} {currency}/kWh."
+            if mode == "schedule" and price and float(price[1]) <= 0.076
+            else ""
+        )
         charging = self.plugged and self.hold == "now"
         start, end = self.window()
         if self.installing:
@@ -245,13 +250,7 @@ class Board:
             text("Charging status", status),
             text("Charging mode", mode),
             text("Charge windows", f"{currency};{start},{end},0.076" if mode == "schedule" else ""),
-            text(
-                "Price warning",
-                f"The schedule averages 0.076 {currency}/kWh, at or above the warning price of "
-                f"{float(warning[1]):g} {currency}/kWh."
-                if dear
-                else "",
-            ),
+            text("Price warning", warning),
             text("Prices until", str((int(time.time()) // 86400 + 2) * 86400) if self.has_car() else "0"),
             text("Savings", SAVINGS if self.paired else ""),
             text("Release", self.release),

@@ -205,7 +205,7 @@ class Controller {
         want_charge = false;
       d.status = want_charge ? "Charging" : next_window_status_(now, settings.standard_offset);
       d.windows = format_windows(schedule_, settings.currency);
-      if (dear_(settings)) {
+      if (settings.warning_price > 0.0f && planned_avg_ >= settings.warning_price) {
         char text[160];
         std::snprintf(text, sizeof(text),
                       "The schedule averages %.3f %s/kWh, at or above the warning price of %g %s/kWh.", planned_avg_,
@@ -333,10 +333,10 @@ class Controller {
   }
 
   // After a plug-in, one message once its schedule has settled: the battery levels, deadline, average price
-  // and window count, and the warning price where the average reaches it, why nothing was bought, or else the
-  // status. A start from the car or the Tesla app
-  // outside the schedule sends one at once, as the board then charges at any price. So does Ready by passing
-  // with the car short while the schedule decides, after the plug-in message: a night that went wrong.
+  // and window count, as a warning where the page warns of the price, why nothing was bought, or else the
+  // status. A start from the car or the Tesla app outside the schedule sends one at once, as the board then
+  // charges at any price. So does Ready by passing with the car short while the schedule decides, after the
+  // plug-in message: a night that went wrong.
   void notify_(int64_t now, const Settings &settings, Decision &d) {
     const bool deadline_passed = deadline_passed_(now, settings);
     if (notify_car_start_) {
@@ -386,11 +386,8 @@ class Controller {
     n.message = text;
     if (schedule_.soc_at_end < limit_ - FULL_WITHIN)
       n.message += "\nNot enough time to reach the limit";
-    if (dear_(settings)) {  // it still charges, and Delete schedule on the page, which a tap opens, stops it
-      std::snprintf(text, sizeof(text), "\nAt or above the warning price of %g %s/kWh", settings.warning_price,
-                    settings.currency);
+    if (!d.warning.empty()) {  // it still charges: Delete schedule on the page, which a tap opens, stops it
       n.title = "Tesla schedule above warning price";
-      n.message += text;
       n.warning = true;
     }
   }
@@ -407,7 +404,7 @@ class Controller {
     return want_charge ? Command::START_CHARGING : Command::STOP_CHARGING;
   }
 
-  // What each button does: holds its choice, and lets the next command go out at once.
+  // What each button does: holds its choice, makes the schedule anew, and lets the next command go out at once.
   void press_(Hold hold) {
     hold_ = hold;
     reschedule_ = true;
@@ -463,12 +460,6 @@ class Controller {
   // Whether the schedule charges in the quarter-hour it was made for (always without prices or battery level).
   bool in_schedule_() const { return !schedule_.valid || schedule_.contains(scheduled_slot_); }
 
-  // Whether the schedule as made anew averaged the warning price or more; a charged car's, made anew, takes nothing and
-  // has no average (NaN).
-  bool dear_(const Settings &settings) const {
-    return settings.warning_price > 0.0f && planned_avg_ >= settings.warning_price;
-  }
-
   Schedule schedule_;
   Tariff tariff_;
   float soc_ = NAN;
@@ -481,7 +472,7 @@ class Controller {
   bool notify_car_start_ = false;
   bool market_ = true;  // prices come from the market (see set_market_prices())
   int64_t scheduled_slot_ = -1;
-  float planned_avg_ = NAN;  // the schedule's average as made anew (see dear_())
+  float planned_avg_ = NAN;  // the schedule's average as made anew, which the warning goes by; none for a charged car
   int64_t planned_for_ = 0;  // the deadline it was made for
   int64_t plugged_since_ = 0;
   int64_t deadline_at_ = 0;  // the deadline in force at the last tick, 0 before the clock is set

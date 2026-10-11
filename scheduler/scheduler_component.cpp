@@ -345,19 +345,15 @@ void SchedulerComponent::dump_config() {
   const std::string market =
       file.area != nullptr ? concat({file.area->name, " from ", market_name(file.area->market)}) : "none";
   const char *plan = !file.plan.empty() ? file.plan.c_str() : file.custom_plan.empty() ? "none" : "custom plan";
-  char warning[32] = "off";
-  if (file.warning_price > 0)
-    std::snprintf(warning, sizeof(warning), "%g %s/kWh", file.warning_price, file.currency.c_str());
   ESP_LOGCONFIG(TAG,
                 "Scheduler:\n"
                 "  Market: %s, prices in %s\n"
                 "  Plan: %s\n"
                 "  Battery: %.0f kWh\n"
                 "  Charging power: %.1f kW\n"
-                "  Phone messages: %s\n"
-                "  Warning price: %s",
+                "  Phone messages: %s",
                 market.c_str(), file.currency.c_str(), plan, file.battery_kwh, file.charging_kw,
-                file.ntfy_topic.empty() ? "off" : "on", warning);
+                file.ntfy_topic.empty() ? "off" : "on");
   LOG_UPDATE_INTERVAL(this);
 }
 

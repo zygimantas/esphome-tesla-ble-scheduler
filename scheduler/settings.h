@@ -91,6 +91,7 @@ struct SettingsFile {
   float vat = 0.0f;            // on the market prices
   float margin = 0.0f;         // the supplier's, per kWh with VAT: on top of the market's, or its fixed part
   std::string ntfy_topic;      // empty: no phone messages
+  float warning_price = 0.0f;  // per kWh with VAT, the grid fees and the margin: a schedule averaging it warns; 0 never
   std::string plan;            // a plan from the list, by its path; empty for a custom plan or none
   std::string_view plan_text;  // the plan as built in
   std::string custom_plan;     // a custom plan's text instead, as read_tariff() reads it: its lines count from 1
@@ -98,7 +99,6 @@ struct SettingsFile {
   float charging_kw = 0.0f;
   std::string vin;
   int32_t standard_offset = 0;  // the time zone's, in seconds
-  float warning_price = 0.0f;  // per kWh with VAT, the grid fees and the margin: a schedule averaging it warns; 0 never
 };
 
 // `text` in capitals.
