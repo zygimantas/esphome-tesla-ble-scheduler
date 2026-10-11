@@ -41,11 +41,11 @@ That's 34% less than charging at once in Sweden, 46% in Lithuania and 36% in Spa
 
 ### Every country
 
-The same car and nights in each of the 26 countries, on a dynamic contract, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price. The car's own schedule starts when the plan's cheapest fee does, or at midnight where the fee is the same all night, and its best start is the one that cost least over the year, which shows only afterwards.
+The same car and nights in each of the 26 countries, on a dynamic contract, except where homes can't have one or it costs more than their usual price, as in Bulgaria, Croatia, Hungary, Ireland, Slovakia and Switzerland: there it's that price.
 
-Where homes pay the market price, the board's charging cost 13% to 50% less than charging at once, and 5% to 33% less than the car's own schedule. Much of that comes from charging late in the night, which the car's own schedule can do too, set at the right time: from its best start it came within 2% of the board in most of these countries. Where homes pay regulated or fixed prices, the car's own schedule does as well as the board. In many countries few homes pay the market price yet, as Confidence says. All these are shares of what charging costs, not of the whole bill.
+Where homes pay the market price, the board's charging cost 13% to 50% less than charging at once, and 5% to 33% less than the car's own schedule. Much of that comes from charging late in the night, which the car's own schedule can do too, set at the right time: from the best fixed start it came within 2% of the board in most of these countries. Where homes pay regulated or fixed prices, the car's own schedule does as well as the board. In many countries few homes pay the market price yet, as Confidence says. All these are shares of what charging costs, not of the whole bill.
 
-| Country | Less than charging at once | Less than the car's own schedule | Less than its best start | Confidence |
+| Country | Cheaper than charging at once | Cheaper than the car's own schedule | Cheaper than the best fixed start | Confidence |
 | --- | --- | --- | --- | --- |
 | [Estonia](plans/ee/AGENTS.md) | 43% | 33% | 5% | High: exchange-price packages are common |
 | [Lithuania](plans/lt/AGENTS.md) | 46% | 32% | 8% | Medium: a few percent of homes pay each quarter-hour's price, most a fixed one |
@@ -74,6 +74,11 @@ Where homes pay the market price, the board's charging cost 13% to 50% less than
 | [Hungary](plans/hu/AGENTS.md) | 12% | 0% | 0% | Medium: homes pay regulated prices, and the car's own meter (A2) pays less at night |
 | [Switzerland](plans/ch/AGENTS.md) | 0% | 0% | 0% | High: homes pay their grid operator's price, which at EKZ, the largest, is the same at every hour |
 
+- **Charging at once:** from 18:00, as soon as the car is plugged in, as a Tesla does unless told otherwise.
+- **The car's own schedule:** the Tesla's scheduled charging, from when the grid plan's night fee starts, or from midnight where the fee is the same all night.
+- **The best fixed start:** the car's own schedule from the start time that turned out cheapest over the year, of all that still finish by 07:00, which no one knows in advance.
+- **Confidence:** how many homes there pay the prices the example takes. High: many do. Medium: a few percent do, or most chose another price. Low: hardly any do, or the bill follows other prices.
+
 AI agents researched each country in October 2026: its notes give every figure's source, what the example settled and what's still open, like [Lithuania's](plans/lt/AGENTS.md). Something wrong or out of date? [Open an issue](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/new/choose).
 
 <details>
@@ -84,10 +89,7 @@ AI agents researched each country in October 2026: its notes give every figure's
 - **The grid fees:** the board's own plans, at their 2026 prices all year: each country's largest grid operator's, with a cheaper night where it has one, like [Vattenfall Tidstariff](plans/se/vattenfall-tidstariff.yaml), [ESO Standartinis with four zones](plans/lt/eso-standartinis-4-zones.yaml) and [2.0TD](plans/es/2-0td.yaml) in the chart. France's off-peak hours from 22:00 are a custom plan, as the board has none, and the Netherlands has no grid fee per kWh.
 - **The rest of each kWh:** VAT, a typical dynamic contract's margin, and what's the same every hour: taxes, levies and, where suppliers bill them, grid losses, at their 2026 rates. Monthly fees are left out, as they don't depend on when the car charges, and so are fees per kW, which the board doesn't count yet ([#82](https://github.com/zygimantas/esphome-tesla-ble-scheduler/issues/82)).
 - **Regulated and fixed prices:** the price itself, with its network fees and levies: the regulated prices in Bulgaria, Croatia, Slovakia and Switzerland, in Hungary A2, for an electric car's own meter, and in Ireland Night Boost, a plan for electric cars with a cheap night.
-- **Charging at once:** from 18:00 straight through, as a Tesla does when you plug it in.
-- **The car's own schedule:** from a set time straight through: from when the plan's cheapest fee starts, or midnight where the fee is the same all night, and from every other quarter-hour that still ends by 07:00, of which the cheapest over the year, its best start, shows only afterwards.
 - **This board:** the board's own scheduler, the same code, picks each night's cheapest quarter-hours from the prices out at 18:00, for the same energy.
-- **Confidence:** High where many homes pay the prices the example takes, Medium where a few percent do or most chose another price, Low where hardly any do or the bill follows other prices.
 - **The research:** AI agents gathered each country's figures, one per country, from regulators', statistics offices' and suppliers' own pages, each with its source. Scripts then checked that no source or figure was lost when the notes were tidied, that each country's summary matches its row here, and that the market prices match Nord Pool's where both could be compared. Each country's notes list the sources to re-check every January.
 - **The chart:** Sweden's costs are in kronor, as its board counts them, and its bars as long as their euros at the ECB's daily rate, so the three compare.
 - **To check it**, run [test/savings_example.cpp](test/savings_example.cpp) in the project's folder, with a C++ compiler, curl and ArduinoJson, as [CONTRIBUTING.md](CONTRIBUTING.md#checks) shows. It downloads the prices and prints the costs and the table.
